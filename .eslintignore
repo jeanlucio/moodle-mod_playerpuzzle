@@ -3,4 +3,4 @@ amd/build/*
 # Ignorar bibliotecas de terceiros minificadas (ajuste se tiver outras)
 **/sweetalert2*
 **/*.min.js
-phaser.js
+amd/src/phaser.js

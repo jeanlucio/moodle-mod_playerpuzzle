@@ -90,6 +90,9 @@ $jsconfig = [
     'questions' => array_values($questions),
 ];
 
+// Carrega o Phaser globalmente ANTES do nosso módulo AMD.
+$PAGE->requires->js(new moodle_url('/mod/playerpuzzle/javascript/phaser.min.js'));
+
 // O Moodle só chama o script, sem passar dados pesados por parâmetro.
 $PAGE->requires->js_call_amd('mod_playerpuzzle/game_boot', 'init', []);
 

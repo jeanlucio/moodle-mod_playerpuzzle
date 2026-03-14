@@ -5,12 +5,12 @@
  * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+/* global Phaser */
 
 define([
     'jquery',
-    'core/notification',
-    'mod_playerpuzzle/phaser'
-], function($, notification, Phaser) {
+    'core/notification'
+], function($, notification) {
     'use strict';
 
     var startPhaser = function(gameConfig) {

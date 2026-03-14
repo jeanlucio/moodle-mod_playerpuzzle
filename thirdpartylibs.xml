@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <libraries>
   <library>
-    <location>amd/src/phaser.js</location>
+    <location>javascript/phaser.min.js</location>
     <name>Phaser</name>
     <license>MIT</license>
     <version>3.90.0</version>

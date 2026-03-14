@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260312" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="playerpuzzle" COMMENT="Stores the PlayerPuzzle activity instances">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Course playerpuzzle activity belongs to"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="name field for moodle instances"/>
+        <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="General introduction of the playerpuzzle activity"/>
+        <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Format of the intro field"/>
+        <FIELD NAME="bossavatar" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="slime.png" SEQUENCE="false" COMMENT="Boss image filename"/>
+        <FIELD NAME="bosshp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1000" SEQUENCE="false" COMMENT="Total health points of the boss"/>
+        <FIELD NAME="bossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Damage dealt by boss per turn"/>
+        <FIELD NAME="questioncategory" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID from question_categories table"/>
+        <FIELD NAME="timelimit" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Time limit in minutes (0 means no limit)"/>
+        <FIELD NAME="maxattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Max attempts allowed (0 means unlimited)"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="course" UNIQUE="false" FIELDS="course"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="playerpuzzle_inventory" COMMENT="Stores global user inventory like coins and upgrade levels">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The user id"/>
+        <FIELD NAME="coins" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total coins collected"/>
+        <FIELD NAME="swordlevel" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Level of the sword upgrade"/>
+        <FIELD NAME="shieldlevel" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Level of the shield upgrade"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="true" FIELDS="userid" COMMENT="One inventory record per user"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="playerpuzzle_attempts" COMMENT="Stores user attempts, tokens, and final scores for the activity">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="playerpuzzleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to playerpuzzle"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to user"/>
+        <FIELD NAME="token" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="Security token for anti-cheat verification"/>
+        <FIELD NAME="bosshp_remaining" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boss HP left when game ended"/>
+        <FIELD NAME="questions_correct" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total questions answered correctly"/>
+        <FIELD NAME="questions_total" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total questions prompted"/>
+        <FIELD NAME="score" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" DECIMALS="5" SEQUENCE="false" COMMENT="Final calculated grade"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="inprogress" SEQUENCE="false" COMMENT="Status: inprogress, finished, abandoned"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="playerpuzzleid" TYPE="foreign" FIELDS="playerpuzzleid" REFTABLE="playerpuzzle" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="token" UNIQUE="true" FIELDS="token"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

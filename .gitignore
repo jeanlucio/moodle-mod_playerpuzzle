@@ -1,0 +1,12 @@
+Plaintext
+# Dependências do Node (Grunt)
+node_modules/
+.grunt/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/

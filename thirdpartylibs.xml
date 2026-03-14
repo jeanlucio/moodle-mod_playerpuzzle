@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<libraries>
+  <library>
+    <location>amd/src/phaser.js</location>
+    <name>Phaser</name>
+    <license>MIT</license>
+    <version>3.60.0</version>
+    <licenseversion></licenseversion>
+  </library>
+</libraries>

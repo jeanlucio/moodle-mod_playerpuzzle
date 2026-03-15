@@ -38,50 +38,92 @@ define([
             containerDOM.append(modalMoodle);
 
             var me = this;
-
-            // 1. DESENHA O CENÁRIO DE FUNDO
             this.add.image(270, 480, 'bg').setDisplaySize(540, 960);
 
-            // 2. CONFIGURA O CHEFÃO (Monstro) - Movido ligeiramente para cima
+            // --- SISTEMA DE TURNOS E STATUS ---
+            this.turnoAtual = 'aluno';
+            var danoBase = parseInt(gameConfig.bossdamage) || 10;
+
+            // Status do Aluno
+            this.alunoOuro = 0;
+            this.alunoEscudo = 0;
+            this.alunoMultiplicador = 1;
+            this.alunoMana = 0; // Nova Barra Azul
+
+            // Status do Chefe
+            this.chefeEnvenenadoTurnos = 0;
+            this.chefeMana = 0; // Nova Barra Azul
+
             this.maxBossHp = gameConfig.bosshp;
             this.currentHp = this.maxBossHp;
 
-            this.bossSprite = this.add.image(270, 85, 'boss');
-            this.bossSprite.setDisplaySize(120, 120);
+            this.bossSprite = this.add.image(270, 75, 'boss');
+            this.bossSprite.setDisplaySize(100, 100);
 
-            // Barra Vermelha (Chefão) - Agora no topo
-            this.bossHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 160, 300, 22);
+            // Interface do Chefe
+            this.bossHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 135, 300, 22);
             this.bossHpBar = this.add.graphics();
-            this.bossHpText = this.add.text(270, 171, '', {fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'}).setOrigin(0.5);
+            this.bossHpText = this.add.text(270, 146, '', {fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'}).setOrigin(0.5);
+
+            this.bossManaBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 158, 300, 8);
+            this.bossManaBar = this.add.graphics();
+
+            this.txtVeneno = this.add.text(430, 146, '☠️', {fontSize: '16px'}).setOrigin(0.5).setAlpha(0);
 
             this.atualizarBarraBoss = function() {
-                var percent = Math.max(0, me.currentHp / me.maxBossHp);
+                var pctHp = Math.max(0, me.currentHp / me.maxBossHp);
                 me.bossHpBar.clear();
-                me.bossHpBar.fillStyle(0xdd0000, 1);
-                me.bossHpBar.fillRect(122, 162, 296 * percent, 18);
+                me.bossHpBar.fillStyle(0xdd0000, 1).fillRect(122, 137, 296 * pctHp, 18);
                 me.bossHpText.setText('Chefe: ' + Math.round(me.currentHp));
+
+                var pctMana = Math.min(1, me.chefeMana / 100);
+                me.bossManaBar.clear();
+                me.bossManaBar.fillStyle(0x0088ff, 1).fillRect(122, 159, 296 * pctMana, 6);
+
+                if (me.chefeEnvenenadoTurnos > 0) {
+                    me.txtVeneno.setAlpha(1);
+                } else {
+                    me.txtVeneno.setAlpha(0);
+                }
             };
             this.atualizarBarraBoss();
 
-            // 3. CONFIGURA O ALUNO (O Herói)
+            // Interface do Aluno
             this.maxPlayerHp = 100;
             this.currentPlayerHp = this.maxPlayerHp;
 
-            // Barra Verde (Aluno) - Empilhada logo abaixo da do Chefão
-            this.playerHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 195, 300, 22);
+            this.playerHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 175, 300, 22);
             this.playerHpBar = this.add.graphics();
-            this.playerHpText = this.add.text(270, 206, '', {fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'}).setOrigin(0.5);
+            this.playerHpText = this.add.text(270, 186, '', {fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'}).setOrigin(0.5);
+
+            this.playerManaBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 198, 300, 8);
+            this.playerManaBar = this.add.graphics();
+
+            // Status Visuais do Aluno (Embaixo da barra de vida)
+            var styleEscudo = {fontSize: '16px', fill: '#aaaaff', fontStyle: 'bold'};
+            var styleOuro = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
+            var styleEstrela = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
+
+            this.txtEscudo = this.add.text(120, 215, '🛡️: 0', styleEscudo);
+            this.txtOuro = this.add.text(270, 215, '🪙: 0', styleOuro).setOrigin(0.5, 0);
+            this.txtEstrela = this.add.text(420, 215, '⭐x1.0', styleEstrela).setOrigin(1, 0);
 
             this.atualizarBarraAluno = function() {
-                var percent = Math.max(0, me.currentPlayerHp / me.maxPlayerHp);
+                var pctHp = Math.max(0, me.currentPlayerHp / me.maxPlayerHp);
                 me.playerHpBar.clear();
-                me.playerHpBar.fillStyle(0x00cc00, 1);
-                me.playerHpBar.fillRect(122, 197, 296 * percent, 18);
+                me.playerHpBar.fillStyle(0x00cc00, 1).fillRect(122, 177, 296 * pctHp, 18);
                 me.playerHpText.setText('Você: ' + Math.round(me.currentPlayerHp) + ' / ' + me.maxPlayerHp);
+
+                var pctMana = Math.min(1, me.alunoMana / 100);
+                me.playerManaBar.clear();
+                me.playerManaBar.fillStyle(0x0088ff, 1).fillRect(122, 199, 296 * pctMana, 6);
+
+                me.txtEscudo.setText('🛡️: ' + me.alunoEscudo);
+                me.txtOuro.setText('🪙: ' + me.alunoOuro);
+                me.txtEstrela.setText('⭐x' + me.alunoMultiplicador.toFixed(1));
             };
             this.atualizarBarraAluno();
 
-            // Botão Expandir
             var btnFullscreen = this.add.text(520, 20, '[ Expandir ]', {
                 fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setOrigin(1, 0);
@@ -105,41 +147,41 @@ define([
             var colunas = 8;
             var tamanhoPeca = 55;
             var offsetX = 77.5;
-            var offsetY = 290; // Tabuleiro ligeiramente descido para acomodar as barras no topo
+            var offsetY = 280;
 
-            // 4. DESENHA A GRADE VISUAL DO TABULEIRO
             var graphics = this.add.graphics();
-            var larguraTabuleiro = colunas * tamanhoPeca;
-            var alturaTabuleiro = linhas * tamanhoPeca;
+            var largTab = colunas * tamanhoPeca;
+            var altTab = linhas * tamanhoPeca;
+
+            var rx = offsetX - (tamanhoPeca / 2);
+            var ry = offsetY - (tamanhoPeca / 2);
 
             graphics.fillStyle(0x000000, 0.85);
-            graphics.fillRect(offsetX - (tamanhoPeca / 2), offsetY - (tamanhoPeca / 2), larguraTabuleiro, alturaTabuleiro);
-
+            graphics.fillRect(rx, ry, largTab, altTab);
             graphics.lineStyle(6, 0x111111, 1);
-            graphics.strokeRect(offsetX - (tamanhoPeca / 2), offsetY - (tamanhoPeca / 2), larguraTabuleiro, alturaTabuleiro);
+            graphics.strokeRect(rx, ry, largTab, altTab);
 
             graphics.lineStyle(2, 0x333333, 0.4);
             graphics.beginPath();
-            var gridX = offsetX - (tamanhoPeca / 2);
-            var gridY = offsetY - (tamanhoPeca / 2);
 
             for (var iGrade = 1; iGrade < linhas; iGrade++) {
-                graphics.moveTo(gridX, gridY + (iGrade * tamanhoPeca));
-                graphics.lineTo(gridX + larguraTabuleiro, gridY + (iGrade * tamanhoPeca));
-                graphics.moveTo(gridX + (iGrade * tamanhoPeca), gridY);
-                graphics.lineTo(gridX + (iGrade * tamanhoPeca), gridY + alturaTabuleiro);
+                graphics.moveTo(rx, ry + (iGrade * tamanhoPeca));
+                graphics.lineTo(rx + largTab, ry + (iGrade * tamanhoPeca));
+                graphics.moveTo(rx + (iGrade * tamanhoPeca), ry);
+                graphics.lineTo(rx + (iGrade * tamanhoPeca), ry + altTab);
             }
             graphics.strokePath();
 
             this.tabuleiro = [];
             this.pecaSelecionada = null;
             this.swipePeca = null;
+            this.ultimaTroca = null;
             this.startX = 0;
             this.startY = 0;
             this.tempoUltimaAcao = 0;
             this.pecaComDica = null;
 
-            var r, c, p1, p2, p3, iLoop, peca, row, col, itemAleatorio, x, y, pecaCaindo, yInicio, yFim;
+            var r, c, p1, p2, p3, peca, row, col, itemAleatorio, x, y, pecaCaindo, yInicio, yFim;
 
             this.verificarHorizontal = function(pecasDestruir) {
                 for (r = 0; r < linhas; r++) {
@@ -185,7 +227,7 @@ define([
                 }
             };
 
-            this.obterDicaDeJogada = function() {
+            this.encontrarJogada = function() {
                 var isMatch = function(rowP, colP) {
                     var p = me.tabuleiro[rowP][colP];
                     if (!p) {
@@ -230,7 +272,7 @@ tr, tc;
                             me.tabuleiro[scanR][scanC].tipo = me.tabuleiro[scanR][scanC + 1].tipo;
                             me.tabuleiro[scanR][scanC + 1].tipo = temp;
                             if (matchR) {
- return me.tabuleiro[scanR][scanC];
+ return {p1: me.tabuleiro[scanR][scanC], p2: me.tabuleiro[scanR][scanC + 1]};
 }
                         }
                         if (scanR < linhas - 1) {
@@ -242,7 +284,7 @@ tr, tc;
                             me.tabuleiro[scanR][scanC].tipo = me.tabuleiro[scanR + 1][scanC].tipo;
                             me.tabuleiro[scanR + 1][scanC].tipo = temp;
                             if (matchD) {
- return me.tabuleiro[scanR][scanC];
+ return {p1: me.tabuleiro[scanR][scanC], p2: me.tabuleiro[scanR + 1][scanC]};
 }
                         }
                     }
@@ -251,29 +293,33 @@ tr, tc;
             };
 
             this.temJogadaPossivel = function() {
-                return me.obterDicaDeJogada() !== null;
+                return me.encontrarJogada() !== null;
             };
 
             this.resetarDica = function() {
                 me.tempoUltimaAcao = me.time.now;
                 if (me.pecaComDica) {
-                    me.tweens.killTweensOf(me.pecaComDica);
-                    me.pecaComDica.setDisplaySize(tamanhoPeca - 4, tamanhoPeca - 4);
+                    me.tweens.killTweensOf([me.pecaComDica.p1, me.pecaComDica.p2]);
+                    me.pecaComDica.p1.setDisplaySize(tamanhoPeca - 4, tamanhoPeca - 4);
+                    me.pecaComDica.p2.setDisplaySize(tamanhoPeca - 4, tamanhoPeca - 4);
                     me.pecaComDica = null;
                 }
             };
 
             this.verificarOciosidade = function() {
-                if (!me.input.enabled) {
+                if (!me.input.enabled || me.turnoAtual !== 'aluno') {
                     me.tempoUltimaAcao = me.time.now;
                     return;
                 }
                 if (me.pecaComDica === null && (me.time.now - me.tempoUltimaAcao > 5000)) {
-                    var pecaDica = me.obterDicaDeJogada();
-                    if (pecaDica) {
-                        me.pecaComDica = pecaDica;
+                    var jogadaDica = me.encontrarJogada();
+                    if (jogadaDica) {
+                        me.pecaComDica = jogadaDica; // Agora o jogo guarda as duas peças!
+
+                        // Faz as DUAS peças piscarem juntas
                         me.tweens.add({
-                            targets: pecaDica, displayWidth: tamanhoPeca + 6, displayHeight: tamanhoPeca + 6,
+                            targets: [jogadaDica.p1, jogadaDica.p2],
+                            displayWidth: tamanhoPeca + 6, displayHeight: tamanhoPeca + 6,
                             yoyo: true, repeat: -1, duration: 400
                         });
                     }
@@ -326,9 +372,264 @@ tr, tc;
 
                 me.time.delayedCall(1200, function() {
                     aviso.destroy();
-                    me.input.enabled = true;
-                    me.resetarDica();
+                    if (me.turnoAtual === 'aluno') {
+                        me.input.enabled = true;
+                        me.resetarDica();
+                    } else {
+                        me.executarTurnoChefe();
+                    }
                 });
+            };
+
+            this.mostrarTelaFim = function(vitoria) {
+                me.input.enabled = false;
+                me.add.graphics().fillStyle(0x000000, 0.8).fillRect(0, 0, 540, 960).setDepth(99);
+
+                var msg = vitoria ? '🌟 VITÓRIA! 🌟' : '💀 DERROTA 💀';
+                var cor = vitoria ? '#00ff00' : '#ff0000';
+
+                var txt = me.add.text(270, 300, msg, {
+                    fontSize: '46px', fill: cor, fontStyle: 'bold', align: 'center'
+                }).setOrigin(0.5).setDepth(100);
+                me.tweens.add({targets: txt, scaleX: 1.1, scaleY: 1.1, yoyo: true, repeat: -1, duration: 800});
+
+                var statsStr = 'Ouro Coletado: ' + me.alunoOuro;
+                statsStr += '\nMultiplicador Máx: x' + me.alunoMultiplicador.toFixed(1);
+
+                me.add.text(270, 400, statsStr, {
+                    fontSize: '24px', fill: '#ffffff', align: 'center'
+                }).setOrigin(0.5).setDepth(100);
+
+                var btnRestart = me.add.text(270, 550, '🎮 JOGAR NOVAMENTE', {
+                    fontSize: '24px', fill: '#ffffff', backgroundColor: '#3366cc', padding: {x: 20, y: 15}, fontStyle: 'bold'
+                }).setOrigin(0.5).setDepth(100).setInteractive();
+
+                btnRestart.on('pointerdown', function() {
+ me.scene.restart();
+});
+
+                var btnSair = me.add.text(270, 650, '🚪 SAIR DO JOGO', {
+                    fontSize: '20px', fill: '#aaaaaa', backgroundColor: '#333333', padding: {x: 20, y: 15}
+                }).setOrigin(0.5).setDepth(100).setInteractive();
+
+                btnSair.on('pointerdown', function() {
+ window.location.href = M.cfg.wwwroot;
+});
+            };
+
+            this.verificarFimDeJogo = function() {
+                if (me.currentHp <= 0) {
+ me.mostrarTelaFim(true); return true;
+}
+                if (me.currentPlayerHp <= 0) {
+ me.mostrarTelaFim(false); return true;
+}
+                return false;
+            };
+
+            this.executarTurnoChefe = function() {
+                var jogada = me.encontrarJogada();
+                if (jogada) {
+                    me.tweens.add({
+                        targets: me.bossSprite,
+                        scaleX: 1.2, scaleY: 1.2, yoyo: true, duration: 300,
+                        onComplete: function() {
+ me.trocarPecas(jogada.p1, jogada.p2);
+}
+                    });
+                } else {
+                    me.embaralhar();
+                }
+            };
+
+            // --- A FUNÇÃO ISOLADA DO MODAL DE PERGUNTA (Resolve a Complexidade) ---
+            this.abrirModalPergunta = function(quemAtivou) {
+                me.input.enabled = false;
+                setTimeout(function() {
+                    me.scene.pause();
+                    var modalMoodle = $('#playerpuzzle-modal');
+
+                    if (modalMoodle.length > 0) {
+                        var perguntaSorteada = {name: "Aviso", questiontext: "Erro de perguntas."};
+                        if (gameConfig.questions && gameConfig.questions.length > 0) {
+                            var idx = Math.floor(Math.random() * gameConfig.questions.length);
+                            perguntaSorteada = gameConfig.questions[idx];
+                        }
+
+                        var textoDaPergunta = perguntaSorteada.questiontext ?
+                            perguntaSorteada.questiontext : perguntaSorteada.name;
+
+                        var respCertas = [];
+                        var respErradas = [];
+                        if (perguntaSorteada.answers) {
+                            perguntaSorteada.answers.forEach(function(r, indexR) {
+                                if (parseFloat(r.fraction) > 0) {
+                                    respCertas.push(indexR);
+                                } else {
+                                    respErradas.push(indexR);
+                                }
+                            });
+                        }
+
+                        var chefeAcertou = (Math.random() > 0.3);
+                        if (respErradas.length === 0) {
+ chefeAcertou = true;
+}
+                        if (respCertas.length === 0) {
+ chefeAcertou = false;
+}
+
+                        var indexChefe = -1;
+                        if (quemAtivou === 'chefe') {
+                            if (chefeAcertou && respCertas.length > 0) {
+                                indexChefe = respCertas[Math.floor(Math.random() * respCertas.length)];
+                            } else if (!chefeAcertou && respErradas.length > 0) {
+                                indexChefe = respErradas[Math.floor(Math.random() * respErradas.length)];
+                            }
+                        }
+
+                        if (quemAtivou === 'chefe') {
+                            var avisoC = '<span class="text-danger fw-bold">👹 O Chefe ativou a pergunta!</span><br><br>';
+                            textoDaPergunta = avisoC + textoDaPergunta;
+                        }
+
+                        $('#playerpuzzle-pergunta-texto').html(textoDaPergunta);
+                        var containerRespostas = $('#playerpuzzle-respostas-container');
+                        containerRespostas.empty();
+
+                        var fecharModal = function() {
+                            modalMoodle.removeClass('show').css('display', 'none');
+                            me.scene.resume();
+                            me.time.delayedCall(250, me.aplicarGravidade, [], me);
+                        };
+
+                        if (perguntaSorteada.answers && perguntaSorteada.answers.length > 0) {
+                            perguntaSorteada.answers.forEach(function(resposta, idxHtml) {
+                                var txtLimpo = resposta.answer.replace(/(<([^>]+)>)/gi, "");
+                                var btnStr = '<button class="btn btn-outline-primary btn-lg mb-3 w-100">';
+                                var btnHTML = $(btnStr + txtLimpo + '</button>');
+
+                                if (quemAtivou === 'aluno') {
+                                    btnHTML.on('click', function() {
+                                        if (parseFloat(resposta.fraction) > 0) {
+                                            me.currentHp -= (danoBase * 3 * me.alunoMultiplicador); // Dano massivo da magia
+                                            if (me.currentHp < 0) {
+ me.currentHp = 0;
+}
+                                            me.atualizarBarraBoss();
+                                            me.bossSprite.setTint(0x0088ff);
+                                            me.tweens.add({
+                                                targets: me.bossSprite, y: me.bossSprite.y - 20,
+                                                yoyo: true, duration: 150,
+                                                onComplete: function() {
+ me.bossSprite.clearTint();
+}
+                                            });
+                                        } else {
+                                            var danoErro = 30;
+                                            if (me.alunoEscudo > 0) {
+                                                if (danoErro >= me.alunoEscudo) {
+                                                    danoErro -= me.alunoEscudo;
+                                                    me.alunoEscudo = 0;
+                                                } else {
+                                                    me.alunoEscudo -= danoErro;
+                                                    danoErro = 0;
+                                                }
+                                            }
+                                            me.currentPlayerHp -= danoErro;
+                                            if (me.currentPlayerHp < 0) {
+ me.currentPlayerHp = 0;
+}
+                                            me.alunoMultiplicador = 1;
+                                            me.atualizarBarraAluno();
+                                            me.cameras.main.shake(250, 0.015);
+                                        }
+                                        $('#playerpuzzle-btn-fechar').text('Fechar');
+                                        fecharModal();
+                                    });
+                                } else {
+                                    btnHTML.prop('disabled', true);
+                                    if (idxHtml === indexChefe) {
+                                        if (chefeAcertou) {
+                                            btnHTML.removeClass('btn-outline-primary').addClass('btn-danger text-white');
+                                            btnHTML.html('<strong>✓ ' + txtLimpo + ' (O Chefe acertou!)</strong>');
+                                        } else {
+                                            btnHTML.removeClass('btn-outline-primary').addClass('btn-secondary text-white');
+                                            btnHTML.html('<strong>✗ ' + txtLimpo + ' (O Chefe errou!)</strong>');
+                                        }
+                                    } else {
+                                        btnHTML.removeClass('btn-outline-primary').addClass('btn-light');
+                                    }
+                                }
+                                containerRespostas.append(btnHTML);
+                            });
+
+                            if (quemAtivou === 'chefe') {
+                                var btnFechar = $('#playerpuzzle-btn-fechar');
+                                var tempoRestante = 15;
+                                btnFechar.show().text('Continuar (' + tempoRestante + 's)');
+
+                                var executouAcao = false;
+                                var timerChefe = setInterval(function() {
+                                    if (executouAcao) {
+ return;
+}
+                                    tempoRestante--;
+                                    if (tempoRestante > 0) {
+                                        btnFechar.text('Continuar (' + tempoRestante + 's)');
+                                    } else {
+                                        executarAcaoChefe();
+                                    }
+                                }, 1000);
+
+                                var executarAcaoChefe = function() {
+                                    if (executouAcao) {
+ return;
+}
+                                    executouAcao = true;
+                                    clearInterval(timerChefe);
+                                    if (chefeAcertou) {
+                                        var dChefe = danoBase * 3;
+                                        if (me.alunoEscudo > 0) {
+                                            if (dChefe >= me.alunoEscudo) {
+                                                dChefe -= me.alunoEscudo;
+                                                me.alunoEscudo = 0;
+                                            } else {
+                                                me.alunoEscudo -= dChefe;
+                                                dChefe = 0;
+                                            }
+                                        }
+                                        me.currentPlayerHp -= dChefe;
+                                        if (me.currentPlayerHp < 0) {
+ me.currentPlayerHp = 0;
+}
+                                        me.atualizarBarraAluno();
+                                        setTimeout(function() {
+ me.cameras.main.shake(300, 0.02);
+}, 100);
+                                    }
+                                    btnFechar.text('Fechar');
+                                    fecharModal();
+                                };
+
+                                btnFechar.off('click').on('click', executarAcaoChefe);
+
+                            } else {
+                                $('#playerpuzzle-btn-fechar').text('Fechar').show().off('click').on('click', fecharModal);
+                            }
+
+                        } else {
+                            containerRespostas.append('<p class="text-danger">Vazio</p>');
+                            $('#playerpuzzle-btn-fechar').text('Fechar').show().off('click').on('click', fecharModal);
+                        }
+
+                        modalMoodle.addClass('show').css('display', 'block');
+
+                    } else {
+                        me.scene.resume();
+                        me.time.delayedCall(250, me.aplicarGravidade, [], me);
+                    }
+                }, 250);
             };
 
             this.aplicarGravidade = function() {
@@ -386,140 +687,150 @@ tr, tc;
                 me.time.delayedCall(500, me.verificarCombinacoes, [], me);
             };
 
+            // FUNÇÃO AUXILIAR PARA LIMPAR A COMPLEXIDADE
+            this.processarEfeitos = function(pecasDestruidas) {
+                var ativouPergunta = false;
+                var quemAtivou = null;
+                var danoCausado = 0;
+
+                for (var i = 0; i < pecasDestruidas.length; i++) {
+                    var peca = pecasDestruidas[i];
+
+                   if (me.turnoAtual === 'aluno') {
+                        if (peca.tipo === 6) {
+                            me.alunoOuro += 10;
+                        } else if (peca.tipo === 5) {
+                            me.currentPlayerHp = Math.min(me.maxPlayerHp, me.currentPlayerHp + 5);
+                        } else if (peca.tipo === 0) {
+                            me.alunoMultiplicador += 0.1;
+                        } else if (peca.tipo === 4) {
+                            me.alunoEscudo += 5;
+                        } else if (peca.tipo === 1) {
+                            me.chefeEnvenenadoTurnos += 3;
+                        } else if (peca.tipo === 2) {
+                            me.alunoMana += 20;
+                        }
+                    } else {
+                        if (peca.tipo === 2) {
+                            me.chefeMana += 20;
+                        }
+                    }
+
+                    if (peca.tipo === 3) {
+ danoCausado += (danoBase / 3);
+} // 3: Espadas (Dano direto)
+
+                    me.tabuleiro[peca.row][peca.col] = null;
+                    me.tweens.add({
+                        targets: peca, scaleX: 0, scaleY: 0, duration: 200,
+                        onComplete: function(tween, targets) {
+ targets[0].destroy();
+}
+                    });
+                }
+
+                me.alunoMultiplicador = Math.round(me.alunoMultiplicador * 10) / 10;
+
+                if (me.alunoMana >= 100) {
+                    me.alunoMana -= 100;
+                    ativouPergunta = true;
+                    quemAtivou = 'aluno';
+                } else if (me.chefeMana >= 100) {
+                    me.chefeMana -= 100;
+                    ativouPergunta = true;
+                    quemAtivou = 'chefe';
+                }
+
+                me.atualizarBarraAluno();
+                me.atualizarBarraBoss();
+
+                return {dano: danoCausado, pergunta: ativouPergunta, quem: quemAtivou};
+            };
+
             this.verificarCombinacoes = function() {
                 var pecasParaDestruir = [];
                 me.verificarHorizontal(pecasParaDestruir);
                 me.verificarVertical(pecasParaDestruir);
 
-                if (pecasParaDestruir.length > 0) {
-                    var ativouPergunta = false;
-                    var danoCausado = 0;
-
-                    for (iLoop = 0; iLoop < pecasParaDestruir.length; iLoop++) {
-                        peca = pecasParaDestruir[iLoop];
-                        if (peca.tipo === 2) {
- ativouPergunta = true;
-} else if (peca.tipo === 3) {
- danoCausado += (gameConfig.bossdamage / 3);
-}
-
-                        me.tabuleiro[peca.row][peca.col] = null;
-                        me.tweens.add({
-                            targets: peca, scaleX: 0, scaleY: 0, duration: 200,
-                            onComplete: function(tween, targets) {
- targets[0].destroy();
-}
-                        });
+                // SE NÃO HOUVER COMBINAÇÃO NENHUMA
+                if (pecasParaDestruir.length === 0) {
+                    // MÁGICA: A jogada foi do jogador e falhou? Reverte!
+                    if (me.ultimaTroca !== null) {
+                        me.trocarPecas(me.ultimaTroca.p1, me.ultimaTroca.p2, true);
+                        return;
                     }
 
-                    if (danoCausado > 0) {
-                        danoCausado = Math.round(danoCausado);
-                        me.currentHp -= danoCausado;
-                        if (me.currentHp < 0) {
- me.currentHp = 0;
+                    if (me.verificarFimDeJogo()) {
+ return;
 }
-                        me.atualizarBarraBoss();
 
+                    if (me.turnoAtual === 'aluno') {
+                        me.turnoAtual = 'chefe';
+                        me.input.enabled = false;
+
+                        if (me.chefeEnvenenadoTurnos > 0) {
+                            me.currentHp = Math.max(0, me.currentHp - 5);
+                            me.chefeEnvenenadoTurnos--;
+                            me.atualizarBarraBoss();
+                            me.bossSprite.setTint(0xff00ff);
+                            me.time.delayedCall(300, function() {
+ me.bossSprite.clearTint();
+});
+                        }
+
+                        me.time.delayedCall(800, me.executarTurnoChefe, [], me);
+                    } else {
+                        me.turnoAtual = 'aluno';
+                        if (!me.temJogadaPossivel()) {
+                            me.embaralhar();
+                        } else {
+                            me.input.enabled = true;
+                            me.resetarDica();
+                        }
+                    }
+                    return;
+                }
+
+                // SE HOUVER COMBINAÇÃO VÁLIDA: Limpa a memória para não reverter
+                me.ultimaTroca = null;
+                me.turnoDoChefePendente = true;
+
+                var efeitos = me.processarEfeitos(pecasParaDestruir);
+                var dCausado = efeitos.dano;
+
+                // ... (O resto do código que já lá está continua igual para baixo) ...
+
+                if (dCausado > 0) {
+                    dCausado = Math.round(dCausado * (me.turnoAtual === 'aluno' ? me.alunoMultiplicador : 1));
+
+                    if (me.turnoAtual === 'aluno') {
+                        // Mágica Matemática 2: Sem 'if' para vida negativa!
+                        me.currentHp = Math.max(0, me.currentHp - dCausado);
+                        me.atualizarBarraBoss();
                         me.bossSprite.setTint(0xff0000);
                         me.time.delayedCall(200, function() {
  me.bossSprite.clearTint();
 });
-
-                        me.tweens.add({
-                            targets: me.bossSprite, x: me.bossSprite.x + 10, yoyo: true, repeat: 3,
-                            duration: 40, onComplete: function() {
- me.bossSprite.x = 270;
-}
-                        });
-                    }
-
-                    if (ativouPergunta) {
-                        me.input.enabled = false;
-                        setTimeout(function() {
-                            me.scene.pause();
-                            var modalMoodle = $('#playerpuzzle-modal');
-
-                            if (modalMoodle.length > 0) {
-                                var perguntaSorteada = {name: "Aviso", questiontext: "Erro de perguntas."};
-                                if (gameConfig.questions && gameConfig.questions.length > 0) {
-                                    var idx = Math.floor(Math.random() * gameConfig.questions.length);
-                                    perguntaSorteada = gameConfig.questions[idx];
-                                }
-
-                                var textoDaPergunta = perguntaSorteada.questiontext ?
-                                    perguntaSorteada.questiontext : perguntaSorteada.name;
-
-                                $('#playerpuzzle-pergunta-texto').html(textoDaPergunta);
-                                var containerRespostas = $('#playerpuzzle-respostas-container');
-                                containerRespostas.empty();
-
-                                var fecharModal = function() {
-                                    modalMoodle.removeClass('show').css('display', 'none');
-                                    me.scene.resume();
-                                    me.time.delayedCall(250, me.aplicarGravidade, [], me);
-                                };
-
-                                if (perguntaSorteada.answers && perguntaSorteada.answers.length > 0) {
-                                    perguntaSorteada.answers.forEach(function(resposta) {
-                                        var textoLimpo = resposta.answer.replace(/(<([^>]+)>)/gi, "");
-                                        var btnStr = '<button class="btn btn-outline-primary btn-lg mb-3 w-100">';
-                                        var btnHTML = $(btnStr + textoLimpo + '</button>');
-
-                                        btnHTML.on('click', function() {
-                                            if (parseFloat(resposta.fraction) > 0) {
-                                                me.currentHp -= (gameConfig.bossdamage * 2);
-                                                if (me.currentHp < 0) {
- me.currentHp = 0;
-}
-                                                me.atualizarBarraBoss();
-                                                me.bossSprite.setTint(0x0088ff);
-
-                                                me.tweens.add({
-                                                    targets: me.bossSprite, y: me.bossSprite.y - 20,
-                                                    yoyo: true, duration: 150,
-                                                    onComplete: function() {
- me.bossSprite.clearTint();
-}
-                                                });
-                                            } else {
-                                                me.currentPlayerHp -= 20;
-                                                if (me.currentPlayerHp < 0) {
- me.currentPlayerHp = 0;
-}
-                                                me.atualizarBarraAluno();
-                                            }
-                                            fecharModal();
-                                        });
-                                        containerRespostas.append(btnHTML);
-                                    });
-                                } else {
-                                    containerRespostas.append('<p class="text-danger">Vazio</p>');
-                                    $('#playerpuzzle-btn-fechar').off('click').on('click', fecharModal);
-                                }
-
-                                modalMoodle.addClass('show').css('display', 'block');
-                                $('#playerpuzzle-btn-fechar').off('click').on('click', fecharModal);
-
-                            } else {
-                                me.scene.resume();
-                                me.time.delayedCall(250, me.aplicarGravidade, [], me);
-                            }
-                        }, 250);
                     } else {
-                        me.time.delayedCall(250, me.aplicarGravidade, [], me);
+                        var danoBloqueado = Math.min(dCausado, me.alunoEscudo);
+                        me.alunoEscudo -= danoBloqueado;
+                        dCausado -= danoBloqueado;
+
+                        // Mágica Matemática 3
+                        me.currentPlayerHp = Math.max(0, me.currentPlayerHp - dCausado);
+                        me.atualizarBarraAluno();
+                        me.cameras.main.shake(250, 0.015);
                     }
+                }
+
+                if (efeitos.pergunta) {
+                    me.abrirModalPergunta(efeitos.quem);
                 } else {
-                    if (!me.temJogadaPossivel()) {
-                        me.input.enabled = false;
-                        me.embaralhar();
-                    } else {
-                        me.input.enabled = true;
-                        me.resetarDica();
-                    }
+                    me.time.delayedCall(250, me.aplicarGravidade, [], me);
                 }
             };
 
-            this.trocarPecas = function(peca1, peca2) {
+            this.trocarPecas = function(peca1, peca2, isRevert) {
                 me.input.enabled = false;
 
                 var tempRow = peca1.row;
@@ -533,16 +844,33 @@ tr, tc;
                 peca2.row = tempRow;
                 peca2.col = tempCol;
 
+                // Guarda a jogada na memória (a não ser que já estejamos a reverter!)
+                if (!isRevert) {
+                    me.ultimaTroca = {p1: peca1, p2: peca2};
+                } else {
+                    me.ultimaTroca = null;
+                }
+
                 me.tweens.add({targets: peca1, x: peca2.x, y: peca2.y, duration: 200});
                 me.tweens.add({
                     targets: peca2, x: peca1.x, y: peca1.y, duration: 200,
                     onComplete: function() {
- me.verificarCombinacoes();
-}
+                        if (!isRevert) {
+                            me.verificarCombinacoes();
+                        } else {
+                            // Se foi uma reversão, devolve o controlo ao aluno!
+                            me.input.enabled = true;
+                            me.resetarDica();
+                        }
+                    }
                 });
             };
 
             this.lidarComClique = function(pecaClicada) {
+                if (me.turnoAtual !== 'aluno') {
+ return;
+}
+
                 if (me.pecaSelecionada === null) {
                     me.pecaSelecionada = pecaClicada;
                     pecaClicada.setTint(0xaaaaaa);
@@ -565,6 +893,9 @@ tr, tc;
             };
 
             this.iniciarSwipe = function(pointer) {
+                if (me.turnoAtual !== 'aluno') {
+ return;
+}
                 me.resetarDica();
                 me.swipePeca = this;
                 me.startX = pointer.x;
@@ -593,43 +924,43 @@ tr, tc;
             }
 
             me.input.on('pointerup', function(pointer) {
-                if (me.swipePeca !== null) {
-                    me.swipePeca.clearTint();
-
-                    var dx = pointer.x - me.startX;
-                    var dy = pointer.y - me.startY;
-                    var threshold = 20;
-
-                    if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
-                        var tRow = me.swipePeca.row;
-                        var tCol = me.swipePeca.col;
-
-                        if (Math.abs(dx) > Math.abs(dy)) {
-                            if (dx > 0) {
- tCol++;
-} else {
- tCol--;
+                // Se não for o turno do aluno ou não houver peça, sai imediatamente (achatamento)
+                if (me.turnoAtual !== 'aluno' || me.swipePeca === null) {
+ return;
 }
-                        } else {
-                            if (dy > 0) {
- tRow++;
-} else {
- tRow--;
-}
-                        }
 
-                        if (tRow >= 0 && tRow < linhas && tCol >= 0 && tCol < colunas) {
-                            var pAlvo = me.tabuleiro[tRow][tCol];
-                            if (pAlvo) {
+                me.swipePeca.clearTint();
+
+                var dx = pointer.x - me.startX;
+                var dy = pointer.y - me.startY;
+                var threshold = 20;
+
+                // Se o movimento for muito curto, trata como CLIQUE normal e sai
+                if (Math.abs(dx) <= threshold && Math.abs(dy) <= threshold) {
+                    me.lidarComClique(me.swipePeca);
+                    me.swipePeca = null;
+                    return;
+                }
+
+                // Se chegou aqui, foi um SWIPE válido
+                var tRow = me.swipePeca.row;
+                var tCol = me.swipePeca.col;
+
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    // Operador ternário substitui o if/else aninhado
+                    tCol += (dx > 0) ? 1 : -1;
+                } else {
+                    tRow += (dy > 0) ? 1 : -1;
+                }
+
+                if (tRow >= 0 && tRow < linhas && tCol >= 0 && tCol < colunas) {
+                    var pAlvo = me.tabuleiro[tRow][tCol];
+                    if (pAlvo) {
  me.trocarPecas(me.swipePeca, pAlvo);
 }
-                        }
-                    } else {
-                        me.lidarComClique(me.swipePeca);
-                    }
-
-                    me.swipePeca = null;
                 }
+
+                me.swipePeca = null;
             });
 
             me.input.enabled = false;
@@ -674,10 +1005,10 @@ tr, tc;
 }
                         startPhaser(config);
                     }, function(erro) {
-                        var erroMsg = '<p class="text-center text-danger p-5 mt-5">';
-                        erroMsg += 'Erro crítico: RequireJS não conseguiu encontrar o módulo Phaser. ';
-                        erroMsg += 'Verifique o console.</p>';
-                        $('#playerpuzzle-canvas-container').html(erroMsg);
+                        var eMsg = '<p class="text-center text-danger p-5 mt-5">';
+                        eMsg += 'Erro crítico: RequireJS não encontrou o Phaser. ';
+                        eMsg += 'Verifique o console.</p>';
+                        $('#playerpuzzle-canvas-container').html(eMsg);
                         window.console.error("RequireJS Error:", erro);
                     });
 

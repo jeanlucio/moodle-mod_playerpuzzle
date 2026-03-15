@@ -5,6 +5,7 @@
  * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 /* global Phaser */
 
 define([
@@ -67,8 +68,39 @@ define([
             var linhas = 8;
             var colunas = 8;
             var tamanhoPeca = 55;
-            var offsetX = 77.5; // Centralização perfeita (540 - (7*55))/2
+            var offsetX = 77.5;
             var offsetY = 320;
+
+            // --- NOVO: DESENHANDO A GRADE VISUAL DO TABULEIRO ---
+            var graphics = this.add.graphics();
+            var larguraTabuleiro = colunas * tamanhoPeca;
+            var alturaTabuleiro = linhas * tamanhoPeca;
+
+            // 1. Fundo do tabuleiro (Preto translúcido para destacar as pedras)
+            graphics.fillStyle(0x000000, 0.4);
+            graphics.fillRect(offsetX - (tamanhoPeca / 2), offsetY - (tamanhoPeca / 2), larguraTabuleiro, alturaTabuleiro);
+
+            // 2. Borda externa do tabuleiro
+            graphics.lineStyle(4, 0x444444, 0.8);
+            graphics.strokeRect(offsetX - (tamanhoPeca / 2), offsetY - (tamanhoPeca / 2), larguraTabuleiro, alturaTabuleiro);
+
+            // 3. Linhas internas (A grelha)
+            graphics.lineStyle(2, 0x333333, 0.5);
+            graphics.beginPath(); // Segurança para evitar falhas de renderização
+
+            var gridX = offsetX - (tamanhoPeca / 2);
+            var gridY = offsetY - (tamanhoPeca / 2);
+
+            for (var iGrade = 1; iGrade < linhas; iGrade++) {
+                // Linhas horizontais
+                graphics.moveTo(gridX, gridY + (iGrade * tamanhoPeca));
+                graphics.lineTo(gridX + larguraTabuleiro, gridY + (iGrade * tamanhoPeca));
+                // Linhas verticais
+                graphics.moveTo(gridX + (iGrade * tamanhoPeca), gridY);
+                graphics.lineTo(gridX + (iGrade * tamanhoPeca), gridY + alturaTabuleiro);
+            }
+            graphics.strokePath();
+            // ---------------------------------------------------
 
             this.tabuleiro = [];
             this.pecaSelecionada = null;
@@ -76,11 +108,10 @@ define([
             this.startX = 0;
             this.startY = 0;
 
-            // --- NOVO: VARIÁVEIS DO SISTEMA DE DICA (IDLE HINT) ---
             this.tempoUltimaAcao = 0;
             this.pecaComDica = null;
 
-            var r, c, p1, p2, p3, i, peca, row, col, itemAleatorio, x, y, pecaCaindo, yInicio, yFim;
+            var r, c, p1, p2, p3, iLoop, peca, row, col, itemAleatorio, x, y, pecaCaindo, yInicio, yFim;
 
             this.verificarHorizontal = function(pecasDestruir) {
                 for (r = 0; r < linhas; r++) {
@@ -126,10 +157,9 @@ define([
                 }
             };
 
-            // --- ATUALIZADO: AGORA RETORNA A PEDRA EXATA PARA DAR A DICA ---
             this.obterDicaDeJogada = function() {
-                var isMatch = function(row, col) {
-                    var p = me.tabuleiro[row][col];
+                var isMatch = function(rowP, colP) {
+                    var p = me.tabuleiro[rowP][colP];
                     if (!p) {
  return false;
 }
@@ -138,20 +168,20 @@ countH = 1,
 countV = 1,
 tr, tc;
 
-                    tc = col - 1; while (tc >= 0 && me.tabuleiro[row][tc] && me.tabuleiro[row][tc].tipo === tipo) {
+                    tc = colP - 1; while (tc >= 0 && me.tabuleiro[rowP][tc] && me.tabuleiro[rowP][tc].tipo === tipo) {
  countH++; tc--;
 }
-                    tc = col + 1; while (tc < colunas && me.tabuleiro[row][tc] && me.tabuleiro[row][tc].tipo === tipo) {
+                    tc = colP + 1; while (tc < colunas && me.tabuleiro[rowP][tc] && me.tabuleiro[rowP][tc].tipo === tipo) {
  countH++; tc++;
 }
                     if (countH >= 3) {
  return true;
 }
 
-                    tr = row - 1; while (tr >= 0 && me.tabuleiro[tr][col] && me.tabuleiro[tr][col].tipo === tipo) {
+                    tr = rowP - 1; while (tr >= 0 && me.tabuleiro[tr][colP] && me.tabuleiro[tr][colP].tipo === tipo) {
  countV++; tr--;
 }
-                    tr = row + 1; while (tr < linhas && me.tabuleiro[tr][col] && me.tabuleiro[tr][col].tipo === tipo) {
+                    tr = rowP + 1; while (tr < linhas && me.tabuleiro[tr][colP] && me.tabuleiro[tr][colP].tipo === tipo) {
  countV++; tr++;
 }
                     if (countV >= 3) {
@@ -173,7 +203,7 @@ tr, tc;
                             me.tabuleiro[scanR][scanC + 1].tipo = temp;
                             if (matchR) {
  return me.tabuleiro[scanR][scanC];
-} // Achei! Retorna a pedra
+}
                         }
                         if (scanR < linhas - 1) {
                             temp = me.tabuleiro[scanR][scanC].tipo;
@@ -185,19 +215,17 @@ tr, tc;
                             me.tabuleiro[scanR + 1][scanC].tipo = temp;
                             if (matchD) {
  return me.tabuleiro[scanR][scanC];
-} // Achei! Retorna a pedra
+}
                         }
                     }
                 }
                 return null;
             };
 
-            // Se retornar algo diferente de null, é porque tem jogada!
             this.temJogadaPossivel = function() {
                 return me.obterDicaDeJogada() !== null;
             };
 
-            // --- NOVO: FUNÇÕES DE CONTROLE DA DICA ---
             this.resetarDica = function() {
                 me.tempoUltimaAcao = me.time.now;
                 if (me.pecaComDica) {
@@ -208,17 +236,14 @@ tr, tc;
             };
 
             this.verificarOciosidade = function() {
-                // Se o jogo estiver processando animações, zera o cronômetro
                 if (!me.input.enabled) {
                     me.tempoUltimaAcao = me.time.now;
                     return;
                 }
-                // Se passaram 5 segundos (5000ms) sem mexer, e não tem dica rodando
                 if (me.pecaComDica === null && (me.time.now - me.tempoUltimaAcao > 5000)) {
                     var pecaDica = me.obterDicaDeJogada();
                     if (pecaDica) {
                         me.pecaComDica = pecaDica;
-                        // Faz a pedra "Pulsar"
                         me.tweens.add({
                             targets: pecaDica,
                             displayWidth: tamanhoPeca + 6,
@@ -231,9 +256,7 @@ tr, tc;
                 }
             };
 
-            // Inicia o cronômetro invisível que checa a ociosidade a cada 1 segundo
             me.time.addEvent({delay: 1000, callback: me.verificarOciosidade, callbackScope: me, loop: true});
-            // ------------------------------------------
 
             this.embaralhar = function() {
                 var aviso = me.add.text(270, 480, 'EMBARALHANDO...', {
@@ -280,7 +303,7 @@ tr, tc;
                 me.time.delayedCall(1200, function() {
                     aviso.destroy();
                     me.input.enabled = true;
-                    me.resetarDica(); // Jogo liberado, começa a contar os 5 segundos!
+                    me.resetarDica();
                 });
             };
 
@@ -348,8 +371,8 @@ tr, tc;
                     var ativouPergunta = false;
                     var danoCausado = 0;
 
-                    for (i = 0; i < pecasParaDestruir.length; i++) {
-                        peca = pecasParaDestruir[i];
+                    for (iLoop = 0; iLoop < pecasParaDestruir.length; iLoop++) {
+                        peca = pecasParaDestruir[iLoop];
                         if (peca.tipo === 2) {
  ativouPergunta = true;
 } else if (peca.tipo === 3) {
@@ -461,7 +484,7 @@ tr, tc;
                         me.embaralhar();
                     } else {
                         me.input.enabled = true;
-                        me.resetarDica(); // Tabuleiro livre, zera o cronômetro!
+                        me.resetarDica();
                     }
                 }
             };
@@ -512,7 +535,7 @@ tr, tc;
             };
 
             this.iniciarSwipe = function(pointer) {
-                me.resetarDica(); // Clicou na tela, apaga a dica e zera o tempo!
+                me.resetarDica();
                 me.swipePeca = this;
                 me.startX = pointer.x;
                 me.startY = pointer.y;
@@ -581,7 +604,7 @@ tr, tc;
 
             me.input.enabled = false;
             me.time.delayedCall(500, me.verificarCombinacoes, [], me);
-            me.tempoUltimaAcao = me.time.now; // Inicia o relógio
+            me.tempoUltimaAcao = me.time.now;
         };
 
         var config = {
@@ -614,9 +637,32 @@ tr, tc;
  throw new Error('Game configuration is missing from HTML.');
 }
                     var config = JSON.parse(configStr);
-                    setTimeout(function() {
- startPhaser(config);
-}, 100);
+
+                    // --- A SOLUÇÃO DEFINITIVA PARA O SEQUESTRO DO AMD ---
+                    // Como vimos no seu print, o Phaser usa um "UMD wrapper" que diz: define("Phaser", ...)
+                    // Nós usamos a função require() do próprio Moodle para resgatá-lo pelo nome oficial!
+                    require(['Phaser'], function(PhaserObj) {
+
+                        window.console.log("Phaser resgatado com sucesso do cofre do Moodle!");
+
+                        // Devolvemos o Phaser ao escopo Global do navegador!
+                        if (PhaserObj) {
+                            window.Phaser = PhaserObj;
+                        }
+
+                        // Iniciamos o jogo imediatamente
+                        startPhaser(config);
+
+                    }, function(erro) {
+                        // Se o RequireJS não o encontrar, mostramos na tela
+                        var erroMsg = '<p class="text-center text-danger p-5 mt-5">';
+                        erroMsg += 'Erro crítico: RequireJS não conseguiu encontrar o módulo Phaser. ';
+                        erroMsg += 'Verifique o console (F12).</p>';
+                        $('#playerpuzzle-canvas-container').html(erroMsg);
+                        window.console.error("RequireJS Error:", erro);
+                    });
+                    // -----------------------------------------------------
+
                 } catch (error) {
                     notification.exception(error);
                 }

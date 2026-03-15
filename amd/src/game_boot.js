@@ -17,6 +17,7 @@ define([
     var startPhaser = function(gameConfig) {
 
         var preload = function() {
+            this.load.image('bg', gameConfig.bgurl);
             this.load.image('boss', gameConfig.bossurl);
             for (var i = 0; i < 7; i++) {
                 this.load.image('item' + i, gameConfig.spriteurls[i]);
@@ -37,15 +38,50 @@ define([
             containerDOM.append(modalMoodle);
 
             var me = this;
-            this.currentHp = gameConfig.bosshp;
 
-            this.bossSprite = this.add.image(270, 120, 'boss');
-            this.bossSprite.setDisplaySize(160, 160);
+            // 1. DESENHA O CENÁRIO DE FUNDO
+            this.add.image(270, 480, 'bg').setDisplaySize(540, 960);
 
-            this.hpText = this.add.text(270, 230, 'Boss HP: ' + this.currentHp, {
-                fontSize: '34px', fill: '#ff0000', fontStyle: 'bold'
-            }).setOrigin(0.5);
+            // 2. CONFIGURA O CHEFÃO (Monstro) - Movido ligeiramente para cima
+            this.maxBossHp = gameConfig.bosshp;
+            this.currentHp = this.maxBossHp;
 
+            this.bossSprite = this.add.image(270, 85, 'boss');
+            this.bossSprite.setDisplaySize(120, 120);
+
+            // Barra Vermelha (Chefão) - Agora no topo
+            this.bossHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 160, 300, 22);
+            this.bossHpBar = this.add.graphics();
+            this.bossHpText = this.add.text(270, 171, '', {fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'}).setOrigin(0.5);
+
+            this.atualizarBarraBoss = function() {
+                var percent = Math.max(0, me.currentHp / me.maxBossHp);
+                me.bossHpBar.clear();
+                me.bossHpBar.fillStyle(0xdd0000, 1);
+                me.bossHpBar.fillRect(122, 162, 296 * percent, 18);
+                me.bossHpText.setText('Chefe: ' + Math.round(me.currentHp));
+            };
+            this.atualizarBarraBoss();
+
+            // 3. CONFIGURA O ALUNO (O Herói)
+            this.maxPlayerHp = 100;
+            this.currentPlayerHp = this.maxPlayerHp;
+
+            // Barra Verde (Aluno) - Empilhada logo abaixo da do Chefão
+            this.playerHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 195, 300, 22);
+            this.playerHpBar = this.add.graphics();
+            this.playerHpText = this.add.text(270, 206, '', {fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'}).setOrigin(0.5);
+
+            this.atualizarBarraAluno = function() {
+                var percent = Math.max(0, me.currentPlayerHp / me.maxPlayerHp);
+                me.playerHpBar.clear();
+                me.playerHpBar.fillStyle(0x00cc00, 1);
+                me.playerHpBar.fillRect(122, 197, 296 * percent, 18);
+                me.playerHpText.setText('Você: ' + Math.round(me.currentPlayerHp) + ' / ' + me.maxPlayerHp);
+            };
+            this.atualizarBarraAluno();
+
+            // Botão Expandir
             var btnFullscreen = this.add.text(520, 20, '[ Expandir ]', {
                 fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setOrigin(1, 0);
@@ -69,45 +105,37 @@ define([
             var colunas = 8;
             var tamanhoPeca = 55;
             var offsetX = 77.5;
-            var offsetY = 320;
+            var offsetY = 290; // Tabuleiro ligeiramente descido para acomodar as barras no topo
 
-            // --- NOVO: DESENHANDO A GRADE VISUAL DO TABULEIRO ---
+            // 4. DESENHA A GRADE VISUAL DO TABULEIRO
             var graphics = this.add.graphics();
             var larguraTabuleiro = colunas * tamanhoPeca;
             var alturaTabuleiro = linhas * tamanhoPeca;
 
-            // 1. Fundo do tabuleiro (Preto translúcido para destacar as pedras)
-            graphics.fillStyle(0x000000, 0.4);
+            graphics.fillStyle(0x000000, 0.85);
             graphics.fillRect(offsetX - (tamanhoPeca / 2), offsetY - (tamanhoPeca / 2), larguraTabuleiro, alturaTabuleiro);
 
-            // 2. Borda externa do tabuleiro
-            graphics.lineStyle(4, 0x444444, 0.8);
+            graphics.lineStyle(6, 0x111111, 1);
             graphics.strokeRect(offsetX - (tamanhoPeca / 2), offsetY - (tamanhoPeca / 2), larguraTabuleiro, alturaTabuleiro);
 
-            // 3. Linhas internas (A grelha)
-            graphics.lineStyle(2, 0x333333, 0.5);
-            graphics.beginPath(); // Segurança para evitar falhas de renderização
-
+            graphics.lineStyle(2, 0x333333, 0.4);
+            graphics.beginPath();
             var gridX = offsetX - (tamanhoPeca / 2);
             var gridY = offsetY - (tamanhoPeca / 2);
 
             for (var iGrade = 1; iGrade < linhas; iGrade++) {
-                // Linhas horizontais
                 graphics.moveTo(gridX, gridY + (iGrade * tamanhoPeca));
                 graphics.lineTo(gridX + larguraTabuleiro, gridY + (iGrade * tamanhoPeca));
-                // Linhas verticais
                 graphics.moveTo(gridX + (iGrade * tamanhoPeca), gridY);
                 graphics.lineTo(gridX + (iGrade * tamanhoPeca), gridY + alturaTabuleiro);
             }
             graphics.strokePath();
-            // ---------------------------------------------------
 
             this.tabuleiro = [];
             this.pecaSelecionada = null;
             this.swipePeca = null;
             this.startX = 0;
             this.startY = 0;
-
             this.tempoUltimaAcao = 0;
             this.pecaComDica = null;
 
@@ -245,12 +273,8 @@ tr, tc;
                     if (pecaDica) {
                         me.pecaComDica = pecaDica;
                         me.tweens.add({
-                            targets: pecaDica,
-                            displayWidth: tamanhoPeca + 6,
-                            displayHeight: tamanhoPeca + 6,
-                            yoyo: true,
-                            repeat: -1,
-                            duration: 400
+                            targets: pecaDica, displayWidth: tamanhoPeca + 6, displayHeight: tamanhoPeca + 6,
+                            yoyo: true, repeat: -1, duration: 400
                         });
                     }
                 }
@@ -394,7 +418,7 @@ tr, tc;
                         if (me.currentHp < 0) {
  me.currentHp = 0;
 }
-                        me.hpText.setText('Boss HP: ' + me.currentHp);
+                        me.atualizarBarraBoss();
 
                         me.bossSprite.setTint(0xff0000);
                         me.time.delayedCall(200, function() {
@@ -447,7 +471,7 @@ tr, tc;
                                                 if (me.currentHp < 0) {
  me.currentHp = 0;
 }
-                                                me.hpText.setText('Boss HP: ' + me.currentHp);
+                                                me.atualizarBarraBoss();
                                                 me.bossSprite.setTint(0x0088ff);
 
                                                 me.tweens.add({
@@ -457,6 +481,12 @@ tr, tc;
  me.bossSprite.clearTint();
 }
                                                 });
+                                            } else {
+                                                me.currentPlayerHp -= 20;
+                                                if (me.currentPlayerHp < 0) {
+ me.currentPlayerHp = 0;
+}
+                                                me.atualizarBarraAluno();
                                             }
                                             fecharModal();
                                         });
@@ -638,30 +668,18 @@ tr, tc;
 }
                     var config = JSON.parse(configStr);
 
-                    // --- A SOLUÇÃO DEFINITIVA PARA O SEQUESTRO DO AMD ---
-                    // Como vimos no seu print, o Phaser usa um "UMD wrapper" que diz: define("Phaser", ...)
-                    // Nós usamos a função require() do próprio Moodle para resgatá-lo pelo nome oficial!
                     require(['Phaser'], function(PhaserObj) {
-
-                        window.console.log("Phaser resgatado com sucesso do cofre do Moodle!");
-
-                        // Devolvemos o Phaser ao escopo Global do navegador!
                         if (PhaserObj) {
-                            window.Phaser = PhaserObj;
-                        }
-
-                        // Iniciamos o jogo imediatamente
+ window.Phaser = PhaserObj;
+}
                         startPhaser(config);
-
                     }, function(erro) {
-                        // Se o RequireJS não o encontrar, mostramos na tela
                         var erroMsg = '<p class="text-center text-danger p-5 mt-5">';
                         erroMsg += 'Erro crítico: RequireJS não conseguiu encontrar o módulo Phaser. ';
-                        erroMsg += 'Verifique o console (F12).</p>';
+                        erroMsg += 'Verifique o console.</p>';
                         $('#playerpuzzle-canvas-container').html(erroMsg);
                         window.console.error("RequireJS Error:", erro);
                     });
-                    // -----------------------------------------------------
 
                 } catch (error) {
                     notification.exception(error);

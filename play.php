@@ -77,6 +77,7 @@ for ($i = 0; $i < 7; $i++) {
 
 $bossbasename = str_replace('.png', '', $playerpuzzle->bossavatar);
 $bossurl = $OUTPUT->image_url('bosses/' . $bossbasename, 'mod_playerpuzzle')->out(false);
+$bgurl = $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false);
 // -------------------------------------------------------------
 
 $jsconfig = [
@@ -86,6 +87,7 @@ $jsconfig = [
     'bossdamage' => $playerpuzzle->bossdamage,
     'bossavatar' => $playerpuzzle->bossavatar,
     'bossurl' => $bossurl,
+    'bgurl' => $bgurl,
     'spriteurls' => $spriteurls,
     'questions' => array_values($questions),
 ];

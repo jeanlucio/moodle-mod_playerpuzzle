@@ -17,6 +17,34 @@ define([
     var startPhaser = function(gameConfig) {
 
         var preload = function() {
+            // 1. Cria a barra de progresso do Bootstrap 5 e injeta sobre o jogo
+            var loadingHtml = '<div id="pp-bootstrap-loader" class="d-flex flex-column justify-content-center align-items-center" ';
+            loadingHtml += 'style="position: absolute; top: 0; left: 0; width: 100%; ';
+            loadingHtml += 'height: 100%; z-index: 1000; background-color: #1a1a1a;">';
+            loadingHtml += '<h3 class="text-white mb-3">Carregando recursos...</h3>';
+            loadingHtml += '<div class="progress w-50" style="height: 25px;">';
+
+            var pBar = '<div id="pp-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" ';
+            pBar += 'role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>';
+
+            loadingHtml += pBar + '</div></div>';
+
+            $('#playerpuzzle-canvas-container').css('position', 'relative').append(loadingHtml);
+
+            // 2. Atualiza a barra HTML conforme o Phaser baixa as imagens
+            this.load.on('progress', function(value) {
+                var percent = parseInt(value * 100);
+                $('#pp-progress-bar').css('width', percent + '%').attr('aria-valuenow', percent).text(percent + '%');
+            });
+
+            // 3. Remove a barra com um efeito suave (FadeOut) quando acabar
+            this.load.on('complete', function() {
+                $('#pp-bootstrap-loader').fadeOut(300, function() {
+ $(this).remove();
+});
+            });
+
+            // 4. Os arquivos que precisam ser baixados
             this.load.image('bg', gameConfig.bgurl);
             this.load.image('boss', gameConfig.bossurl);
             for (var i = 0; i < 7; i++) {
@@ -25,98 +53,116 @@ define([
         };
 
         var create = function() {
+            var isDesk = window.innerWidth > window.innerHeight;
+
+            // O NOSSO "MAPA" DE RESPONSIVIDADE
+            var L = isDesk ? {
+                w: 1280, h: 720, aspect: '16/9', maxW: '100%',
+                bgX: 640, bgY: 360, bgW: 1280, bgH: 720,
+                bossX: 1040, bossY: 260, bossScale: 180,
+                bossUiX: 890, bossHpY: 380, bossManaY: 405, bossTxtY: 391, venenoX: 1200,
+                playerUiX: 90, playerHpY: 380, playerManaY: 405, playerTxtY: 391,
+                escudoX: 90, ouroX: 240, estrelaX: 390,
+                boardOffX: 447.5, boardOffY: 167.5,
+                btnExpX: 1260, btnExpY: 20
+            } : {
+                w: 540, h: 960, aspect: '9/16', maxW: '540px',
+                bgX: 270, bgY: 480, bgW: 540, bgH: 960,
+                bossX: 270, bossY: 75, bossScale: 100,
+                bossUiX: 120, bossHpY: 135, bossManaY: 158, bossTxtY: 146, venenoX: 430,
+                playerUiX: 120, playerHpY: 175, playerManaY: 198, playerTxtY: 186,
+                escudoX: 120, ouroX: 270, estrelaX: 420,
+                boardOffX: 77.5, boardOffY: 280,
+                btnExpX: 520, btnExpY: 20
+            };
+
             var containerDOM = $('#playerpuzzle-canvas-container');
             containerDOM.find('p').remove();
-
-            containerDOM.css({
-                'aspect-ratio': '9/16',
-                'max-width': '540px',
-                'margin': '0 auto'
-            });
+            containerDOM.css({'aspect-ratio': L.aspect, 'max-width': L.maxW, 'margin': '0 auto'});
 
             var modalMoodle = $('#playerpuzzle-modal');
             containerDOM.append(modalMoodle);
 
             var me = this;
-            this.add.image(270, 480, 'bg').setDisplaySize(540, 960);
+            this.L = L; // Guarda o mapa para ser usado na tela de derrota
 
-            // --- SISTEMA DE TURNOS E STATUS ---
+            this.add.image(L.bgX, L.bgY, 'bg').setDisplaySize(L.bgW, L.bgH);
+
             this.turnoAtual = 'aluno';
             var danoBase = parseInt(gameConfig.bossdamage) || 10;
 
-            // Status do Aluno
             this.alunoOuro = 0;
             this.alunoEscudo = 0;
             this.alunoMultiplicador = 1;
-            this.alunoMana = 0; // Nova Barra Azul
+            this.alunoMana = 0;
 
-            // Status do Chefe
             this.chefeEnvenenadoTurnos = 0;
-            this.chefeMana = 0; // Nova Barra Azul
+            this.chefeMana = 0;
 
             this.maxBossHp = gameConfig.bosshp;
             this.currentHp = this.maxBossHp;
 
-            this.bossSprite = this.add.image(270, 75, 'boss');
-            this.bossSprite.setDisplaySize(100, 100);
+            this.bossSprite = this.add.image(L.bossX, L.bossY, 'boss');
+            this.bossSprite.setDisplaySize(L.bossScale, L.bossScale);
 
-            // Interface do Chefe
-            this.bossHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 135, 300, 22);
+            this.bossHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.bossUiX, L.bossHpY, 300, 22);
             this.bossHpBar = this.add.graphics();
-            this.bossHpText = this.add.text(270, 146, '', {fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'}).setOrigin(0.5);
+            this.bossHpText = this.add.text(L.bossUiX + 150, L.bossTxtY, '', {
+                fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'
+            }).setOrigin(0.5);
 
-            this.bossManaBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 158, 300, 8);
+            this.bossManaBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.bossUiX, L.bossManaY, 300, 8);
             this.bossManaBar = this.add.graphics();
 
-            this.txtVeneno = this.add.text(430, 146, '☠️', {fontSize: '16px'}).setOrigin(0.5).setAlpha(0);
+            this.txtVeneno = this.add.text(L.venenoX, L.bossTxtY, '☠️', {fontSize: '16px'}).setOrigin(0.5).setAlpha(0);
 
             this.atualizarBarraBoss = function() {
                 var pctHp = Math.max(0, me.currentHp / me.maxBossHp);
                 me.bossHpBar.clear();
-                me.bossHpBar.fillStyle(0xdd0000, 1).fillRect(122, 137, 296 * pctHp, 18);
+                me.bossHpBar.fillStyle(0xdd0000, 1).fillRect(L.bossUiX + 2, L.bossHpY + 2, 296 * pctHp, 18);
                 me.bossHpText.setText('Chefe: ' + Math.round(me.currentHp));
 
                 var pctMana = Math.min(1, me.chefeMana / 100);
                 me.bossManaBar.clear();
-                me.bossManaBar.fillStyle(0x0088ff, 1).fillRect(122, 159, 296 * pctMana, 6);
+                me.bossManaBar.fillStyle(0x0088ff, 1).fillRect(L.bossUiX + 2, L.bossManaY + 1, 296 * pctMana, 6);
 
                 if (me.chefeEnvenenadoTurnos > 0) {
-                    me.txtVeneno.setAlpha(1);
-                } else {
-                    me.txtVeneno.setAlpha(0);
-                }
+ me.txtVeneno.setAlpha(1);
+} else {
+ me.txtVeneno.setAlpha(0);
+}
             };
             this.atualizarBarraBoss();
 
-            // Interface do Aluno
             this.maxPlayerHp = 100;
             this.currentPlayerHp = this.maxPlayerHp;
 
-            this.playerHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 175, 300, 22);
+            this.playerHpBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.playerUiX, L.playerHpY, 300, 22);
             this.playerHpBar = this.add.graphics();
-            this.playerHpText = this.add.text(270, 186, '', {fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'}).setOrigin(0.5);
+            this.playerHpText = this.add.text(L.playerUiX + 150, L.playerTxtY, '', {
+                fontSize: '15px', fill: '#ffffff', fontStyle: 'bold'
+            }).setOrigin(0.5);
 
-            this.playerManaBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(120, 198, 300, 8);
+            this.playerManaBg = this.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.playerUiX, L.playerManaY, 300, 8);
             this.playerManaBar = this.add.graphics();
 
-            // Status Visuais do Aluno (Embaixo da barra de vida)
             var styleEscudo = {fontSize: '16px', fill: '#aaaaff', fontStyle: 'bold'};
             var styleOuro = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
             var styleEstrela = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
 
-            this.txtEscudo = this.add.text(120, 215, '🛡️: 0', styleEscudo);
-            this.txtOuro = this.add.text(270, 215, '🪙: 0', styleOuro).setOrigin(0.5, 0);
-            this.txtEstrela = this.add.text(420, 215, '⭐x1.0', styleEstrela).setOrigin(1, 0);
+            this.txtEscudo = this.add.text(L.escudoX, L.playerHpY + 40, '🛡️: 0', styleEscudo);
+            this.txtOuro = this.add.text(L.ouroX, L.playerHpY + 40, '🪙: 0', styleOuro).setOrigin(0.5, 0);
+            this.txtEstrela = this.add.text(L.estrelaX, L.playerHpY + 40, '⭐x1.0', styleEstrela).setOrigin(1, 0);
 
             this.atualizarBarraAluno = function() {
                 var pctHp = Math.max(0, me.currentPlayerHp / me.maxPlayerHp);
                 me.playerHpBar.clear();
-                me.playerHpBar.fillStyle(0x00cc00, 1).fillRect(122, 177, 296 * pctHp, 18);
+                me.playerHpBar.fillStyle(0x00cc00, 1).fillRect(L.playerUiX + 2, L.playerHpY + 2, 296 * pctHp, 18);
                 me.playerHpText.setText('Você: ' + Math.round(me.currentPlayerHp) + ' / ' + me.maxPlayerHp);
 
                 var pctMana = Math.min(1, me.alunoMana / 100);
                 me.playerManaBar.clear();
-                me.playerManaBar.fillStyle(0x0088ff, 1).fillRect(122, 199, 296 * pctMana, 6);
+                me.playerManaBar.fillStyle(0x0088ff, 1).fillRect(L.playerUiX + 2, L.playerManaY + 1, 296 * pctMana, 6);
 
                 me.txtEscudo.setText('🛡️: ' + me.alunoEscudo);
                 me.txtOuro.setText('🪙: ' + me.alunoOuro);
@@ -124,20 +170,17 @@ define([
             };
             this.atualizarBarraAluno();
 
-            var btnFullscreen = this.add.text(520, 20, '[ Expandir ]', {
+            var btnFullscreen = this.add.text(L.btnExpX, L.btnExpY, '[ Expandir ]', {
                 fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-            }).setOrigin(1, 0);
+            }).setOrigin(1, 0).setInteractive();
 
-            btnFullscreen.setInteractive();
             btnFullscreen.on('pointerdown', function() {
                 me.cameras.main.fadeOut(200, 0, 0, 0);
                 me.time.delayedCall(200, function() {
                     if (me.scale.isFullscreen) {
-                        me.scale.stopFullscreen();
-                        btnFullscreen.setText('[ Expandir ]');
+                        me.scale.stopFullscreen(); btnFullscreen.setText('[ Expandir ]');
                     } else {
-                        me.scale.startFullscreen();
-                        btnFullscreen.setText('[ Encolher ]');
+                        me.scale.startFullscreen(); btnFullscreen.setText('[ Encolher ]');
                     }
                     me.cameras.main.fadeIn(200, 0, 0, 0);
                 });
@@ -146,8 +189,8 @@ define([
             var linhas = 8;
             var colunas = 8;
             var tamanhoPeca = 55;
-            var offsetX = 77.5;
-            var offsetY = 280;
+            var offsetX = L.boardOffX;
+            var offsetY = L.boardOffY;
 
             var graphics = this.add.graphics();
             var largTab = colunas * tamanhoPeca;
@@ -156,14 +199,11 @@ define([
             var rx = offsetX - (tamanhoPeca / 2);
             var ry = offsetY - (tamanhoPeca / 2);
 
-            graphics.fillStyle(0x000000, 0.85);
-            graphics.fillRect(rx, ry, largTab, altTab);
-            graphics.lineStyle(6, 0x111111, 1);
-            graphics.strokeRect(rx, ry, largTab, altTab);
+            graphics.fillStyle(0x000000, 0.85).fillRect(rx, ry, largTab, altTab);
+            graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, largTab, altTab);
 
             graphics.lineStyle(2, 0x333333, 0.4);
             graphics.beginPath();
-
             for (var iGrade = 1; iGrade < linhas; iGrade++) {
                 graphics.moveTo(rx, ry + (iGrade * tamanhoPeca));
                 graphics.lineTo(rx + largTab, ry + (iGrade * tamanhoPeca));
@@ -383,38 +423,70 @@ tr, tc;
 
             this.mostrarTelaFim = function(vitoria) {
                 me.input.enabled = false;
-                me.add.graphics().fillStyle(0x000000, 0.8).fillRect(0, 0, 540, 960).setDepth(99);
+                me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.L.w, me.L.h).setDepth(99);
 
                 var msg = vitoria ? '🌟 VITÓRIA! 🌟' : '💀 DERROTA 💀';
-                var cor = vitoria ? '#00ff00' : '#ff0000';
+                var cor = vitoria ? 'text-success' : 'text-danger';
 
-                var txt = me.add.text(270, 300, msg, {
-                    fontSize: '46px', fill: cor, fontStyle: 'bold', align: 'center'
-                }).setOrigin(0.5).setDepth(100);
-                me.tweens.add({targets: txt, scaleX: 1.1, scaleY: 1.1, yoyo: true, repeat: -1, duration: 800});
+                var statsStr = '<p class="lead text-white mb-4">Ouro Coletado: ';
+                statsStr += '<strong class="text-warning">' + me.alunoOuro + '</strong><br>';
+                statsStr += 'Multiplicador Máx: <strong class="text-info">x' + me.alunoMultiplicador.toFixed(1);
+                statsStr += '</strong></p>';
 
-                var statsStr = 'Ouro Coletado: ' + me.alunoOuro;
-                statsStr += '\nMultiplicador Máx: x' + me.alunoMultiplicador.toFixed(1);
+                // MENSAGEM DE SALVAMENTO PARA O ALUNO VER
+                statsStr += '<p id="pp-save-status" class="text-muted small">Salvando progresso no Moodle...</p>';
 
-                me.add.text(270, 400, statsStr, {
-                    fontSize: '24px', fill: '#ffffff', align: 'center'
-                }).setOrigin(0.5).setDepth(100);
+                var overlayHtml = '<div id="playerpuzzle-gameover" ';
+                overlayHtml += 'class="d-flex flex-column justify-content-center align-items-center" ';
+                overlayHtml += 'style="position: absolute; top: 0; left: 0; width: 100%; ';
+                overlayHtml += 'height: 100%; z-index: 1000; text-align: center;">';
+                overlayHtml += '<h1 class="display-4 fw-bold ' + cor + ' mb-3">' + msg + '</h1>';
+                overlayHtml += statsStr;
+                overlayHtml += '<div class="mt-2 d-flex flex-wrap justify-content-center gap-3">';
 
-                var btnRestart = me.add.text(270, 550, '🎮 JOGAR NOVAMENTE', {
-                    fontSize: '24px', fill: '#ffffff', backgroundColor: '#3366cc', padding: {x: 20, y: 15}, fontStyle: 'bold'
-                }).setOrigin(0.5).setDepth(100).setInteractive();
+                overlayHtml += '<button id="btn-pp-restart" disabled ';
+                overlayHtml += 'class="btn btn-primary btn-lg fw-bold shadow">🎮 Jogar Novamente</button>';
 
-                btnRestart.on('pointerdown', function() {
- me.scene.restart();
-});
+                overlayHtml += '<button id="btn-pp-exit" disabled ';
+                overlayHtml += 'class="btn btn-secondary btn-lg fw-bold shadow">🚪 Sair do Jogo</button>';
 
-                var btnSair = me.add.text(270, 650, '🚪 SAIR DO JOGO', {
-                    fontSize: '20px', fill: '#aaaaaa', backgroundColor: '#333333', padding: {x: 20, y: 15}
-                }).setOrigin(0.5).setDepth(100).setInteractive();
+                overlayHtml += '</div></div>';
 
-                btnSair.on('pointerdown', function() {
- window.location.href = M.cfg.wwwroot;
-});
+                var containerDOM = $('#playerpuzzle-canvas-container');
+                containerDOM.css('position', 'relative');
+                containerDOM.append(overlayHtml);
+
+                // --- O TELEFONEMA PARA O AJAX.PHP ---
+                var postData = {
+                    cmid: gameConfig.cmid,
+                    sesskey: M.cfg.sesskey,
+                    ouro: me.alunoOuro,
+                    vitoria: vitoria ? 1 : 0,
+                    dano: me.maxBossHp - me.currentHp
+                };
+
+                $.post(M.cfg.wwwroot + '/mod/playerpuzzle/ajax.php', postData)
+                .done(function(respostaStr) {
+                    var res = JSON.parse(respostaStr);
+                    if (res.status === 'sucesso') {
+                        var msgSucesso = 'Progresso Salvo! (Total de Ouro: ' + res.ouro_total + ')';
+                        $('#pp-save-status').removeClass('text-muted').addClass('text-success').text(msgSucesso);
+                        $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false); // Liberta os botões
+                    }
+                })
+                .fail(function() {
+                    $('#pp-save-status').removeClass('text-muted').addClass('text-danger').text('Erro ao salvar no servidor.');
+                    $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
+                });
+
+                $('#btn-pp-restart').on('click', function() {
+                    $('#playerpuzzle-gameover').remove();
+                    me.scene.restart();
+                });
+
+                $('#btn-pp-exit').on('click', function() {
+                    window.location.href = M.cfg.wwwroot;
+                });
             };
 
             this.verificarFimDeJogo = function() {
@@ -489,7 +561,8 @@ tr, tc;
                         }
 
                         if (quemAtivou === 'chefe') {
-                            var avisoC = '<span class="text-danger fw-bold">👹 O Chefe ativou a pergunta!</span><br><br>';
+                            var avisoC = '<span class="text-danger fw-bold">';
+                            avisoC += '👹 O Chefe ativou a pergunta!</span><br><br>';
                             textoDaPergunta = avisoC + textoDaPergunta;
                         }
 
@@ -552,10 +625,12 @@ tr, tc;
                                     if (idxHtml === indexChefe) {
                                         if (chefeAcertou) {
                                             btnHTML.removeClass('btn-outline-primary').addClass('btn-danger text-white');
-                                            btnHTML.html('<strong>✓ ' + txtLimpo + ' (O Chefe acertou!)</strong>');
+                                            var btnAcerto = '<strong>✓ ' + txtLimpo + ' (O Chefe acertou!)</strong>';
+                                            btnHTML.html(btnAcerto);
                                         } else {
                                             btnHTML.removeClass('btn-outline-primary').addClass('btn-secondary text-white');
-                                            btnHTML.html('<strong>✗ ' + txtLimpo + ' (O Chefe errou!)</strong>');
+                                            var btnErro = '<strong>✗ ' + txtLimpo + ' (O Chefe errou!)</strong>';
+                                            btnHTML.html(btnErro);
                                         }
                                     } else {
                                         btnHTML.removeClass('btn-outline-primary').addClass('btn-light');
@@ -966,8 +1041,9 @@ tr, tc;
             me.input.enabled = false;
             me.time.delayedCall(500, me.verificarCombinacoes, [], me);
             me.tempoUltimaAcao = me.time.now;
-        };
+        }; // <-- FECHA A FUNÇÃO CREATE
 
+        var isDesk = window.innerWidth > window.innerHeight;
         var config = {
             type: Phaser.AUTO,
             parent: 'playerpuzzle-canvas-container',
@@ -975,8 +1051,8 @@ tr, tc;
             scale: {
                 mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.CENTER_BOTH,
-                width: 540,
-                height: 960,
+                width: isDesk ? 1280 : 540,
+                height: isDesk ? 720 : 960,
                 fullscreenTarget: document.getElementById('playerpuzzle-canvas-container')
             },
             scene: {
@@ -986,12 +1062,16 @@ tr, tc;
         };
 
         new Phaser.Game(config);
-    };
+    }; // <-- FECHA A FUNÇÃO startPhaser
 
+    // --- MÓDULO AMD DO MOODLE ---
     return {
         init: function() {
             $(document).ready(function() {
                 try {
+                    // Clareia o texto "Loading the game engine..." para dar para ler no fundo preto
+                    $('#playerpuzzle-canvas-container p').css('color', '#ffffff');
+
                     var container = document.getElementById('playerpuzzle-canvas-container');
                     var configStr = container.getAttribute('data-config');
                     if (!configStr) {
@@ -1018,4 +1098,4 @@ tr, tc;
             });
         }
     };
-});
+}); // <-- FECHA O DEFINE PRINCIPAL

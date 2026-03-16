@@ -50,6 +50,12 @@ define([
             for (var i = 0; i < 7; i++) {
                 this.load.image('item' + i, gameConfig.spriteurls[i]);
             }
+            // --- CÓDIGO NOVO: CARREGAR ÁUDIOS ---
+            var urlPix = M.cfg.wwwroot + '/mod/playerpuzzle/pix/';
+            this.load.audio('bg_music', urlPix + 'music.mp3');
+            this.load.audio('sfx_swap', urlPix + 'swap.mp3');
+            this.load.audio('sfx_match', urlPix + 'match.mp3');
+            this.load.audio('sfx_hit', urlPix + 'hit.mp3');
         };
 
         var create = function() {
@@ -87,6 +93,59 @@ define([
             this.L = L; // Guarda o mapa para ser usado na tela de derrota
 
             this.add.image(L.bgX, L.bgY, 'bg').setDisplaySize(L.bgW, L.bgH);
+
+            // --- CÓDIGO NOVO: CONFIGURAR ÁUDIOS ---
+            this.sfxSwap = this.sound.add('sfx_swap', {volume: 0.6});
+            this.sfxMatch = this.sound.add('sfx_match', {volume: 0.5});
+            this.sfxHit = this.sound.add('sfx_hit', {volume: 0.8});
+
+            // Música de fundo em Loop
+            this.bgMusic = this.sound.add('bg_music', {volume: 0.3, loop: true});
+            if (!this.sound.locked) {
+                this.bgMusic.play();
+            } else {
+                this.sound.once(Phaser.Sound.Events.UNLOCKED, function() {
+                    me.bgMusic.play();
+                });
+            }
+            // --------------------------------------
+            // --- CÓDIGO NOVO: CONTROLES DE ÁUDIO ---
+            me.musicOn = true;
+            me.sfxOn = true;
+
+            // Desenha os botões no canto superior esquerdo
+            var btnMusic = this.add.text(20, 20, '🎵 Música', {
+                fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
+            }).setInteractive().setDepth(10);
+
+            var btnSfx = this.add.text(120, 20, '🔊 Efeitos', {
+                fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
+            }).setInteractive().setDepth(10);
+
+            // Ação do Botão de Música
+            btnMusic.on('pointerdown', function() {
+                me.musicOn = !me.musicOn;
+                btnMusic.setText(me.musicOn ? '🎵 Música' : '🔇 Música');
+                btnMusic.setStyle({fill: me.musicOn ? '#ffffff' : '#aaaaaa'});
+                if (me.musicOn) {
+ me.bgMusic.resume();
+} else {
+ me.bgMusic.pause();
+}
+            });
+
+            // Ação do Botão de Efeitos
+            btnSfx.on('pointerdown', function() {
+                me.sfxOn = !me.sfxOn;
+                btnSfx.setText(me.sfxOn ? '🔊 Efeitos' : '🔈 Efeitos');
+                btnSfx.setStyle({fill: me.sfxOn ? '#ffffff' : '#aaaaaa'});
+                var vol = me.sfxOn ? 1 : 0;
+                // Aplica o volume zero ou normal para os efeitos
+                me.sfxSwap.setVolume(0.6 * vol);
+                me.sfxMatch.setVolume(0.5 * vol);
+                me.sfxHit.setVolume(0.8 * vol);
+            });
+            // --------------------------------------
 
             this.turnoAtual = 'aluno';
             var danoBase = parseInt(gameConfig.bossdamage) || 10;
@@ -768,10 +827,13 @@ tr, tc;
                 var quemAtivou = null;
                 var danoCausado = 0;
 
+                me.sfxMatch.play();
+
                 for (var i = 0; i < pecasDestruidas.length; i++) {
                     var peca = pecasDestruidas[i];
 
                    if (me.turnoAtual === 'aluno') {
+                    me.sfxHit.play();
                         if (peca.tipo === 6) {
                             me.alunoOuro += 10;
                         } else if (peca.tipo === 5) {
@@ -908,6 +970,8 @@ tr, tc;
             this.trocarPecas = function(peca1, peca2, isRevert) {
                 me.input.enabled = false;
 
+                me.sfxSwap.play();
+
                 var tempRow = peca1.row;
                 var tempCol = peca1.col;
 
@@ -981,7 +1045,27 @@ tr, tc;
             for (row = 0; row < linhas; row++) {
                 this.tabuleiro[row] = [];
                 for (col = 0; col < colunas; col++) {
-                    itemAleatorio = Math.floor(Math.random() * 7);
+
+                    // MÁGICA 1: Impede combinações ao gerar o tabuleiro inicial!
+                    var temMatch;
+                    do {
+                        itemAleatorio = Math.floor(Math.random() * 7);
+                        temMatch = false;
+
+                        // Verifica combinações na vertical
+                        if (row >= 2 && this.tabuleiro[row - 1][col].tipo === itemAleatorio &&
+                            this.tabuleiro[row - 2][col].tipo === itemAleatorio) {
+                            temMatch = true;
+                        }
+
+                        // Verifica combinações na horizontal
+                        if (col >= 2 && this.tabuleiro[row][col - 1].tipo === itemAleatorio &&
+                            this.tabuleiro[row][col - 2].tipo === itemAleatorio) {
+                            temMatch = true;
+                        }
+
+                    } while (temMatch);
+
                     x = offsetX + (col * tamanhoPeca);
                     y = offsetY + (row * tamanhoPeca);
 
@@ -1038,9 +1122,14 @@ tr, tc;
                 me.swipePeca = null;
             });
 
-            me.input.enabled = false;
-            me.time.delayedCall(500, me.verificarCombinacoes, [], me);
-            me.tempoUltimaAcao = me.time.now;
+            // MÁGICA 2: Libertar o jogo apenas para o aluno jogar!
+            if (!me.temJogadaPossivel()) {
+                me.embaralhar();
+            } else {
+                me.input.enabled = true;
+                me.tempoUltimaAcao = me.time.now;
+                me.resetarDica();
+            }
         }; // <-- FECHA A FUNÇÃO CREATE
 
         var isDesk = window.innerWidth > window.innerHeight;

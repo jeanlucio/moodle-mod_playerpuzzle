@@ -107,7 +107,7 @@ define([
                     preventDefaultWheel: false
                 },
                 touch: {
-                    capture: true
+                    capture: false
                 }
             },
             // ---------------------------------------

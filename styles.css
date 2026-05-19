@@ -51,3 +51,35 @@ body.pagelayout-embedded #playerpuzzle-canvas-container {
     border-radius: 0 !important;
     box-shadow: none !important;
 }
+
+/**
+ * Question modal: reduce font sizes on mobile without breaking accessibility.
+ * Question text stays at 1rem (16px) — accepted body text minimum.
+ * Answer buttons use 0.875rem (14px) — acceptable for form controls per WCAG.
+ * max-height + overflow-y: auto on modal-body prevents viewport overflow on
+ * very long questions.
+ */
+body.pagelayout-embedded #playerpuzzle-modal .modal-dialog {
+    margin: 0.5rem;
+}
+
+body.pagelayout-embedded #playerpuzzle-modal .modal-body {
+    padding: 0.75rem;
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+body.pagelayout-embedded #playerpuzzle-pergunta-texto {
+    font-size: 1rem;
+    margin-bottom: 0.75rem !important;
+}
+
+body.pagelayout-embedded #playerpuzzle-respostas-container .btn {
+    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem;
+    margin-bottom: 0.375rem !important;
+}
+
+body.pagelayout-embedded #playerpuzzle-btn-fechar {
+    font-size: 0.875rem;
+}

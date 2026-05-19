@@ -110,35 +110,7 @@ define(['jquery'], function($) {
                 fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setOrigin(1, 0).setInteractive().setDepth(10);
 
-            const container = document.getElementById('playerpuzzle-canvas-container');
-
-            // Mobile (touch): CSS fullscreen keeps browser UI visible so the shrink button remains tappable.
-            // Desktop: native Fullscreen API gives a more immersive experience.
-            const isMobile = window.matchMedia('(pointer: coarse)').matches;
-
-            if (!document.getElementById('pp-fullscreen-style')) {
-                const styleEl = document.createElement('style');
-                styleEl.id = 'pp-fullscreen-style';
-                styleEl.textContent = '#playerpuzzle-canvas-container.pp-fullscreen{' +
-                    'position:fixed!important;top:0!important;left:0!important;' +
-                    'width:100vw!important;height:100vh!important;z-index:9999!important;' +
-                    'aspect-ratio:unset!important;max-width:none!important;margin:0!important;}';
-                document.head.appendChild(styleEl);
-            }
-
-            const enterCssFullscreen = () => {
-                container.classList.add('pp-fullscreen');
-                container._cssFullscreen = true;
-                me.scale.refresh();
-            };
-
-            const exitCssFullscreen = () => {
-                container.classList.remove('pp-fullscreen');
-                container._cssFullscreen = false;
-                me.scale.refresh();
-            };
-
-            // Sync button label when user exits native fullscreen via browser controls (e.g. Android back).
+            // Sync button label when user exits fullscreen via browser controls (e.g. Android back button).
             const onFullscreenChange = () => {
                 if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                     btnFullscreen.setText('[ Expandir ]');
@@ -150,20 +122,11 @@ define(['jquery'], function($) {
             btnFullscreen.on('pointerdown', () => {
                 me.cameras.main.fadeOut(200, 0, 0, 0);
                 me.time.delayedCall(200, () => {
-                    const expanded = me.scale.isFullscreen || container._cssFullscreen;
-                    if (expanded) {
-                        if (me.scale.isFullscreen) {
-                            me.scale.stopFullscreen();
-                        } else {
-                            exitCssFullscreen();
-                        }
+                    if (me.scale.isFullscreen) {
+                        me.scale.stopFullscreen();
                         btnFullscreen.setText('[ Expandir ]');
                     } else {
-                        if (!isMobile && document.fullscreenEnabled) {
-                            me.scale.startFullscreen();
-                        } else {
-                            enterCssFullscreen();
-                        }
+                        me.scale.startFullscreen();
                         btnFullscreen.setText('[ Encolher ]');
                     }
                     me.cameras.main.fadeIn(200, 0, 0, 0);

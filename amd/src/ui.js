@@ -105,35 +105,39 @@ define(['jquery'], function($) {
             var me = this.scene;
             var L = this.L;
 
-            // Botão de Expandir Tela — oculto em dispositivos touch (fullscreen nativo bloqueia a UI do browser).
+            // Botão de Expandir Tela.
+            // No mobile: entra em fullscreen e esconde o botão — o usuário sai pelo gesto do browser.
+            // No desktop: alterna entre Expandir/Encolher normalmente.
             const isMobile = window.matchMedia('(pointer: coarse)').matches;
-            if (!isMobile) {
-                var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, '[ Expandir ]', {
-                    fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-                }).setOrigin(1, 0).setInteractive().setDepth(10);
+            var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, '[ Expandir ]', {
+                fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
+            }).setOrigin(1, 0).setInteractive().setDepth(10);
 
-                const onFullscreenChange = () => {
-                    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                        btnFullscreen.setText('[ Expandir ]');
-                    }
-                };
-                document.addEventListener('fullscreenchange', onFullscreenChange);
-                document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+            const onFullscreenChange = () => {
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    btnFullscreen.setText('[ Expandir ]').setVisible(true);
+                }
+            };
+            document.addEventListener('fullscreenchange', onFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
-                btnFullscreen.on('pointerdown', () => {
-                    me.cameras.main.fadeOut(200, 0, 0, 0);
-                    me.time.delayedCall(200, () => {
-                        if (me.scale.isFullscreen) {
-                            me.scale.stopFullscreen();
-                            btnFullscreen.setText('[ Expandir ]');
+            btnFullscreen.on('pointerdown', () => {
+                me.cameras.main.fadeOut(200, 0, 0, 0);
+                me.time.delayedCall(200, () => {
+                    if (me.scale.isFullscreen) {
+                        me.scale.stopFullscreen();
+                        btnFullscreen.setText('[ Expandir ]').setVisible(true);
+                    } else {
+                        me.scale.startFullscreen();
+                        if (isMobile) {
+                            btnFullscreen.setVisible(false);
                         } else {
-                            me.scale.startFullscreen();
                             btnFullscreen.setText('[ Encolher ]');
                         }
-                        me.cameras.main.fadeIn(200, 0, 0, 0);
-                    });
+                    }
+                    me.cameras.main.fadeIn(200, 0, 0, 0);
                 });
-            }
+            });
 
             // Controles de Áudio
             me.musicOn = true;

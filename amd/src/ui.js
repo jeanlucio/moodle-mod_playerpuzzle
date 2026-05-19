@@ -110,14 +110,67 @@ define(['jquery'], function($) {
                 fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setOrigin(1, 0).setInteractive().setDepth(10);
 
+            const container = document.getElementById('playerpuzzle-canvas-container');
+
+            // Mobile (touch): CSS fullscreen keeps browser UI visible so the shrink button remains tappable.
+            // Desktop: native Fullscreen API gives a more immersive experience.
+            const isMobile = window.matchMedia('(pointer: coarse)').matches;
+            const nativeFullscreenAvailable = !isMobile && !!document.fullscreenEnabled;
+
+            const enterCssFullscreen = () => {
+                container._origStyles = {
+                    position: container.style.position,
+                    top: container.style.top,
+                    left: container.style.left,
+                    width: container.style.width,
+                    height: container.style.height,
+                    zIndex: container.style.zIndex,
+                    aspectRatio: container.style.aspectRatio,
+                    maxWidth: container.style.maxWidth,
+                    margin: container.style.margin,
+                };
+                container.style.cssText += ';position:fixed!important;top:0!important;left:0!important;' +
+                    'width:100vw!important;height:100vh!important;z-index:9999!important;' +
+                    'aspect-ratio:unset!important;max-width:unset!important;margin:0!important;';
+                container._cssFullscreen = true;
+                me.scale.refresh();
+            };
+
+            const exitCssFullscreen = () => {
+                if (container._origStyles) {
+                    Object.assign(container.style, container._origStyles);
+                    container._origStyles = null;
+                }
+                container._cssFullscreen = false;
+                me.scale.refresh();
+            };
+
+            // Sync button label when user exits native fullscreen via browser controls (e.g. Android back).
+            const onFullscreenChange = () => {
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    btnFullscreen.setText('[ Expandir ]');
+                }
+            };
+            document.addEventListener('fullscreenchange', onFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
             btnFullscreen.on('pointerdown', () => {
                 me.cameras.main.fadeOut(200, 0, 0, 0);
                 me.time.delayedCall(200, () => {
-                    if (me.scale.isFullscreen) {
-                        me.scale.stopFullscreen();
+                    const expanded = me.scale.isFullscreen || container._cssFullscreen;
+                    if (expanded) {
+                        if (me.scale.isFullscreen) {
+                            me.scale.stopFullscreen();
+                        } else {
+                            exitCssFullscreen();
+                        }
                         btnFullscreen.setText('[ Expandir ]');
                     } else {
-                        me.scale.startFullscreen();
+                        if (nativeFullscreenAvailable) {
+                            me.scale.startFullscreen();
+                        } else {
+                            enterCssFullscreen();
+                        }
                         btnFullscreen.setText('[ Encolher ]');
                     }
                     me.cameras.main.fadeIn(200, 0, 0, 0);

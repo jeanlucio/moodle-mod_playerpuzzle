@@ -235,10 +235,12 @@ define(['jquery'], function($) {
                     };
 
                     if (perguntaSorteada.answers && perguntaSorteada.answers.length > 0) {
+                        var btnClass = ctx.gameConfig.mobile
+                            ? 'btn btn-outline-primary w-100 pp-answer-btn'
+                            : 'btn btn-outline-primary btn-lg mb-3 w-100';
                         perguntaSorteada.answers.forEach(function(resposta, idxHtml) {
                             var txtLimpo = resposta.answer.replace(/(<([^>]+)>)/gi, "");
-                            var btnHTML = $('<button class="btn btn-outline-primary btn-lg mb-3 w-100">' +
-                                txtLimpo + '</button>');
+                            var btnHTML = $('<button class="' + btnClass + '">' + txtLimpo + '</button>');
 
                             if (quemAtivou === 'aluno') {
                                 btnHTML.on('click', function() {

@@ -61,11 +61,21 @@ $welcomemsg = get_string('lobbywelcome', 'mod_playerpuzzle');
 echo html_writer::tag('p', $welcomemsg, ['class' => 'lead text-center mt-4']);
 
 // The "Play Game" button.
-$playurl = new moodle_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
+$ismobile = core_useragent::is_ios() || core_useragent::is_webkit_android();
+$playparams = ['id' => $cm->id];
+if ($ismobile) {
+    $playparams['mobile'] = 1;
+}
+$playurl = new moodle_url('/mod/playerpuzzle/play.php', $playparams);
+$btnattrs = ['class' => 'btn btn-primary btn-lg mt-3 px-5 py-3 fs-4 fw-bold shadow-sm'];
+if ($ismobile) {
+    $btnattrs['target'] = '_blank';
+    $btnattrs['rel'] = 'noopener';
+}
 $playbutton = html_writer::link(
     $playurl,
     get_string('playgame', 'mod_playerpuzzle'),
-    ['class' => 'btn btn-primary btn-lg mt-3 px-5 py-3 fs-4 fw-bold shadow-sm']
+    $btnattrs
 );
 
 echo html_writer::div($playbutton, 'text-center mb-5');

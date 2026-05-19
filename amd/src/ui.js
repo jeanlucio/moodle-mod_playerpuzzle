@@ -21,7 +21,7 @@ define(['jquery'], function($) {
                 'class="d-flex flex-column justify-content-center align-items-center" ' +
                 'style="position: absolute; top: 0; left: 0; width: 100%; ' +
                 'height: 100%; z-index: 1000; background-color: #1a1a1a;">';
-            loadingHtml += '<h3 class="text-white mb-3">Carregando recursos...</h3>';
+            loadingHtml += '<h3 class="text-white mb-3">Carregando...</h3>';
             loadingHtml += '<div class="progress w-50" style="height: 25px;">';
 
             var pBar = '<div id="pp-progress-bar" ' +
@@ -105,24 +105,31 @@ define(['jquery'], function($) {
             var me = this.scene;
             var L = this.L;
 
-            // Botão de Expandir Tela
-            var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, '[ Expandir ]', {
-                fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-            }).setOrigin(1, 0).setInteractive().setDepth(10);
+            if (this.gameConfig.mobile) {
+                var btnExit = me.add.text(L.btnExpX, L.btnExpY, '✕ Sair', {
+                    fontSize: '20px', fill: '#ffffff', backgroundColor: '#882222', padding: {x: 8, y: 8}
+                }).setOrigin(1, 0).setInteractive().setDepth(10);
+                btnExit.on('pointerdown', () => this.showExitConfirm());
+            } else {
+                // Botão de Expandir Tela
+                var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, '[ Expandir ]', {
+                    fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
+                }).setOrigin(1, 0).setInteractive().setDepth(10);
 
-            btnFullscreen.on('pointerdown', () => {
-                me.cameras.main.fadeOut(200, 0, 0, 0);
-                me.time.delayedCall(200, () => {
-                    if (me.scale.isFullscreen) {
-                        me.scale.stopFullscreen();
-                        btnFullscreen.setText('[ Expandir ]');
-                    } else {
-                        me.scale.startFullscreen();
-                        btnFullscreen.setText('[ Encolher ]');
-                    }
-                    me.cameras.main.fadeIn(200, 0, 0, 0);
+                btnFullscreen.on('pointerdown', () => {
+                    me.cameras.main.fadeOut(200, 0, 0, 0);
+                    me.time.delayedCall(200, () => {
+                        if (me.scale.isFullscreen) {
+                            me.scale.stopFullscreen();
+                            btnFullscreen.setText('[ Expandir ]');
+                        } else {
+                            me.scale.startFullscreen();
+                            btnFullscreen.setText('[ Encolher ]');
+                        }
+                        me.cameras.main.fadeIn(200, 0, 0, 0);
+                    });
                 });
-            });
+            }
 
             // Controles de Áudio
             me.musicOn = true;
@@ -171,6 +178,58 @@ define(['jquery'], function($) {
                 .fillRect(this.L.bossUiX + 2, this.L.bossManaY + 1, 296 * pctMana, 6);
 
             this.txtVeneno.setAlpha(envenenadoTurnos > 0 ? 1 : 0);
+        }
+
+        showExitConfirm() {
+            if (this._confirmOpen) {
+                return;
+            }
+            this._confirmOpen = true;
+            var self = this;
+            var me = this.scene;
+            var L = this.L;
+            var cx = L.w / 2;
+            var cy = L.h / 2;
+            var boxW = Math.round(L.w * 0.78);
+            var boxH = 200;
+            var boxX = cx - boxW / 2;
+            var boxY = cy - boxH / 2;
+
+            var overlay = me.add.graphics().setDepth(20);
+            overlay.fillStyle(0x000000, 0.75);
+            overlay.fillRect(0, 0, L.w, L.h);
+            overlay.fillStyle(0x222222, 1);
+            overlay.fillRoundedRect(boxX, boxY, boxW, boxH, 16);
+
+            var txtWarn = me.add.text(cx, boxY + 55, 'Sair agora vai\nperder o progresso!', {
+                fontSize: '20px', fill: '#ffcc00', align: 'center'
+            }).setOrigin(0.5).setDepth(21);
+
+            var btnContinue = me.add.text(cx - 70, boxY + 145, 'Continuar', {
+                fontSize: '18px', fill: '#ffffff', backgroundColor: '#224488', padding: {x: 14, y: 10}
+            }).setOrigin(0.5).setInteractive().setDepth(21);
+
+            var btnConfirmExit = me.add.text(cx + 70, boxY + 145, 'Sair', {
+                fontSize: '18px', fill: '#ffffff', backgroundColor: '#882222', padding: {x: 22, y: 10}
+            }).setOrigin(0.5).setInteractive().setDepth(21);
+
+            var cleanup = function() {
+                self._confirmOpen = false;
+                overlay.destroy();
+                txtWarn.destroy();
+                btnContinue.destroy();
+                btnConfirmExit.destroy();
+            };
+
+            btnContinue.on('pointerdown', cleanup);
+
+            var viewurl = this.gameConfig.viewurl;
+            btnConfirmExit.on('pointerdown', function() {
+                window.close();
+                setTimeout(function() {
+                    window.location.href = viewurl;
+                }, 300);
+            });
         }
 
         atualizarBarraAluno(currentHp, maxHp, mana, escudo, ouro, multiplicador) {

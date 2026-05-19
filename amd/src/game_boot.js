@@ -19,6 +19,18 @@ define([
 
     var startPhaser = function(gameConfig) {
 
+        var onExitConfirm = null;
+
+        if (gameConfig.mobile) {
+            history.pushState({ppgame: true}, '');
+            window.addEventListener('popstate', function() {
+                history.pushState({ppgame: true}, '');
+                if (onExitConfirm) {
+                    onExitConfirm();
+                }
+            });
+        }
+
         var preload = function() {
             this.ui = new UIHandler(this, null, gameConfig);
             this.ui.setupLoader();
@@ -59,7 +71,9 @@ define([
 
             var containerDOM = $('#playerpuzzle-canvas-container');
             containerDOM.find('p').remove();
-            containerDOM.css({'aspect-ratio': L.aspect, 'max-width': L.maxW, 'margin': '0 auto'});
+            if (!gameConfig.mobile) {
+                containerDOM.css({'aspect-ratio': L.aspect, 'max-width': L.maxW, 'margin': '0 auto'});
+            }
             containerDOM.append($('#playerpuzzle-modal'));
 
             // Injeta o Layout na UI e desenha a interface estática
@@ -87,6 +101,12 @@ define([
 
             // Sincroniza a interface visual com os status iniciais do combate
             this.combat.atualizarUI();
+
+            if (gameConfig.mobile) {
+                onExitConfirm = function() {
+                    me.ui.showExitConfirm();
+                };
+            }
         };
 
         var isDesk = window.innerWidth > window.innerHeight;

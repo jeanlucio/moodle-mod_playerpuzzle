@@ -106,16 +106,28 @@ define(['jquery'], function($) {
             var L = this.L;
 
             // Botão de Expandir Tela.
-            // No mobile: entra em fullscreen e esconde o botão — o usuário sai pelo gesto do browser.
-            // No desktop: alterna entre Expandir/Encolher normalmente.
+            // Desktop: API nativa de fullscreen (mais imersivo).
+            // Mobile: expande o container via CSS para 100vw × 100vh sem esconder a UI do browser,
+            //         permitindo que o botão Encolher permaneça acessível.
             const isMobile = window.matchMedia('(pointer: coarse)').matches;
+            const container = document.getElementById('playerpuzzle-canvas-container');
+
+            if (!document.getElementById('pp-fullscreen-style')) {
+                const styleEl = document.createElement('style');
+                styleEl.id = 'pp-fullscreen-style';
+                styleEl.textContent = '#playerpuzzle-canvas-container.pp-fullscreen{' +
+                    'position:fixed!important;top:0!important;left:0!important;' +
+                    'width:100vw!important;height:100vh!important;z-index:9999!important;}';
+                document.head.appendChild(styleEl);
+            }
+
             var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, '[ Expandir ]', {
                 fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setOrigin(1, 0).setInteractive().setDepth(10);
 
             const onFullscreenChange = () => {
                 if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                    btnFullscreen.setText('[ Expandir ]').setVisible(true);
+                    btnFullscreen.setText('[ Expandir ]');
                 }
             };
             document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -124,14 +136,28 @@ define(['jquery'], function($) {
             btnFullscreen.on('pointerdown', () => {
                 me.cameras.main.fadeOut(200, 0, 0, 0);
                 me.time.delayedCall(200, () => {
-                    if (me.scale.isFullscreen) {
-                        me.scale.stopFullscreen();
-                        btnFullscreen.setText('[ Expandir ]').setVisible(true);
-                    } else {
-                        me.scale.startFullscreen();
-                        if (isMobile) {
-                            btnFullscreen.setVisible(false);
+                    if (isMobile) {
+                        if (container.classList.contains('pp-fullscreen')) {
+                            container.classList.remove('pp-fullscreen');
+                            btnFullscreen.setText('[ Expandir ]');
+                            requestAnimationFrame(() => {
+                                me.scale.refresh();
+                                me.input.updateBounds();
+                            });
                         } else {
+                            container.classList.add('pp-fullscreen');
+                            btnFullscreen.setText('[ Encolher ]');
+                            requestAnimationFrame(() => {
+                                me.scale.refresh();
+                                me.input.updateBounds();
+                            });
+                        }
+                    } else {
+                        if (me.scale.isFullscreen) {
+                            me.scale.stopFullscreen();
+                            btnFullscreen.setText('[ Expandir ]');
+                        } else {
+                            me.scale.startFullscreen();
                             btnFullscreen.setText('[ Encolher ]');
                         }
                     }

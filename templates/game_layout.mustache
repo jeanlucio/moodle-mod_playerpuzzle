@@ -1,18 +1,18 @@
 {{!
-	This file is part of Moodle - http://moodle.org/
+    This file is part of Moodle - https://moodle.org/
 
-	Moodle is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-	Moodle is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
     @template mod_playerpuzzle/game_layout
@@ -22,56 +22,57 @@
     Example context (json):
     {
         "gametitle": "Fire Dungeon",
-        "loadingtext": "Loading the game engine..."
+        "loadingtext": "Loading the game engine...",
+        "gameconfig": "{}"
     }
 }}
 
 <div class="playerpuzzle-game-wrapper d-flex flex-column align-items-center mt-3 mb-5">
     <h3 class="mb-3">{{gametitle}}</h3>
 
-    {{! The container where Phaser.js will inject the <canvas> element. }}
+    {{! The container where Phaser.js will inject the canvas element. }}
     <div id="playerpuzzle-canvas-container" class="pp-canvas-container"
          aria-label="{{loadingtext}}" role="application"
          data-config="{{gameconfig}}">
         <p class="text-center p-5 text-muted">{{loadingtext}}</p>
     </div>
 
-    {{! Modal de Pergunta do Jogo }}
-    <div id="playerpuzzle-modal" class="modal" tabindex="-1" role="dialog" style="display: none; background: rgba(0,0,0,0.8);">
+    {{! Custom question modal — controlled entirely by combat.js via jQuery. }}
+    <div id="playerpuzzle-modal" class="modal pp-question-modal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content shadow-lg border-primary">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">⚔️ Desafio Mágico!</h5>
+                    <h5 class="modal-title">{{#str}} questionchallenge, mod_playerpuzzle {{/str}}</h5>
                 </div>
                 <div class="modal-body">
-                    <h4 id="playerpuzzle-pergunta-texto">O texto da pergunta vai aparecer aqui...</h4>
+                    <h4 id="playerpuzzle-pergunta-texto">&nbsp;</h4>
 
                     <div id="playerpuzzle-respostas-container" class="d-grid gap-2">
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" id="playerpuzzle-btn-fechar">Fugir (Ignorar)</button>
+                    <button type="button" class="btn btn-secondary" id="playerpuzzle-btn-fechar">
+                        {{#str}} close, mod_playerpuzzle {{/str}}
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    {{! Accessible BS5 Modal for Moodle Questions }}
+    {{! Accessible BS5 modal for Moodle questions. }}
     <div class="modal fade" id="playerpuzzleQuestionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title" id="questionModalLabel">{{#str}} answerquestion, mod_playerpuzzle {{/str}}</h5>
-                    {{! Accessible close button for screen readers }}
+                    {{! Accessible close button for screen readers. }}
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{#str}} close, mod_playerpuzzle {{/str}}"></button>
                 </div>
                 <div class="modal-body">
                     <div id="playerpuzzle-question-text" class="fs-5 mb-4">
-                        {{! Question text injected via JS will appear here }}
                         &nbsp;
                     </div>
                     <div id="playerpuzzle-options-container" class="d-grid gap-2">
-                        {{! Answer buttons injected via JS will appear here }}
                     </div>
                 </div>
                 <div class="modal-footer d-flex justify-content-between">

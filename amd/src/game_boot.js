@@ -2,8 +2,8 @@
  * Main bootloader for the PlayerPuzzle Phaser game.
  *
  * @module     mod_playerpuzzle/game_boot
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /* global Phaser */
@@ -76,11 +76,9 @@ define([
             }
             containerDOM.append($('#playerpuzzle-modal'));
 
-            // Injeta o Layout na UI e desenha a interface estática
             this.ui.L = L;
             this.ui.setupStaticUI();
 
-            // Áudios
             this.sfxSwap = this.sound.add('sfx_swap', {volume: 0.6});
             this.sfxMatch = this.sound.add('sfx_match', {volume: 0.5});
             this.sfxHit = this.sound.add('sfx_hit', {volume: 0.8});
@@ -95,11 +93,9 @@ define([
                 });
             }
 
-            // Inicializa os módulos de Combate e Tabuleiro
             this.combat = new CombatHandler(this, gameConfig);
             this.board = new BoardHandler(this, L);
 
-            // Sincroniza a interface visual com os status iniciais do combate
             this.combat.atualizarUI();
 
             if (gameConfig.mobile) {
@@ -121,7 +117,6 @@ define([
                 height: isDesk ? 720 : 960,
                 fullscreenTarget: document.getElementById('playerpuzzle-canvas-container')
             },
-            // --- NOVA CONFIGURAÇÃO DE INPUT AQUI ---
             input: {
                 mouse: {
                     preventDefaultWheel: false
@@ -130,7 +125,6 @@ define([
                     capture: false
                 }
             },
-            // ---------------------------------------
             scene: {preload: preload, create: create}
         };
         new Phaser.Game(config);
@@ -154,10 +148,10 @@ define([
                             window.Phaser = PhaserObj;
                         }
                         startPhaser(config);
-                    }, function(erro) {
-                        var msg = '<p class="text-danger">Erro crítico do RequireJS.</p>';
+                    }, function(err) {
+                        var msg = '<p class="text-danger">Critical RequireJS error.</p>';
                         $('#playerpuzzle-canvas-container').html(msg);
-                        window.console.error("RequireJS Error:", erro);
+                        window.console.error('RequireJS error:', err);
                     });
                 } catch (error) {
                     notification.exception(error);

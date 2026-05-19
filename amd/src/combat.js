@@ -1,9 +1,9 @@
 /**
- * Combat and Rules Module for PlayerPuzzle
+ * Combat and Rules Module for PlayerPuzzle.
  *
  * @module     mod_playerpuzzle/combat
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 define(['jquery'], function($) {
@@ -17,7 +17,6 @@ define(['jquery'], function($) {
             this.danoBase = parseInt(gameConfig.bossdamage) || 10;
             this.turnoAtual = 'aluno';
 
-            // Status do Aluno
             this.alunoOuro = 0;
             this.alunoEscudo = 0;
             this.alunoMultiplicador = 1;
@@ -25,7 +24,6 @@ define(['jquery'], function($) {
             this.maxPlayerHp = 100;
             this.currentPlayerHp = this.maxPlayerHp;
 
-            // Status do Chefe
             this.chefeEnvenenadoTurnos = 0;
             this.chefeMana = 0;
             this.maxBossHp = gameConfig.bosshp;
@@ -71,8 +69,8 @@ define(['jquery'], function($) {
                 me.tweens.add({
                     targets: peca, scaleX: 0, scaleY: 0, duration: 200,
                     onComplete: function(tween, targets) {
- targets[0].destroy();
-}
+                        targets[0].destroy();
+                    }
                 });
             }
 
@@ -107,8 +105,8 @@ define(['jquery'], function($) {
             this.atualizarUI();
             me.ui.bossSprite.setTint(0xff0000);
             me.time.delayedCall(200, function() {
- me.ui.bossSprite.clearTint();
-});
+                me.ui.bossSprite.clearTint();
+            });
         }
 
         aplicarDanoAluno(dCausado) {
@@ -133,8 +131,8 @@ define(['jquery'], function($) {
                 this.atualizarUI();
                 me.ui.bossSprite.setTint(0xff00ff);
                 me.time.delayedCall(300, function() {
- me.ui.bossSprite.clearTint();
-});
+                    me.ui.bossSprite.clearTint();
+                });
             }
 
             me.time.delayedCall(800, this.executarTurnoChefe, [], this);
@@ -149,8 +147,8 @@ define(['jquery'], function($) {
                     targets: me.ui.bossSprite,
                     scaleX: 1.2, scaleY: 1.2, yoyo: true, duration: 300,
                     onComplete: function() {
- me.board.trocarPecas(jogada.p1, jogada.p2);
-}
+                        me.board.trocarPecas(jogada.p1, jogada.p2);
+                    }
                 });
             } else {
                 me.board.embaralhar();
@@ -183,7 +181,7 @@ define(['jquery'], function($) {
                 var modalMoodle = $('#playerpuzzle-modal');
 
                 if (modalMoodle.length > 0) {
-                    var perguntaSorteada = {name: "Aviso", questiontext: "Erro de perguntas."};
+                    var perguntaSorteada = {name: 'Notice', questiontext: 'Question error.'};
                     if (ctx.gameConfig.questions && ctx.gameConfig.questions.length > 0) {
                         var idx = Math.floor(Math.random() * ctx.gameConfig.questions.length);
                         perguntaSorteada = ctx.gameConfig.questions[idx];
@@ -206,11 +204,11 @@ define(['jquery'], function($) {
 
                     var chefeAcertou = (Math.random() > 0.3);
                     if (respErradas.length === 0) {
- chefeAcertou = true;
-}
+                        chefeAcertou = true;
+                    }
                     if (respCertas.length === 0) {
- chefeAcertou = false;
-}
+                        chefeAcertou = false;
+                    }
 
                     var indexChefe = -1;
                     if (quemAtivou === 'chefe') {
@@ -220,7 +218,7 @@ define(['jquery'], function($) {
                             indexChefe = respErradas[Math.floor(Math.random() * respErradas.length)];
                         }
 
-                        var avisoC = '<span class="text-danger fw-bold">👹 O Chefe ativou a pergunta!</span><br><br>';
+                        var avisoC = '<span class="text-danger fw-bold">👹 The boss triggered a question!</span><br><br>';
                         textoDaPergunta = avisoC + textoDaPergunta;
                     }
 
@@ -239,7 +237,7 @@ define(['jquery'], function($) {
                             ? 'btn btn-outline-primary w-100 pp-answer-btn'
                             : 'btn btn-outline-primary btn-lg mb-3 w-100';
                         perguntaSorteada.answers.forEach(function(resposta, idxHtml) {
-                            var txtLimpo = resposta.answer.replace(/(<([^>]+)>)/gi, "");
+                            var txtLimpo = resposta.answer.replace(/(<([^>]+)>)/gi, '');
                             var btnHTML = $('<button class="' + btnClass + '">' + txtLimpo + '</button>');
 
                             if (quemAtivou === 'aluno') {
@@ -251,15 +249,15 @@ define(['jquery'], function($) {
                                             targets: me.ui.bossSprite, y: me.ui.bossSprite.y - 20,
                                             yoyo: true, duration: 150,
                                             onComplete: function() {
- me.ui.bossSprite.clearTint();
-}
+                                                me.ui.bossSprite.clearTint();
+                                            }
                                         });
                                     } else {
                                         ctx.aplicarDanoAluno(30);
                                         ctx.alunoMultiplicador = 1;
                                         ctx.atualizarUI();
                                     }
-                                    $('#playerpuzzle-btn-fechar').text('Fechar');
+                                    $('#playerpuzzle-btn-fechar').text('Close');
                                     fecharModal();
                                 });
                             } else {
@@ -267,10 +265,10 @@ define(['jquery'], function($) {
                                 if (idxHtml === indexChefe) {
                                     if (chefeAcertou) {
                                         btnHTML.removeClass('btn-outline-primary').addClass('btn-danger text-white');
-                                        btnHTML.html('<strong>✓ ' + txtLimpo + ' (O Chefe acertou!)</strong>');
+                                        btnHTML.html('<strong>✓ ' + txtLimpo + ' (Boss answered correctly!)</strong>');
                                     } else {
                                         btnHTML.removeClass('btn-outline-primary').addClass('btn-secondary text-white');
-                                        btnHTML.html('<strong>✗ ' + txtLimpo + ' (O Chefe errou!)</strong>');
+                                        btnHTML.html('<strong>✗ ' + txtLimpo + ' (Boss answered incorrectly!)</strong>');
                                     }
                                 } else {
                                     btnHTML.removeClass('btn-outline-primary').addClass('btn-light');
@@ -282,16 +280,16 @@ define(['jquery'], function($) {
                         if (quemAtivou === 'chefe') {
                             var btnFechar = $('#playerpuzzle-btn-fechar');
                             var tempoRestante = 15;
-                            btnFechar.show().text('Continuar (' + tempoRestante + 's)');
+                            btnFechar.show().text('Continue (' + tempoRestante + 's)');
 
                             var executouAcao = false;
                             var timerChefe = setInterval(function() {
                                 if (executouAcao) {
- return;
-}
+                                    return;
+                                }
                                 tempoRestante--;
                                 if (tempoRestante > 0) {
-                                    btnFechar.text('Continuar (' + tempoRestante + 's)');
+                                    btnFechar.text('Continue (' + tempoRestante + 's)');
                                 } else {
                                     executarAcaoChefe();
                                 }
@@ -299,26 +297,26 @@ define(['jquery'], function($) {
 
                             var executarAcaoChefe = function() {
                                 if (executouAcao) {
- return;
-}
+                                    return;
+                                }
                                 executouAcao = true;
                                 clearInterval(timerChefe);
                                 if (chefeAcertou) {
                                     ctx.aplicarDanoAluno(ctx.danoBase * 3);
                                 }
-                                btnFechar.text('Fechar');
+                                btnFechar.text('Close');
                                 fecharModal();
                             };
 
                             btnFechar.off('click').on('click', executarAcaoChefe);
 
                         } else {
-                            $('#playerpuzzle-btn-fechar').text('Fechar').show().off('click').on('click', fecharModal);
+                            $('#playerpuzzle-btn-fechar').text('Close').show().off('click').on('click', fecharModal);
                         }
 
                     } else {
-                        containerRespostas.append('<p class="text-danger">Vazio</p>');
-                        $('#playerpuzzle-btn-fechar').text('Fechar').show().off('click').on('click', fecharModal);
+                        containerRespostas.append('<p class="text-danger">No answers available.</p>');
+                        $('#playerpuzzle-btn-fechar').text('Close').show().off('click').on('click', fecharModal);
                     }
 
                     modalMoodle.addClass('show').css('display', 'block');
@@ -334,13 +332,13 @@ define(['jquery'], function($) {
             me.input.enabled = false;
             me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
 
-            var msg = vitoria ? '🌟 VITÓRIA! 🌟' : '💀 DERROTA 💀';
+            var msg = vitoria ? '🌟 VICTORY! 🌟' : '💀 DEFEAT 💀';
             var cor = vitoria ? 'text-success' : 'text-danger';
 
-            var statsStr = '<p class="lead text-white mb-4">Ouro Coletado: ';
+            var statsStr = '<p class="lead text-white mb-4">Coins collected: ';
             statsStr += '<strong class="text-warning">' + this.alunoOuro + '</strong><br>';
-            statsStr += 'Multiplicador Máx: <strong class="text-info">x' + this.alunoMultiplicador.toFixed(1) + '</strong></p>';
-            statsStr += '<p id="pp-save-status" class="text-muted small">Salvando progresso no Moodle...</p>';
+            statsStr += 'Max multiplier: <strong class="text-info">x' + this.alunoMultiplicador.toFixed(1) + '</strong></p>';
+            statsStr += '<p id="pp-save-status" class="text-muted small">Saving progress...</p>';
 
             var overlayHtml = '<div id="playerpuzzle-gameover" ' +
                 'class="d-flex flex-column justify-content-center align-items-center" ' +
@@ -348,9 +346,9 @@ define(['jquery'], function($) {
             overlayHtml += '<h1 class="display-4 fw-bold ' + cor + ' mb-3">' + msg + '</h1>' + statsStr;
             overlayHtml += '<div class="mt-2 d-flex flex-wrap justify-content-center gap-3">';
             overlayHtml += '<button id="btn-pp-restart" disabled ' +
-                'class="btn btn-primary btn-lg fw-bold shadow">🎮 Jogar Novamente</button>';
+                'class="btn btn-primary btn-lg fw-bold shadow">🎮 Play again</button>';
             overlayHtml += '<button id="btn-pp-exit" disabled ' +
-                'class="btn btn-secondary btn-lg fw-bold shadow">🚪 Sair do Jogo</button>';
+                'class="btn btn-secondary btn-lg fw-bold shadow">🚪 Exit game</button>';
             overlayHtml += '</div></div>';
 
             $('#playerpuzzle-canvas-container').css('position', 'relative').append(overlayHtml);
@@ -366,14 +364,14 @@ define(['jquery'], function($) {
             $.post(M.cfg.wwwroot + '/mod/playerpuzzle/ajax.php', postData)
                 .done(function(respostaStr) {
                     var res = JSON.parse(respostaStr);
-                    if (res.status === 'sucesso') {
-                        var msgSucesso = 'Progresso Salvo! (Total de Ouro: ' + res.ouro_total + ')';
+                    if (res.status === 'success') {
+                        var msgSucesso = 'Progress saved! (Total coins: ' + res.totalcoins + ')';
                         $('#pp-save-status').removeClass('text-muted').addClass('text-success').text(msgSucesso);
                         $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
                     }
                 })
                 .fail(function() {
-                    $('#pp-save-status').removeClass('text-muted').addClass('text-danger').text('Erro ao salvar no servidor.');
+                    $('#pp-save-status').removeClass('text-muted').addClass('text-danger').text('Error saving to server.');
                     $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
                 });
 

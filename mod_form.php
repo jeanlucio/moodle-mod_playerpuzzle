@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * The main module configuration form.
  *
  * @package    mod_playerpuzzle
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
@@ -33,12 +33,11 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
     /**
      * Defines forms elements.
      */
-    public function definition() {
+    public function definition(): void {
         global $DB, $COURSE;
 
         $mform = $this->_form;
 
-        // General settings header.
         $mform->addElement('header', 'general', get_string('general', 'mod_playerpuzzle'));
 
         $mform->addElement('text', 'name', get_string('name', 'mod_playerpuzzle'), ['size' => '64']);
@@ -47,10 +46,8 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $this->standard_intro_elements();
 
-        // Boss settings header.
         $mform->addElement('header', 'bosssettings', get_string('bosssettings', 'mod_playerpuzzle'));
 
-        // Native library of bosses.
         $bossoptions = [
             'slime.png'  => 'Slime',
             'goblin.png' => 'Goblin',
@@ -68,19 +65,17 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('bossdamage', PARAM_INT);
         $mform->setDefault('bossdamage', 10);
 
-        // SELEÇÃO DE CATEGORIA DE QUESTÕES (Moodle 4.0+).
         $mform->addElement('header', 'questionsettings', get_string('questionsettings', 'mod_playerpuzzle'));
 
         $categories = [];
         $coursecontext = \context_course::instance($COURSE->id);
         $contextstocheck = [];
 
-        // 1. Contextos Pais (Sistema, Categoria, Curso)
+        // Collect parent contexts (system, category, course) and all module contexts.
         foreach ($coursecontext->get_parent_contexts(true) as $ctx) {
             $contextstocheck[$ctx->id] = $ctx;
         }
 
-        // 2. Contextos de Módulos dentro do Curso
         $modinfo = get_fast_modinfo($COURSE);
         foreach ($modinfo->cms as $cm) {
             $modcontext = \context_module::instance($cm->id);
@@ -125,16 +120,13 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         }
 
         if (empty($categories)) {
-            // Caso não encontre nada, mostra o aviso.
-            $categories[0] = 'Nenhuma categoria de questões encontrada.';
+            $categories[0] = get_string('nocategories', 'mod_playerpuzzle');
         }
 
         $mform->addElement('select', 'questioncategory', get_string('questioncategory', 'mod_playerpuzzle'), $categories);
         $mform->setType('questioncategory', PARAM_INT);
         $mform->addRule('questioncategory', null, 'required', null, 'client');
-        // ------------------------------------------------------
 
-        // Game rules header.
         $mform->addElement('header', 'rules', get_string('rules', 'mod_playerpuzzle'));
 
         $mform->addElement('text', 'timelimit', get_string('timelimit', 'mod_playerpuzzle'));
@@ -144,12 +136,9 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $mform->addElement('text', 'maxattempts', get_string('maxattempts', 'mod_playerpuzzle'));
         $mform->setType('maxattempts', PARAM_INT);
-        $mform->setDefault('maxattempts', 0); // 0 equals unlimited.
+        $mform->setDefault('maxattempts', 0);
 
-        // Standard Moodle module elements (Grade, Common module settings, Restrict access).
         $this->standard_coursemodule_elements();
-
-        // Add standard action buttons (Save, Cancel).
         $this->add_action_buttons();
     }
 }

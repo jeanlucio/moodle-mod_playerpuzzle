@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,17 +12,17 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * The gameplay controller page.
  *
  * @package    mod_playerpuzzle
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
+require_once(__DIR__ . '/../../config.php');
 
 $id = required_param('id', PARAM_INT);
 
@@ -35,7 +35,6 @@ require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/playerpuzzle:view', $context);
 
-// Page configuration.
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));
 $PAGE->set_heading(format_string($course->fullname));
@@ -50,12 +49,11 @@ if ($ismobile) {
     $PAGE->blocks->show_only_fake_blocks();
 }
 
-// 1. ENGINE CALLS (Security).
 $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token((int)$playerpuzzle->id, (int)$USER->id);
 
-// BUSCA DE QUESTÕES E RESPOSTAS (Moodle 4.0+).
 $categoryid = (int)$playerpuzzle->questioncategory;
 
+// Phase 5: replace with question_fetcher::get_questions_for_frontend() — fraction must not reach the client.
 $sql = "SELECT q.id, q.name, q.questiontext
           FROM {question} q
           JOIN {question_versions} qv ON qv.questionid = q.id
@@ -66,15 +64,28 @@ $sql = "SELECT q.id, q.name, q.questiontext
 $questions = $DB->get_records_sql($sql, ['categoryid' => $categoryid]);
 
 if ($questions) {
+    $questionids = array_keys($questions);
+    [$insql, $inparams] = $DB->get_in_or_equal($questionids);
+    $allanswers = $DB->get_records_select(
+        'question_answers',
+        "question $insql",
+        $inparams,
+        'question, id ASC',
+        'id, question, answer, fraction'
+    );
+    foreach ($allanswers as $answer) {
+        if (!isset($questions[$answer->question]->answers)) {
+            $questions[$answer->question]->answers = [];
+        }
+        $questions[$answer->question]->answers[] = $answer;
+    }
     foreach ($questions as $q) {
-        $answers = $DB->get_records('question_answers', ['question' => $q->id], 'id ASC', 'id, answer, fraction');
-        $q->answers = $answers ? array_values($answers) : [];
+        if (!isset($q->answers)) {
+            $q->answers = [];
+        }
     }
 }
 
-// 2. JAVASCRIPT INJECTION (AMD).
-
-// AS VARIÁVEIS QUE HAVIAM SUMIDO ESTÃO AQUI DE VOLTA.
 $spriteurls = [];
 for ($i = 0; $i < 7; $i++) {
     $spriteurls[] = $OUTPUT->image_url('sprites/item' . $i, 'mod_playerpuzzle')->out(false);
@@ -83,37 +94,31 @@ for ($i = 0; $i < 7; $i++) {
 $bossbasename = str_replace('.png', '', $playerpuzzle->bossavatar);
 $bossurl = $OUTPUT->image_url('bosses/' . $bossbasename, 'mod_playerpuzzle')->out(false);
 $bgurl = $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false);
-// -------------------------------------------------------------
 
 $jsconfig = [
-    'cmid' => $cm->id,
-    'token' => $token,
-    'bosshp' => $playerpuzzle->bosshp,
+    'cmid'       => $cm->id,
+    'token'      => $token,
+    'bosshp'     => $playerpuzzle->bosshp,
     'bossdamage' => $playerpuzzle->bossdamage,
     'bossavatar' => $playerpuzzle->bossavatar,
-    'bossurl' => $bossurl,
-    'bgurl' => $bgurl,
+    'bossurl'    => $bossurl,
+    'bgurl'      => $bgurl,
     'spriteurls' => $spriteurls,
-    'questions' => array_values($questions),
-    'mobile' => $ismobile,
-    'viewurl' => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
+    'questions'  => array_values($questions),
+    'mobile'     => $ismobile,
+    'viewurl'    => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
 ];
 
-// Carrega o Phaser globalmente ANTES do nosso módulo AMD.
+// Phaser must be loaded globally before the AMD module initialises.
 $PAGE->requires->js(new moodle_url('/mod/playerpuzzle/javascript/phaser.min.js'));
-
-// O Moodle só chama o script, sem passar dados pesados por parâmetro.
 $PAGE->requires->js_call_amd('mod_playerpuzzle/game_boot', 'init', []);
 
-// 3. TEMPLATE RENDER DATA.
 $templatedata = [
-    'gametitle' => format_string($playerpuzzle->name),
+    'gametitle'  => format_string($playerpuzzle->name),
     'loadingtext' => get_string('loadinggame', 'mod_playerpuzzle'),
-    // Passamos o JSON diretamente para o HTML.
     'gameconfig' => json_encode($jsconfig),
 ];
 
-// OUTPUT.
 echo $OUTPUT->header();
 echo $OUTPUT->render_from_template('mod_playerpuzzle/game_layout', $templatedata);
 echo $OUTPUT->footer();

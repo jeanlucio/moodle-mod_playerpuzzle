@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,20 +12,21 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Version details.
+ * Plugin version and other meta-data are defined here.
  *
  * @package    mod_playerpuzzle
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_playerpuzzle';
-$plugin->version   = 2026031201; // Format: YYYYMMDDXX.
-$plugin->requires  = 2022041900; // Requires Moodle 4.0+ for Autoloading support.
+$plugin->version   = 2026031201;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->requires  = 2024100700;        // Requires: Moodle 4.5+.
+$plugin->supported = [405, 502];
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = 'v0.1.0';
+$plugin->release   = 'v0.1.0';         // User-friendly version number.

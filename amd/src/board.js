@@ -1,9 +1,9 @@
 /**
- * Board and Match-3 Module for PlayerPuzzle
+ * Board and Match-3 Module for PlayerPuzzle.
  *
  * @module     mod_playerpuzzle/board
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /* global Phaser */
@@ -35,7 +35,7 @@ define([], function() {
             this.inicializarTabuleiro();
             this.configurarInputs();
 
-            // Loop para verificar ociosidade e mostrar dicas
+            // Show a move hint after 5 s of player inactivity.
             this.scene.time.addEvent({
                 delay: 1000,
                 callback: this.verificarOciosidade,
@@ -219,14 +219,14 @@ define([], function() {
                     var p3 = this.tabuleiro[r][c + 2];
                     if (p1 && p2 && p3 && p1.tipo === p2.tipo && p2.tipo === p3.tipo) {
                         if (pecasDestruir.indexOf(p1) === -1) {
- pecasDestruir.push(p1);
-}
+                            pecasDestruir.push(p1);
+                        }
                         if (pecasDestruir.indexOf(p2) === -1) {
- pecasDestruir.push(p2);
-}
+                            pecasDestruir.push(p2);
+                        }
                         if (pecasDestruir.indexOf(p3) === -1) {
- pecasDestruir.push(p3);
-}
+                            pecasDestruir.push(p3);
+                        }
                     }
                 }
             }
@@ -240,14 +240,14 @@ define([], function() {
                     var p3 = this.tabuleiro[r + 2][c];
                     if (p1 && p2 && p3 && p1.tipo === p2.tipo && p2.tipo === p3.tipo) {
                         if (pecasDestruir.indexOf(p1) === -1) {
- pecasDestruir.push(p1);
-}
+                            pecasDestruir.push(p1);
+                        }
                         if (pecasDestruir.indexOf(p2) === -1) {
- pecasDestruir.push(p2);
-}
+                            pecasDestruir.push(p2);
+                        }
                         if (pecasDestruir.indexOf(p3) === -1) {
- pecasDestruir.push(p3);
-}
+                            pecasDestruir.push(p3);
+                        }
                     }
                 }
             }
@@ -258,13 +258,13 @@ define([], function() {
             var isMatch = function(rowP, colP) {
                 var p = ctx.tabuleiro[rowP][colP];
                 if (!p) {
- return false;
-}
+                    return false;
+                }
 
                 var tipo = p.tipo,
-countH = 1,
-countV = 1,
-tr, tc;
+                    countH = 1,
+                    countV = 1,
+                    tr, tc;
 
                 tc = colP - 1;
                 while (tc >= 0 && ctx.tabuleiro[rowP][tc] && ctx.tabuleiro[rowP][tc].tipo === tipo) {
@@ -276,8 +276,8 @@ tr, tc;
                     countH++; tc++;
                 }
                 if (countH >= 3) {
- return true;
-}
+                    return true;
+                }
 
                 tr = rowP - 1;
                 while (tr >= 0 && ctx.tabuleiro[tr][colP] && ctx.tabuleiro[tr][colP].tipo === tipo) {
@@ -306,8 +306,8 @@ tr, tc;
                         this.tabuleiro[r][c + 1].tipo = temp;
 
                         if (matchR) {
- return {p1: this.tabuleiro[r][c], p2: this.tabuleiro[r][c + 1]};
-}
+                            return {p1: this.tabuleiro[r][c], p2: this.tabuleiro[r][c + 1]};
+                        }
                     }
                     if (r < this.linhas - 1) {
                         temp = this.tabuleiro[r][c].tipo;
@@ -320,8 +320,8 @@ tr, tc;
                         this.tabuleiro[r + 1][c].tipo = temp;
 
                         if (matchD) {
- return {p1: this.tabuleiro[r][c], p2: this.tabuleiro[r + 1][c]};
-}
+                            return {p1: this.tabuleiro[r][c], p2: this.tabuleiro[r + 1][c]};
+                        }
                     }
                 }
             }
@@ -363,7 +363,7 @@ tr, tc;
 
         embaralhar() {
             var me = this.scene;
-            var aviso = me.add.text(270, 480, 'EMBARALHANDO...', {
+            var aviso = me.add.text(270, 480, 'SHUFFLING...', {
                 fontSize: '32px', fill: '#ffffff', backgroundColor: '#000000',
                 align: 'center', fontStyle: 'bold', padding: {x: 20, y: 20}
             }).setOrigin(0.5).setDepth(100);
@@ -423,8 +423,8 @@ tr, tc;
             for (col = 0; col < this.colunas; col++) {
                 for (row = this.linhas - 1; row >= 0; row--) {
                     if (this.tabuleiro[row][col] !== null) {
- continue;
-}
+                        continue;
+                    }
 
                     for (r = row - 1; r >= 0; r--) {
                         if (this.tabuleiro[r][col] !== null) {
@@ -446,8 +446,8 @@ tr, tc;
             for (col = 0; col < this.colunas; col++) {
                 for (row = 0; row < this.linhas; row++) {
                     if (this.tabuleiro[row][col] !== null) {
- continue;
-}
+                        continue;
+                    }
 
                     itemAleatorio = Math.floor(Math.random() * 7);
                     x = this.offsetX + (col * this.tamanhoPeca);
@@ -506,7 +506,6 @@ tr, tc;
 
             this.ultimaTroca = null;
 
-            // Aqui o tabuleiro avisa o combate que houve combinação
             var efeitos = me.combat.processarEfeitos(pecasParaDestruir);
             var dCausado = efeitos.dano;
 

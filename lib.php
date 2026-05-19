@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,23 +12,23 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Library of functions and constants for module playerpuzzle.
  *
  * @package    mod_playerpuzzle
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
  * Indicates API features that the playerpuzzle supports.
  *
  * @param string $feature
- * @return mixed True if yes (some features may use other values)
+ * @return bool|null True if yes, null if unknown.
  */
-function playerpuzzle_supports($feature) {
+function playerpuzzle_supports(string $feature): bool|null {
     switch ($feature) {
         case FEATURE_MOD_INTRO:
             return true;
@@ -45,16 +45,15 @@ function playerpuzzle_supports($feature) {
  * Saves a new instance of the playerpuzzle into the database.
  *
  * @param stdClass $playerpuzzle Submitted data from the form.
- * @param mod_playerpuzzle_mod_form $mform The form instance.
+ * @param ?moodleform $mform The form instance.
  * @return int The new instance id.
  */
-function playerpuzzle_add_instance($playerpuzzle, $mform = null) {
+function playerpuzzle_add_instance(stdClass $playerpuzzle, ?moodleform $mform = null): int {
     global $DB;
 
     $playerpuzzle->timecreated = time();
     $playerpuzzle->timemodified = $playerpuzzle->timecreated;
 
-    // Save to the database securely using the API.
     return $DB->insert_record('playerpuzzle', $playerpuzzle);
 }
 
@@ -62,10 +61,10 @@ function playerpuzzle_add_instance($playerpuzzle, $mform = null) {
  * Updates an instance of the playerpuzzle in the database.
  *
  * @param stdClass $playerpuzzle Submitted data from the form.
- * @param mod_playerpuzzle_mod_form $mform The form instance.
+ * @param ?moodleform $mform The form instance.
  * @return bool True if successful.
  */
-function playerpuzzle_update_instance($playerpuzzle, $mform = null) {
+function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform = null): bool {
     global $DB;
 
     $playerpuzzle->timemodified = time();
@@ -80,17 +79,14 @@ function playerpuzzle_update_instance($playerpuzzle, $mform = null) {
  * @param int $id ID of the module instance.
  * @return bool True if successful.
  */
-function playerpuzzle_delete_instance($id) {
+function playerpuzzle_delete_instance(int $id): bool {
     global $DB;
 
     if (!$playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $id])) {
         return false;
     }
 
-    // Delete related attempts first to maintain relational integrity.
     $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $playerpuzzle->id]);
-
-    // Delete the instance.
     $DB->delete_records('playerpuzzle', ['id' => $playerpuzzle->id]);
 
     return true;

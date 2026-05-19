@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,14 +12,14 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
  * Question fetcher engine for PlayerPuzzle.
  *
  * @package    mod_playerpuzzle
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace mod_playerpuzzle\local\engine;
@@ -44,7 +44,7 @@ class question_fetcher {
     public static function get_questions_for_frontend(int $categoryid, \context $context, int $limit = 10): array {
         global $DB;
 
-        // 1. Fetch only the IDs of matching questions to ensure cross-database compatibility.
+        // Fetch only IDs first to ensure cross-database compatibility.
         $sql = "SELECT q.id
                   FROM {question} q
                   JOIN {question_versions} qv ON qv.questionid = q.id
@@ -58,12 +58,9 @@ class question_fetcher {
             return [];
         }
 
-        // 2. Shuffle the IDs in PHP and pick the required amount.
         shuffle($matchingids);
         $selectedids = array_slice($matchingids, 0, $limit);
 
-        // 3. Fetch the full details of the randomly selected questions.
-        // Using the modern short array syntax for destructuring.
         [$insql, $inparams] = $DB->get_in_or_equal($selectedids);
         $fullsql = "SELECT id, qtype, questiontext, questiontextformat
                       FROM {question}
@@ -94,7 +91,7 @@ class question_fetcher {
                 }
             }
 
-            // Pack the question without the "correct_answer" field.
+            // Pack the question without the correct answer field (Blind JSON security).
             $formatted[] = [
                 'id' => $q->id,
                 'type' => $q->qtype,
@@ -116,16 +113,11 @@ class question_fetcher {
     public static function is_answer_correct(int $questionid, int $answerid): bool {
         global $DB;
 
-        // Get the fraction (score) of the chosen answer. 1.0 means 100% correct.
         $fraction = $DB->get_field('question_answers', 'fraction', [
             'id' => $answerid,
             'question' => $questionid,
         ]);
 
-        if ($fraction !== false && (float)$fraction >= 1.0) {
-            return true;
-        }
-
-        return false;
+        return $fraction !== false && (float)$fraction >= 1.0;
     }
 }

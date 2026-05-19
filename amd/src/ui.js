@@ -115,32 +115,25 @@ define(['jquery'], function($) {
             // Mobile (touch): CSS fullscreen keeps browser UI visible so the shrink button remains tappable.
             // Desktop: native Fullscreen API gives a more immersive experience.
             const isMobile = window.matchMedia('(pointer: coarse)').matches;
-            const nativeFullscreenAvailable = !isMobile && !!document.fullscreenEnabled;
+
+            if (!document.getElementById('pp-fullscreen-style')) {
+                const styleEl = document.createElement('style');
+                styleEl.id = 'pp-fullscreen-style';
+                styleEl.textContent = '#playerpuzzle-canvas-container.pp-fullscreen{' +
+                    'position:fixed!important;top:0!important;left:0!important;' +
+                    'width:100vw!important;height:100vh!important;z-index:9999!important;' +
+                    'aspect-ratio:unset!important;max-width:none!important;margin:0!important;}';
+                document.head.appendChild(styleEl);
+            }
 
             const enterCssFullscreen = () => {
-                container._origStyles = {
-                    position: container.style.position,
-                    top: container.style.top,
-                    left: container.style.left,
-                    width: container.style.width,
-                    height: container.style.height,
-                    zIndex: container.style.zIndex,
-                    aspectRatio: container.style.aspectRatio,
-                    maxWidth: container.style.maxWidth,
-                    margin: container.style.margin,
-                };
-                container.style.cssText += ';position:fixed!important;top:0!important;left:0!important;' +
-                    'width:100vw!important;height:100vh!important;z-index:9999!important;' +
-                    'aspect-ratio:unset!important;max-width:unset!important;margin:0!important;';
+                container.classList.add('pp-fullscreen');
                 container._cssFullscreen = true;
                 me.scale.refresh();
             };
 
             const exitCssFullscreen = () => {
-                if (container._origStyles) {
-                    Object.assign(container.style, container._origStyles);
-                    container._origStyles = null;
-                }
+                container.classList.remove('pp-fullscreen');
                 container._cssFullscreen = false;
                 me.scale.refresh();
             };
@@ -166,7 +159,7 @@ define(['jquery'], function($) {
                         }
                         btnFullscreen.setText('[ Expandir ]');
                     } else {
-                        if (nativeFullscreenAvailable) {
+                        if (!isMobile && document.fullscreenEnabled) {
                             me.scale.startFullscreen();
                         } else {
                             enterCssFullscreen();

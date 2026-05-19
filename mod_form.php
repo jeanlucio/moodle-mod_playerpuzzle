@@ -100,10 +100,14 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         if (!empty($validcontextids)) {
             [$insql, $params] = $DB->get_in_or_equal($validcontextids, SQL_PARAMS_NAMED);
-            $sql = "SELECT id, name, contextid
-                      FROM {question_categories}
-                     WHERE contextid $insql
-                  ORDER BY contextid, name ASC";
+            $sql = "SELECT qc.id, qc.name, qc.contextid, COUNT(qv.id) AS questioncount
+                      FROM {question_categories} qc
+                      JOIN {question_bank_entries} qbe ON qbe.questioncategoryid = qc.id
+                      JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id AND qv.status = 'ready'
+                     WHERE qc.contextid $insql
+                  GROUP BY qc.id, qc.name, qc.contextid
+                    HAVING COUNT(qv.id) > 0
+                  ORDER BY qc.contextid, qc.name ASC";
             $dbcategories = $DB->get_records_sql($sql, $params);
 
             if ($dbcategories) {
@@ -111,7 +115,8 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
                     try {
                         $catcontext = \context::instance_by_id($cat->contextid);
                         $contextname = $catcontext->get_context_name(false, true);
-                        $categories[$cat->id] = format_string($cat->name) . ' (' . $contextname . ')';
+                        $categories[$cat->id] = format_string($cat->name) .
+                            ' (' . $cat->questioncount . ') (' . $contextname . ')';
                     } catch (\Exception $e) {
                         continue;
                     }

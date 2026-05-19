@@ -39,7 +39,6 @@ body.path-mod-playerpuzzle [data-region="drawer-toggle"],
 body.path-mod-playerpuzzle .drawer-toggler,
 body.path-mod-playerpuzzle #courseindex-toggle-btn,
 body.path-mod-playerpuzzle .btn-footer-popover {
-    display: none;
 }
 
 /**

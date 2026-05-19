@@ -24,3 +24,30 @@
 .path-mod-playerpuzzle .btn-footer-popover {
     display: none !important;
 }
+
+/**
+ * Embedded layout: full-screen canvas for mobile play.
+ * !important is required to override Bootstrap 5 utility classes (border, rounded,
+ * shadow-lg) and the inline style on the canvas container, both of which use
+ * specificity or !important that cannot be beaten by selector weight alone.
+ */
+body.pagelayout-embedded .playerpuzzle-game-wrapper {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+body.pagelayout-embedded .playerpuzzle-game-wrapper h3 {
+    display: none;
+}
+
+body.pagelayout-embedded #playerpuzzle-canvas-container {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    aspect-ratio: unset !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}

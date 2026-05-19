@@ -41,9 +41,14 @@ $PAGE->set_title(format_string($playerpuzzle->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
-// Clean layout for gaming (hides blocks if the theme supports it).
-$PAGE->set_pagelayout('incourse');
-$PAGE->blocks->show_only_fake_blocks();
+$ismobile = optional_param('mobile', 0, PARAM_INT) === 1;
+
+if ($ismobile) {
+    $PAGE->set_pagelayout('embedded');
+} else {
+    $PAGE->set_pagelayout('incourse');
+    $PAGE->blocks->show_only_fake_blocks();
+}
 
 // 1. ENGINE CALLS (Security).
 $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token((int)$playerpuzzle->id, (int)$USER->id);
@@ -90,6 +95,8 @@ $jsconfig = [
     'bgurl' => $bgurl,
     'spriteurls' => $spriteurls,
     'questions' => array_values($questions),
+    'mobile' => $ismobile,
+    'viewurl' => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
 ];
 
 // Carrega o Phaser globalmente ANTES do nosso módulo AMD.

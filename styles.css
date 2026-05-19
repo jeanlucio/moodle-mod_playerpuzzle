@@ -7,6 +7,22 @@
  */
 
 /**
+ * Default canvas container: replaces inline style and Bootstrap utility classes
+ * so the embedded layout override below can work without !important.
+ */
+.pp-canvas-container {
+    width: 100%;
+    max-width: 540px;
+    aspect-ratio: 9/16;
+    margin: 0 auto;
+    overflow: hidden;
+    background-color: #1a1a1a;
+    border: 2px solid #343a40;
+    border-radius: 0.375rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+/**
  * Prevent the browser from treating touch gestures on the canvas as page scroll or zoom.
  * This allows Phaser to receive all touch events cleanly for match-3 drag interactions.
  */
@@ -17,19 +33,20 @@
 /**
  * Hide the Moodle course index / block drawer toggle button while inside the game.
  * It overlaps the canvas on mobile viewports and cannot be interacted with during gameplay.
+ * body. prefix raises specificity to (0,2,1), beating the theme's (0,2,0).
  */
-.path-mod-playerpuzzle [data-region="drawer-toggle"],
-.path-mod-playerpuzzle .drawer-toggler,
-.path-mod-playerpuzzle #courseindex-toggle-btn,
-.path-mod-playerpuzzle .btn-footer-popover {
-    display: none !important;
+body.path-mod-playerpuzzle [data-region="drawer-toggle"],
+body.path-mod-playerpuzzle .drawer-toggler,
+body.path-mod-playerpuzzle #courseindex-toggle-btn,
+body.path-mod-playerpuzzle .btn-footer-popover {
+    display: none;
 }
 
 /**
  * Embedded layout: full-screen canvas for mobile play.
- * !important is required to override Bootstrap 5 utility classes (border, rounded,
- * shadow-lg) and the inline style on the canvas container, both of which use
- * specificity or !important that cannot be beaten by selector weight alone.
+ * No inline style or Bootstrap utilities on the element means no !important needed —
+ * the ID selector here (1,1,1) beats the class selector of .pp-canvas-container (0,1,0),
+ * and the JS containerDOM.css() call is skipped when gameConfig.mobile is true.
  */
 body.pagelayout-embedded .playerpuzzle-game-wrapper {
     margin: 0;
@@ -42,14 +59,14 @@ body.pagelayout-embedded .playerpuzzle-game-wrapper h3 {
 }
 
 body.pagelayout-embedded #playerpuzzle-canvas-container {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100vh !important;
-    aspect-ratio: unset !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    aspect-ratio: unset;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 /**

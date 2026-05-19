@@ -30,10 +30,9 @@
     <h3 class="mb-3">{{gametitle}}</h3>
 
     {{! The container where Phaser.js will inject the <canvas> element. }}
-    <div id="playerpuzzle-canvas-container" class="border border-2 border-dark rounded shadow-lg"
+    <div id="playerpuzzle-canvas-container" class="pp-canvas-container"
          aria-label="{{loadingtext}}" role="application"
-         data-config="{{gameconfig}}"
-         style="width: 100%; max-width: 540px; aspect-ratio: 9/16; margin: 0 auto; overflow: hidden; background-color: #1a1a1a;">
+         data-config="{{gameconfig}}">
         <p class="text-center p-5 text-muted">{{loadingtext}}</p>
     </div>
 

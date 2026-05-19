@@ -59,7 +59,9 @@ define([
 
             var containerDOM = $('#playerpuzzle-canvas-container');
             containerDOM.find('p').remove();
-            containerDOM.css({'aspect-ratio': L.aspect, 'max-width': L.maxW, 'margin': '0 auto'});
+            if (!gameConfig.mobile) {
+                containerDOM.css({'aspect-ratio': L.aspect, 'max-width': L.maxW, 'margin': '0 auto'});
+            }
             containerDOM.append($('#playerpuzzle-modal'));
 
             // Injeta o Layout na UI e desenha a interface estática

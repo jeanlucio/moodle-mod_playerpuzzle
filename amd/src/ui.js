@@ -21,7 +21,7 @@ define(['jquery'], function($) {
                 'class="d-flex flex-column justify-content-center align-items-center" ' +
                 'style="position: absolute; top: 0; left: 0; width: 100%; ' +
                 'height: 100%; z-index: 1000; background-color: #1a1a1a;">';
-            loadingHtml += '<h3 class="text-white mb-3">Carregando recursos...</h3>';
+            loadingHtml += '<h3 class="text-white mb-3">Carregando...</h3>';
             loadingHtml += '<div class="progress w-50" style="height: 25px;">';
 
             var pBar = '<div id="pp-progress-bar" ' +

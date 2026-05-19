@@ -1,0 +1,26 @@
+/**
+ * Styles for the PlayerPuzzle activity module.
+ *
+ * @package    mod_playerpuzzle
+ * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/**
+ * Prevent the browser from treating touch gestures on the canvas as page scroll or zoom.
+ * This allows Phaser to receive all touch events cleanly for match-3 drag interactions.
+ */
+.path-mod-playerpuzzle #playerpuzzle-canvas-container canvas {
+    touch-action: none;
+}
+
+/**
+ * Hide the Moodle course index / block drawer toggle button while inside the game.
+ * It overlaps the canvas on mobile viewports and cannot be interacted with during gameplay.
+ */
+.path-mod-playerpuzzle [data-region="drawer-toggle"],
+.path-mod-playerpuzzle .drawer-toggler,
+.path-mod-playerpuzzle #courseindex-toggle-btn,
+.path-mod-playerpuzzle .btn-footer-popover {
+    display: none !important;
+}

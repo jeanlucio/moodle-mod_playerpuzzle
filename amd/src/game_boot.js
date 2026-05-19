@@ -104,11 +104,11 @@ define([
             // --- NOVA CONFIGURAÇÃO DE INPUT AQUI ---
             input: {
                 mouse: {
-                    preventDefaultWheel: false // Libera a rodinha do mouse no computador
+                    preventDefaultWheel: false
                 },
                 touch: {
-                    capture: false // Mantenha 'true' para não estragar o swipe do Match-3.
-                } // Ou mude para 'false' para liberar a rolagem de tela no celular.
+                    capture: true
+                }
             },
             // ---------------------------------------
             scene: {preload: preload, create: create}

@@ -137,21 +137,12 @@ define(['jquery'], function($) {
                 me.cameras.main.fadeOut(200, 0, 0, 0);
                 me.time.delayedCall(200, () => {
                     if (isMobile) {
-                        if (container.classList.contains('pp-fullscreen')) {
-                            container.classList.remove('pp-fullscreen');
-                            btnFullscreen.setText('[ Expandir ]');
-                            requestAnimationFrame(() => {
-                                me.scale.refresh();
-                                me.input.updateBounds();
-                            });
-                        } else {
-                            container.classList.add('pp-fullscreen');
-                            btnFullscreen.setText('[ Encolher ]');
-                            requestAnimationFrame(() => {
-                                me.scale.refresh();
-                                me.input.updateBounds();
-                            });
-                        }
+                        const expanding = !container.classList.contains('pp-fullscreen');
+                        container.classList.toggle('pp-fullscreen');
+                        btnFullscreen.setText(expanding ? '[ Encolher ]' : '[ Expandir ]');
+                        // Phaser natively handles window resize events; dispatching one
+                        // makes it recalculate the canvas size against the new container dimensions.
+                        window.dispatchEvent(new Event('resize'));
                     } else {
                         if (me.scale.isFullscreen) {
                             me.scale.stopFullscreen();

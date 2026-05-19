@@ -54,7 +54,7 @@ body.pagelayout-embedded .playerpuzzle-game-wrapper {
     overflow: hidden;
 }
 
-body.pagelayout-embedded .playerpuzzle-game-wrapper h3 {
+body.pagelayout-embedded .playerpuzzle-game-wrapper > h3 {
     display: none;
 }
 

@@ -19,6 +19,18 @@ define([
 
     var startPhaser = function(gameConfig) {
 
+        var onExitConfirm = null;
+
+        if (gameConfig.mobile) {
+            history.pushState({ppgame: true}, '');
+            window.addEventListener('popstate', function() {
+                history.pushState({ppgame: true}, '');
+                if (onExitConfirm) {
+                    onExitConfirm();
+                }
+            });
+        }
+
         var preload = function() {
             this.ui = new UIHandler(this, null, gameConfig);
             this.ui.setupLoader();
@@ -91,11 +103,9 @@ define([
             this.combat.atualizarUI();
 
             if (gameConfig.mobile) {
-                history.pushState({ppgame: true}, '');
-                window.addEventListener('popstate', function() {
-                    history.pushState({ppgame: true}, '');
+                onExitConfirm = function() {
                     me.ui.showExitConfirm();
-                });
+                };
             }
         };
 

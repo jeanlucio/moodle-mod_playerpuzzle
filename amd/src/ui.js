@@ -105,19 +105,10 @@ define(['jquery'], function($) {
             var me = this.scene;
             var L = this.L;
 
-            // Botão de Expandir Tela.
+            // Botão de Expandir Tela
             var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, '[ Expandir ]', {
                 fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setOrigin(1, 0).setInteractive().setDepth(10);
-
-            // Sync button label when user exits fullscreen via browser controls (e.g. Android back button).
-            const onFullscreenChange = () => {
-                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                    btnFullscreen.setText('[ Expandir ]');
-                }
-            };
-            document.addEventListener('fullscreenchange', onFullscreenChange);
-            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 
             btnFullscreen.on('pointerdown', () => {
                 me.cameras.main.fadeOut(200, 0, 0, 0);

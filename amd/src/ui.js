@@ -181,6 +181,11 @@ define(['jquery'], function($) {
         }
 
         showExitConfirm() {
+            if (this._confirmOpen) {
+                return;
+            }
+            this._confirmOpen = true;
+            var self = this;
             var me = this.scene;
             var L = this.L;
             var cx = L.w / 2;
@@ -209,6 +214,7 @@ define(['jquery'], function($) {
             }).setOrigin(0.5).setInteractive().setDepth(21);
 
             var cleanup = function() {
+                self._confirmOpen = false;
                 overlay.destroy();
                 txtWarn.destroy();
                 btnContinue.destroy();

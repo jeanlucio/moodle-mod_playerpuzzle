@@ -87,6 +87,14 @@ define([
 
             // Sincroniza a interface visual com os status iniciais do combate
             this.combat.atualizarUI();
+
+            if (gameConfig.mobile) {
+                history.pushState({ppgame: true}, '');
+                window.addEventListener('popstate', function() {
+                    history.pushState({ppgame: true}, '');
+                    me.ui.showExitConfirm();
+                });
+            }
         };
 
         var isDesk = window.innerWidth > window.innerHeight;

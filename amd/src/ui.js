@@ -106,25 +106,11 @@ define(['jquery'], function($) {
             var L = this.L;
 
             // Botão de Expandir Tela.
-            // Desktop: API nativa de fullscreen (mais imersivo).
-            // Mobile: expande o container via CSS para 100vw × 100vh sem esconder a UI do browser,
-            //         permitindo que o botão Encolher permaneça acessível.
-            const isMobile = window.matchMedia('(pointer: coarse)').matches;
-            const container = document.getElementById('playerpuzzle-canvas-container');
-
-            if (!document.getElementById('pp-fullscreen-style')) {
-                const styleEl = document.createElement('style');
-                styleEl.id = 'pp-fullscreen-style';
-                styleEl.textContent = '#playerpuzzle-canvas-container.pp-fullscreen{' +
-                    'position:fixed!important;top:0!important;left:0!important;' +
-                    'width:100vw!important;height:100vh!important;z-index:9999!important;}';
-                document.head.appendChild(styleEl);
-            }
-
             var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, '[ Expandir ]', {
                 fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setOrigin(1, 0).setInteractive().setDepth(10);
 
+            // Sync button label when user exits fullscreen via browser controls (e.g. Android back button).
             const onFullscreenChange = () => {
                 if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                     btnFullscreen.setText('[ Expandir ]');
@@ -136,21 +122,12 @@ define(['jquery'], function($) {
             btnFullscreen.on('pointerdown', () => {
                 me.cameras.main.fadeOut(200, 0, 0, 0);
                 me.time.delayedCall(200, () => {
-                    if (isMobile) {
-                        const expanding = !container.classList.contains('pp-fullscreen');
-                        container.classList.toggle('pp-fullscreen');
-                        btnFullscreen.setText(expanding ? '[ Encolher ]' : '[ Expandir ]');
-                        // Phaser natively handles window resize events; dispatching one
-                        // makes it recalculate the canvas size against the new container dimensions.
-                        window.dispatchEvent(new Event('resize'));
+                    if (me.scale.isFullscreen) {
+                        me.scale.stopFullscreen();
+                        btnFullscreen.setText('[ Expandir ]');
                     } else {
-                        if (me.scale.isFullscreen) {
-                            me.scale.stopFullscreen();
-                            btnFullscreen.setText('[ Expandir ]');
-                        } else {
-                            me.scale.startFullscreen();
-                            btnFullscreen.setText('[ Encolher ]');
-                        }
+                        me.scale.startFullscreen();
+                        btnFullscreen.setText('[ Encolher ]');
                     }
                     me.cameras.main.fadeIn(200, 0, 0, 0);
                 });

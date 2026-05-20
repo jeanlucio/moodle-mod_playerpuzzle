@@ -49,6 +49,7 @@ $string['questioncategory'] = 'Categoria de perguntas';
 $string['questionchallenge'] = '⚔️ Desafio Mágico!';
 $string['questionsettings'] = 'Configurações de perguntas';
 $string['rules'] = 'Regras do jogo';
+$string['skip'] = 'Pular';
 $string['timelimit'] = 'Limite de tempo (minutos)';
 $string['timelimit_help'] = 'Defina como 0 para sem limite de tempo.';
 $string['unlimited'] = 'Ilimitado';

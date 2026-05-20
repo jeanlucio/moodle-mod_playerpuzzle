@@ -49,6 +49,7 @@ $string['questioncategory'] = 'Question category';
 $string['questionchallenge'] = '⚔️ Magic Challenge!';
 $string['questionsettings'] = 'Question settings';
 $string['rules'] = 'Game rules';
+$string['skip'] = 'Skip';
 $string['timelimit'] = 'Time limit (minutes)';
 $string['timelimit_help'] = 'Set to 0 for no time limit.';
 $string['unlimited'] = 'Unlimited';

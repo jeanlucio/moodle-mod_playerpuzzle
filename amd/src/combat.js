@@ -225,6 +225,8 @@ define(['jquery'], function($) {
                     $('#playerpuzzle-pergunta-texto').html(textoDaPergunta);
                     var containerRespostas = $('#playerpuzzle-respostas-container');
                     containerRespostas.empty();
+                    $('#playerpuzzle-btn-fechar').hide().off('click');
+                    $('#playerpuzzle-btn-pular').hide().off('click');
 
                     var fecharModal = function() {
                         modalMoodle.removeClass('show').css('display', 'none');
@@ -236,87 +238,122 @@ define(['jquery'], function($) {
                         var btnClass = ctx.gameConfig.mobile
                             ? 'btn btn-outline-primary w-100 pp-answer-btn'
                             : 'btn btn-outline-primary btn-lg mb-3 w-100';
-                        perguntaSorteada.answers.forEach(function(resposta, idxHtml) {
-                            var txtLimpo = resposta.answer.replace(/(<([^>]+)>)/gi, '');
-                            var btnHTML = $('<button class="' + btnClass + '">' + txtLimpo + '</button>');
 
-                            if (quemAtivou === 'aluno') {
+                        if (quemAtivou === 'aluno') {
+                            $('#playerpuzzle-btn-pular').show().on('click', fecharModal);
+                            $('#playerpuzzle-btn-fechar').text('⚔️ Atacar!')
+                                .prop('disabled', true).show();
+
+                            var respostaSelecionada = null;
+
+                            perguntaSorteada.answers.forEach(function(resposta) {
+                                var txtLimpo = resposta.answer.replace(/(<([^>]+)>)/gi, '');
+                                var btnHTML = $('<button class="' + btnClass
+                                    + '" data-fraction="' + resposta.fraction + '">'
+                                    + txtLimpo + '</button>');
+
                                 btnHTML.on('click', function() {
-                                    if (parseFloat(resposta.fraction) > 0) {
-                                        ctx.aplicarDanoBoss(ctx.danoBase * 3 * ctx.alunoMultiplicador);
-                                        me.ui.bossSprite.setTint(0x0088ff);
-                                        me.tweens.add({
-                                            targets: me.ui.bossSprite, y: me.ui.bossSprite.y - 20,
-                                            yoyo: true, duration: 150,
-                                            onComplete: function() {
-                                                me.ui.bossSprite.clearTint();
-                                            }
-                                        });
-                                    } else {
-                                        ctx.aplicarDanoAluno(30);
-                                        ctx.alunoMultiplicador = 1;
-                                        ctx.atualizarUI();
-                                    }
-                                    $('#playerpuzzle-btn-fechar').text('Close');
-                                    fecharModal();
+                                    containerRespostas.find('button')
+                                        .removeClass('btn-warning')
+                                        .addClass('btn-outline-primary');
+                                    $(this).removeClass('btn-outline-primary').addClass('btn-warning');
+                                    respostaSelecionada = resposta;
+                                    $('#playerpuzzle-btn-fechar').prop('disabled', false);
                                 });
-                            } else {
+
+                                containerRespostas.append(btnHTML);
+                            });
+
+                            $('#playerpuzzle-btn-fechar').off('click').on('click', function() {
+                                if (!respostaSelecionada) {
+                                    return;
+                                }
+                                containerRespostas.find('button').prop('disabled', true);
+                                $('#playerpuzzle-btn-pular').hide();
+                                $('#playerpuzzle-btn-fechar').prop('disabled', true);
+
+                                var feedbackMsg;
+                                if (parseFloat(respostaSelecionada.fraction) > 0) {
+                                    containerRespostas.find('.btn-warning')
+                                        .removeClass('btn-warning').addClass('btn-success text-white');
+                                    ctx.aplicarDanoBoss(ctx.danoBase * 3 * ctx.alunoMultiplicador);
+                                    me.ui.bossSprite.setTint(0x0088ff);
+                                    me.tweens.add({
+                                        targets: me.ui.bossSprite, y: me.ui.bossSprite.y - 20,
+                                        yoyo: true, duration: 150,
+                                        onComplete: function() {
+                                            me.ui.bossSprite.clearTint();
+                                        }
+                                    });
+                                    feedbackMsg = '<div class="alert alert-success mt-2 mb-0">'
+                                        + '<strong>✓ Correct!</strong> The boss takes damage!</div>';
+                                } else {
+                                    containerRespostas.find('.btn-warning')
+                                        .removeClass('btn-warning').addClass('btn-danger text-white');
+                                    containerRespostas.find('[data-fraction]').each(function() {
+                                        if (parseFloat($(this).data('fraction')) > 0) {
+                                            $(this).removeClass('btn-outline-primary')
+                                                .addClass('btn-success text-white');
+                                        }
+                                    });
+                                    ctx.aplicarDanoAluno(30);
+                                    ctx.alunoMultiplicador = 1;
+                                    ctx.atualizarUI();
+                                    feedbackMsg = '<div class="alert alert-danger mt-2 mb-0">'
+                                        + '<strong>✗ Wrong!</strong> You take 30 damage!</div>';
+                                }
+
+                                containerRespostas.append(feedbackMsg);
+                                $('#playerpuzzle-btn-fechar').text('Continuar')
+                                    .prop('disabled', false).off('click').on('click', fecharModal);
+                            });
+
+                        } else {
+                            perguntaSorteada.answers.forEach(function(resposta, idxHtml) {
+                                var txtLimpo = resposta.answer.replace(/(<([^>]+)>)/gi, '');
+                                var btnHTML = $('<button class="' + btnClass
+                                    + '" data-fraction="' + resposta.fraction + '">'
+                                    + txtLimpo + '</button>');
+
                                 btnHTML.prop('disabled', true);
                                 if (idxHtml === indexChefe) {
                                     if (chefeAcertou) {
-                                        btnHTML.removeClass('btn-outline-primary').addClass('btn-danger text-white');
-                                        btnHTML.html('<strong>✓ ' + txtLimpo + ' (Boss answered correctly!)</strong>');
+                                        btnHTML.removeClass('btn-outline-primary')
+                                            .addClass('btn-danger text-white');
+                                        btnHTML.html('<strong>✓ ' + txtLimpo
+                                            + ' (Boss answered correctly!)</strong>');
                                     } else {
-                                        btnHTML.removeClass('btn-outline-primary').addClass('btn-secondary text-white');
-                                        btnHTML.html('<strong>✗ ' + txtLimpo + ' (Boss answered incorrectly!)</strong>');
+                                        btnHTML.removeClass('btn-outline-primary')
+                                            .addClass('btn-secondary text-white');
+                                        btnHTML.html('<strong>✗ ' + txtLimpo
+                                            + ' (Boss answered incorrectly!)</strong>');
                                     }
                                 } else {
                                     btnHTML.removeClass('btn-outline-primary').addClass('btn-light');
                                 }
+                                containerRespostas.append(btnHTML);
+                            });
+
+                            var feedbackChefe;
+                            if (chefeAcertou) {
+                                ctx.aplicarDanoAluno(ctx.danoBase * 3);
+                                feedbackChefe = '<div class="alert alert-danger mt-2 mb-0">'
+                                    + '<strong>💥 The boss answered correctly!</strong> You take '
+                                    + (ctx.danoBase * 3) + ' damage!</div>';
+                            } else {
+                                feedbackChefe = '<div class="alert alert-success mt-2 mb-0">'
+                                    + '<strong>😅 The boss answered incorrectly!</strong>'
+                                    + ' Lucky escape!</div>';
                             }
-                            containerRespostas.append(btnHTML);
-                        });
-
-                        if (quemAtivou === 'chefe') {
-                            var btnFechar = $('#playerpuzzle-btn-fechar');
-                            var tempoRestante = 15;
-                            btnFechar.show().text('Continue (' + tempoRestante + 's)');
-
-                            var executouAcao = false;
-                            var timerChefe = setInterval(function() {
-                                if (executouAcao) {
-                                    return;
-                                }
-                                tempoRestante--;
-                                if (tempoRestante > 0) {
-                                    btnFechar.text('Continue (' + tempoRestante + 's)');
-                                } else {
-                                    executarAcaoChefe();
-                                }
-                            }, 1000);
-
-                            var executarAcaoChefe = function() {
-                                if (executouAcao) {
-                                    return;
-                                }
-                                executouAcao = true;
-                                clearInterval(timerChefe);
-                                if (chefeAcertou) {
-                                    ctx.aplicarDanoAluno(ctx.danoBase * 3);
-                                }
-                                btnFechar.text('Close');
-                                fecharModal();
-                            };
-
-                            btnFechar.off('click').on('click', executarAcaoChefe);
-
-                        } else {
-                            $('#playerpuzzle-btn-fechar').text('Close').show().off('click').on('click', fecharModal);
+                            containerRespostas.append(feedbackChefe);
+                            $('#playerpuzzle-btn-fechar').text('Continuar').show()
+                                .off('click').on('click', fecharModal);
                         }
 
                     } else {
                         containerRespostas.append('<p class="text-danger">No answers available.</p>');
-                        $('#playerpuzzle-btn-fechar').text('Close').show().off('click').on('click', fecharModal);
+                        $('#playerpuzzle-btn-fechar').text('Continuar').show()
+                            .off('click').on('click', fecharModal);
                     }
 
                     modalMoodle.addClass('show').css('display', 'block');

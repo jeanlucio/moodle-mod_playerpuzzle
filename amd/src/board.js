@@ -12,9 +12,10 @@ define([], function() {
     'use strict';
 
     class BoardHandler {
-        constructor(scene, layout) {
+        constructor(scene, layout, strings) {
             this.scene = scene;
             this.L = layout;
+            this.strings = strings;
 
             this.rows = 8;
             this.cols = 8;
@@ -363,7 +364,7 @@ define([], function() {
 
         shuffle() {
             var me = this.scene;
-            var notice = me.add.text(270, 480, 'SHUFFLING...', {
+            var notice = me.add.text(this.L.w / 2, this.L.h / 2, this.strings.shuffling, {
                 fontSize: '32px', fill: '#ffffff', backgroundColor: '#000000',
                 align: 'center', fontStyle: 'bold', padding: {x: 20, y: 20}
             }).setOrigin(0.5).setDepth(100);

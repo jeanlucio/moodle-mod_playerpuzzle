@@ -11,13 +11,14 @@
 define([
     'jquery',
     'core/notification',
+    'core/str',
     'mod_playerpuzzle/ui',
     'mod_playerpuzzle/combat',
     'mod_playerpuzzle/board'
-], function($, notification, UIHandler, CombatHandler, BoardHandler) {
+], function($, notification, Str, UIHandler, CombatHandler, BoardHandler) {
     'use strict';
 
-    var startPhaser = function(gameConfig) {
+    var startPhaser = function(gameConfig, strings) {
 
         var onExitConfirm = null;
 
@@ -32,7 +33,7 @@ define([
         }
 
         var preload = function() {
-            this.ui = new UIHandler(this, null, gameConfig);
+            this.ui = new UIHandler(this, null, gameConfig, strings);
             this.ui.setupLoader();
 
             this.load.image('bg', gameConfig.bgurl);
@@ -93,8 +94,8 @@ define([
                 });
             }
 
-            this.combat = new CombatHandler(this, gameConfig);
-            this.board = new BoardHandler(this, L);
+            this.combat = new CombatHandler(this, gameConfig, strings);
+            this.board = new BoardHandler(this, L, strings);
 
             this.combat.updateUI();
 
@@ -147,7 +148,30 @@ define([
                         if (PhaserObj) {
                             window.Phaser = PhaserObj;
                         }
-                        startPhaser(config);
+
+                        var strKeys = [
+                            'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
+                            'bosstrigger', 'bosswrongfeedback', 'btnattack', 'btncontinue',
+                            'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
+                            'coinscollected', 'defeat', 'exitwarning', 'expand',
+                            'hpboss', 'hpyou', 'loading', 'maxmultiplier',
+                            'musicoff', 'musicon', 'noanswers', 'playercorrect',
+                            'playerwrong', 'progresssaved', 'questionerror', 'saveerror',
+                            'savingprogress', 'sfxoff', 'sfxon', 'shrink', 'shuffling', 'victory'
+                        ];
+
+                        Str.get_strings(strKeys.map(function(key) {
+                            return {key: key, component: 'mod_playerpuzzle'};
+                        })).then(function(values) {
+                            var strings = {};
+                            strKeys.forEach(function(key, i) {
+                                strings[key] = values[i];
+                            });
+                            startPhaser(config, strings);
+                            return true;
+                        }).catch(function(err) {
+                            notification.exception(err);
+                        });
                     }, function(err) {
                         var msg = '<p class="text-danger">Critical RequireJS error.</p>';
                         $('#playerpuzzle-canvas-container').html(msg);

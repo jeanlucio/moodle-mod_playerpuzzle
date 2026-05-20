@@ -10,10 +10,11 @@ define(['jquery'], function($) {
     'use strict';
 
     class UIHandler {
-        constructor(scene, layout, gameConfig) {
+        constructor(scene, layout, gameConfig, strings) {
             this.scene = scene;
             this.L = layout;
             this.gameConfig = gameConfig;
+            this.strings = strings;
         }
 
         setupLoader() {
@@ -21,7 +22,7 @@ define(['jquery'], function($) {
                 'class="d-flex flex-column justify-content-center align-items-center" ' +
                 'style="position: absolute; top: 0; left: 0; width: 100%; ' +
                 'height: 100%; z-index: 1000; background-color: #1a1a1a;">';
-            loadingHtml += '<h3 class="text-white mb-3">Loading...</h3>';
+            loadingHtml += '<h3 class="text-white mb-3">' + this.strings.loading + '</h3>';
             loadingHtml += '<div class="progress w-50" style="height: 25px;">';
 
             var pBar = '<div id="pp-progress-bar" ' +
@@ -99,14 +100,15 @@ define(['jquery'], function($) {
         setupButtons() {
             var me = this.scene;
             var L = this.L;
+            var strings = this.strings;
 
             if (this.gameConfig.mobile) {
-                var btnExit = me.add.text(L.btnExpX, L.btnExpY, '✕ Exit', {
+                var btnExit = me.add.text(L.btnExpX, L.btnExpY, strings.btnexit, {
                     fontSize: '20px', fill: '#ffffff', backgroundColor: '#882222', padding: {x: 8, y: 8}
                 }).setOrigin(1, 0).setInteractive().setDepth(10);
                 btnExit.on('pointerdown', () => this.showExitConfirm());
             } else {
-                var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, '[ Expand ]', {
+                var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, strings.expand, {
                     fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
                 }).setOrigin(1, 0).setInteractive().setDepth(10);
 
@@ -115,10 +117,10 @@ define(['jquery'], function($) {
                     me.time.delayedCall(200, () => {
                         if (me.scale.isFullscreen) {
                             me.scale.stopFullscreen();
-                            btnFullscreen.setText('[ Expand ]');
+                            btnFullscreen.setText(this.strings.expand);
                         } else {
                             me.scale.startFullscreen();
-                            btnFullscreen.setText('[ Shrink ]');
+                            btnFullscreen.setText(this.strings.shrink);
                         }
                         me.cameras.main.fadeIn(200, 0, 0, 0);
                     });
@@ -128,17 +130,17 @@ define(['jquery'], function($) {
             me.musicOn = true;
             me.sfxOn = true;
 
-            var btnMusic = me.add.text(20, 20, '🎵 Music', {
+            var btnMusic = me.add.text(20, 20, strings.musicon, {
                 fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setInteractive().setDepth(10);
 
-            var btnSfx = me.add.text(120, 20, '🔊 Effects', {
+            var btnSfx = me.add.text(120, 20, strings.sfxon, {
                 fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setInteractive().setDepth(10);
 
             btnMusic.on('pointerdown', function() {
                 me.musicOn = !me.musicOn;
-                btnMusic.setText(me.musicOn ? '🎵 Music' : '🔇 Music');
+                btnMusic.setText(me.musicOn ? strings.musicon : strings.musicoff);
                 btnMusic.setStyle({fill: me.musicOn ? '#ffffff' : '#aaaaaa'});
                 if (me.musicOn) {
                     me.bgMusic.resume();
@@ -149,7 +151,7 @@ define(['jquery'], function($) {
 
             btnSfx.on('pointerdown', function() {
                 me.sfxOn = !me.sfxOn;
-                btnSfx.setText(me.sfxOn ? '🔊 Effects' : '🔈 Effects');
+                btnSfx.setText(me.sfxOn ? strings.sfxon : strings.sfxoff);
                 btnSfx.setStyle({fill: me.sfxOn ? '#ffffff' : '#aaaaaa'});
                 var vol = me.sfxOn ? 1 : 0;
                 me.sfxSwap.setVolume(0.6 * vol);
@@ -163,7 +165,7 @@ define(['jquery'], function($) {
             this.bossHpBar.clear()
                 .fillStyle(0xdd0000, 1)
                 .fillRect(this.L.bossUiX + 2, this.L.bossHpY + 2, 296 * pctHp, 18);
-            this.bossHpText.setText('Boss: ' + Math.round(currentHp));
+            this.bossHpText.setText(this.strings.hpboss + ' ' + Math.round(currentHp));
 
             var pctMana = Math.min(1, mana / 100);
             this.bossManaBar.clear()
@@ -194,15 +196,15 @@ define(['jquery'], function($) {
             overlay.fillStyle(0x222222, 1);
             overlay.fillRoundedRect(boxX, boxY, boxW, boxH, 16);
 
-            var txtWarn = me.add.text(cx, boxY + 55, 'Quitting now will\nlose your progress!', {
+            var txtWarn = me.add.text(cx, boxY + 55, this.strings.exitwarning, {
                 fontSize: '20px', fill: '#ffcc00', align: 'center'
             }).setOrigin(0.5).setDepth(21);
 
-            var btnContinue = me.add.text(cx - 70, boxY + 145, 'Continue', {
+            var btnContinue = me.add.text(cx - 70, boxY + 145, this.strings.btncontinue, {
                 fontSize: '18px', fill: '#ffffff', backgroundColor: '#224488', padding: {x: 14, y: 10}
             }).setOrigin(0.5).setInteractive().setDepth(21);
 
-            var btnConfirmExit = me.add.text(cx + 70, boxY + 145, 'Quit', {
+            var btnConfirmExit = me.add.text(cx + 70, boxY + 145, this.strings.btnquit, {
                 fontSize: '18px', fill: '#ffffff', backgroundColor: '#882222', padding: {x: 22, y: 10}
             }).setOrigin(0.5).setInteractive().setDepth(21);
 
@@ -230,7 +232,9 @@ define(['jquery'], function($) {
             this.playerHpBar.clear()
                 .fillStyle(0x00cc00, 1)
                 .fillRect(this.L.playerUiX + 2, this.L.playerHpY + 2, 296 * pctHp, 18);
-            this.playerHpText.setText('You: ' + Math.round(currentHp) + ' / ' + maxHp);
+            this.playerHpText.setText(
+                this.strings.hpyou + ' ' + Math.round(currentHp) + ' / ' + maxHp
+            );
 
             var pctMana = Math.min(1, mana / 100);
             this.playerManaBar.clear()

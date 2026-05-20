@@ -10,9 +10,10 @@ define(['jquery'], function($) {
     'use strict';
 
     class CombatHandler {
-        constructor(scene, gameConfig) {
+        constructor(scene, gameConfig, strings) {
             this.scene = scene;
             this.gameConfig = gameConfig;
+            this.strings = strings;
 
             this.baseDamage = parseInt(gameConfig.bossdamage) || 10;
             this.currentTurn = 'player';
@@ -181,7 +182,7 @@ define(['jquery'], function($) {
                 var modalMoodle = $('#playerpuzzle-modal');
 
                 if (modalMoodle.length > 0) {
-                    var question = {name: 'Notice', questiontext: 'Question error.'};
+                    var question = {name: 'Notice', questiontext: ctx.strings.questionerror};
                     if (ctx.gameConfig.questions && ctx.gameConfig.questions.length > 0) {
                         var idx = Math.floor(Math.random() * ctx.gameConfig.questions.length);
                         question = ctx.gameConfig.questions[idx];
@@ -223,7 +224,7 @@ define(['jquery'], function($) {
                         }
 
                         var bossWarning = '<span class="text-danger fw-bold">'
-                            + '👹 The boss triggered a question!</span><br><br>';
+                            + ctx.strings.bosstrigger + '</span><br><br>';
                         questionText = bossWarning + questionText;
                     }
 
@@ -246,7 +247,7 @@ define(['jquery'], function($) {
 
                         if (trigger === 'player') {
                             $('#playerpuzzle-btn-pular').show().on('click', closeModal);
-                            $('#playerpuzzle-btn-fechar').text('⚔️ Atacar!')
+                            $('#playerpuzzle-btn-fechar').text(ctx.strings.btnattack)
                                 .prop('disabled', true).show();
 
                             var selectedAnswer = null;
@@ -290,8 +291,8 @@ define(['jquery'], function($) {
                                             me.ui.bossSprite.clearTint();
                                         }
                                     });
-                                    feedbackMsg = '<div class="alert alert-success mt-2 mb-0">'
-                                        + '<strong>✓ Correct!</strong> The boss takes damage!</div>';
+                                    feedbackMsg = '<div class="alert alert-success mt-2 mb-0"><strong>'
+                                        + ctx.strings.playercorrect + '</strong></div>';
                                 } else {
                                     answersContainer.find('.btn-warning')
                                         .removeClass('btn-warning').addClass('btn-danger text-white');
@@ -304,12 +305,13 @@ define(['jquery'], function($) {
                                     ctx.applyDamageToPlayer(30);
                                     ctx.playerMultiplier = 1;
                                     ctx.updateUI();
-                                    feedbackMsg = '<div class="alert alert-danger mt-2 mb-0">'
-                                        + '<strong>✗ Wrong!</strong> You take 30 damage!</div>';
+                                    feedbackMsg = '<div class="alert alert-danger mt-2 mb-0"><strong>'
+                                        + ctx.strings.playerwrong.replace('{$a}', 30)
+                                        + '</strong></div>';
                                 }
 
                                 answersContainer.append(feedbackMsg);
-                                $('#playerpuzzle-btn-fechar').text('Continuar')
+                                $('#playerpuzzle-btn-fechar').text(ctx.strings.btncontinue)
                                     .prop('disabled', false).off('click').on('click', closeModal);
                             });
 
@@ -325,13 +327,15 @@ define(['jquery'], function($) {
                                     if (bossCorrect) {
                                         btn.removeClass('btn-outline-primary')
                                             .addClass('btn-danger text-white');
-                                        btn.html('<strong>✓ ' + cleanText
-                                            + ' (Boss answered correctly!)</strong>');
+                                        btn.html('<strong>'
+                                            + ctx.strings.bossansweredcorrect.replace('{$a}', cleanText)
+                                            + '</strong>');
                                     } else {
                                         btn.removeClass('btn-outline-primary')
                                             .addClass('btn-secondary text-white');
-                                        btn.html('<strong>✗ ' + cleanText
-                                            + ' (Boss answered incorrectly!)</strong>');
+                                        btn.html('<strong>'
+                                            + ctx.strings.bossansweredwrong.replace('{$a}', cleanText)
+                                            + '</strong>');
                                     }
                                 } else {
                                     btn.removeClass('btn-outline-primary').addClass('btn-light');
@@ -342,22 +346,23 @@ define(['jquery'], function($) {
                             var bossFeedback;
                             if (bossCorrect) {
                                 ctx.applyDamageToPlayer(ctx.baseDamage * 3);
-                                bossFeedback = '<div class="alert alert-danger mt-2 mb-0">'
-                                    + '<strong>💥 The boss answered correctly!</strong> You take '
-                                    + (ctx.baseDamage * 3) + ' damage!</div>';
+                                bossFeedback = '<div class="alert alert-danger mt-2 mb-0"><strong>'
+                                    + ctx.strings.bosscorrectfeedback.replace('{$a}', ctx.baseDamage * 3)
+                                    + '</strong></div>';
                             } else {
-                                bossFeedback = '<div class="alert alert-success mt-2 mb-0">'
-                                    + '<strong>😅 The boss answered incorrectly!</strong>'
-                                    + ' Lucky escape!</div>';
+                                bossFeedback = '<div class="alert alert-success mt-2 mb-0"><strong>'
+                                    + ctx.strings.bosswrongfeedback + '</strong></div>';
                             }
                             answersContainer.append(bossFeedback);
-                            $('#playerpuzzle-btn-fechar').text('Continuar').show()
+                            $('#playerpuzzle-btn-fechar').text(ctx.strings.btncontinue).show()
                                 .off('click').on('click', closeModal);
                         }
 
                     } else {
-                        answersContainer.append('<p class="text-danger">No answers available.</p>');
-                        $('#playerpuzzle-btn-fechar').text('Continuar').show()
+                        answersContainer.append(
+                            '<p class="text-danger">' + ctx.strings.noanswers + '</p>'
+                        );
+                        $('#playerpuzzle-btn-fechar').text(ctx.strings.btncontinue).show()
                             .off('click').on('click', closeModal);
                     }
 
@@ -371,28 +376,33 @@ define(['jquery'], function($) {
 
         showEndScreen(victory) {
             var me = this.scene;
+            var strings = this.strings;
             me.input.enabled = false;
             me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
 
-            var msg = victory ? '🌟 VICTORY! 🌟' : '💀 DEFEAT 💀';
+            var msg = victory ? strings.victory : strings.defeat;
             var colorClass = victory ? 'text-success' : 'text-danger';
 
-            var statsHtml = '<p class="lead text-white mb-4">Coins collected: ';
-            statsHtml += '<strong class="text-warning">' + this.playerGold + '</strong><br>';
-            statsHtml += 'Max multiplier: <strong class="text-info">x'
+            var statsHtml = '<p class="lead text-white mb-4">' + strings.coinscollected;
+            statsHtml += ' <strong class="text-warning">' + this.playerGold + '</strong><br>';
+            statsHtml += strings.maxmultiplier + ' <strong class="text-info">x'
                 + this.playerMultiplier.toFixed(1) + '</strong></p>';
-            statsHtml += '<p id="pp-save-status" class="text-muted small">Saving progress...</p>';
+            statsHtml += '<p id="pp-save-status" class="text-muted small">'
+                + strings.savingprogress + '</p>';
 
             var overlayHtml = '<div id="playerpuzzle-gameover" ' +
                 'class="d-flex flex-column justify-content-center align-items-center" ' +
                 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;' +
                 ' z-index: 1000; text-align: center;">';
-            overlayHtml += '<h1 class="display-4 fw-bold ' + colorClass + ' mb-3">' + msg + '</h1>' + statsHtml;
+            overlayHtml += '<h1 class="display-4 fw-bold ' + colorClass + ' mb-3">' + msg + '</h1>'
+                + statsHtml;
             overlayHtml += '<div class="mt-2 d-flex flex-wrap justify-content-center gap-3">';
-            overlayHtml += '<button id="btn-pp-restart" disabled ' +
-                'class="btn btn-primary btn-lg fw-bold shadow">🎮 Play again</button>';
-            overlayHtml += '<button id="btn-pp-exit" disabled ' +
-                'class="btn btn-secondary btn-lg fw-bold shadow">🚪 Exit game</button>';
+            overlayHtml += '<button id="btn-pp-restart" disabled '
+                + 'class="btn btn-primary btn-lg fw-bold shadow">'
+                + strings.btnplayagain + '</button>';
+            overlayHtml += '<button id="btn-pp-exit" disabled '
+                + 'class="btn btn-secondary btn-lg fw-bold shadow">'
+                + strings.btnexitgame + '</button>';
             overlayHtml += '</div></div>';
 
             $('#playerpuzzle-canvas-container').css('position', 'relative').append(overlayHtml);
@@ -409,14 +419,15 @@ define(['jquery'], function($) {
                 .done(function(respostaStr) {
                     var res = JSON.parse(respostaStr);
                     if (res.status === 'success') {
-                        var successMsg = 'Progress saved! (Total coins: ' + res.totalcoins + ')';
-                        $('#pp-save-status').removeClass('text-muted').addClass('text-success').text(successMsg);
+                        var successMsg = strings.progresssaved.replace('{$a}', res.totalcoins);
+                        $('#pp-save-status').removeClass('text-muted').addClass('text-success')
+                            .text(successMsg);
                         $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
                     }
                 })
                 .fail(function() {
                     $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
-                        .text('Error saving to server.');
+                        .text(strings.saveerror);
                     $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
                 });
 

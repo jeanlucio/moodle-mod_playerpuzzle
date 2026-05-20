@@ -11,6 +11,7 @@
  * so the embedded layout override below can work without !important.
  */
 .pp-canvas-container {
+    position: relative;
     width: 100%;
     max-width: 540px;
     aspect-ratio: 9/16;
@@ -56,6 +57,60 @@ body.pagelayout-embedded .playerpuzzle-game-wrapper {
 
 body.pagelayout-embedded .playerpuzzle-game-wrapper > h3 {
     display: none;
+}
+
+/**
+ * Loading screen overlay: replaces inline style injected by setupLoader().
+ * Covers the canvas container while Phaser assets load.
+ */
+#pp-bootstrap-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    background-color: #1a1a1a;
+}
+
+.pp-loader-progress {
+    height: 25px;
+    width: 50%;
+}
+
+#pp-progress-bar {
+    width: 0%;
+}
+
+/**
+ * Game over overlay: replaces inline style injected by showEndScreen().
+ */
+#playerpuzzle-gameover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    text-align: center;
+}
+
+/**
+ * Gameover action buttons: replaces Bootstrap 5-only gap-3 utility.
+ */
+.pp-gameover-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+/**
+ * Bold title for gameover and boss-trigger warning: replaces fw-bold (BS5-only).
+ */
+.pp-bold {
+    font-weight: bold;
 }
 
 body.pagelayout-embedded #playerpuzzle-canvas-container {

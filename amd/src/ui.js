@@ -18,40 +18,24 @@ define(['jquery'], function($) {
         }
 
         setupLoader() {
-            var loadingHtml = '<div id="pp-bootstrap-loader" ' +
-                'class="d-flex flex-column justify-content-center align-items-center" ' +
-                'style="position: absolute; top: 0; left: 0; width: 100%; ' +
-                'height: 100%; z-index: 1000; background-color: #1a1a1a;">';
-            loadingHtml += '<h3 class="text-white mb-3">' + this.strings.loading + '</h3>';
-            loadingHtml += '<div class="progress w-50" style="height: 25px;">';
-
-            var pBar = '<div id="pp-progress-bar" ' +
-                'class="progress-bar progress-bar-striped progress-bar-animated bg-primary" ' +
-                'role="progressbar" style="width: 0%;" aria-valuenow="0" ' +
-                'aria-valuemin="0" aria-valuemax="100">0%</div>';
-
-            loadingHtml += pBar + '</div></div>';
-
-            $('#playerpuzzle-canvas-container').css('position', 'relative').append(loadingHtml);
-
-            this.scene.load.on('progress', function(value) {
-                var percent = parseInt(value * 100);
+            this.scene.load.on('progress', value => {
+                const percent = parseInt(value * 100);
                 $('#pp-progress-bar')
-                    .css('width', percent + '%')
+                    .css('width', `${percent}%`)
                     .attr('aria-valuenow', percent)
-                    .text(percent + '%');
+                    .text(`${percent}%`);
             });
 
-            this.scene.load.on('complete', function() {
-                $('#pp-bootstrap-loader').fadeOut(300, function() {
-                    $(this).remove();
+            this.scene.load.on('complete', () => {
+                $('#pp-bootstrap-loader').fadeOut(300, () => {
+                    $('#pp-bootstrap-loader').remove();
                 });
             });
         }
 
         setupStaticUI() {
-            var me = this.scene;
-            var L = this.L;
+            const me = this.scene;
+            const L = this.L;
 
             me.add.image(L.bgX, L.bgY, 'bg').setDisplaySize(L.bgW, L.bgH);
 
@@ -62,9 +46,9 @@ define(['jquery'], function($) {
                 .setOrigin(0.5)
                 .setAlpha(0);
 
-            var styleShield = {fontSize: '16px', fill: '#aaaaff', fontStyle: 'bold'};
-            var styleGold = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
-            var styleStar = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
+            const styleShield = {fontSize: '16px', fill: '#aaaaff', fontStyle: 'bold'};
+            const styleGold = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
+            const styleStar = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
 
             this.txtShield = me.add.text(L.shieldX, L.playerHpY + 40, '🛡️: 0', styleShield);
             this.txtGold = me.add.text(L.goldX, L.playerHpY + 40, '🪙: 0', styleGold)
@@ -98,17 +82,17 @@ define(['jquery'], function($) {
         }
 
         setupButtons() {
-            var me = this.scene;
-            var L = this.L;
-            var strings = this.strings;
+            const me = this.scene;
+            const L = this.L;
+            const strings = this.strings;
 
             if (this.gameConfig.mobile) {
-                var btnExit = me.add.text(L.btnExpX, L.btnExpY, strings.btnexit, {
+                const btnExit = me.add.text(L.btnExpX, L.btnExpY, strings.btnexit, {
                     fontSize: '20px', fill: '#ffffff', backgroundColor: '#882222', padding: {x: 8, y: 8}
                 }).setOrigin(1, 0).setInteractive().setDepth(10);
                 btnExit.on('pointerdown', () => this.showExitConfirm());
             } else {
-                var btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, strings.expand, {
+                const btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, strings.expand, {
                     fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
                 }).setOrigin(1, 0).setInteractive().setDepth(10);
 
@@ -130,15 +114,15 @@ define(['jquery'], function($) {
             me.musicOn = true;
             me.sfxOn = true;
 
-            var btnMusic = me.add.text(20, 20, strings.musicon, {
+            const btnMusic = me.add.text(20, 20, strings.musicon, {
                 fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setInteractive().setDepth(10);
 
-            var btnSfx = me.add.text(120, 20, strings.sfxon, {
+            const btnSfx = me.add.text(120, 20, strings.sfxon, {
                 fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setInteractive().setDepth(10);
 
-            btnMusic.on('pointerdown', function() {
+            btnMusic.on('pointerdown', () => {
                 me.musicOn = !me.musicOn;
                 btnMusic.setText(me.musicOn ? strings.musicon : strings.musicoff);
                 btnMusic.setStyle({fill: me.musicOn ? '#ffffff' : '#aaaaaa'});
@@ -149,11 +133,11 @@ define(['jquery'], function($) {
                 }
             });
 
-            btnSfx.on('pointerdown', function() {
+            btnSfx.on('pointerdown', () => {
                 me.sfxOn = !me.sfxOn;
                 btnSfx.setText(me.sfxOn ? strings.sfxon : strings.sfxoff);
                 btnSfx.setStyle({fill: me.sfxOn ? '#ffffff' : '#aaaaaa'});
-                var vol = me.sfxOn ? 1 : 0;
+                const vol = me.sfxOn ? 1 : 0;
                 me.sfxSwap.setVolume(0.6 * vol);
                 me.sfxMatch.setVolume(0.5 * vol);
                 me.sfxHit.setVolume(0.8 * vol);
@@ -161,13 +145,13 @@ define(['jquery'], function($) {
         }
 
         updateBossBar(currentHp, maxHp, mana, poisonTurns) {
-            var pctHp = Math.max(0, currentHp / maxHp);
+            const pctHp = Math.max(0, currentHp / maxHp);
             this.bossHpBar.clear()
                 .fillStyle(0xdd0000, 1)
                 .fillRect(this.L.bossUiX + 2, this.L.bossHpY + 2, 296 * pctHp, 18);
-            this.bossHpText.setText(this.strings.hpboss + ' ' + Math.round(currentHp));
+            this.bossHpText.setText(`${this.strings.hpboss} ${Math.round(currentHp)}`);
 
-            var pctMana = Math.min(1, mana / 100);
+            const pctMana = Math.min(1, mana / 100);
             this.bossManaBar.clear()
                 .fillStyle(0x0088ff, 1)
                 .fillRect(this.L.bossUiX + 2, this.L.bossManaY + 1, 296 * pctMana, 6);
@@ -180,36 +164,35 @@ define(['jquery'], function($) {
                 return;
             }
             this._confirmOpen = true;
-            var self = this;
-            var me = this.scene;
-            var L = this.L;
-            var cx = L.w / 2;
-            var cy = L.h / 2;
-            var boxW = Math.round(L.w * 0.78);
-            var boxH = 200;
-            var boxX = cx - boxW / 2;
-            var boxY = cy - boxH / 2;
+            const me = this.scene;
+            const L = this.L;
+            const cx = L.w / 2;
+            const cy = L.h / 2;
+            const boxW = Math.round(L.w * 0.78);
+            const boxH = 200;
+            const boxX = cx - boxW / 2;
+            const boxY = cy - boxH / 2;
 
-            var overlay = me.add.graphics().setDepth(20);
+            const overlay = me.add.graphics().setDepth(20);
             overlay.fillStyle(0x000000, 0.75);
             overlay.fillRect(0, 0, L.w, L.h);
             overlay.fillStyle(0x222222, 1);
             overlay.fillRoundedRect(boxX, boxY, boxW, boxH, 16);
 
-            var txtWarn = me.add.text(cx, boxY + 55, this.strings.exitwarning, {
+            const txtWarn = me.add.text(cx, boxY + 55, this.strings.exitwarning, {
                 fontSize: '20px', fill: '#ffcc00', align: 'center'
             }).setOrigin(0.5).setDepth(21);
 
-            var btnContinue = me.add.text(cx - 70, boxY + 145, this.strings.btncontinue, {
+            const btnContinue = me.add.text(cx - 70, boxY + 145, this.strings.btncontinue, {
                 fontSize: '18px', fill: '#ffffff', backgroundColor: '#224488', padding: {x: 14, y: 10}
             }).setOrigin(0.5).setInteractive().setDepth(21);
 
-            var btnConfirmExit = me.add.text(cx + 70, boxY + 145, this.strings.btnquit, {
+            const btnConfirmExit = me.add.text(cx + 70, boxY + 145, this.strings.btnquit, {
                 fontSize: '18px', fill: '#ffffff', backgroundColor: '#882222', padding: {x: 22, y: 10}
             }).setOrigin(0.5).setInteractive().setDepth(21);
 
-            var cleanup = function() {
-                self._confirmOpen = false;
+            const cleanup = () => {
+                this._confirmOpen = false;
                 overlay.destroy();
                 txtWarn.destroy();
                 btnContinue.destroy();
@@ -218,32 +201,32 @@ define(['jquery'], function($) {
 
             btnContinue.on('pointerdown', cleanup);
 
-            var viewurl = this.gameConfig.viewurl;
-            btnConfirmExit.on('pointerdown', function() {
+            const viewurl = this.gameConfig.viewurl;
+            btnConfirmExit.on('pointerdown', () => {
                 window.close();
-                setTimeout(function() {
+                setTimeout(() => {
                     window.location.href = viewurl;
                 }, 300);
             });
         }
 
         updatePlayerBar(currentHp, maxHp, mana, shield, gold, multiplier) {
-            var pctHp = Math.max(0, currentHp / maxHp);
+            const pctHp = Math.max(0, currentHp / maxHp);
             this.playerHpBar.clear()
                 .fillStyle(0x00cc00, 1)
                 .fillRect(this.L.playerUiX + 2, this.L.playerHpY + 2, 296 * pctHp, 18);
             this.playerHpText.setText(
-                this.strings.hpyou + ' ' + Math.round(currentHp) + ' / ' + maxHp
+                `${this.strings.hpyou} ${Math.round(currentHp)} / ${maxHp}`
             );
 
-            var pctMana = Math.min(1, mana / 100);
+            const pctMana = Math.min(1, mana / 100);
             this.playerManaBar.clear()
                 .fillStyle(0x0088ff, 1)
                 .fillRect(this.L.playerUiX + 2, this.L.playerManaY + 1, 296 * pctMana, 6);
 
-            this.txtShield.setText('🛡️: ' + shield);
-            this.txtGold.setText('🪙: ' + gold);
-            this.txtStar.setText('⭐x' + multiplier.toFixed(1));
+            this.txtShield.setText(`🛡️: ${shield}`);
+            this.txtGold.setText(`🪙: ${gold}`);
+            this.txtStar.setText(`⭐x${multiplier.toFixed(1)}`);
         }
     }
 

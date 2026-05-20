@@ -46,18 +46,18 @@ define([], function() {
         }
 
         drawBackground() {
-            var graphics = this.scene.add.graphics();
-            var gridWidth = this.cols * this.pieceSize;
-            var gridHeight = this.rows * this.pieceSize;
-            var rx = this.offsetX - (this.pieceSize / 2);
-            var ry = this.offsetY - (this.pieceSize / 2);
+            const graphics = this.scene.add.graphics();
+            const gridWidth = this.cols * this.pieceSize;
+            const gridHeight = this.rows * this.pieceSize;
+            const rx = this.offsetX - (this.pieceSize / 2);
+            const ry = this.offsetY - (this.pieceSize / 2);
 
             graphics.fillStyle(0x000000, 0.85).fillRect(rx, ry, gridWidth, gridHeight);
             graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, gridWidth, gridHeight);
             graphics.lineStyle(2, 0x333333, 0.4);
             graphics.beginPath();
 
-            for (var i = 1; i < this.rows; i++) {
+            for (let i = 1; i < this.rows; i++) {
                 graphics.moveTo(rx, ry + (i * this.pieceSize));
                 graphics.lineTo(rx + gridWidth, ry + (i * this.pieceSize));
                 graphics.moveTo(rx + (i * this.pieceSize), ry);
@@ -67,11 +67,11 @@ define([], function() {
         }
 
         initGrid() {
-            var me = this.scene;
-            for (var row = 0; row < this.rows; row++) {
+            const me = this.scene;
+            for (let row = 0; row < this.rows; row++) {
                 this.grid[row] = [];
-                for (var col = 0; col < this.cols; col++) {
-                    var randomType, hasMatch;
+                for (let col = 0; col < this.cols; col++) {
+                    let randomType, hasMatch;
                     do {
                         randomType = Math.floor(Math.random() * 7);
                         hasMatch = false;
@@ -86,10 +86,10 @@ define([], function() {
                         }
                     } while (hasMatch);
 
-                    var x = this.offsetX + (col * this.pieceSize);
-                    var y = this.offsetY + (row * this.pieceSize);
+                    const x = this.offsetX + (col * this.pieceSize);
+                    const y = this.offsetY + (row * this.pieceSize);
 
-                    var piece = me.add.image(x, y, 'item' + randomType);
+                    const piece = me.add.image(x, y, `item${randomType}`);
                     piece.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
                     piece.type = randomType;
                     piece.row = row;
@@ -103,25 +103,24 @@ define([], function() {
         }
 
         setupInputs() {
-            var ctx = this;
-            this.scene.input.on('pointerup', function(pointer) {
-                if (ctx.scene.combat.currentTurn !== 'player' || ctx.swipePiece === null) {
+            this.scene.input.on('pointerup', pointer => {
+                if (this.scene.combat.currentTurn !== 'player' || this.swipePiece === null) {
                     return;
                 }
 
-                ctx.swipePiece.clearTint();
-                var dx = pointer.x - ctx.startX;
-                var dy = pointer.y - ctx.startY;
-                var threshold = 20;
+                this.swipePiece.clearTint();
+                const dx = pointer.x - this.startX;
+                const dy = pointer.y - this.startY;
+                const threshold = 20;
 
                 if (Math.abs(dx) <= threshold && Math.abs(dy) <= threshold) {
-                    ctx.handleClick(ctx.swipePiece);
-                    ctx.swipePiece = null;
+                    this.handleClick(this.swipePiece);
+                    this.swipePiece = null;
                     return;
                 }
 
-                var tRow = ctx.swipePiece.row;
-                var tCol = ctx.swipePiece.col;
+                let tRow = this.swipePiece.row;
+                let tCol = this.swipePiece.col;
 
                 if (Math.abs(dx) > Math.abs(dy)) {
                     tCol += (dx > 0) ? 1 : -1;
@@ -129,13 +128,13 @@ define([], function() {
                     tRow += (dy > 0) ? 1 : -1;
                 }
 
-                if (tRow >= 0 && tRow < ctx.rows && tCol >= 0 && tCol < ctx.cols) {
-                    var target = ctx.grid[tRow][tCol];
+                if (tRow >= 0 && tRow < this.rows && tCol >= 0 && tCol < this.cols) {
+                    const target = this.grid[tRow][tCol];
                     if (target) {
-                        ctx.swapPieces(ctx.swipePiece, target);
+                        this.swapPieces(this.swipePiece, target);
                     }
                 }
-                ctx.swipePiece = null;
+                this.swipePiece = null;
             });
         }
 
@@ -159,13 +158,13 @@ define([], function() {
                 this.selectedPiece = clickedPiece;
                 clickedPiece.setTint(0xaaaaaa);
             } else {
-                var p1 = this.selectedPiece;
-                var p2 = clickedPiece;
+                const p1 = this.selectedPiece;
+                const p2 = clickedPiece;
 
                 p1.clearTint();
                 this.selectedPiece = null;
 
-                var isAdjacent = Math.abs(p1.row - p2.row) + Math.abs(p1.col - p2.col) === 1;
+                const isAdjacent = Math.abs(p1.row - p2.row) + Math.abs(p1.col - p2.col) === 1;
                 if (isAdjacent) {
                     this.swapPieces(p1, p2);
                 } else if (p1 !== p2) {
@@ -176,12 +175,12 @@ define([], function() {
         }
 
         swapPieces(piece1, piece2, isRevert) {
-            var me = this.scene;
+            const me = this.scene;
             me.input.enabled = false;
             me.sfxSwap.play();
 
-            var tempRow = piece1.row;
-            var tempCol = piece1.col;
+            const tempRow = piece1.row;
+            const tempCol = piece1.col;
 
             this.grid[piece1.row][piece1.col] = piece2;
             this.grid[piece2.row][piece2.col] = piece1;
@@ -197,27 +196,26 @@ define([], function() {
                 this.lastSwap = null;
             }
 
-            var ctx = this;
             me.tweens.add({targets: piece1, x: piece2.x, y: piece2.y, duration: 200});
             me.tweens.add({
                 targets: piece2, x: piece1.x, y: piece1.y, duration: 200,
-                onComplete: function() {
+                onComplete: () => {
                     if (!isRevert) {
-                        ctx.checkMatches();
+                        this.checkMatches();
                     } else {
                         me.input.enabled = true;
-                        ctx.resetHint();
+                        this.resetHint();
                     }
                 }
             });
         }
 
         checkHorizontal(toDestroy) {
-            for (var r = 0; r < this.rows; r++) {
-                for (var c = 0; c < this.cols - 2; c++) {
-                    var p1 = this.grid[r][c];
-                    var p2 = this.grid[r][c + 1];
-                    var p3 = this.grid[r][c + 2];
+            for (let r = 0; r < this.rows; r++) {
+                for (let c = 0; c < this.cols - 2; c++) {
+                    const p1 = this.grid[r][c];
+                    const p2 = this.grid[r][c + 1];
+                    const p3 = this.grid[r][c + 2];
                     if (p1 && p2 && p3 && p1.type === p2.type && p2.type === p3.type) {
                         if (toDestroy.indexOf(p1) === -1) {
                             toDestroy.push(p1);
@@ -234,11 +232,11 @@ define([], function() {
         }
 
         checkVertical(toDestroy) {
-            for (var c = 0; c < this.cols; c++) {
-                for (var r = 0; r < this.rows - 2; r++) {
-                    var p1 = this.grid[r][c];
-                    var p2 = this.grid[r + 1][c];
-                    var p3 = this.grid[r + 2][c];
+            for (let c = 0; c < this.cols; c++) {
+                for (let r = 0; r < this.rows - 2; r++) {
+                    const p1 = this.grid[r][c];
+                    const p2 = this.grid[r + 1][c];
+                    const p3 = this.grid[r + 2][c];
                     if (p1 && p2 && p3 && p1.type === p2.type && p2.type === p3.type) {
                         if (toDestroy.indexOf(p1) === -1) {
                             toDestroy.push(p1);
@@ -255,25 +253,24 @@ define([], function() {
         }
 
         findMove() {
-            var ctx = this;
-            var isMatch = function(rowP, colP) {
-                var p = ctx.grid[rowP][colP];
+            const isMatch = (rowP, colP) => {
+                const p = this.grid[rowP][colP];
                 if (!p) {
                     return false;
                 }
 
-                var type = p.type,
-                    countH = 1,
-                    countV = 1,
-                    tr, tc;
+                const {type} = p;
+                let countH = 1;
+                let countV = 1;
+                let tr, tc;
 
                 tc = colP - 1;
-                while (tc >= 0 && ctx.grid[rowP][tc] && ctx.grid[rowP][tc].type === type) {
+                while (tc >= 0 && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
                     countH++; tc--;
                 }
 
                 tc = colP + 1;
-                while (tc < ctx.cols && ctx.grid[rowP][tc] && ctx.grid[rowP][tc].type === type) {
+                while (tc < this.cols && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
                     countH++; tc++;
                 }
                 if (countH >= 3) {
@@ -281,26 +278,26 @@ define([], function() {
                 }
 
                 tr = rowP - 1;
-                while (tr >= 0 && ctx.grid[tr][colP] && ctx.grid[tr][colP].type === type) {
+                while (tr >= 0 && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
                     countV++; tr--;
                 }
 
                 tr = rowP + 1;
-                while (tr < ctx.rows && ctx.grid[tr][colP] && ctx.grid[tr][colP].type === type) {
+                while (tr < this.rows && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
                     countV++; tr++;
                 }
 
                 return countV >= 3;
             };
 
-            for (var r = 0; r < this.rows; r++) {
-                for (var c = 0; c < this.cols; c++) {
-                    var temp;
+            for (let r = 0; r < this.rows; r++) {
+                for (let c = 0; c < this.cols; c++) {
+                    let temp;
                     if (c < this.cols - 1) {
                         temp = this.grid[r][c].type;
                         this.grid[r][c].type = this.grid[r][c + 1].type;
                         this.grid[r][c + 1].type = temp;
-                        var matchR = isMatch(r, c) || isMatch(r, c + 1);
+                        const matchR = isMatch(r, c) || isMatch(r, c + 1);
 
                         temp = this.grid[r][c].type;
                         this.grid[r][c].type = this.grid[r][c + 1].type;
@@ -314,7 +311,7 @@ define([], function() {
                         temp = this.grid[r][c].type;
                         this.grid[r][c].type = this.grid[r + 1][c].type;
                         this.grid[r + 1][c].type = temp;
-                        var matchD = isMatch(r, c) || isMatch(r + 1, c);
+                        const matchD = isMatch(r, c) || isMatch(r + 1, c);
 
                         temp = this.grid[r][c].type;
                         this.grid[r][c].type = this.grid[r + 1][c].type;
@@ -349,7 +346,7 @@ define([], function() {
                 return;
             }
             if (this.hintPiece === null && (this.scene.time.now - this.lastActionTime > 5000)) {
-                var hintMove = this.findMove();
+                const hintMove = this.findMove();
                 if (hintMove) {
                     this.hintPiece = hintMove;
                     this.scene.tweens.add({
@@ -363,42 +360,41 @@ define([], function() {
         }
 
         shuffle() {
-            var me = this.scene;
-            var notice = me.add.text(this.L.w / 2, this.L.h / 2, this.strings.shuffling, {
+            const me = this.scene;
+            const notice = me.add.text(this.L.w / 2, this.L.h / 2, this.strings.shuffling, {
                 fontSize: '32px', fill: '#ffffff', backgroundColor: '#000000',
                 align: 'center', fontStyle: 'bold', padding: {x: 20, y: 20}
             }).setOrigin(0.5).setDepth(100);
 
-            var types = [];
-            for (var r = 0; r < this.rows; r++) {
-                for (var c = 0; c < this.cols; c++) {
+            const types = [];
+            for (let r = 0; r < this.rows; r++) {
+                for (let c = 0; c < this.cols; c++) {
                     types.push(this.grid[r][c].type);
                 }
             }
 
-            var ctx = this;
-            var hasInitialMatch = function() {
-                var toDestroy = [];
-                ctx.checkHorizontal(toDestroy);
-                ctx.checkVertical(toDestroy);
+            const hasInitialMatch = () => {
+                const toDestroy = [];
+                this.checkHorizontal(toDestroy);
+                this.checkVertical(toDestroy);
                 return toDestroy.length > 0;
             };
 
             do {
                 Phaser.Utils.Array.Shuffle(types);
-                var idx = 0;
-                for (var r2 = 0; r2 < this.rows; r2++) {
-                    for (var c2 = 0; c2 < this.cols; c2++) {
+                let idx = 0;
+                for (let r2 = 0; r2 < this.rows; r2++) {
+                    for (let c2 = 0; c2 < this.cols; c2++) {
                         this.grid[r2][c2].type = types[idx];
-                        this.grid[r2][c2].setTexture('item' + types[idx]);
+                        this.grid[r2][c2].setTexture(`item${types[idx]}`);
                         idx++;
                     }
                 }
             } while (!this.hasAvailableMove() || hasInitialMatch());
 
-            for (var r3 = 0; r3 < this.rows; r3++) {
-                for (var c3 = 0; c3 < this.cols; c3++) {
-                    var shufflePiece = this.grid[r3][c3];
+            for (let r3 = 0; r3 < this.rows; r3++) {
+                for (let c3 = 0; c3 < this.cols; c3++) {
+                    const shufflePiece = this.grid[r3][c3];
                     shufflePiece.alpha = 0;
                     me.tweens.add({
                         targets: shufflePiece, alpha: 1, duration: 500, delay: Math.random() * 400
@@ -406,11 +402,11 @@ define([], function() {
                 }
             }
 
-            me.time.delayedCall(1200, function() {
+            me.time.delayedCall(1200, () => {
                 notice.destroy();
                 if (me.combat.currentTurn === 'player') {
                     me.input.enabled = true;
-                    ctx.resetHint();
+                    this.resetHint();
                 } else {
                     me.combat.executeBossTurn();
                 }
@@ -418,8 +414,8 @@ define([], function() {
         }
 
         applyGravity() {
-            var me = this.scene;
-            var col, row, r, falling, piece, x, yStart, yEnd, randomType;
+            const me = this.scene;
+            let col, row, r, falling, piece, x, yStart, yEnd, randomType;
 
             for (col = 0; col < this.cols; col++) {
                 for (row = this.rows - 1; row >= 0; row--) {
@@ -455,7 +451,7 @@ define([], function() {
                     yStart = this.offsetY - (this.pieceSize * (this.rows - row));
                     yEnd = this.offsetY + (row * this.pieceSize);
 
-                    piece = me.add.image(x, yStart, 'item' + randomType);
+                    piece = me.add.image(x, yStart, `item${randomType}`);
                     piece.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
                     piece.type = randomType;
                     piece.row = row;
@@ -475,8 +471,8 @@ define([], function() {
         }
 
         checkMatches() {
-            var me = this.scene;
-            var toDestroy = [];
+            const me = this.scene;
+            const toDestroy = [];
 
             this.checkHorizontal(toDestroy);
             this.checkVertical(toDestroy);
@@ -507,17 +503,17 @@ define([], function() {
 
             this.lastSwap = null;
 
-            var effects = me.combat.processEffects(toDestroy);
-            var damage = effects.damage;
+            const effects = me.combat.processEffects(toDestroy);
+            const damage = effects.damage;
 
             if (damage > 0) {
-                damage = Math.round(
+                const scaledDamage = Math.round(
                     damage * (me.combat.currentTurn === 'player' ? me.combat.playerMultiplier : 1)
                 );
                 if (me.combat.currentTurn === 'player') {
-                    me.combat.applyDamageToBoss(damage);
+                    me.combat.applyDamageToBoss(scaledDamage);
                 } else {
-                    me.combat.applyDamageToPlayer(damage);
+                    me.combat.applyDamageToPlayer(scaledDamage);
                 }
             }
 

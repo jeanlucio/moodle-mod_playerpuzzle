@@ -18,13 +18,14 @@ define([
 ], function($, notification, Str, UIHandler, CombatHandler, BoardHandler) {
     'use strict';
 
-    var startPhaser = function(gameConfig, strings) {
+    // Phaser requires regular functions for preload/create so it can bind `this` to the scene.
+    const startPhaser = (gameConfig, strings) => {
 
-        var onExitConfirm = null;
+        let onExitConfirm = null;
 
         if (gameConfig.mobile) {
             history.pushState({ppgame: true}, '');
-            window.addEventListener('popstate', function() {
+            window.addEventListener('popstate', () => {
                 history.pushState({ppgame: true}, '');
                 if (onExitConfirm) {
                     onExitConfirm();
@@ -32,27 +33,29 @@ define([
             });
         }
 
-        var preload = function() {
+        // Must be regular function: Phaser binds `this` to the scene instance.
+        const preload = function() {
             this.ui = new UIHandler(this, null, gameConfig, strings);
             this.ui.setupLoader();
 
             this.load.image('bg', gameConfig.bgurl);
             this.load.image('boss', gameConfig.bossurl);
-            for (var i = 0; i < 7; i++) {
-                this.load.image('item' + i, gameConfig.spriteurls[i]);
+            for (let i = 0; i < 7; i++) {
+                this.load.image(`item${i}`, gameConfig.spriteurls[i]);
             }
 
-            var urlPix = M.cfg.wwwroot + '/mod/playerpuzzle/pix/';
-            this.load.audio('bg_music', urlPix + 'music.mp3');
-            this.load.audio('sfx_swap', urlPix + 'swap.mp3');
-            this.load.audio('sfx_match', urlPix + 'match.mp3');
-            this.load.audio('sfx_hit', urlPix + 'hit.mp3');
+            const urlPix = `${M.cfg.wwwroot}/mod/playerpuzzle/pix/`;
+            this.load.audio('bg_music', `${urlPix}music.mp3`);
+            this.load.audio('sfx_swap', `${urlPix}swap.mp3`);
+            this.load.audio('sfx_match', `${urlPix}match.mp3`);
+            this.load.audio('sfx_hit', `${urlPix}hit.mp3`);
         };
 
-        var create = function() {
-            var isDesk = window.innerWidth > window.innerHeight;
+        // Must be regular function: Phaser binds `this` to the scene instance.
+        const create = function() {
+            const isDesk = window.innerWidth > window.innerHeight;
 
-            var L = isDesk ? {
+            const L = isDesk ? {
                 w: 1280, h: 720, aspect: '16/9', maxW: '100%',
                 bgX: 640, bgY: 360, bgW: 1280, bgH: 720,
                 bossX: 1040, bossY: 260, bossScale: 180,
@@ -70,7 +73,7 @@ define([
                 boardOffX: 77.5, boardOffY: 280, btnExpX: 520, btnExpY: 20
             };
 
-            var containerDOM = $('#playerpuzzle-canvas-container');
+            const containerDOM = $('#playerpuzzle-canvas-container');
             containerDOM.find('p').remove();
             if (!gameConfig.mobile) {
                 containerDOM.css({'aspect-ratio': L.aspect, 'max-width': L.maxW, 'margin': '0 auto'});
@@ -85,11 +88,11 @@ define([
             this.sfxHit = this.sound.add('sfx_hit', {volume: 0.8});
             this.bgMusic = this.sound.add('bg_music', {volume: 0.3, loop: true});
 
-            var me = this;
+            const me = this;
             if (!this.sound.locked) {
                 this.bgMusic.play();
             } else {
-                this.sound.once(Phaser.Sound.Events.UNLOCKED, function() {
+                this.sound.once(Phaser.Sound.Events.UNLOCKED, () => {
                     me.bgMusic.play();
                 });
             }
@@ -100,14 +103,14 @@ define([
             this.combat.updateUI();
 
             if (gameConfig.mobile) {
-                onExitConfirm = function() {
+                onExitConfirm = () => {
                     me.ui.showExitConfirm();
                 };
             }
         };
 
-        var isDesk = window.innerWidth > window.innerHeight;
-        var config = {
+        const isDesk = window.innerWidth > window.innerHeight;
+        const config = {
             type: Phaser.AUTO,
             parent: 'playerpuzzle-canvas-container',
             backgroundColor: '#1a1a1a',
@@ -132,19 +135,19 @@ define([
     };
 
     return {
-        init: function() {
-            $(document).ready(function() {
+        init() {
+            $(document).ready(async() => {
                 try {
                     $('#playerpuzzle-canvas-container p').css('color', '#ffffff');
-                    var container = document.getElementById('playerpuzzle-canvas-container');
-                    var configStr = container.getAttribute('data-config');
+                    const container = document.getElementById('playerpuzzle-canvas-container');
+                    const configStr = container.getAttribute('data-config');
                     if (!configStr) {
                         throw new Error('Game configuration is missing from HTML.');
                     }
 
-                    var config = JSON.parse(configStr);
+                    const config = JSON.parse(configStr);
 
-                    var strKeys = [
+                    const strKeys = [
                         'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
                         'bosstrigger', 'bosswrongfeedback', 'btnattack', 'btncontinue',
                         'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
@@ -156,28 +159,24 @@ define([
                         'shuffling', 'victory'
                     ];
 
-                    Str.get_strings(strKeys.map(function(key) {
-                        return {key: key, component: 'mod_playerpuzzle'};
-                    })).then(function(values) {
-                        var strings = {};
-                        strKeys.forEach(function(key, i) {
-                            strings[key] = values[i];
-                        });
+                    const values = await Str.get_strings(
+                        strKeys.map(key => ({key, component: 'mod_playerpuzzle'}))
+                    );
+                    const strings = {};
+                    strKeys.forEach((key, i) => {
+                        strings[key] = values[i];
+                    });
 
-                        require(['Phaser'], function(PhaserObj) {
-                            if (PhaserObj) {
-                                window.Phaser = PhaserObj;
-                            }
-                            startPhaser(config, strings);
-                        }, function(err) {
-                            window.console.error('RequireJS error:', err);
-                            $('#playerpuzzle-canvas-container').html(
-                                '<p class="text-danger">' + strings.requirejserror + '</p>'
-                            );
-                        });
-                        return true;
-                    }).catch(function(err) {
-                        notification.exception(err);
+                    require(['Phaser'], PhaserObj => {
+                        if (PhaserObj) {
+                            window.Phaser = PhaserObj;
+                        }
+                        startPhaser(config, strings);
+                    }, err => {
+                        window.console.error('RequireJS error:', err);
+                        $('#playerpuzzle-canvas-container').html(
+                            `<p class="text-danger">${strings.requirejserror}</p>`
+                        );
                     });
                 } catch (error) {
                     notification.exception(error);

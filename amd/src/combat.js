@@ -6,7 +6,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery'], function($) {
+define(['jquery', 'core/templates'], function($, Templates) {
     'use strict';
 
     class CombatHandler {
@@ -32,15 +32,14 @@ define(['jquery'], function($) {
         }
 
         processEffects(destroyedPieces) {
-            var me = this.scene;
-            var questionTriggered = false;
-            var triggeredBy = null;
-            var damageDealt = 0;
+            const me = this.scene;
+            let questionTriggered = false;
+            let triggeredBy = null;
+            let damageDealt = 0;
 
             me.sfxMatch.play();
 
-            for (var i = 0; i < destroyedPieces.length; i++) {
-                var piece = destroyedPieces[i];
+            for (const piece of destroyedPieces) {
                 if (this.currentTurn === 'player') {
                     me.sfxHit.play();
                     if (piece.type === 6) {
@@ -69,7 +68,7 @@ define(['jquery'], function($) {
                 me.board.grid[piece.row][piece.col] = null;
                 me.tweens.add({
                     targets: piece, scaleX: 0, scaleY: 0, duration: 200,
-                    onComplete: function(tween, targets) {
+                    onComplete: (tween, targets) => {
                         targets[0].destroy();
                     }
                 });
@@ -101,18 +100,18 @@ define(['jquery'], function($) {
         }
 
         applyDamageToBoss(amount) {
-            var me = this.scene;
+            const me = this.scene;
             this.currentHp = Math.max(0, this.currentHp - amount);
             this.updateUI();
             me.ui.bossSprite.setTint(0xff0000);
-            me.time.delayedCall(200, function() {
+            me.time.delayedCall(200, () => {
                 me.ui.bossSprite.clearTint();
             });
         }
 
         applyDamageToPlayer(amount) {
-            var me = this.scene;
-            var blocked = Math.min(amount, this.playerShield);
+            const me = this.scene;
+            const blocked = Math.min(amount, this.playerShield);
             this.playerShield -= blocked;
             amount -= blocked;
 
@@ -122,7 +121,7 @@ define(['jquery'], function($) {
         }
 
         passTurnToBoss() {
-            var me = this.scene;
+            const me = this.scene;
             this.currentTurn = 'boss';
             me.input.enabled = false;
 
@@ -131,7 +130,7 @@ define(['jquery'], function($) {
                 this.bossPoison--;
                 this.updateUI();
                 me.ui.bossSprite.setTint(0xff00ff);
-                me.time.delayedCall(300, function() {
+                me.time.delayedCall(300, () => {
                     me.ui.bossSprite.clearTint();
                 });
             }
@@ -140,14 +139,14 @@ define(['jquery'], function($) {
         }
 
         executeBossTurn() {
-            var me = this.scene;
-            var move = me.board.findMove();
+            const me = this.scene;
+            const move = me.board.findMove();
 
             if (move) {
                 me.tweens.add({
                     targets: me.ui.bossSprite,
                     scaleX: 1.2, scaleY: 1.2, yoyo: true, duration: 300,
-                    onComplete: function() {
+                    onComplete: () => {
                         me.board.swapPieces(move.p1, move.p2);
                     }
                 });
@@ -173,28 +172,28 @@ define(['jquery'], function($) {
         }
 
         openQuestionModal(trigger) {
-            var me = this.scene;
-            var ctx = this;
+            const me = this.scene;
+            const ctx = this;
             me.input.enabled = false;
 
-            setTimeout(function() {
+            setTimeout(() => {
                 me.scene.pause();
-                var modalMoodle = $('#playerpuzzle-modal');
+                const modalMoodle = $('#playerpuzzle-modal');
 
                 if (modalMoodle.length > 0) {
-                    var question = {name: 'Notice', questiontext: ctx.strings.questionerror};
+                    let question = {name: 'Notice', questiontext: ctx.strings.questionerror};
                     if (ctx.gameConfig.questions && ctx.gameConfig.questions.length > 0) {
-                        var idx = Math.floor(Math.random() * ctx.gameConfig.questions.length);
+                        const idx = Math.floor(Math.random() * ctx.gameConfig.questions.length);
                         question = ctx.gameConfig.questions[idx];
                     }
 
-                    var questionText = question.questiontext ?
+                    let questionText = question.questiontext ?
                         question.questiontext : question.name;
 
-                    var correctAnswers = [];
-                    var wrongAnswers = [];
+                    const correctAnswers = [];
+                    const wrongAnswers = [];
                     if (question.answers) {
-                        question.answers.forEach(function(r, indexR) {
+                        question.answers.forEach((r, indexR) => {
                             if (parseFloat(r.fraction) > 0) {
                                 correctAnswers.push(indexR);
                             } else {
@@ -203,7 +202,7 @@ define(['jquery'], function($) {
                         });
                     }
 
-                    var bossCorrect = (Math.random() > 0.3);
+                    let bossCorrect = (Math.random() > 0.3);
                     if (wrongAnswers.length === 0) {
                         bossCorrect = true;
                     }
@@ -211,7 +210,7 @@ define(['jquery'], function($) {
                         bossCorrect = false;
                     }
 
-                    var bossAnswerIdx = -1;
+                    let bossAnswerIdx = -1;
                     if (trigger === 'boss') {
                         if (bossCorrect && correctAnswers.length > 0) {
                             bossAnswerIdx = correctAnswers[
@@ -223,25 +222,24 @@ define(['jquery'], function($) {
                             ];
                         }
 
-                        var bossWarning = '<span class="text-danger fw-bold">'
-                            + ctx.strings.bosstrigger + '</span><br><br>';
+                        const bossWarning = `<strong class="text-danger pp-bold">${ctx.strings.bosstrigger}</strong><br><br>`;
                         questionText = bossWarning + questionText;
                     }
 
                     $('#playerpuzzle-pergunta-texto').html(questionText);
-                    var answersContainer = $('#playerpuzzle-respostas-container');
+                    const answersContainer = $('#playerpuzzle-respostas-container');
                     answersContainer.empty();
                     $('#playerpuzzle-btn-fechar').hide().off('click');
                     $('#playerpuzzle-btn-pular').hide().off('click');
 
-                    var closeModal = function() {
+                    const closeModal = () => {
                         modalMoodle.removeClass('show').css('display', 'none');
                         me.scene.resume();
                         me.time.delayedCall(250, me.board.applyGravity, [], me.board);
                     };
 
                     if (question.answers && question.answers.length > 0) {
-                        var btnClass = ctx.gameConfig.mobile
+                        const btnClass = ctx.gameConfig.mobile
                             ? 'btn btn-outline-primary w-100 pp-answer-btn'
                             : 'btn btn-outline-primary btn-lg mb-3 w-100';
 
@@ -250,14 +248,15 @@ define(['jquery'], function($) {
                             $('#playerpuzzle-btn-fechar').text(ctx.strings.btnattack)
                                 .prop('disabled', true).show();
 
-                            var selectedAnswer = null;
+                            let selectedAnswer = null;
 
-                            question.answers.forEach(function(answer) {
-                                var cleanText = answer.answer.replace(/(<([^>]+)>)/gi, '');
-                                var btn = $('<button class="' + btnClass
-                                    + '" data-fraction="' + answer.fraction + '">'
-                                    + cleanText + '</button>');
+                            question.answers.forEach(answer => {
+                                const cleanText = answer.answer.replace(/(<([^>]+)>)/gi, '');
+                                const btn = $(
+                                    `<button class="${btnClass}" data-fraction="${answer.fraction}">${cleanText}</button>`
+                                );
 
+                                // Using function() to preserve jQuery's this binding for the clicked button.
                                 btn.on('click', function() {
                                     answersContainer.find('button')
                                         .removeClass('btn-warning')
@@ -270,7 +269,7 @@ define(['jquery'], function($) {
                                 answersContainer.append(btn);
                             });
 
-                            $('#playerpuzzle-btn-fechar').off('click').on('click', function() {
+                            $('#playerpuzzle-btn-fechar').off('click').on('click', () => {
                                 if (!selectedAnswer) {
                                     return;
                                 }
@@ -278,7 +277,7 @@ define(['jquery'], function($) {
                                 $('#playerpuzzle-btn-pular').hide();
                                 $('#playerpuzzle-btn-fechar').prop('disabled', true);
 
-                                var feedbackMsg;
+                                let feedbackMsg;
                                 if (parseFloat(selectedAnswer.fraction) > 0) {
                                     answersContainer.find('.btn-warning')
                                         .removeClass('btn-warning').addClass('btn-success text-white');
@@ -287,15 +286,17 @@ define(['jquery'], function($) {
                                     me.tweens.add({
                                         targets: me.ui.bossSprite, y: me.ui.bossSprite.y - 20,
                                         yoyo: true, duration: 150,
-                                        onComplete: function() {
+                                        onComplete: () => {
                                             me.ui.bossSprite.clearTint();
                                         }
                                     });
-                                    feedbackMsg = '<div class="alert alert-success mt-2 mb-0"><strong>'
-                                        + ctx.strings.playercorrect + '</strong></div>';
+                                    const correctText = ctx.strings.playercorrect;
+                                    feedbackMsg = '<div class="alert alert-success mt-2 mb-0">'
+                                        + `<strong>${correctText}</strong></div>`;
                                 } else {
                                     answersContainer.find('.btn-warning')
                                         .removeClass('btn-warning').addClass('btn-danger text-white');
+                                    // Using function() to preserve jQuery's this binding in the each() iterator.
                                     answersContainer.find('[data-fraction]').each(function() {
                                         if (parseFloat($(this).data('fraction')) > 0) {
                                             $(this).removeClass('btn-outline-primary')
@@ -305,9 +306,8 @@ define(['jquery'], function($) {
                                     ctx.applyDamageToPlayer(30);
                                     ctx.playerMultiplier = 1;
                                     ctx.updateUI();
-                                    feedbackMsg = '<div class="alert alert-danger mt-2 mb-0"><strong>'
-                                        + ctx.strings.playerwrong.replace('{$a}', 30)
-                                        + '</strong></div>';
+                                    const wrongMsg = ctx.strings.playerwrong.replace('{$a}', 30);
+                                    feedbackMsg = `<div class="alert alert-danger mt-2 mb-0"><strong>${wrongMsg}</strong></div>`;
                                 }
 
                                 answersContainer.append(feedbackMsg);
@@ -316,26 +316,22 @@ define(['jquery'], function($) {
                             });
 
                         } else {
-                            question.answers.forEach(function(answer, idx) {
-                                var cleanText = answer.answer.replace(/(<([^>]+)>)/gi, '');
-                                var btn = $('<button class="' + btnClass
-                                    + '" data-fraction="' + answer.fraction + '">'
-                                    + cleanText + '</button>');
+                            question.answers.forEach((answer, idx) => {
+                                const cleanText = answer.answer.replace(/(<([^>]+)>)/gi, '');
+                                const btn = $(
+                                    `<button class="${btnClass}" data-fraction="${answer.fraction}">${cleanText}</button>`
+                                );
 
                                 btn.prop('disabled', true);
                                 if (idx === bossAnswerIdx) {
                                     if (bossCorrect) {
                                         btn.removeClass('btn-outline-primary')
                                             .addClass('btn-danger text-white');
-                                        btn.html('<strong>'
-                                            + ctx.strings.bossansweredcorrect.replace('{$a}', cleanText)
-                                            + '</strong>');
+                                        btn.html(`<strong>${ctx.strings.bossansweredcorrect.replace('{$a}', cleanText)}</strong>`);
                                     } else {
                                         btn.removeClass('btn-outline-primary')
                                             .addClass('btn-secondary text-white');
-                                        btn.html('<strong>'
-                                            + ctx.strings.bossansweredwrong.replace('{$a}', cleanText)
-                                            + '</strong>');
+                                        btn.html(`<strong>${ctx.strings.bossansweredwrong.replace('{$a}', cleanText)}</strong>`);
                                     }
                                 } else {
                                     btn.removeClass('btn-outline-primary').addClass('btn-light');
@@ -343,15 +339,14 @@ define(['jquery'], function($) {
                                 answersContainer.append(btn);
                             });
 
-                            var bossFeedback;
+                            let bossFeedback;
                             if (bossCorrect) {
                                 ctx.applyDamageToPlayer(ctx.baseDamage * 3);
-                                bossFeedback = '<div class="alert alert-danger mt-2 mb-0"><strong>'
-                                    + ctx.strings.bosscorrectfeedback.replace('{$a}', ctx.baseDamage * 3)
-                                    + '</strong></div>';
+                                const dmgMsg = ctx.strings.bosscorrectfeedback.replace('{$a}', ctx.baseDamage * 3);
+                                bossFeedback = `<div class="alert alert-danger mt-2 mb-0"><strong>${dmgMsg}</strong></div>`;
                             } else {
-                                bossFeedback = '<div class="alert alert-success mt-2 mb-0"><strong>'
-                                    + ctx.strings.bosswrongfeedback + '</strong></div>';
+                                const wfMsg = ctx.strings.bosswrongfeedback;
+                                bossFeedback = `<div class="alert alert-success mt-2 mb-0"><strong>${wfMsg}</strong></div>`;
                             }
                             answersContainer.append(bossFeedback);
                             $('#playerpuzzle-btn-fechar').text(ctx.strings.btncontinue).show()
@@ -360,7 +355,7 @@ define(['jquery'], function($) {
 
                     } else {
                         answersContainer.append(
-                            '<p class="text-danger">' + ctx.strings.noanswers + '</p>'
+                            `<p class="text-danger">${ctx.strings.noanswers}</p>`
                         );
                         $('#playerpuzzle-btn-fechar').text(ctx.strings.btncontinue).show()
                             .off('click').on('click', closeModal);
@@ -374,41 +369,29 @@ define(['jquery'], function($) {
             }, 250);
         }
 
-        showEndScreen(victory) {
-            var me = this.scene;
-            var strings = this.strings;
-            var viewurl = this.gameConfig.viewurl;
+        async showEndScreen(victory) {
+            const me = this.scene;
+            const strings = this.strings;
+            const viewurl = this.gameConfig.viewurl;
             me.input.enabled = false;
             me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
 
-            var msg = victory ? strings.victory : strings.defeat;
-            var colorClass = victory ? 'text-success' : 'text-danger';
+            const context = {
+                colorclass: victory ? 'text-success' : 'text-danger',
+                msg: victory ? strings.victory : strings.defeat,
+                coinscollected: strings.coinscollected,
+                playergold: this.playerGold,
+                maxmultiplier: strings.maxmultiplier,
+                playermultiplier: this.playerMultiplier.toFixed(1),
+                savingprogress: strings.savingprogress,
+                btnplayagain: strings.btnplayagain,
+                btnexitgame: strings.btnexitgame,
+            };
 
-            var statsHtml = '<p class="lead text-white mb-4">' + strings.coinscollected;
-            statsHtml += ' <strong class="text-warning">' + this.playerGold + '</strong><br>';
-            statsHtml += strings.maxmultiplier + ' <strong class="text-info">x'
-                + this.playerMultiplier.toFixed(1) + '</strong></p>';
-            statsHtml += '<p id="pp-save-status" class="text-muted small">'
-                + strings.savingprogress + '</p>';
+            const html = await Templates.render('mod_playerpuzzle/gameover_overlay', context);
+            $('#playerpuzzle-canvas-container').append(html);
 
-            var overlayHtml = '<div id="playerpuzzle-gameover" ' +
-                'class="d-flex flex-column justify-content-center align-items-center" ' +
-                'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;' +
-                ' z-index: 1000; text-align: center;">';
-            overlayHtml += '<h1 class="display-4 fw-bold ' + colorClass + ' mb-3">' + msg + '</h1>'
-                + statsHtml;
-            overlayHtml += '<div class="mt-2 d-flex flex-wrap justify-content-center gap-3">';
-            overlayHtml += '<button id="btn-pp-restart" disabled '
-                + 'class="btn btn-primary btn-lg fw-bold shadow">'
-                + strings.btnplayagain + '</button>';
-            overlayHtml += '<button id="btn-pp-exit" disabled '
-                + 'class="btn btn-secondary btn-lg fw-bold shadow">'
-                + strings.btnexitgame + '</button>';
-            overlayHtml += '</div></div>';
-
-            $('#playerpuzzle-canvas-container').css('position', 'relative').append(overlayHtml);
-
-            var postData = {
+            const postData = {
                 cmid: this.gameConfig.cmid,
                 sesskey: M.cfg.sesskey,
                 ouro: this.playerGold,
@@ -416,26 +399,26 @@ define(['jquery'], function($) {
                 dano: this.maxBossHp - this.currentHp
             };
 
-            $.post(M.cfg.wwwroot + '/mod/playerpuzzle/ajax.php', postData)
-                .done(function(res) {
+            $.post(`${M.cfg.wwwroot}/mod/playerpuzzle/ajax.php`, postData)
+                .done(res => {
                     if (res.status === 'success') {
-                        var successMsg = strings.progresssaved.replace('{$a}', res.totalcoins);
+                        const successMsg = strings.progresssaved.replace('{$a}', res.totalcoins);
                         $('#pp-save-status').removeClass('text-muted').addClass('text-success')
                             .text(successMsg);
                     }
                     $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
                 })
-                .fail(function() {
+                .fail(() => {
                     $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
                         .text(strings.saveerror);
                     $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
                 });
 
-            $('#btn-pp-restart').on('click', function() {
+            $('#btn-pp-restart').on('click', () => {
                 $('#playerpuzzle-gameover').remove();
                 me.scene.restart();
             });
-            $('#btn-pp-exit').on('click', function() {
+            $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;
             });
         }

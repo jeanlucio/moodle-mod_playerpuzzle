@@ -436,10 +436,7 @@ define(['jquery'], function($) {
                 me.scene.restart();
             });
             $('#btn-pp-exit').on('click', function() {
-                window.close();
-                setTimeout(function() {
-                    window.location.href = viewurl;
-                }, 300);
+                window.location.href = viewurl;
             });
         }
     }

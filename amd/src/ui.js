@@ -57,18 +57,18 @@ define(['jquery'], function($) {
             this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
                 .setDisplaySize(L.bossScale, L.bossScale);
 
-            this.txtVeneno = me.add.text(L.venenoX, L.bossTxtY, '☠️', {fontSize: '16px'})
+            this.txtPoison = me.add.text(L.poisonX, L.bossTxtY, '☠️', {fontSize: '16px'})
                 .setOrigin(0.5)
                 .setAlpha(0);
 
-            var styleEscudo = {fontSize: '16px', fill: '#aaaaff', fontStyle: 'bold'};
-            var styleOuro = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
-            var styleEstrela = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
+            var styleShield = {fontSize: '16px', fill: '#aaaaff', fontStyle: 'bold'};
+            var styleGold = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
+            var styleStar = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
 
-            this.txtEscudo = me.add.text(L.escudoX, L.playerHpY + 40, '🛡️: 0', styleEscudo);
-            this.txtOuro = me.add.text(L.ouroX, L.playerHpY + 40, '🪙: 0', styleOuro)
+            this.txtShield = me.add.text(L.shieldX, L.playerHpY + 40, '🛡️: 0', styleShield);
+            this.txtGold = me.add.text(L.goldX, L.playerHpY + 40, '🪙: 0', styleGold)
                 .setOrigin(0.5, 0);
-            this.txtEstrela = me.add.text(L.estrelaX, L.playerHpY + 40, '⭐x1.0', styleEstrela)
+            this.txtStar = me.add.text(L.starX, L.playerHpY + 40, '⭐x1.0', styleStar)
                 .setOrigin(1, 0);
 
             me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.bossUiX, L.bossHpY, 300, 22);
@@ -158,7 +158,7 @@ define(['jquery'], function($) {
             });
         }
 
-        atualizarBarraBoss(currentHp, maxHp, mana, envenenadoTurnos) {
+        updateBossBar(currentHp, maxHp, mana, poisonTurns) {
             var pctHp = Math.max(0, currentHp / maxHp);
             this.bossHpBar.clear()
                 .fillStyle(0xdd0000, 1)
@@ -170,7 +170,7 @@ define(['jquery'], function($) {
                 .fillStyle(0x0088ff, 1)
                 .fillRect(this.L.bossUiX + 2, this.L.bossManaY + 1, 296 * pctMana, 6);
 
-            this.txtVeneno.setAlpha(envenenadoTurnos > 0 ? 1 : 0);
+            this.txtPoison.setAlpha(poisonTurns > 0 ? 1 : 0);
         }
 
         showExitConfirm() {
@@ -225,7 +225,7 @@ define(['jquery'], function($) {
             });
         }
 
-        atualizarBarraAluno(currentHp, maxHp, mana, escudo, ouro, multiplicador) {
+        updatePlayerBar(currentHp, maxHp, mana, shield, gold, multiplier) {
             var pctHp = Math.max(0, currentHp / maxHp);
             this.playerHpBar.clear()
                 .fillStyle(0x00cc00, 1)
@@ -237,9 +237,9 @@ define(['jquery'], function($) {
                 .fillStyle(0x0088ff, 1)
                 .fillRect(this.L.playerUiX + 2, this.L.playerManaY + 1, 296 * pctMana, 6);
 
-            this.txtEscudo.setText('🛡️: ' + escudo);
-            this.txtOuro.setText('🪙: ' + ouro);
-            this.txtEstrela.setText('⭐x' + multiplicador.toFixed(1));
+            this.txtShield.setText('🛡️: ' + shield);
+            this.txtGold.setText('🪙: ' + gold);
+            this.txtStar.setText('⭐x' + multiplier.toFixed(1));
         }
     }
 

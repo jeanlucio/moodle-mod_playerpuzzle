@@ -74,6 +74,7 @@ $string['questioncategory'] = 'Categoria de perguntas';
 $string['questionchallenge'] = '⚔️ Desafio Mágico!';
 $string['questionerror'] = 'Erro na pergunta.';
 $string['questionsettings'] = 'Configurações de perguntas';
+$string['requirejserror'] = 'Erro crítico: não foi possível carregar o motor do jogo.';
 $string['rules'] = 'Regras do jogo';
 $string['saveerror'] = 'Erro ao salvar no servidor.';
 $string['savingprogress'] = 'Salvando progresso...';

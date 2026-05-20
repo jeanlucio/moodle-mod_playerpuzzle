@@ -74,6 +74,7 @@ $string['questioncategory'] = 'Question category';
 $string['questionchallenge'] = '⚔️ Magic Challenge!';
 $string['questionerror'] = 'Question error.';
 $string['questionsettings'] = 'Question settings';
+$string['requirejserror'] = 'Critical error: could not load the game engine.';
 $string['rules'] = 'Game rules';
 $string['saveerror'] = 'Error saving to server.';
 $string['savingprogress'] = 'Saving progress...';

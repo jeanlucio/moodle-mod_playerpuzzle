@@ -144,38 +144,40 @@ define([
 
                     var config = JSON.parse(configStr);
 
-                    require(['Phaser'], function(PhaserObj) {
-                        if (PhaserObj) {
-                            window.Phaser = PhaserObj;
-                        }
+                    var strKeys = [
+                        'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
+                        'bosstrigger', 'bosswrongfeedback', 'btnattack', 'btncontinue',
+                        'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
+                        'coinscollected', 'defeat', 'exitwarning', 'expand',
+                        'hpboss', 'hpyou', 'loading', 'maxmultiplier',
+                        'musicoff', 'musicon', 'noanswers', 'playercorrect',
+                        'playerwrong', 'progresssaved', 'questionerror', 'requirejserror',
+                        'saveerror', 'savingprogress', 'sfxoff', 'sfxon', 'shrink',
+                        'shuffling', 'victory'
+                    ];
 
-                        var strKeys = [
-                            'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
-                            'bosstrigger', 'bosswrongfeedback', 'btnattack', 'btncontinue',
-                            'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
-                            'coinscollected', 'defeat', 'exitwarning', 'expand',
-                            'hpboss', 'hpyou', 'loading', 'maxmultiplier',
-                            'musicoff', 'musicon', 'noanswers', 'playercorrect',
-                            'playerwrong', 'progresssaved', 'questionerror', 'saveerror',
-                            'savingprogress', 'sfxoff', 'sfxon', 'shrink', 'shuffling', 'victory'
-                        ];
-
-                        Str.get_strings(strKeys.map(function(key) {
-                            return {key: key, component: 'mod_playerpuzzle'};
-                        })).then(function(values) {
-                            var strings = {};
-                            strKeys.forEach(function(key, i) {
-                                strings[key] = values[i];
-                            });
-                            startPhaser(config, strings);
-                            return true;
-                        }).catch(function(err) {
-                            notification.exception(err);
+                    Str.get_strings(strKeys.map(function(key) {
+                        return {key: key, component: 'mod_playerpuzzle'};
+                    })).then(function(values) {
+                        var strings = {};
+                        strKeys.forEach(function(key, i) {
+                            strings[key] = values[i];
                         });
-                    }, function(err) {
-                        var msg = '<p class="text-danger">Critical RequireJS error.</p>';
-                        $('#playerpuzzle-canvas-container').html(msg);
-                        window.console.error('RequireJS error:', err);
+
+                        require(['Phaser'], function(PhaserObj) {
+                            if (PhaserObj) {
+                                window.Phaser = PhaserObj;
+                            }
+                            startPhaser(config, strings);
+                        }, function(err) {
+                            window.console.error('RequireJS error:', err);
+                            $('#playerpuzzle-canvas-container').html(
+                                '<p class="text-danger">' + strings.requirejserror + '</p>'
+                            );
+                        });
+                        return true;
+                    }).catch(function(err) {
+                        notification.exception(err);
                     });
                 } catch (error) {
                     notification.exception(error);

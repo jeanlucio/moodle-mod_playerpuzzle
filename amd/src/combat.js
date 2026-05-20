@@ -377,6 +377,7 @@ define(['jquery'], function($) {
         showEndScreen(victory) {
             var me = this.scene;
             var strings = this.strings;
+            var viewurl = this.gameConfig.viewurl;
             me.input.enabled = false;
             me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
 
@@ -416,14 +417,13 @@ define(['jquery'], function($) {
             };
 
             $.post(M.cfg.wwwroot + '/mod/playerpuzzle/ajax.php', postData)
-                .done(function(respostaStr) {
-                    var res = JSON.parse(respostaStr);
+                .done(function(res) {
                     if (res.status === 'success') {
                         var successMsg = strings.progresssaved.replace('{$a}', res.totalcoins);
                         $('#pp-save-status').removeClass('text-muted').addClass('text-success')
                             .text(successMsg);
-                        $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
                     }
+                    $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
                 })
                 .fail(function() {
                     $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
@@ -436,7 +436,10 @@ define(['jquery'], function($) {
                 me.scene.restart();
             });
             $('#btn-pp-exit').on('click', function() {
-                window.location.href = M.cfg.wwwroot;
+                window.close();
+                setTimeout(function() {
+                    window.location.href = viewurl;
+                }, 300);
             });
         }
     }

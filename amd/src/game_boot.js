@@ -176,6 +176,11 @@ define([
 
                 const config = JSON.parse(configStr);
 
+                // Apply desktop layout immediately so the loading screen renders at the correct size.
+                if (!config.mobile && window.innerWidth > window.innerHeight) {
+                    container.classList.add('pp-canvas-desktop');
+                }
+
                 const strKeys = [
                     'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
                     'bosstrigger', 'bosswrongfeedback', 'btnattack', 'btncontinue',

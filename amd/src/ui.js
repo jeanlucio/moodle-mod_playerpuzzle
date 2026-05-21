@@ -6,6 +6,8 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/* global Phaser */
+
 define(['jquery'], function($) {
     'use strict';
 
@@ -114,15 +116,22 @@ define(['jquery'], function($) {
             me.musicOn = true;
             me.sfxOn = true;
 
+            // Explicit hit areas prevent emoji mismetrics from shrinking the tap zone on mobile.
+            // pointerup is more reliable than pointerdown for button taps on touch devices.
+            const hitRect = (w, h) => new Phaser.Geom.Rectangle(-4, -4, w, h);
+
             const btnMusic = me.add.text(20, 20, strings.musicon, {
                 fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-            }).setInteractive().setDepth(10);
+            }).setInteractive(hitRect(110, 44), Phaser.Geom.Rectangle.Contains).setDepth(10);
 
-            const btnSfx = me.add.text(120, 20, strings.sfxon, {
+            const btnSfx = me.add.text(140, 20, strings.sfxon, {
                 fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-            }).setInteractive().setDepth(10);
+            }).setInteractive(hitRect(120, 44), Phaser.Geom.Rectangle.Contains).setDepth(10);
 
-            btnMusic.on('pointerdown', () => {
+            btnMusic.on('pointerup', () => {
+                if (me.board && me.board.swipePiece !== null) {
+                    return;
+                }
                 me.musicOn = !me.musicOn;
                 btnMusic.setText(me.musicOn ? strings.musicon : strings.musicoff);
                 btnMusic.setStyle({fill: me.musicOn ? '#ffffff' : '#aaaaaa'});
@@ -133,7 +142,10 @@ define(['jquery'], function($) {
                 }
             });
 
-            btnSfx.on('pointerdown', () => {
+            btnSfx.on('pointerup', () => {
+                if (me.board && me.board.swipePiece !== null) {
+                    return;
+                }
                 me.sfxOn = !me.sfxOn;
                 btnSfx.setText(me.sfxOn ? strings.sfxon : strings.sfxoff);
                 btnSfx.setStyle({fill: me.sfxOn ? '#ffffff' : '#aaaaaa'});

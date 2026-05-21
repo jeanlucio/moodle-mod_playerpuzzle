@@ -89,12 +89,28 @@ define([
             this.bgMusic = this.sound.add('bg_music', {volume: 0.3, loop: true});
 
             const me = this;
-            if (!this.sound.locked) {
-                this.bgMusic.play();
-            } else {
-                this.sound.once(Phaser.Sound.Events.UNLOCKED, () => {
+            const startMusic = () => {
+                if (!me.bgMusic.isPlaying) {
                     me.bgMusic.play();
-                });
+                }
+            };
+            if (!this.sound.locked) {
+                startMusic();
+            } else {
+                this.sound.once(Phaser.Sound.Events.UNLOCKED, startMusic);
+                // Android Chrome may not fire UNLOCKED via Phaser's internal mechanism.
+                // Watch the AudioContext state directly as a fallback.
+                if (this.sound.context) {
+                    const ctx = this.sound.context;
+                    const onCtxState = () => {
+                        if (ctx.state === 'running') {
+                            ctx.removeEventListener('statechange', onCtxState);
+                            me.sound.locked = false;
+                            startMusic();
+                        }
+                    };
+                    ctx.addEventListener('statechange', onCtxState);
+                }
             }
 
             this.combat = new CombatHandler(this, gameConfig, strings);
@@ -126,7 +142,7 @@ define([
                     preventDefaultWheel: false
                 },
                 touch: {
-                    capture: false
+                    capture: true
                 }
             },
             scene: {preload: preload, create: create}

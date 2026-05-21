@@ -152,7 +152,7 @@ body.pagelayout-embedded #playerpuzzle-modal .modal-body {
     overflow-y: auto;
 }
 
-body.pagelayout-embedded #playerpuzzle-pergunta-texto {
+body.pagelayout-embedded #playerpuzzle-question-text {
     font-size: 1rem;
     margin-bottom: 0.75rem;
 }

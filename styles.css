@@ -154,7 +154,7 @@ body.pagelayout-embedded .pp-answer-btn {
     margin-bottom: 0.375rem;
 }
 
-body.pagelayout-embedded #playerpuzzle-btn-fechar,
-body.pagelayout-embedded #playerpuzzle-btn-pular {
+body.pagelayout-embedded #playerpuzzle-btn-confirm,
+body.pagelayout-embedded #playerpuzzle-btn-skip {
     font-size: 0.875rem;
 }

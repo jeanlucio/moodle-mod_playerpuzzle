@@ -28,9 +28,9 @@ require_login();
 require_sesskey();
 
 $cmid      = required_param('cmid', PARAM_INT);
-$coins     = required_param('ouro', PARAM_INT);
-$isvictory = required_param('vitoria', PARAM_INT);
-$damage    = required_param('dano', PARAM_INT);
+$coins     = required_param('gold', PARAM_INT);
+$isvictory = required_param('victory', PARAM_INT);
+$damage    = required_param('damage', PARAM_INT);
 
 $cm = get_coursemodule_from_id('playerpuzzle', $cmid, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);

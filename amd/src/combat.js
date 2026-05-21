@@ -226,11 +226,11 @@ define(['jquery', 'core/templates'], function($, Templates) {
                         questionText = bossWarning + questionText;
                     }
 
-                    $('#playerpuzzle-pergunta-texto').html(questionText);
-                    const answersContainer = $('#playerpuzzle-respostas-container');
+                    $('#playerpuzzle-question-text').html(questionText);
+                    const answersContainer = $('#playerpuzzle-answers-container');
                     answersContainer.empty();
-                    $('#playerpuzzle-btn-fechar').hide().off('click');
-                    $('#playerpuzzle-btn-pular').hide().off('click');
+                    $('#playerpuzzle-btn-confirm').hide().off('click');
+                    $('#playerpuzzle-btn-skip').hide().off('click');
 
                     const closeModal = () => {
                         modalMoodle.removeClass('show').css('display', 'none');
@@ -244,8 +244,8 @@ define(['jquery', 'core/templates'], function($, Templates) {
                             : 'btn btn-outline-primary btn-lg mb-3 w-100';
 
                         if (trigger === 'player') {
-                            $('#playerpuzzle-btn-pular').show().on('click', closeModal);
-                            $('#playerpuzzle-btn-fechar').text(ctx.strings.btnattack)
+                            $('#playerpuzzle-btn-skip').show().on('click', closeModal);
+                            $('#playerpuzzle-btn-confirm').text(ctx.strings.btnattack)
                                 .prop('disabled', true).show();
 
                             let selectedAnswer = null;
@@ -263,19 +263,19 @@ define(['jquery', 'core/templates'], function($, Templates) {
                                         .addClass('btn-outline-primary');
                                     $(this).removeClass('btn-outline-primary').addClass('btn-warning');
                                     selectedAnswer = answer;
-                                    $('#playerpuzzle-btn-fechar').prop('disabled', false);
+                                    $('#playerpuzzle-btn-confirm').prop('disabled', false);
                                 });
 
                                 answersContainer.append(btn);
                             });
 
-                            $('#playerpuzzle-btn-fechar').off('click').on('click', () => {
+                            $('#playerpuzzle-btn-confirm').off('click').on('click', () => {
                                 if (!selectedAnswer) {
                                     return;
                                 }
                                 answersContainer.find('button').prop('disabled', true);
-                                $('#playerpuzzle-btn-pular').hide();
-                                $('#playerpuzzle-btn-fechar').prop('disabled', true);
+                                $('#playerpuzzle-btn-skip').hide();
+                                $('#playerpuzzle-btn-confirm').prop('disabled', true);
 
                                 let feedbackMsg;
                                 if (parseFloat(selectedAnswer.fraction) > 0) {
@@ -311,7 +311,7 @@ define(['jquery', 'core/templates'], function($, Templates) {
                                 }
 
                                 answersContainer.append(feedbackMsg);
-                                $('#playerpuzzle-btn-fechar').text(ctx.strings.btncontinue)
+                                $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
                                     .prop('disabled', false).off('click').on('click', closeModal);
                             });
 
@@ -349,7 +349,7 @@ define(['jquery', 'core/templates'], function($, Templates) {
                                 bossFeedback = `<div class="alert alert-success mt-2 mb-0"><strong>${wfMsg}</strong></div>`;
                             }
                             answersContainer.append(bossFeedback);
-                            $('#playerpuzzle-btn-fechar').text(ctx.strings.btncontinue).show()
+                            $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue).show()
                                 .off('click').on('click', closeModal);
                         }
 
@@ -357,7 +357,7 @@ define(['jquery', 'core/templates'], function($, Templates) {
                         answersContainer.append(
                             `<p class="text-danger">${ctx.strings.noanswers}</p>`
                         );
-                        $('#playerpuzzle-btn-fechar').text(ctx.strings.btncontinue).show()
+                        $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue).show()
                             .off('click').on('click', closeModal);
                     }
 
@@ -394,9 +394,9 @@ define(['jquery', 'core/templates'], function($, Templates) {
             const postData = {
                 cmid: this.gameConfig.cmid,
                 sesskey: M.cfg.sesskey,
-                ouro: this.playerGold,
-                vitoria: victory ? 1 : 0,
-                dano: this.maxBossHp - this.currentHp
+                gold: this.playerGold,
+                victory: victory ? 1 : 0,
+                damage: this.maxBossHp - this.currentHp
             };
 
             $.post(`${M.cfg.wwwroot}/mod/playerpuzzle/ajax.php`, postData)

@@ -35,7 +35,6 @@ use stdClass;
  * Saves the player's coin rewards and game result to the inventory.
  */
 class save_progress extends external_api {
-
     /**
      * Returns the parameter definitions.
      *

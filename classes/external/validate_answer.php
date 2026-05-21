@@ -38,7 +38,6 @@ use mod_playerpuzzle\local\engine\question_fetcher;
  * activity instance, preventing cross-instance data access.
  */
 class validate_answer extends external_api {
-
     /**
      * Returns the parameter definitions.
      *

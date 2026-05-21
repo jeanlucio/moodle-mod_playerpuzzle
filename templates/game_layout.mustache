@@ -41,7 +41,6 @@
                 <div id="pp-progress-bar"
                      class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
                      role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                    <span class="visually-hidden">0%</span>
                 </div>
             </div>
         </div>
@@ -49,7 +48,7 @@
     </div>
 
     {{! Custom question modal — controlled entirely by combat.js via jQuery. }}
-    <div id="playerpuzzle-modal" class="modal pp-question-modal" tabindex="-1" role="dialog">
+    <div id="playerpuzzle-modal" class="modal pp-question-modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="playerpuzzle-question-text">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content shadow-lg border-primary">
                 <div class="modal-header bg-primary text-white">

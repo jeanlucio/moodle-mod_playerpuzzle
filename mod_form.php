@@ -106,6 +106,8 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             $dbcategories = $DB->get_records_sql($sql, $params);
 
             if ($dbcategories) {
+                \context_helper::preload_contexts_by_id(array_column($dbcategories, 'contextid'));
+
                 foreach ($dbcategories as $cat) {
                     try {
                         $catcontext = \context::instance_by_id($cat->contextid);

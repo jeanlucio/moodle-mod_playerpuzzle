@@ -61,6 +61,6 @@ $totalcoins = $inventory ? $inventory->coins : $coins;
 header('Content-Type: application/json');
 echo json_encode([
     'status' => 'success',
-    'message' => 'Progress saved.',
+    'message' => get_string('progresssaved', 'mod_playerpuzzle', $totalcoins),
     'totalcoins' => $totalcoins,
 ]);

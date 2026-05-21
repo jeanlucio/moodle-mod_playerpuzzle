@@ -53,38 +53,7 @@ $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token((int)$p
 
 $categoryid = (int)$playerpuzzle->questioncategory;
 
-// Phase 5: replace with question_fetcher::get_questions_for_frontend() — fraction must not reach the client.
-$sql = "SELECT q.id, q.name, q.questiontext
-          FROM {question} q
-          JOIN {question_versions} qv ON qv.questionid = q.id
-          JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
-         WHERE qbe.questioncategoryid = :categoryid
-           AND qv.status = 'ready'";
-
-$questions = $DB->get_records_sql($sql, ['categoryid' => $categoryid]);
-
-if ($questions) {
-    $questionids = array_keys($questions);
-    [$insql, $inparams] = $DB->get_in_or_equal($questionids);
-    $allanswers = $DB->get_records_select(
-        'question_answers',
-        "question $insql",
-        $inparams,
-        'question, id ASC',
-        'id, question, answer, fraction'
-    );
-    foreach ($allanswers as $answer) {
-        if (!isset($questions[$answer->question]->answers)) {
-            $questions[$answer->question]->answers = [];
-        }
-        $questions[$answer->question]->answers[] = $answer;
-    }
-    foreach ($questions as $q) {
-        if (!isset($q->answers)) {
-            $q->answers = [];
-        }
-    }
-}
+$questions = \mod_playerpuzzle\local\engine\question_fetcher::get_questions_for_frontend($categoryid, $context);
 
 $spriteurls = [];
 for ($i = 0; $i < 7; $i++) {
@@ -104,7 +73,7 @@ $jsconfig = [
     'bossurl'    => $bossurl,
     'bgurl'      => $bgurl,
     'spriteurls' => $spriteurls,
-    'questions'  => array_values($questions),
+    'questions'  => $questions,
     'mobile'     => $ismobile,
     'viewurl'    => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
 ];

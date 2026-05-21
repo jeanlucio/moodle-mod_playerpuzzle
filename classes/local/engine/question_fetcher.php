@@ -24,11 +24,6 @@
 
 namespace mod_playerpuzzle\local\engine;
 
-defined('MOODLE_INTERNAL') || die();
-
-global $CFG;
-require_once($CFG->libdir . '/questionlib.php');
-
 /**
  * Class to safely fetch questions from the Moodle Question Bank (Blind JSON).
  */
@@ -68,22 +63,26 @@ class question_fetcher {
 
         $rawquestions = $DB->get_records_sql($fullsql, $inparams);
 
+        $answersql = "SELECT id, question, answer, answerformat
+                        FROM {question_answers}
+                       WHERE question $insql";
+        $allanswers = $DB->get_records_sql($answersql, $inparams);
+
+        $groupedanswers = [];
+        foreach ($allanswers as $ans) {
+            $groupedanswers[$ans->question][] = $ans;
+        }
+
         $formatted = [];
 
         foreach ($rawquestions as $q) {
-            // Load the full question object via core API to safely get the answers.
-            $questionobj = \question_bank::load_question($q->id);
             $options = [];
 
-            if ($q->qtype === 'multichoice' || $q->qtype === 'truefalse') {
-                $answers = $questionobj->answers;
-                $anskeys = array_keys($answers);
+            if (($q->qtype === 'multichoice' || $q->qtype === 'truefalse') && isset($groupedanswers[$q->id])) {
+                $qanswers = $groupedanswers[$q->id];
+                shuffle($qanswers);
 
-                // Shuffle the options so they don't always appear in the same order.
-                shuffle($anskeys);
-
-                foreach ($anskeys as $key) {
-                    $ans = $answers[$key];
+                foreach ($qanswers as $ans) {
                     $options[] = [
                         'id' => $ans->id,
                         'text' => format_text($ans->answer, $ans->answerformat, ['context' => $context]),
@@ -91,7 +90,6 @@ class question_fetcher {
                 }
             }
 
-            // Pack the question without the correct answer field (Blind JSON security).
             $formatted[] = [
                 'id' => $q->id,
                 'type' => $q->qtype,

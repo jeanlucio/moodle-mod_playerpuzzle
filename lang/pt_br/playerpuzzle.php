@@ -24,12 +24,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['basebosshp'] = 'HP base do chefe';
+$string['basebosshp_help'] = 'HP do chefe no Nível 1, Fase 1. Escala automaticamente nas fases seguintes.';
+$string['basestudenthp'] = 'HP base do aluno';
+$string['basestudenthp_help'] = 'HP do aluno no Nível 1, Fase 1. Escala automaticamente nas fases seguintes.';
 $string['bossansweredcorrect'] = '✓ {$a} (O chefe acertou!)';
 $string['bossansweredwrong'] = '✗ {$a} (O chefe errou!)';
 $string['bossavatar'] = 'Avatar do chefe';
 $string['bosscorrectfeedback'] = '💥 O chefe acertou! Você sofre {$a} de dano!';
 $string['bossdamage'] = 'Dano do chefe';
-$string['bosshp'] = 'HP do chefe';
 $string['bosssettings'] = 'Configurações do chefe';
 $string['bosstrigger'] = '👹 O chefe ativou uma pergunta!';
 $string['bosswrongfeedback'] = '😅 O chefe errou! Você teve sorte!';
@@ -48,10 +51,13 @@ $string['expand'] = '[ Expandir ]';
 $string['general'] = 'Configurações gerais';
 $string['hpboss'] = 'Chefe:';
 $string['hpyou'] = 'Você:';
+$string['levelsandphases'] = 'Níveis e fases';
 $string['loading'] = 'Carregando...';
 $string['loadinggame'] = 'Carregando o motor do jogo...';
 $string['lobbywelcome'] = 'Bem-vindo ao Lobby! A loja e o botão Jogar estarão aqui em breve.';
 $string['maxattempts'] = 'Número máximo de tentativas';
+$string['maxlevels'] = 'Número de níveis';
+$string['maxlevels_help'] = 'Cada nível contém 10 fases de dificuldade crescente. 1 nível = 10 fases; 10 níveis = 100 fases.';
 $string['maxmultiplier'] = 'Multiplicador máximo:';
 $string['modulename'] = 'PlayerPuzzle';
 $string['modulename_help'] = 'A atividade PlayerPuzzle permite que o professor crie um jogo RPG Match-3 onde os estudantes combinam gemas para derrotar um chefe, respondem perguntas e ganham moedas.';

@@ -42,7 +42,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
             this.bossPoison = 0;
             this.bossMana = 0;
-            this.maxBossHp = gameConfig.bosshp;
+            this.maxBossHp = gameConfig.basebosshp;
             this.currentHp = this.maxBossHp;
         }
 

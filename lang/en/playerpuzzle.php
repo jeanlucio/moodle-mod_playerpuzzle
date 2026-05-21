@@ -24,12 +24,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['basebosshp'] = 'Base boss HP';
+$string['basebosshp_help'] = 'Boss HP at Level 1, Phase 1. Scales automatically for later phases.';
+$string['basestudenthp'] = 'Base student HP';
+$string['basestudenthp_help'] = 'Student HP at Level 1, Phase 1. Scales automatically for later phases.';
 $string['bossansweredcorrect'] = '✓ {$a} (Boss answered correctly!)';
 $string['bossansweredwrong'] = '✗ {$a} (Boss answered incorrectly!)';
 $string['bossavatar'] = 'Boss avatar';
 $string['bosscorrectfeedback'] = '💥 The boss answered correctly! You take {$a} damage!';
 $string['bossdamage'] = 'Boss damage';
-$string['bosshp'] = 'Boss HP';
 $string['bosssettings'] = 'Boss settings';
 $string['bosstrigger'] = '👹 The boss triggered a question!';
 $string['bosswrongfeedback'] = '😅 The boss answered incorrectly! Lucky escape!';
@@ -48,10 +51,13 @@ $string['expand'] = '[ Expand ]';
 $string['general'] = 'General settings';
 $string['hpboss'] = 'Boss:';
 $string['hpyou'] = 'You:';
+$string['levelsandphases'] = 'Levels and phases';
 $string['loading'] = 'Loading...';
 $string['loadinggame'] = 'Loading the game engine...';
 $string['lobbywelcome'] = 'Welcome to the Lobby! The Shop and the Play button will be here soon.';
 $string['maxattempts'] = 'Maximum attempts';
+$string['maxlevels'] = 'Number of levels';
+$string['maxlevels_help'] = 'Each level contains 10 phases of increasing difficulty. 1 level = 10 phases; 10 levels = 100 phases.';
 $string['maxmultiplier'] = 'Max multiplier:';
 $string['modulename'] = 'PlayerPuzzle';
 $string['modulename_help'] = 'The PlayerPuzzle activity enables a teacher to create a Match-3 RPG game where students combine gems to defeat a boss, answer questions, and earn coins.';

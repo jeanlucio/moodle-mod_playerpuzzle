@@ -15,18 +15,12 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Plugin administration settings.
+ *
+ * No admin settings required: PlayerHUD integration is automatic via class_exists(),
+ * and API keys are managed by local_playergames.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->component = 'mod_playerpuzzle';
-$plugin->version   = 2026052101;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2024100700;        // Requires: Moodle 4.5+.
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = 'v0.1.0';         // User-friendly version number.

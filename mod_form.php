@@ -46,6 +46,22 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $this->standard_intro_elements();
 
+        $mform->addElement('header', 'levelsandphases', get_string('levelsandphases', 'mod_playerpuzzle'));
+
+        $leveloptions = [];
+        for ($i = 1; $i <= 10; $i++) {
+            $leveloptions[$i] = $i;
+        }
+        $mform->addElement('select', 'maxlevels', get_string('maxlevels', 'mod_playerpuzzle'), $leveloptions);
+        $mform->setType('maxlevels', PARAM_INT);
+        $mform->setDefault('maxlevels', 1);
+        $mform->addHelpButton('maxlevels', 'maxlevels', 'mod_playerpuzzle');
+
+        $mform->addElement('text', 'basestudenthp', get_string('basestudenthp', 'mod_playerpuzzle'));
+        $mform->setType('basestudenthp', PARAM_INT);
+        $mform->setDefault('basestudenthp', 100);
+        $mform->addHelpButton('basestudenthp', 'basestudenthp', 'mod_playerpuzzle');
+
         $mform->addElement('header', 'bosssettings', get_string('bosssettings', 'mod_playerpuzzle'));
 
         $bossoptions = [
@@ -57,9 +73,9 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('bossavatar', PARAM_FILE);
         $mform->setDefault('bossavatar', 'slime.png');
 
-        $mform->addElement('text', 'bosshp', get_string('bosshp', 'mod_playerpuzzle'));
-        $mform->setType('bosshp', PARAM_INT);
-        $mform->setDefault('bosshp', 1000);
+        $mform->addElement('text', 'basebosshp', get_string('basebosshp', 'mod_playerpuzzle'));
+        $mform->setType('basebosshp', PARAM_INT);
+        $mform->setDefault('basebosshp', 1000);
 
         $mform->addElement('text', 'bossdamage', get_string('bossdamage', 'mod_playerpuzzle'));
         $mform->setType('bossdamage', PARAM_INT);

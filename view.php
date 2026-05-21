@@ -56,28 +56,19 @@ if (trim($playerpuzzle->intro) !== '') {
     echo $OUTPUT->box(format_module_intro('playerpuzzle', $playerpuzzle, $cm->id), 'generalbox', 'intro');
 }
 
-// Temporary welcome message using the localized string.
-$welcomemsg = get_string('lobbywelcome', 'mod_playerpuzzle');
-echo html_writer::tag('p', $welcomemsg, ['class' => 'lead text-center mt-4']);
-
-// The "Play Game" button.
 $ismobile = core_useragent::is_ios() || core_useragent::is_webkit_android();
 $playparams = ['id' => $cm->id];
 if ($ismobile) {
     $playparams['mobile'] = 1;
 }
-$playurl = new moodle_url('/mod/playerpuzzle/play.php', $playparams);
-$btnattrs = ['class' => 'btn btn-primary btn-lg mt-3 px-5 py-3 fs-4 fw-bold shadow-sm'];
-if ($ismobile) {
-    $btnattrs['target'] = '_blank';
-    $btnattrs['rel'] = 'noopener';
-}
-$playbutton = html_writer::link(
-    $playurl,
-    get_string('playgame', 'mod_playerpuzzle'),
-    $btnattrs
-);
 
-echo html_writer::div($playbutton, 'text-center mb-5');
+$templatedata = [
+    'welcomemsg' => get_string('lobbywelcome', 'mod_playerpuzzle'),
+    'playurl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
+    'playtext' => get_string('playgame', 'mod_playerpuzzle'),
+    'ismobile' => $ismobile,
+];
+
+echo $OUTPUT->render_from_template('mod_playerpuzzle/view_lobby', $templatedata);
 
 echo $OUTPUT->footer();

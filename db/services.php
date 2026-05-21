@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * External function definitions for PlayerPuzzle.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -24,9 +24,21 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'mod_playerpuzzle';
-$plugin->version   = 2026052001;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2024100700;        // Requires: Moodle 4.5+.
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = 'v0.1.0';         // User-friendly version number.
+$functions = [
+    'mod_playerpuzzle_save_progress' => [
+        'classname'    => 'mod_playerpuzzle\external\save_progress',
+        'methodname'   => 'execute',
+        'description'  => 'Saves the player progress and coin rewards after a game session.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
+    'mod_playerpuzzle_validate_answer' => [
+        'classname'    => 'mod_playerpuzzle\external\validate_answer',
+        'methodname'   => 'execute',
+        'description'  => 'Validates a player answer during the combat phase.',
+        'type'         => 'read',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
+];

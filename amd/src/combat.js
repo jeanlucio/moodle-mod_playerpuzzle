@@ -21,7 +21,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/templates'], function($, Templates) {
+define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
     'use strict';
 
     class CombatHandler {
@@ -296,13 +296,14 @@ define(['jquery', 'core/templates'], function($, Templates) {
                                         .prop('disabled', false).off('click').on('click', closeModal);
                                 };
 
-                                $.post(`${M.cfg.wwwroot}/mod/playerpuzzle/ajax.php`, {
-                                    action: 'validateanswer',
-                                    cmid: ctx.gameConfig.cmid,
-                                    sesskey: M.cfg.sesskey,
-                                    questionid: question.id,
-                                    answerid: selectedAnswer.id,
-                                }).done(res => {
+                                Ajax.call([{
+                                    methodname: 'mod_playerpuzzle_validate_answer',
+                                    args: {
+                                        cmid: ctx.gameConfig.cmid,
+                                        questionid: question.id,
+                                        answerid: selectedAnswer.id,
+                                    },
+                                }])[0].done(res => {
                                     applyResult(!!res.correct, res.correctanswerid || null);
                                 }).fail(() => {
                                     applyResult(false, null);
@@ -380,28 +381,24 @@ define(['jquery', 'core/templates'], function($, Templates) {
             const html = await Templates.render('mod_playerpuzzle/gameover_overlay', context);
             $('#playerpuzzle-canvas-container').append(html);
 
-            const postData = {
-                cmid: this.gameConfig.cmid,
-                sesskey: M.cfg.sesskey,
-                gold: this.playerGold,
-                victory: victory ? 1 : 0,
-                damage: this.maxBossHp - this.currentHp
-            };
-
-            $.post(`${M.cfg.wwwroot}/mod/playerpuzzle/ajax.php`, postData)
-                .done(res => {
-                    if (res.status === 'success') {
-                        const successMsg = strings.progresssaved.replace('{$a}', res.totalcoins);
-                        $('#pp-save-status').removeClass('text-muted').addClass('text-success')
-                            .text(successMsg);
-                    }
-                    $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
-                })
-                .fail(() => {
-                    $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
-                        .text(strings.saveerror);
-                    $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
-                });
+            Ajax.call([{
+                methodname: 'mod_playerpuzzle_save_progress',
+                args: {
+                    cmid: this.gameConfig.cmid,
+                    gold: this.playerGold,
+                    victory: victory ? 1 : 0,
+                    damage: this.maxBossHp - this.currentHp,
+                },
+            }])[0].done(res => {
+                const successMsg = strings.progresssaved.replace('{$a}', res.totalcoins);
+                $('#pp-save-status').removeClass('text-muted').addClass('text-success')
+                    .text(successMsg);
+                $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
+            }).fail(() => {
+                $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
+                    .text(strings.saveerror);
+                $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
+            });
 
             $('#btn-pp-restart').on('click', () => {
                 $('#playerpuzzle-gameover').remove();

@@ -236,7 +236,7 @@ define(['jquery', 'core/templates'], function($, Templates) {
                             let selectedAnswer = null;
 
                             question.options.forEach(option => {
-                                const btn = $(`<button class="${btnClass}">${option.text}</button>`);
+                                const btn = $(`<button class="${btnClass}" data-answerid="${option.id}">${option.text}</button>`);
 
                                 // Using function() to preserve jQuery's this binding for the clicked button.
                                 btn.on('click', function() {
@@ -259,7 +259,7 @@ define(['jquery', 'core/templates'], function($, Templates) {
                                 $('#playerpuzzle-btn-skip').hide();
                                 $('#playerpuzzle-btn-confirm').prop('disabled', true);
 
-                                const applyResult = (isCorrect) => {
+                                const applyResult = (isCorrect, correctanswerid) => {
                                     let feedbackMsg;
                                     if (isCorrect) {
                                         answersContainer.find('.btn-warning')
@@ -278,6 +278,12 @@ define(['jquery', 'core/templates'], function($, Templates) {
                                     } else {
                                         answersContainer.find('.btn-warning')
                                             .removeClass('btn-warning').addClass('btn-danger text-white');
+                                        if (correctanswerid) {
+                                            answersContainer
+                                                .find(`[data-answerid="${correctanswerid}"]`)
+                                                .removeClass('btn-outline-primary')
+                                                .addClass('btn-success text-white');
+                                        }
                                         ctx.applyDamageToPlayer(30);
                                         ctx.playerMultiplier = 1;
                                         ctx.updateUI();
@@ -297,9 +303,9 @@ define(['jquery', 'core/templates'], function($, Templates) {
                                     questionid: question.id,
                                     answerid: selectedAnswer.id,
                                 }).done(res => {
-                                    applyResult(!!res.correct);
+                                    applyResult(!!res.correct, res.correctanswerid || null);
                                 }).fail(() => {
-                                    applyResult(false);
+                                    applyResult(false, null);
                                 });
                             });
 

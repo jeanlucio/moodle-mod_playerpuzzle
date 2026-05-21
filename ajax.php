@@ -54,8 +54,12 @@ if ($action === 'validateanswer') {
         $answerid
     );
 
+    $correctanswerid = $correct
+        ? null
+        : \mod_playerpuzzle\local\engine\question_fetcher::get_correct_answer_id($questionid);
+
     header('Content-Type: application/json');
-    echo json_encode(['correct' => $correct]);
+    echo json_encode(['correct' => $correct, 'correctanswerid' => $correctanswerid]);
     exit;
 }
 

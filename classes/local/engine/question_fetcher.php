@@ -118,4 +118,23 @@ class question_fetcher {
 
         return $fraction !== false && (float)$fraction >= 1.0;
     }
+
+    /**
+     * Returns the ID of one correct answer for the question (for post-submission feedback only).
+     *
+     * @param int $questionid The question ID.
+     * @return int|null The answer ID with fraction >= 1, or null if none found.
+     */
+    public static function get_correct_answer_id(int $questionid): ?int {
+        global $DB;
+
+        $records = $DB->get_records_sql(
+            "SELECT id FROM {question_answers} WHERE question = :qid AND fraction >= :minf ORDER BY id ASC",
+            ['qid' => $questionid, 'minf' => 1.0],
+            0,
+            1
+        );
+
+        return empty($records) ? null : (int)reset($records)->id;
+    }
 }

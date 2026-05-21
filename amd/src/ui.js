@@ -1,3 +1,18 @@
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
 /**
  * UI Module for PlayerPuzzle.
  *
@@ -22,10 +37,10 @@ define(['jquery'], function($) {
         setupLoader() {
             this.scene.load.on('progress', value => {
                 const percent = parseInt(value * 100);
-                $('#pp-progress-bar')
-                    .css('width', `${percent}%`)
-                    .attr('aria-valuenow', percent)
-                    .text(`${percent}%`);
+                const bar = document.getElementById('pp-progress-bar');
+                bar.style.setProperty('--pp-bar-width', `${percent}%`);
+                bar.setAttribute('aria-valuenow', percent);
+                bar.textContent = `${percent}%`;
             });
 
             this.scene.load.on('complete', () => {

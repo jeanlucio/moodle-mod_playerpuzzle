@@ -24,7 +24,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['answerquestion'] = 'Answer the Question to Attack!';
 $string['bossansweredcorrect'] = '✓ {$a} (Boss answered correctly!)';
 $string['bossansweredwrong'] = '✗ {$a} (Boss answered incorrectly!)';
 $string['bossavatar'] = 'Boss avatar';

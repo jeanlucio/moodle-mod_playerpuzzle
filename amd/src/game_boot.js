@@ -1,3 +1,18 @@
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
 /**
  * Main bootloader for the PlayerPuzzle Phaser game.
  *
@@ -76,7 +91,7 @@ define([
             const containerDOM = $('#playerpuzzle-canvas-container');
             containerDOM.find('p').remove();
             if (!gameConfig.mobile) {
-                containerDOM.css({'aspect-ratio': L.aspect, 'max-width': L.maxW, 'margin': '0 auto'});
+                containerDOM.toggleClass('pp-canvas-desktop', isDesk);
             }
             containerDOM.append($('#playerpuzzle-modal'));
 
@@ -154,7 +169,6 @@ define([
         init() {
             $(document).ready(async() => {
                 try {
-                    $('#playerpuzzle-canvas-container p').css('color', '#ffffff');
                     const container = document.getElementById('playerpuzzle-canvas-container');
                     const configStr = container.getAttribute('data-config');
                     if (!configStr) {

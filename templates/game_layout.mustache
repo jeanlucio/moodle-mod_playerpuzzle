@@ -44,7 +44,7 @@
                 </div>
             </div>
         </div>
-        <p class="text-center p-5 text-muted">{{loadingtext}}</p>
+        <p class="text-center p-5 pp-loading-text">{{loadingtext}}</p>
     </div>
 
     {{! Custom question modal — controlled entirely by combat.js via jQuery. }}
@@ -67,32 +67,6 @@
                     <button type="button" class="btn btn-secondary" id="playerpuzzle-btn-confirm">
                         {{#str}} close, mod_playerpuzzle {{/str}}
                     </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{! Accessible BS5 modal for Moodle questions. }}
-    <div class="modal fade" id="playerpuzzleQuestionModal" tabindex="-1" aria-labelledby="questionModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="questionModalLabel">{{#str}} answerquestion, mod_playerpuzzle {{/str}}</h5>
-                    {{! Accessible close button for screen readers. }}
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{#str}} close, mod_playerpuzzle {{/str}}"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="playerpuzzle-question-text" class="fs-5 mb-4">
-                        &nbsp;
-                    </div>
-                    <div id="playerpuzzle-options-container" class="d-grid gap-2">
-                    </div>
-                </div>
-                <div class="modal-footer d-flex justify-content-between">
-                    <div class="visually-hidden" id="playerpuzzle-screenreader-status" aria-live="polite"></div>
-                    <span class="badge bg-info text-dark fs-6" id="playerpuzzle-timer-badge">
-                        <i class="fa fa-clock-o" aria-hidden="true"></i> <span id="playerpuzzle-time-left">00:00</span>
-                    </span>
                 </div>
             </div>
         </div>

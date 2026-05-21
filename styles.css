@@ -2,13 +2,13 @@
  * Styles for the PlayerPuzzle activity module.
  *
  * @package    mod_playerpuzzle
- * @copyright  2026 Jean Lúcio <jeanlucio@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
- * Default canvas container: replaces inline style and Bootstrap utility classes
- * so the embedded layout override below can work without !important.
+ * Default canvas container: portrait 9/16 layout (mobile and desktop-portrait).
+ * JS adds .pp-canvas-desktop on desktop-landscape to switch to 16/9 layout.
  */
 .pp-canvas-container {
     position: relative;
@@ -21,6 +21,15 @@
     border: 2px solid #343a40;
     border-radius: 0.375rem;
     box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.pp-canvas-desktop {
+    aspect-ratio: 16/9;
+    max-width: 100%;
+}
+
+.pp-loading-text {
+    color: #ffffff;
 }
 
 /**
@@ -79,7 +88,7 @@ body.pagelayout-embedded .playerpuzzle-game-wrapper > h3 {
 }
 
 #pp-progress-bar {
-    width: 0%;
+    width: var(--pp-bar-width, 0%);
 }
 
 /**

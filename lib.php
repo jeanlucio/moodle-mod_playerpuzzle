@@ -22,11 +22,12 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+
 /**
  * Indicates API features that the playerpuzzle supports.
  *
- * @param string $feature
- * @return bool|null True if yes, null if unknown.
+ * @param string $feature The feature to check.
+ * @return bool|null True if supported, null if unknown.
  */
 function playerpuzzle_supports(string $feature): bool|null {
     switch ($feature) {
@@ -82,7 +83,8 @@ function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform
 function playerpuzzle_delete_instance(int $id): bool {
     global $DB;
 
-    if (!$playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $id])) {
+    $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $id]);
+    if (!$playerpuzzle) {
         return false;
     }
 

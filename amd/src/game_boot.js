@@ -24,13 +24,12 @@
 /* global Phaser */
 
 define([
-    'jquery',
     'core/notification',
     'core/str',
     'mod_playerpuzzle/ui',
     'mod_playerpuzzle/combat',
     'mod_playerpuzzle/board'
-], function($, notification, Str, UIHandler, CombatHandler, BoardHandler) {
+], function(notification, Str, UIHandler, CombatHandler, BoardHandler) {
     'use strict';
 
     // Phaser requires regular functions for preload/create so it can bind `this` to the scene.
@@ -88,12 +87,12 @@ define([
                 boardOffX: 77.5, boardOffY: 280, btnExpX: 520, btnExpY: 20
             };
 
-            const containerDOM = $('#playerpuzzle-canvas-container');
-            containerDOM.find('p').remove();
+            const containerDOM = document.getElementById('playerpuzzle-canvas-container');
+            containerDOM.querySelectorAll('p').forEach(el => el.remove());
             if (!gameConfig.mobile) {
-                containerDOM.toggleClass('pp-canvas-desktop', isDesk);
+                containerDOM.classList.toggle('pp-canvas-desktop', isDesk);
             }
-            containerDOM.append($('#playerpuzzle-modal'));
+            containerDOM.appendChild(document.getElementById('playerpuzzle-modal'));
 
             this.ui.L = L;
             this.ui.setupStaticUI();
@@ -208,9 +207,10 @@ define([
                     startPhaser(config, strings);
                 }, err => {
                     window.console.error('RequireJS error:', err);
-                    $('#playerpuzzle-canvas-container').html(
-                        `<p class="text-danger">${strings.requirejserror}</p>`
-                    );
+                    const errContainer = document.getElementById('playerpuzzle-canvas-container');
+                    if (errContainer) {
+                        errContainer.innerHTML = `<p class="text-danger">${strings.requirejserror}</p>`;
+                    }
                 });
             } catch (error) {
                 notification.exception(error);

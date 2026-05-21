@@ -33,9 +33,6 @@ use mod_playerpuzzle\local\engine\question_fetcher;
 
 /**
  * Validates whether the answer submitted by the player is correct.
- *
- * Also verifies that the question belongs to the category configured for this
- * activity instance, preventing cross-instance data access.
  */
 class validate_answer extends external_api {
     /**
@@ -52,12 +49,12 @@ class validate_answer extends external_api {
     }
 
     /**
-     * Validates the answer and returns correctness with an optional feedback answer ID.
+     * Validates the answer and returns correctness.
      *
      * @param int $cmid Course module ID.
      * @param int $questionid Question ID.
      * @param int $answerid Answer ID submitted.
-     * @return array Result with correct flag and optional correct answer ID.
+     * @return array Result matrix.
      */
     public static function execute(int $cmid, int $questionid, int $answerid): array {
         global $DB;
@@ -75,15 +72,16 @@ class validate_answer extends external_api {
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
         $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $cm->instance], '*', MUST_EXIST);
 
-        // Verify the question belongs to the category configured for this instance.
-        $valid = $DB->record_exists_sql(
-            "SELECT 1
-               FROM {question_bank_entries} qbe
-               JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
-              WHERE qv.questionid = :qid
-                AND qbe.questioncategoryid = :catid",
-            ['qid' => $params['questionid'], 'catid' => $playerpuzzle->questioncategory]
-        );
+        $sql = "SELECT 1
+                  FROM {question_bank_entries} qbe
+                  JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+                 WHERE qv.questionid = :qid
+                   AND qbe.questioncategoryid = :catid";
+
+        $valid = $DB->record_exists_sql($sql, [
+            'qid'   => $params['questionid'],
+            'catid' => (int) $playerpuzzle->questioncategory,
+        ]);
 
         $correct = $valid && question_fetcher::is_answer_correct(
             $params['questionid'],

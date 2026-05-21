@@ -15,8 +15,6 @@
     along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 }}
 {{!
-    @template mod_playerpuzzle/view_lobby
-
     Lobby layout for the PlayerPuzzle activity.
 
     Example context (json):
@@ -33,5 +31,8 @@
        class="btn btn-primary btn-lg mt-3 px-5 py-3 fs-4 fw-bold shadow-sm"
        {{#ismobile}}target="_blank" rel="noopener"{{/ismobile}}>
         {{playtext}}
+        {{#ismobile}}
+            <span class="visually-hidden">({{#str}}opensinnewwindow, core{{/str}})</span>
+        {{/ismobile}}
     </a>
 </div>

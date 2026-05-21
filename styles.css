@@ -10,26 +10,26 @@
  * Default canvas container: portrait 9/16 layout (mobile and desktop-portrait).
  * JS adds .pp-canvas-desktop on desktop-landscape to switch to 16/9 layout.
  */
-.pp-canvas-container {
+body.path-mod-playerpuzzle .pp-canvas-container {
     position: relative;
     width: 100%;
     max-width: 540px;
     aspect-ratio: 9/16;
     margin: 0 auto;
     overflow: hidden;
-    background-color: #1a1a1a;
-    border: 2px solid #343a40;
+    background-color: var(--dark, #1a1a1a);
+    border: 2px solid var(--secondary, #343a40);
     border-radius: 0.375rem;
     box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
 }
 
-.pp-canvas-desktop {
+body.path-mod-playerpuzzle .pp-canvas-desktop {
     aspect-ratio: 16/9;
     max-width: 100%;
 }
 
-.pp-loading-text {
-    color: #ffffff;
+body.path-mod-playerpuzzle .pp-loading-text {
+    color: var(--white, #ffffff);
 }
 
 /**
@@ -55,7 +55,7 @@ body.path-mod-playerpuzzle .btn-footer-popover {
 /**
  * Embedded layout: full-screen canvas for mobile play.
  * No inline style or Bootstrap utilities on the element means no !important needed —
- * the ID selector here (1,1,1) beats the class selector of .pp-canvas-container (0,1,0),
+ * the ID selector here (1,1,1) beats the class selector of .pp-canvas-container (0,2,1),
  * and the JS containerDOM.css() call is skipped when gameConfig.mobile is true.
  */
 body.pagelayout-embedded .playerpuzzle-game-wrapper {
@@ -72,29 +72,29 @@ body.pagelayout-embedded .playerpuzzle-game-wrapper > h3 {
  * Loading screen overlay: replaces inline style injected by setupLoader().
  * Covers the canvas container while Phaser assets load.
  */
-#pp-bootstrap-loader {
+body.path-mod-playerpuzzle #pp-bootstrap-loader {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     z-index: 1000;
-    background-color: #1a1a1a;
+    background-color: var(--dark, #1a1a1a);
 }
 
-.pp-loader-progress {
+body.path-mod-playerpuzzle .pp-loader-progress {
     height: 25px;
     width: 50%;
 }
 
-#pp-progress-bar {
+body.path-mod-playerpuzzle #pp-progress-bar {
     width: var(--pp-bar-width, 0%);
 }
 
 /**
  * Game over overlay: replaces inline style injected by showEndScreen().
  */
-#playerpuzzle-gameover {
+body.path-mod-playerpuzzle #playerpuzzle-gameover {
     position: absolute;
     top: 0;
     left: 0;
@@ -107,7 +107,7 @@ body.pagelayout-embedded .playerpuzzle-game-wrapper > h3 {
 /**
  * Gameover action buttons: replaces Bootstrap 5-only gap-3 utility.
  */
-.pp-gameover-buttons {
+body.path-mod-playerpuzzle .pp-gameover-buttons {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -118,7 +118,7 @@ body.pagelayout-embedded .playerpuzzle-game-wrapper > h3 {
 /**
  * Bold title for gameover and boss-trigger warning: replaces fw-bold (BS5-only).
  */
-.pp-bold {
+body.path-mod-playerpuzzle .pp-bold {
     font-weight: bold;
 }
 

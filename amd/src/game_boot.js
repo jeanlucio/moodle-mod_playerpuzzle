@@ -166,52 +166,50 @@ define([
     };
 
     return {
-        init() {
-            $(document).ready(async() => {
-                try {
-                    const container = document.getElementById('playerpuzzle-canvas-container');
-                    const configStr = container.getAttribute('data-config');
-                    if (!configStr) {
-                        throw new Error('Game configuration is missing from HTML.');
-                    }
-
-                    const config = JSON.parse(configStr);
-
-                    const strKeys = [
-                        'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
-                        'bosstrigger', 'bosswrongfeedback', 'btnattack', 'btncontinue',
-                        'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
-                        'coinscollected', 'defeat', 'exitwarning', 'expand',
-                        'hpboss', 'hpyou', 'loading', 'maxmultiplier',
-                        'musicoff', 'musicon', 'noanswers', 'playercorrect',
-                        'playerwrong', 'progresssaved', 'questionerror', 'requirejserror',
-                        'saveerror', 'savingprogress', 'sfxoff', 'sfxon', 'shrink',
-                        'shuffling', 'victory'
-                    ];
-
-                    const values = await Str.get_strings(
-                        strKeys.map(key => ({key, component: 'mod_playerpuzzle'}))
-                    );
-                    const strings = {};
-                    strKeys.forEach((key, i) => {
-                        strings[key] = values[i];
-                    });
-
-                    require(['Phaser'], PhaserObj => {
-                        if (PhaserObj) {
-                            window.Phaser = PhaserObj;
-                        }
-                        startPhaser(config, strings);
-                    }, err => {
-                        window.console.error('RequireJS error:', err);
-                        $('#playerpuzzle-canvas-container').html(
-                            `<p class="text-danger">${strings.requirejserror}</p>`
-                        );
-                    });
-                } catch (error) {
-                    notification.exception(error);
+        async init() {
+            try {
+                const container = document.getElementById('playerpuzzle-canvas-container');
+                const configStr = container.getAttribute('data-config');
+                if (!configStr) {
+                    throw new Error('Game configuration is missing from HTML.');
                 }
-            });
+
+                const config = JSON.parse(configStr);
+
+                const strKeys = [
+                    'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
+                    'bosstrigger', 'bosswrongfeedback', 'btnattack', 'btncontinue',
+                    'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
+                    'coinscollected', 'defeat', 'exitwarning', 'expand',
+                    'hpboss', 'hpyou', 'loading', 'maxmultiplier',
+                    'musicoff', 'musicon', 'noanswers', 'playercorrect',
+                    'playerwrong', 'progresssaved', 'questionerror', 'requirejserror',
+                    'saveerror', 'savingprogress', 'sfxoff', 'sfxon', 'shrink',
+                    'shuffling', 'victory'
+                ];
+
+                const values = await Str.get_strings(
+                    strKeys.map(key => ({key, component: 'mod_playerpuzzle'}))
+                );
+                const strings = {};
+                strKeys.forEach((key, i) => {
+                    strings[key] = values[i];
+                });
+
+                require(['Phaser'], PhaserObj => {
+                    if (PhaserObj) {
+                        window.Phaser = PhaserObj;
+                    }
+                    startPhaser(config, strings);
+                }, err => {
+                    window.console.error('RequireJS error:', err);
+                    $('#playerpuzzle-canvas-container').html(
+                        `<p class="text-danger">${strings.requirejserror}</p>`
+                    );
+                });
+            } catch (error) {
+                notification.exception(error);
+            }
         }
     };
 });

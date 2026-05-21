@@ -196,50 +196,20 @@ define(['jquery', 'core/templates'], function($, Templates) {
                 const modalMoodle = $('#playerpuzzle-modal');
 
                 if (modalMoodle.length > 0) {
-                    let question = {name: 'Notice', questiontext: ctx.strings.questionerror};
+                    let question = {text: ctx.strings.questionerror, options: []};
                     if (ctx.gameConfig.questions && ctx.gameConfig.questions.length > 0) {
                         const idx = Math.floor(Math.random() * ctx.gameConfig.questions.length);
                         question = ctx.gameConfig.questions[idx];
                     }
 
-                    let questionText = question.questiontext ?
-                        question.questiontext : question.name;
+                    const bossCorrect = Math.random() > 0.3;
+                    const numOptions = question.options ? question.options.length : 0;
+                    const bossPickIdx = (trigger === 'boss' && numOptions > 0)
+                        ? Math.floor(Math.random() * numOptions) : -1;
 
-                    const correctAnswers = [];
-                    const wrongAnswers = [];
-                    if (question.answers) {
-                        question.answers.forEach((r, indexR) => {
-                            if (parseFloat(r.fraction) > 0) {
-                                correctAnswers.push(indexR);
-                            } else {
-                                wrongAnswers.push(indexR);
-                            }
-                        });
-                    }
-
-                    let bossCorrect = (Math.random() > 0.3);
-                    if (wrongAnswers.length === 0) {
-                        bossCorrect = true;
-                    }
-                    if (correctAnswers.length === 0) {
-                        bossCorrect = false;
-                    }
-
-                    let bossAnswerIdx = -1;
-                    if (trigger === 'boss') {
-                        if (bossCorrect && correctAnswers.length > 0) {
-                            bossAnswerIdx = correctAnswers[
-                                Math.floor(Math.random() * correctAnswers.length)
-                            ];
-                        } else if (!bossCorrect && wrongAnswers.length > 0) {
-                            bossAnswerIdx = wrongAnswers[
-                                Math.floor(Math.random() * wrongAnswers.length)
-                            ];
-                        }
-
-                        const bossWarning = `<strong class="text-danger pp-bold">${ctx.strings.bosstrigger}</strong><br><br>`;
-                        questionText = bossWarning + questionText;
-                    }
+                    const questionText = trigger === 'boss'
+                        ? `<strong class="text-danger pp-bold">${ctx.strings.bosstrigger}</strong><br><br>${question.text}`
+                        : question.text;
 
                     $('#playerpuzzle-question-text').html(questionText);
                     const answersContainer = $('#playerpuzzle-answers-container');
@@ -253,7 +223,7 @@ define(['jquery', 'core/templates'], function($, Templates) {
                         me.time.delayedCall(250, me.board.applyGravity, [], me.board);
                     };
 
-                    if (question.answers && question.answers.length > 0) {
+                    if (question.options && question.options.length > 0) {
                         const btnClass = ctx.gameConfig.mobile
                             ? 'btn btn-outline-primary w-100 pp-answer-btn'
                             : 'btn btn-outline-primary btn-lg mb-3 w-100';
@@ -265,11 +235,8 @@ define(['jquery', 'core/templates'], function($, Templates) {
 
                             let selectedAnswer = null;
 
-                            question.answers.forEach(answer => {
-                                const cleanText = answer.answer.replace(/(<([^>]+)>)/gi, '');
-                                const btn = $(
-                                    `<button class="${btnClass}" data-fraction="${answer.fraction}">${cleanText}</button>`
-                                );
+                            question.options.forEach(option => {
+                                const btn = $(`<button class="${btnClass}">${option.text}</button>`);
 
                                 // Using function() to preserve jQuery's this binding for the clicked button.
                                 btn.on('click', function() {
@@ -277,7 +244,7 @@ define(['jquery', 'core/templates'], function($, Templates) {
                                         .removeClass('btn-warning')
                                         .addClass('btn-outline-primary');
                                     $(this).removeClass('btn-outline-primary').addClass('btn-warning');
-                                    selectedAnswer = answer;
+                                    selectedAnswer = option;
                                     $('#playerpuzzle-btn-confirm').prop('disabled', false);
                                 });
 
@@ -292,61 +259,62 @@ define(['jquery', 'core/templates'], function($, Templates) {
                                 $('#playerpuzzle-btn-skip').hide();
                                 $('#playerpuzzle-btn-confirm').prop('disabled', true);
 
-                                let feedbackMsg;
-                                if (parseFloat(selectedAnswer.fraction) > 0) {
-                                    answersContainer.find('.btn-warning')
-                                        .removeClass('btn-warning').addClass('btn-success text-white');
-                                    ctx.applyDamageToBoss(ctx.baseDamage * 3 * ctx.playerMultiplier);
-                                    me.ui.bossSprite.setTint(0x0088ff);
-                                    me.tweens.add({
-                                        targets: me.ui.bossSprite, y: me.ui.bossSprite.y - 20,
-                                        yoyo: true, duration: 150,
-                                        onComplete: () => {
-                                            me.ui.bossSprite.clearTint();
-                                        }
-                                    });
-                                    const correctText = ctx.strings.playercorrect;
-                                    feedbackMsg = '<div class="alert alert-success mt-2 mb-0">'
-                                        + `<strong>${correctText}</strong></div>`;
-                                } else {
-                                    answersContainer.find('.btn-warning')
-                                        .removeClass('btn-warning').addClass('btn-danger text-white');
-                                    // Using function() to preserve jQuery's this binding in the each() iterator.
-                                    answersContainer.find('[data-fraction]').each(function() {
-                                        if (parseFloat($(this).data('fraction')) > 0) {
-                                            $(this).removeClass('btn-outline-primary')
-                                                .addClass('btn-success text-white');
-                                        }
-                                    });
-                                    ctx.applyDamageToPlayer(30);
-                                    ctx.playerMultiplier = 1;
-                                    ctx.updateUI();
-                                    const wrongMsg = ctx.strings.playerwrong.replace('{$a}', 30);
-                                    feedbackMsg = `<div class="alert alert-danger mt-2 mb-0"><strong>${wrongMsg}</strong></div>`;
-                                }
+                                const applyResult = (isCorrect) => {
+                                    let feedbackMsg;
+                                    if (isCorrect) {
+                                        answersContainer.find('.btn-warning')
+                                            .removeClass('btn-warning').addClass('btn-success text-white');
+                                        ctx.applyDamageToBoss(ctx.baseDamage * 3 * ctx.playerMultiplier);
+                                        me.ui.bossSprite.setTint(0x0088ff);
+                                        me.tweens.add({
+                                            targets: me.ui.bossSprite, y: me.ui.bossSprite.y - 20,
+                                            yoyo: true, duration: 150,
+                                            onComplete: () => {
+                                                me.ui.bossSprite.clearTint();
+                                            }
+                                        });
+                                        feedbackMsg = '<div class="alert alert-success mt-2 mb-0">'
+                                            + `<strong>${ctx.strings.playercorrect}</strong></div>`;
+                                    } else {
+                                        answersContainer.find('.btn-warning')
+                                            .removeClass('btn-warning').addClass('btn-danger text-white');
+                                        ctx.applyDamageToPlayer(30);
+                                        ctx.playerMultiplier = 1;
+                                        ctx.updateUI();
+                                        const wrongMsg = ctx.strings.playerwrong.replace('{$a}', 30);
+                                        feedbackMsg = '<div class="alert alert-danger mt-2 mb-0">'
+                                            + `<strong>${wrongMsg}</strong></div>`;
+                                    }
+                                    answersContainer.append(feedbackMsg);
+                                    $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
+                                        .prop('disabled', false).off('click').on('click', closeModal);
+                                };
 
-                                answersContainer.append(feedbackMsg);
-                                $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
-                                    .prop('disabled', false).off('click').on('click', closeModal);
+                                $.post(`${M.cfg.wwwroot}/mod/playerpuzzle/ajax.php`, {
+                                    action: 'validateanswer',
+                                    cmid: ctx.gameConfig.cmid,
+                                    sesskey: M.cfg.sesskey,
+                                    questionid: question.id,
+                                    answerid: selectedAnswer.id,
+                                }).done(res => {
+                                    applyResult(!!res.correct);
+                                }).fail(() => {
+                                    applyResult(false);
+                                });
                             });
 
                         } else {
-                            question.answers.forEach((answer, idx) => {
-                                const cleanText = answer.answer.replace(/(<([^>]+)>)/gi, '');
-                                const btn = $(
-                                    `<button class="${btnClass}" data-fraction="${answer.fraction}">${cleanText}</button>`
-                                );
+                            question.options.forEach((option, idx) => {
+                                const plainText = option.text.replace(/(<([^>]+)>)/gi, '');
+                                const btn = $(`<button class="${btnClass}" disabled>${option.text}</button>`);
 
-                                btn.prop('disabled', true);
-                                if (idx === bossAnswerIdx) {
+                                if (idx === bossPickIdx) {
                                     if (bossCorrect) {
-                                        btn.removeClass('btn-outline-primary')
-                                            .addClass('btn-danger text-white');
-                                        btn.html(`<strong>${ctx.strings.bossansweredcorrect.replace('{$a}', cleanText)}</strong>`);
+                                        btn.removeClass('btn-outline-primary').addClass('btn-danger text-white');
+                                        btn.html(`<strong>${ctx.strings.bossansweredcorrect.replace('{$a}', plainText)}</strong>`);
                                     } else {
-                                        btn.removeClass('btn-outline-primary')
-                                            .addClass('btn-secondary text-white');
-                                        btn.html(`<strong>${ctx.strings.bossansweredwrong.replace('{$a}', cleanText)}</strong>`);
+                                        btn.removeClass('btn-outline-primary').addClass('btn-secondary text-white');
+                                        btn.html(`<strong>${ctx.strings.bossansweredwrong.replace('{$a}', plainText)}</strong>`);
                                     }
                                 } else {
                                     btn.removeClass('btn-outline-primary').addClass('btn-light');

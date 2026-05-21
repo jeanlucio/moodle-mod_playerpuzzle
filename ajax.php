@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * AJAX endpoint for saving PlayerPuzzle game progress.
+ * AJAX endpoint for PlayerPuzzle game actions (answer validation and progress saving).
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -26,6 +26,38 @@ require_once(__DIR__ . '/../../config.php');
 
 require_login();
 require_sesskey();
+
+$action = optional_param('action', 'saveprogress', PARAM_ALPHA);
+
+if ($action === 'validateanswer') {
+    $cmid       = required_param('cmid', PARAM_INT);
+    $questionid = required_param('questionid', PARAM_INT);
+    $answerid   = required_param('answerid', PARAM_INT);
+
+    $cm = get_coursemodule_from_id('playerpuzzle', $cmid, 0, false, MUST_EXIST);
+    $context = context_module::instance($cm->id);
+    require_capability('mod/playerpuzzle:view', $context);
+
+    // Verify the question belongs to the category configured for this instance.
+    $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $cm->instance], '*', MUST_EXIST);
+    $valid = $DB->record_exists_sql(
+        "SELECT 1
+           FROM {question_bank_entries} qbe
+           JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+          WHERE qv.questionid = :qid
+            AND qbe.questioncategoryid = :catid",
+        ['qid' => $questionid, 'catid' => $playerpuzzle->questioncategory]
+    );
+
+    $correct = $valid && \mod_playerpuzzle\local\engine\question_fetcher::is_answer_correct(
+        $questionid,
+        $answerid
+    );
+
+    header('Content-Type: application/json');
+    echo json_encode(['correct' => $correct]);
+    exit;
+}
 
 $cmid      = required_param('cmid', PARAM_INT);
 $coins     = required_param('gold', PARAM_INT);

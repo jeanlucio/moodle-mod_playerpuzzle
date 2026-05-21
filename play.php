@@ -35,6 +35,11 @@ require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/playerpuzzle:view', $context);
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    redirect(new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]));
+}
+require_sesskey();
+
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));
 $PAGE->set_heading(format_string($course->fullname));

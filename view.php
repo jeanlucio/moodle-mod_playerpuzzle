@@ -66,6 +66,7 @@ $templatedata = [
     'welcomemsg' => get_string('lobbywelcome', 'mod_playerpuzzle'),
     'playurl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
     'playtext' => get_string('playgame', 'mod_playerpuzzle'),
+    'sesskey' => sesskey(),
     'ismobile' => $ismobile,
 ];
 

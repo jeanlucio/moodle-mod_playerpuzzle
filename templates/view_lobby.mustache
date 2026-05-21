@@ -24,17 +24,19 @@
         "welcomemsg": "Welcome to the Lobby! The Shop and the Play button will be here soon.",
         "playurl": "/mod/playerpuzzle/play.php?id=1",
         "playtext": "Play Game",
+        "sesskey": "abc123example",
         "ismobile": false
     }
 }}
 <div class="pp-lobby text-center mb-5">
     <p class="lead mt-4">{{welcomemsg}}</p>
-    <a href="{{{playurl}}}"
-       class="btn btn-primary btn-lg mt-3 px-5 py-3 fs-4 fw-bold shadow-sm"
-       {{#ismobile}}target="_blank" rel="noopener"{{/ismobile}}>
-        {{playtext}}
-        {{#ismobile}}
-            <span class="visually-hidden">({{#str}}opensinnewwindow, core{{/str}})</span>
-        {{/ismobile}}
-    </a>
+    <form method="post" action="{{{playurl}}}" class="mt-3" {{#ismobile}}target="_blank"{{/ismobile}}>
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fs-4 fw-bold shadow-sm">
+            {{playtext}}
+            {{#ismobile}}
+                <span class="visually-hidden">({{#str}}opensinnewwindow, core{{/str}})</span>
+            {{/ismobile}}
+        </button>
+    </form>
 </div>

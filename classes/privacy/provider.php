@@ -1,0 +1,328 @@
+<?php
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * Privacy provider implementation for mod_playerpuzzle.
+ *
+ * @package    mod_playerpuzzle
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace mod_playerpuzzle\privacy;
+
+use core_privacy\local\metadata\collection;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\contextlist;
+use core_privacy\local\request\transform;
+use core_privacy\local\request\userlist;
+use core_privacy\local\request\writer;
+
+/**
+ * Privacy provider for mod_playerpuzzle.
+ *
+ * Personal data is stored in two places:
+ * - playerpuzzle_inventory (userid, coins, swordlevel, shieldlevel): one row per
+ *   user, shared across every PlayerPuzzle instance on the site. Lives at the
+ *   user's own context, not at any particular activity's context.
+ * - playerpuzzle_attempts (userid, currentlevel, currentphase, bosshp_remaining,
+ *   questions_correct, questions_total, score, status): one row per attempt,
+ *   tied to the specific activity instance the attempt was made in.
+ *
+ * @package    mod_playerpuzzle
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class provider implements
+    \core_privacy\local\metadata\provider,
+    \core_privacy\local\request\core_userlist_provider,
+    \core_privacy\local\request\plugin\provider {
+    /**
+     * Returns metadata about personal data stored by this plugin.
+     *
+     * @param collection $collection The initialised collection to add items to.
+     * @return collection A listing of user data stored through this system.
+     */
+    public static function get_metadata(collection $collection): collection {
+        $collection->add_database_table('playerpuzzle_inventory', [
+            'userid'      => 'privacy:metadata:userid',
+            'coins'       => 'privacy:metadata:coins',
+            'swordlevel'  => 'privacy:metadata:swordlevel',
+            'shieldlevel' => 'privacy:metadata:shieldlevel',
+            'timecreated' => 'privacy:metadata:timecreated',
+            'timemodified' => 'privacy:metadata:timemodified',
+        ], 'privacy:metadata:playerpuzzle_inventory');
+
+        $collection->add_database_table('playerpuzzle_attempts', [
+            'userid'            => 'privacy:metadata:userid',
+            'currentlevel'      => 'privacy:metadata:currentlevel',
+            'currentphase'      => 'privacy:metadata:currentphase',
+            'bosshp_remaining'  => 'privacy:metadata:bosshp_remaining',
+            'questions_correct' => 'privacy:metadata:questions_correct',
+            'questions_total'   => 'privacy:metadata:questions_total',
+            'score'             => 'privacy:metadata:score',
+            'status'            => 'privacy:metadata:status',
+            'timecreated'       => 'privacy:metadata:timecreated',
+            'timefinished'      => 'privacy:metadata:timefinished',
+        ], 'privacy:metadata:playerpuzzle_attempts');
+
+        return $collection;
+    }
+
+    /**
+     * Get the list of contexts that contain user information for the specified user.
+     *
+     * @param int $userid The user to search.
+     * @return contextlist The contextlist containing the list of contexts used in this plugin.
+     */
+    public static function get_contexts_for_userid(int $userid): contextlist {
+        global $DB;
+
+        $contextlist = new contextlist();
+
+        if ($DB->record_exists('playerpuzzle_inventory', ['userid' => $userid])) {
+            $contextlist->add_user_context($userid);
+        }
+
+        $sql = "SELECT ctx.id
+                  FROM {playerpuzzle_attempts} pa
+                  JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
+                  JOIN {modules} m ON m.name = :activityname
+                  JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                  JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
+                 WHERE pa.userid = :userid";
+        $contextlist->add_from_sql($sql, [
+            'activityname' => 'playerpuzzle',
+            'modlevel'     => CONTEXT_MODULE,
+            'userid'       => $userid,
+        ]);
+
+        return $contextlist;
+    }
+
+    /**
+     * Get the list of users who have data within a context.
+     *
+     * @param userlist $userlist The userlist to populate.
+     */
+    public static function get_users_in_context(userlist $userlist): void {
+        global $DB;
+
+        $context = $userlist->get_context();
+
+        if (is_a($context, \context_user::class)) {
+            if ($DB->record_exists('playerpuzzle_inventory', ['userid' => $context->instanceid])) {
+                $userlist->add_user($context->instanceid);
+            }
+            return;
+        }
+
+        if (!is_a($context, \context_module::class)) {
+            return;
+        }
+
+        $sql = "SELECT pa.userid
+                  FROM {playerpuzzle_attempts} pa
+                  JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
+                  JOIN {modules} m ON m.name = :activityname
+                  JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                  JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
+                 WHERE ctx.id = :contextid";
+        $userlist->add_from_sql('userid', $sql, [
+            'activityname' => 'playerpuzzle',
+            'modlevel'     => CONTEXT_MODULE,
+            'contextid'    => $context->id,
+        ]);
+    }
+
+    /**
+     * Export all user data for the specified user, in the specified contexts.
+     *
+     * @param approved_contextlist $contextlist The approved contexts to export information for.
+     */
+    public static function export_user_data(approved_contextlist $contextlist): void {
+        global $DB;
+
+        $userid = $contextlist->get_user()->id;
+
+        foreach ($contextlist->get_contexts() as $context) {
+            if ($context->contextlevel == CONTEXT_USER && $context->instanceid == $userid) {
+                $inventory = $DB->get_record('playerpuzzle_inventory', ['userid' => $userid]);
+                if ($inventory) {
+                    writer::with_context($context)->export_data(
+                        [get_string('privacy:metadata:playerpuzzle_inventory', 'mod_playerpuzzle')],
+                        (object) [
+                            'coins'        => $inventory->coins,
+                            'swordlevel'   => $inventory->swordlevel,
+                            'shieldlevel'  => $inventory->shieldlevel,
+                            'timecreated'  => transform::datetime($inventory->timecreated),
+                            'timemodified' => transform::datetime($inventory->timemodified),
+                        ]
+                    );
+                }
+            }
+        }
+
+        $contexts = array_reduce($contextlist->get_contexts(), function (array $carry, \context $context): array {
+            if ($context->contextlevel == CONTEXT_MODULE) {
+                $carry[$context->id] = $context;
+            }
+            return $carry;
+        }, []);
+
+        if (empty($contexts)) {
+            return;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal(array_keys($contexts), SQL_PARAMS_NAMED, 'ctx');
+
+        $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.bosshp_remaining,
+                       pa.questions_correct, pa.questions_total, pa.score, pa.status,
+                       pa.timecreated, pa.timefinished, ctx.id AS contextid
+                  FROM {playerpuzzle_attempts} pa
+                  JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
+                  JOIN {modules} m ON m.name = 'playerpuzzle'
+                  JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                  JOIN {context} ctx ON ctx.instanceid = cm.id
+                 WHERE ctx.id $insql
+                   AND pa.userid = :userid";
+        $records = $DB->get_recordset_sql($sql, array_merge($inparams, ['userid' => $userid]));
+
+        $allattempts = [];
+        foreach ($records as $record) {
+            $allattempts[$record->contextid][] = (object) [
+                'currentlevel'     => $record->currentlevel,
+                'currentphase'     => $record->currentphase,
+                'bosshpremaining'  => $record->bosshp_remaining,
+                'questionscorrect' => $record->questions_correct,
+                'questionstotal'   => $record->questions_total,
+                'score'            => $record->score,
+                'status'           => $record->status,
+                'timecreated'      => transform::datetime($record->timecreated),
+                'timefinished'     => $record->timefinished ? transform::datetime($record->timefinished) : null,
+            ];
+        }
+        $records->close();
+
+        foreach ($allattempts as $contextid => $attempts) {
+            writer::with_context($contexts[$contextid])->export_data(
+                [get_string('privacy:metadata:playerpuzzle_attempts', 'mod_playerpuzzle')],
+                (object) ['attempts' => $attempts]
+            );
+        }
+    }
+
+    /**
+     * Delete all user data for all users in the specified context.
+     *
+     * @param \context $context The context to delete data for.
+     */
+    public static function delete_data_for_all_users_in_context(\context $context): void {
+        global $DB;
+
+        if ($context->contextlevel == CONTEXT_USER) {
+            $DB->delete_records('playerpuzzle_inventory', ['userid' => $context->instanceid]);
+            return;
+        }
+
+        if ($context->contextlevel != CONTEXT_MODULE) {
+            return;
+        }
+
+        $cm = get_coursemodule_from_id('playerpuzzle', $context->instanceid);
+        if (!$cm) {
+            return;
+        }
+
+        $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $cm->instance]);
+    }
+
+    /**
+     * Delete all user data for the specified user, in the specified contexts.
+     *
+     * @param approved_contextlist $contextlist The approved contexts and user information to delete information for.
+     */
+    public static function delete_data_for_user(approved_contextlist $contextlist): void {
+        global $DB;
+
+        $userid = $contextlist->get_user()->id;
+
+        $instanceids = [];
+        foreach ($contextlist->get_contexts() as $context) {
+            if ($context->contextlevel == CONTEXT_USER && $context->instanceid == $userid) {
+                $DB->delete_records('playerpuzzle_inventory', ['userid' => $userid]);
+                continue;
+            }
+            if ($context->contextlevel != CONTEXT_MODULE) {
+                continue;
+            }
+            $cm = get_coursemodule_from_id('playerpuzzle', $context->instanceid);
+            if ($cm) {
+                $instanceids[] = (int) $cm->instance;
+            }
+        }
+
+        if (empty($instanceids)) {
+            return;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($instanceids, SQL_PARAMS_NAMED, 'pp');
+        $DB->delete_records_select(
+            'playerpuzzle_attempts',
+            "playerpuzzleid $insql AND userid = :userid",
+            array_merge($inparams, ['userid' => $userid])
+        );
+    }
+
+    /**
+     * Delete multiple users within a single context.
+     *
+     * @param approved_userlist $userlist The approved context and user information to delete information for.
+     */
+    public static function delete_data_for_users(approved_userlist $userlist): void {
+        global $DB;
+
+        $context = $userlist->get_context();
+        $userids = $userlist->get_userids();
+        if (empty($userids)) {
+            return;
+        }
+
+        if (is_a($context, \context_user::class)) {
+            if (in_array($context->instanceid, $userids)) {
+                $DB->delete_records('playerpuzzle_inventory', ['userid' => $context->instanceid]);
+            }
+            return;
+        }
+
+        if (!is_a($context, \context_module::class)) {
+            return;
+        }
+
+        $cm = get_coursemodule_from_id('playerpuzzle', $context->instanceid);
+        if (!$cm) {
+            return;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'uid');
+        $DB->delete_records_select(
+            'playerpuzzle_attempts',
+            "playerpuzzleid = :playerpuzzleid AND userid $insql",
+            array_merge(['playerpuzzleid' => $cm->instance], $inparams)
+        );
+    }
+}

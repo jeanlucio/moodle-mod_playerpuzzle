@@ -40,6 +40,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 require_sesskey();
 
+if ((int) $playerpuzzle->maxattempts > 0) {
+    $finishedattempts = $DB->count_records_select(
+        'playerpuzzle_attempts',
+        'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress',
+        ['ppid' => $playerpuzzle->id, 'uid' => $USER->id, 'inprogress' => 'inprogress']
+    );
+    if ($finishedattempts >= (int) $playerpuzzle->maxattempts) {
+        throw new moodle_exception('maxattemptsreached', 'mod_playerpuzzle', new moodle_url(
+            '/mod/playerpuzzle/view.php',
+            ['id' => $cm->id]
+        ));
+    }
+}
+
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));
 $PAGE->set_heading(format_string($course->fullname));

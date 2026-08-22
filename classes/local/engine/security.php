@@ -55,15 +55,34 @@ class security {
     }
 
     /**
+     * Statuses a token may be consumed into. Mirrors db/install.xml's playerpuzzle_attempts.status.
+     */
+    public const FINAL_STATUSES = ['won', 'lost', 'timeout', 'abandoned'];
+
+    /**
      * Validates and consumes a token to prevent replay attacks.
+     *
+     * Moves the attempt straight to its final status in the same update that consumes the
+     * token, so a second request with the same token no longer matches status = 'inprogress'
+     * and is rejected.
      *
      * @param string $token The token provided by the client.
      * @param int $playerpuzzleid The instance ID.
      * @param int $userid The user ID.
+     * @param string $finalstatus One of self::FINAL_STATUSES.
      * @return \stdClass|false The attempt record if valid, false if cheat detected.
      */
-    public static function validate_and_consume_token(string $token, int $playerpuzzleid, int $userid) {
+    public static function validate_and_consume_token(
+        string $token,
+        int $playerpuzzleid,
+        int $userid,
+        string $finalstatus
+    ) {
         global $DB;
+
+        if (!in_array($finalstatus, self::FINAL_STATUSES, true)) {
+            throw new \coding_exception('Invalid final attempt status: ' . $finalstatus);
+        }
 
         $params = [
             'token' => $token,
@@ -81,8 +100,9 @@ class security {
         }
 
         // Consume the token so it cannot be used again (Anti-Replay).
-        $attempt->status = 'finished';
-        $attempt->timemodified = time();
+        $attempt->status = $finalstatus;
+        $attempt->timefinished = time();
+        $attempt->timemodified = $attempt->timefinished;
         $DB->update_record('playerpuzzle_attempts', $attempt);
 
         return $attempt;

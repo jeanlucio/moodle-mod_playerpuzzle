@@ -29,6 +29,8 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_playerpuzzle\local\engine\security;
+use moodle_exception;
 use stdClass;
 
 /**
@@ -43,6 +45,7 @@ class save_progress extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'cmid'    => new external_value(PARAM_INT, 'Course module ID'),
+            'token'   => new external_value(PARAM_ALPHANUM, 'Anti-replay token issued when the attempt started'),
             'gold'    => new external_value(PARAM_INT, 'Gold coins earned in this session'),
             'victory' => new external_value(PARAM_INT, 'Whether it was a victory (1) or defeat (0)'),
             'damage'  => new external_value(PARAM_INT, 'Damage dealt to the boss'),
@@ -50,19 +53,21 @@ class save_progress extends external_api {
     }
 
     /**
-     * Saves coins earned to the player inventory (fetch → modify in PHP → update).
+     * Consumes the attempt token, persists the attempt outcome, and credits coins on victory.
      *
      * @param int $cmid Course module ID.
+     * @param string $token Anti-replay token issued when the attempt started.
      * @param int $gold Gold coins earned.
      * @param int $victory Whether it was a victory.
      * @param int $damage Damage dealt to the boss.
      * @return array Result with status, message, and total coins.
      */
-    public static function execute(int $cmid, int $gold, int $victory, int $damage): array {
+    public static function execute(int $cmid, string $token, int $gold, int $victory, int $damage): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid'    => $cmid,
+            'token'   => $token,
             'gold'    => $gold,
             'victory' => $victory,
             'damage'  => $damage,
@@ -72,28 +77,57 @@ class save_progress extends external_api {
         self::validate_context($context);
         require_capability('mod/playerpuzzle:view', $context);
 
-        $safegold = max(0, $params['gold']);
-        $inventory = $DB->get_record('playerpuzzle_inventory', ['userid' => $USER->id]);
+        $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
+        $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $cm->instance], '*', MUST_EXIST);
 
-        if ($inventory) {
-            $inventory->coins += $safegold;
-            $inventory->timemodified = time();
-            $DB->update_record('playerpuzzle_inventory', $inventory);
-        } else {
-            $inventory = new stdClass();
-            $inventory->userid = $USER->id;
-            $inventory->coins = $safegold;
-            $inventory->swordlevel = 1;
-            $inventory->shieldlevel = 1;
-            $inventory->timecreated = time();
-            $inventory->timemodified = time();
-            $DB->insert_record('playerpuzzle_inventory', $inventory);
+        $isvictory = $params['victory'] === 1;
+        $finalstatus = $isvictory ? 'won' : 'lost';
+
+        $attempt = security::validate_and_consume_token(
+            $params['token'],
+            (int) $playerpuzzle->id,
+            (int) $USER->id,
+            $finalstatus
+        );
+        if (!$attempt) {
+            // Token unknown, already consumed, or belongs to a different user/instance:
+            // this is a replay or forged submission, not a coding mistake.
+            throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
+        }
+
+        // Sanity check: damage can never exceed the boss HP the server itself configured.
+        $safedamage = max(0, min($params['damage'], (int) $playerpuzzle->basebosshp));
+        $attempt->bosshp_remaining = max(0, (int) $playerpuzzle->basebosshp - $safedamage);
+        $attempt->score = round(($safedamage / max(1, (int) $playerpuzzle->basebosshp)) * 100, 5);
+        $DB->update_record('playerpuzzle_attempts', $attempt);
+
+        $totalcoins = 0;
+        if ($isvictory) {
+            // Defeat/timeout discards the session's coins; only a win banks them.
+            $safegold = max(0, $params['gold']);
+            $inventory = $DB->get_record('playerpuzzle_inventory', ['userid' => $USER->id]);
+
+            if ($inventory) {
+                $inventory->coins += $safegold;
+                $inventory->timemodified = time();
+                $DB->update_record('playerpuzzle_inventory', $inventory);
+            } else {
+                $inventory = new stdClass();
+                $inventory->userid = $USER->id;
+                $inventory->coins = $safegold;
+                $inventory->swordlevel = 1;
+                $inventory->shieldlevel = 1;
+                $inventory->timecreated = time();
+                $inventory->timemodified = time();
+                $DB->insert_record('playerpuzzle_inventory', $inventory);
+            }
+            $totalcoins = (int) $inventory->coins;
         }
 
         return [
             'status'     => 'success',
-            'message'    => get_string('progresssaved', 'mod_playerpuzzle', $inventory->coins),
-            'totalcoins' => (int) $inventory->coins,
+            'message'    => get_string('progresssaved', 'mod_playerpuzzle', $totalcoins),
+            'totalcoins' => $totalcoins,
         ];
     }
 

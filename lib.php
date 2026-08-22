@@ -35,16 +35,16 @@ function playerpuzzle_supports(string $feature): bool|null {
             return true;
         case FEATURE_SHOW_DESCRIPTION:
             return true;
-        case FEATURE_BACKUP_MOODLE2:
-            return true;
-        case FEATURE_GRADE_HAS_GRADE:
-            return true;
         case FEATURE_GROUPS:
             return true;
         case FEATURE_GROUPINGS:
             return true;
+        // Not yet implemented: no backup/moodle2/ steplib, no custom_completion class, no
+        // grade column/grade_item_update. Flip these on only alongside their real implementation.
+        case FEATURE_BACKUP_MOODLE2:
+        case FEATURE_GRADE_HAS_GRADE:
         case FEATURE_COMPLETION_HAS_RULES:
-            return true;
+            return false;
         default:
             return null;
     }

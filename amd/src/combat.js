@@ -385,6 +385,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 methodname: 'mod_playerpuzzle_save_progress',
                 args: {
                     cmid: this.gameConfig.cmid,
+                    token: this.gameConfig.token,
                     gold: this.playerGold,
                     victory: victory ? 1 : 0,
                     damage: this.maxBossHp - this.currentHp,

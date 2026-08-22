@@ -30,8 +30,8 @@ use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\hud_service;
 use moodle_exception;
-use stdClass;
 
 /**
  * Saves the player's coin rewards and game result to the inventory.
@@ -60,7 +60,7 @@ class save_progress extends external_api {
      * @param int $gold Gold coins earned.
      * @param int $victory Whether it was a victory.
      * @param int $damage Damage dealt to the boss.
-     * @return array Result with status, message, and total coins.
+     * @return array Result with status, message, and coins banked.
      */
     public static function execute(int $cmid, string $token, int $gold, int $victory, int $damage): array {
         global $DB, $USER;
@@ -101,33 +101,22 @@ class save_progress extends external_api {
         $attempt->score = round(($safedamage / max(1, (int) $playerpuzzle->basebosshp)) * 100, 5);
         $DB->update_record('playerpuzzle_attempts', $attempt);
 
-        $totalcoins = 0;
+        $coinsbanked = 0;
         if ($isvictory) {
-            // Defeat/timeout discards the session's coins; only a win banks them.
+            // Defeat/timeout discards the session's coins; only a win banks them, and only into
+            // block_playerhud's own PlayerCoin item — PlayerPuzzle keeps no local currency.
             $safegold = max(0, $params['gold']);
-            $inventory = $DB->get_record('playerpuzzle_inventory', ['userid' => $USER->id]);
-
-            if ($inventory) {
-                $inventory->coins += $safegold;
-                $inventory->timemodified = time();
-                $DB->update_record('playerpuzzle_inventory', $inventory);
-            } else {
-                $inventory = new stdClass();
-                $inventory->userid = $USER->id;
-                $inventory->coins = $safegold;
-                $inventory->swordlevel = 1;
-                $inventory->shieldlevel = 1;
-                $inventory->timecreated = time();
-                $inventory->timemodified = time();
-                $DB->insert_record('playerpuzzle_inventory', $inventory);
+            $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
+            if ($blockinstanceid !== null) {
+                $banked = hud_service::credit_coins($blockinstanceid, (int) $USER->id, $safegold);
+                $coinsbanked = $banked ? $safegold : 0;
             }
-            $totalcoins = (int) $inventory->coins;
         }
 
         return [
-            'status'     => 'success',
-            'message'    => get_string('progresssaved', 'mod_playerpuzzle', $totalcoins),
-            'totalcoins' => $totalcoins,
+            'status'      => 'success',
+            'message'     => get_string('progresssaved', 'mod_playerpuzzle', $coinsbanked),
+            'coinsbanked' => $coinsbanked,
         ];
     }
 
@@ -138,9 +127,9 @@ class save_progress extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'status'     => new external_value(PARAM_ALPHA, 'Success status'),
-            'message'    => new external_value(PARAM_TEXT, 'Feedback message for the player'),
-            'totalcoins' => new external_value(PARAM_INT, 'Total coins the player now holds'),
+            'status'      => new external_value(PARAM_ALPHA, 'Success status'),
+            'message'     => new external_value(PARAM_TEXT, 'Feedback message for the player'),
+            'coinsbanked' => new external_value(PARAM_INT, 'Coins banked into PlayerHUD this session'),
         ]);
     }
 }

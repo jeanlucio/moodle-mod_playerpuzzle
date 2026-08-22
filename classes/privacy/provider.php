@@ -35,13 +35,11 @@ use core_privacy\local\request\writer;
 /**
  * Privacy provider for mod_playerpuzzle.
  *
- * Personal data is stored in two places:
- * - playerpuzzle_inventory (userid, coins, swordlevel, shieldlevel): one row per
- *   user, shared across every PlayerPuzzle instance on the site. Lives at the
- *   user's own context, not at any particular activity's context.
- * - playerpuzzle_attempts (userid, currentlevel, currentphase, bosshp_remaining,
- *   questions_correct, questions_total, score, status): one row per attempt,
- *   tied to the specific activity instance the attempt was made in.
+ * Personal data is stored only in playerpuzzle_attempts (userid, currentlevel, currentphase,
+ * bosshp_remaining, questions_correct, questions_total, score, status): one row per attempt,
+ * tied to the specific activity instance the attempt was made in. PlayerPuzzle keeps no
+ * currency or upgrade-level data of its own — coins and upgrade levels live in
+ * block_playerhud, which declares its own personal data independently.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -58,15 +56,6 @@ class provider implements
      * @return collection A listing of user data stored through this system.
      */
     public static function get_metadata(collection $collection): collection {
-        $collection->add_database_table('playerpuzzle_inventory', [
-            'userid'      => 'privacy:metadata:userid',
-            'coins'       => 'privacy:metadata:coins',
-            'swordlevel'  => 'privacy:metadata:swordlevel',
-            'shieldlevel' => 'privacy:metadata:shieldlevel',
-            'timecreated' => 'privacy:metadata:timecreated',
-            'timemodified' => 'privacy:metadata:timemodified',
-        ], 'privacy:metadata:playerpuzzle_inventory');
-
         $collection->add_database_table('playerpuzzle_attempts', [
             'userid'            => 'privacy:metadata:userid',
             'currentlevel'      => 'privacy:metadata:currentlevel',
@@ -90,13 +79,7 @@ class provider implements
      * @return contextlist The contextlist containing the list of contexts used in this plugin.
      */
     public static function get_contexts_for_userid(int $userid): contextlist {
-        global $DB;
-
         $contextlist = new contextlist();
-
-        if ($DB->record_exists('playerpuzzle_inventory', ['userid' => $userid])) {
-            $contextlist->add_user_context($userid);
-        }
 
         $sql = "SELECT ctx.id
                   FROM {playerpuzzle_attempts} pa
@@ -123,13 +106,6 @@ class provider implements
         global $DB;
 
         $context = $userlist->get_context();
-
-        if (is_a($context, \context_user::class)) {
-            if ($DB->record_exists('playerpuzzle_inventory', ['userid' => $context->instanceid])) {
-                $userlist->add_user($context->instanceid);
-            }
-            return;
-        }
 
         if (!is_a($context, \context_module::class)) {
             return;
@@ -158,24 +134,6 @@ class provider implements
         global $DB;
 
         $userid = $contextlist->get_user()->id;
-
-        foreach ($contextlist->get_contexts() as $context) {
-            if ($context->contextlevel == CONTEXT_USER && $context->instanceid == $userid) {
-                $inventory = $DB->get_record('playerpuzzle_inventory', ['userid' => $userid]);
-                if ($inventory) {
-                    writer::with_context($context)->export_data(
-                        [get_string('privacy:metadata:playerpuzzle_inventory', 'mod_playerpuzzle')],
-                        (object) [
-                            'coins'        => $inventory->coins,
-                            'swordlevel'   => $inventory->swordlevel,
-                            'shieldlevel'  => $inventory->shieldlevel,
-                            'timecreated'  => transform::datetime($inventory->timecreated),
-                            'timemodified' => transform::datetime($inventory->timemodified),
-                        ]
-                    );
-                }
-            }
-        }
 
         $contexts = array_reduce($contextlist->get_contexts(), function (array $carry, \context $context): array {
             if ($context->contextlevel == CONTEXT_MODULE) {
@@ -234,11 +192,6 @@ class provider implements
     public static function delete_data_for_all_users_in_context(\context $context): void {
         global $DB;
 
-        if ($context->contextlevel == CONTEXT_USER) {
-            $DB->delete_records('playerpuzzle_inventory', ['userid' => $context->instanceid]);
-            return;
-        }
-
         if ($context->contextlevel != CONTEXT_MODULE) {
             return;
         }
@@ -263,10 +216,6 @@ class provider implements
 
         $instanceids = [];
         foreach ($contextlist->get_contexts() as $context) {
-            if ($context->contextlevel == CONTEXT_USER && $context->instanceid == $userid) {
-                $DB->delete_records('playerpuzzle_inventory', ['userid' => $userid]);
-                continue;
-            }
             if ($context->contextlevel != CONTEXT_MODULE) {
                 continue;
             }
@@ -299,13 +248,6 @@ class provider implements
         $context = $userlist->get_context();
         $userids = $userlist->get_userids();
         if (empty($userids)) {
-            return;
-        }
-
-        if (is_a($context, \context_user::class)) {
-            if (in_array($context->instanceid, $userids)) {
-                $DB->delete_records('playerpuzzle_inventory', ['userid' => $context->instanceid]);
-            }
             return;
         }
 

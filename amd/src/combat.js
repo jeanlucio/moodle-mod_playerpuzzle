@@ -391,7 +391,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                     damage: this.maxBossHp - this.currentHp,
                 },
             }])[0].done(res => {
-                const successMsg = strings.progresssaved.replace('{$a}', res.totalcoins);
+                const successMsg = strings.progresssaved.replace('{$a}', res.coinsbanked);
                 $('#pp-save-status').removeClass('text-muted').addClass('text-success')
                     .text(successMsg);
                 $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);

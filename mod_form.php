@@ -156,7 +156,75 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('maxattempts', PARAM_INT);
         $mform->setDefault('maxattempts', 0);
 
+        $this->add_hud_elements($mform, (int) $COURSE->id);
+
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
+    }
+
+    /**
+     * Adds the PlayerHUD integration section: which items stand in for the sword and shield
+     * upgrade levels. Only rendered when a block_playerhud instance exists in this course —
+     * coins always go to the block's own PlayerCoin item automatically, with no field here.
+     *
+     * @param MoodleQuickForm $mform The form being built.
+     * @param int $courseid Current course ID.
+     */
+    private function add_hud_elements(MoodleQuickForm $mform, int $courseid): void {
+        if (!\mod_playerpuzzle\local\hud_service::is_available_for_course($courseid)) {
+            return;
+        }
+
+        $blockinstanceid = \mod_playerpuzzle\local\hud_service::get_block_instance_id($courseid);
+        $huditems = \mod_playerpuzzle\local\hud_service::get_items_for_block($blockinstanceid);
+        $itemoptions = [0 => get_string('hud_noitem', 'mod_playerpuzzle')];
+        foreach ($huditems as $item) {
+            $itemoptions[$item->id] = format_string($item->name);
+        }
+
+        $mform->addElement('header', 'hudheader', get_string('hud_header', 'mod_playerpuzzle'));
+
+        $mform->addElement(
+            'select',
+            'hud_sword_item',
+            get_string('hud_sword_item', 'mod_playerpuzzle'),
+            $this->add_stale_hud_item_option($itemoptions, $blockinstanceid, 'hud_sword_item')
+        );
+        $mform->setType('hud_sword_item', PARAM_INT);
+        $mform->setDefault('hud_sword_item', 0);
+        $mform->addHelpButton('hud_sword_item', 'hud_sword_item', 'mod_playerpuzzle');
+
+        $mform->addElement(
+            'select',
+            'hud_shield_item',
+            get_string('hud_shield_item', 'mod_playerpuzzle'),
+            $this->add_stale_hud_item_option($itemoptions, $blockinstanceid, 'hud_shield_item')
+        );
+        $mform->setType('hud_shield_item', PARAM_INT);
+        $mform->setDefault('hud_shield_item', 0);
+        $mform->addHelpButton('hud_shield_item', 'hud_shield_item', 'mod_playerpuzzle');
+    }
+
+    /**
+     * Keeps a previously configured item selectable even if it was disabled or deleted since,
+     * so an existing instance's settings page never silently drops the stored value.
+     *
+     * @param array $options Item id => display name options built so far.
+     * @param int $blockinstanceid Block instance ID the stored item is expected to belong to.
+     * @param string $field Form field name to read the currently stored value from.
+     * @return array
+     */
+    private function add_stale_hud_item_option(array $options, int $blockinstanceid, string $field): array {
+        $storedid = (int) ($this->current->{$field} ?? 0);
+        if ($storedid <= 0 || isset($options[$storedid])) {
+            return $options;
+        }
+
+        $itemname = \mod_playerpuzzle\local\hud_service::get_item_name($blockinstanceid, $storedid);
+        $options[$storedid] = ($itemname !== '')
+            ? get_string('hud_item_disabled', 'mod_playerpuzzle', $itemname)
+            : get_string('hud_item_deleted', 'mod_playerpuzzle');
+
+        return $options;
     }
 }

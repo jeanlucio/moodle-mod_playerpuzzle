@@ -77,5 +77,32 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026052101, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026082201) {
+        $table = new xmldb_table('playerpuzzle');
+
+        // Add hud_sword_item.
+        $field = new xmldb_field('hud_sword_item', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add hud_shield_item.
+        $field = new xmldb_field('hud_shield_item', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Drop playerpuzzle_inventory: coins and upgrade levels are no longer stored locally.
+        // Coins are banked into block_playerhud's own PlayerCoin item and upgrade levels are
+        // read from teacher-picked block_playerhud items (see hud_service); with no PlayerHUD
+        // installed there is no permanent progression at all, matching SCOPE.md's design.
+        $inventorytable = new xmldb_table('playerpuzzle_inventory');
+        if ($dbman->table_exists($inventorytable)) {
+            $dbman->drop_table($inventorytable);
+        }
+
+        upgrade_mod_savepoint(true, 2026082201, 'playerpuzzle');
+    }
+
     return true;
 }

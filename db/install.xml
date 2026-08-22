@@ -19,6 +19,7 @@
         <FIELD NAME="questioncategory" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID from question_categories table"/>
         <FIELD NAME="timelimit" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Time limit in minutes (0 means no limit)"/>
         <FIELD NAME="maxattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Max attempts allowed (0 means unlimited)"/>
+        <FIELD NAME="hud_coin_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID credited with leftover coins on victory (0 = unconfigured)"/>
         <FIELD NAME="hud_sword_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID read as the sword upgrade level (0 = unconfigured)"/>
         <FIELD NAME="hud_shield_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID read as the shield upgrade level (0 = unconfigured)"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>

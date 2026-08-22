@@ -30,10 +30,12 @@ namespace mod_playerpuzzle\local;
  * PlayerPuzzle has no permanent economy of its own: SCOPE.md decides that a teacher who has
  * not added a block_playerhud instance to the course gets no persistent progression at all
  * (only the per-attempt tactical balance spent on in-game consumables, which never touches
- * this class). Where PlayerHUD is available, coins are always banked into the block's own
- * PlayerCoin item (a well-known item auto-created by PlayerHUD and shared across the whole
- * Player ecosystem, never a teacher-picked dropdown) — while "sword level" and "shield level"
- * remain teacher-picked per instance, since block_playerhud has no generic concept of either.
+ * this class). Where PlayerHUD is available, the teacher picks, per instance, which of the
+ * block's own items stand in for "coins", "sword level", and "shield level" — the same
+ * teacher-picked-dropdown pattern already used by mod_playerwords/mod_playercross, so adding
+ * this integration never requires a change to block_playerhud itself. PlayerHUD's own
+ * auto-generated PlayerCoin item is simply one of the options in that dropdown, like any
+ * other item the teacher could pick or create.
  */
 class hud_service {
     /**
@@ -133,36 +135,18 @@ class hud_service {
     }
 
     /**
-     * Returns the ID of the block instance's PlayerCoin item, or null if PlayerHUD has not
-     * created one yet (the teacher never opened the block's item wizard) or is unavailable.
+     * Grants $qty units of the configured "coin" item to $userid — the leftover per-attempt
+     * balance banked on victory. Returns false without granting anything when the item is
+     * unconfigured, PlayerHUD is unavailable, or there is nothing to grant.
      *
-     * @param int $blockinstanceid Block instance ID.
-     * @return int|null
-     */
-    public static function get_playercoin_item_id(int $blockinstanceid): ?int {
-        if (!self::is_installed()) {
-            return null;
-        }
-        return \block_playerhud\local\external_items::get_playercoin_item_id($blockinstanceid);
-    }
-
-    /**
-     * Grants $qty units of the block instance's PlayerCoin item to $userid — the leftover
-     * per-attempt balance banked on victory. Returns false without granting anything when
-     * PlayerHUD is unavailable, the block instance has no PlayerCoin item yet, or there is
-     * nothing to grant.
-     *
-     * @param int $blockinstanceid Block instance ID.
+     * @param int $blockinstanceid Block instance ID the item must belong to.
      * @param int $userid User ID.
+     * @param int $itemid PlayerHUD item ID configured as the coin item.
      * @param int $qty Number of coins to grant.
      * @return bool Whether the coins were actually banked.
      */
-    public static function credit_coins(int $blockinstanceid, int $userid, int $qty): bool {
-        if ($qty <= 0) {
-            return false;
-        }
-        $itemid = self::get_playercoin_item_id($blockinstanceid);
-        if ($itemid === null) {
+    public static function credit_coins(int $blockinstanceid, int $userid, int $itemid, int $qty): bool {
+        if (!self::is_installed() || $itemid <= 0 || $qty <= 0) {
             return false;
         }
         \block_playerhud\local\external_items::grant($blockinstanceid, $itemid, $userid, $qty, 'playerpuzzle', false);

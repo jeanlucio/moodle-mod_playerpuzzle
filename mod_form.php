@@ -163,9 +163,11 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
     }
 
     /**
-     * Adds the PlayerHUD integration section: which items stand in for the sword and shield
-     * upgrade levels. Only rendered when a block_playerhud instance exists in this course —
-     * coins always go to the block's own PlayerCoin item automatically, with no field here.
+     * Adds the PlayerHUD integration section: which items stand in for coins, the sword
+     * upgrade level, and the shield upgrade level. Only rendered when a block_playerhud
+     * instance exists in this course. All three fields list the same set of items — PlayerHUD's
+     * own auto-generated PlayerCoin item shows up as an ordinary option here, like any other
+     * item the teacher could pick or create.
      *
      * @param MoodleQuickForm $mform The form being built.
      * @param int $courseid Current course ID.
@@ -183,6 +185,16 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         }
 
         $mform->addElement('header', 'hudheader', get_string('hud_header', 'mod_playerpuzzle'));
+
+        $mform->addElement(
+            'select',
+            'hud_coin_item',
+            get_string('hud_coin_item', 'mod_playerpuzzle'),
+            $this->add_stale_hud_item_option($itemoptions, $blockinstanceid, 'hud_coin_item')
+        );
+        $mform->setType('hud_coin_item', PARAM_INT);
+        $mform->setDefault('hud_coin_item', 0);
+        $mform->addHelpButton('hud_coin_item', 'hud_coin_item', 'mod_playerpuzzle');
 
         $mform->addElement(
             'select',

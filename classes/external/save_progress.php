@@ -104,11 +104,16 @@ class save_progress extends external_api {
         $coinsbanked = 0;
         if ($isvictory) {
             // Defeat/timeout discards the session's coins; only a win banks them, and only into
-            // block_playerhud's own PlayerCoin item — PlayerPuzzle keeps no local currency.
+            // the item the teacher configured — PlayerPuzzle keeps no local currency of its own.
             $safegold = max(0, $params['gold']);
             $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
             if ($blockinstanceid !== null) {
-                $banked = hud_service::credit_coins($blockinstanceid, (int) $USER->id, $safegold);
+                $banked = hud_service::credit_coins(
+                    $blockinstanceid,
+                    (int) $USER->id,
+                    (int) $playerpuzzle->hud_coin_item,
+                    $safegold
+                );
                 $coinsbanked = $banked ? $safegold : 0;
             }
         }

@@ -267,44 +267,64 @@ define([], function() {
             }
         }
 
-        findMove() {
-            const isMatch = (rowP, colP) => {
-                const p = this.grid[rowP][colP];
-                if (!p) {
-                    return false;
-                }
+        /**
+         * Checks whether the piece at the given cell is part of a match, optionally
+         * restricted to a single piece type (used by findMove() to hunt for a specific
+         * type of match, e.g. the boss prioritising damage-dealing pieces).
+         *
+         * @param {number} rowP Row index.
+         * @param {number} colP Column index.
+         * @param {number|null} onlyType When set, only counts as a match if the piece type equals this value.
+         * @returns {boolean} Whether a match of at least 3 exists at this cell.
+         */
+        isMatchAt(rowP, colP, onlyType = null) {
+            const p = this.grid[rowP][colP];
+            if (!p) {
+                return false;
+            }
 
-                const {type} = p;
-                let countH = 1;
-                let countV = 1;
-                let tr, tc;
+            const {type} = p;
+            if (onlyType !== null && type !== onlyType) {
+                return false;
+            }
 
-                tc = colP - 1;
-                while (tc >= 0 && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
-                    countH++; tc--;
-                }
+            let countH = 1;
+            let countV = 1;
+            let tr, tc;
 
-                tc = colP + 1;
-                while (tc < this.cols && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
-                    countH++; tc++;
-                }
-                if (countH >= 3) {
-                    return true;
-                }
+            tc = colP - 1;
+            while (tc >= 0 && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
+                countH++; tc--;
+            }
 
-                tr = rowP - 1;
-                while (tr >= 0 && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
-                    countV++; tr--;
-                }
+            tc = colP + 1;
+            while (tc < this.cols && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
+                countH++; tc++;
+            }
+            if (countH >= 3) {
+                return true;
+            }
 
-                tr = rowP + 1;
-                while (tr < this.rows && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
-                    countV++; tr++;
-                }
+            tr = rowP - 1;
+            while (tr >= 0 && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
+                countV++; tr--;
+            }
 
-                return countV >= 3;
-            };
+            tr = rowP + 1;
+            while (tr < this.rows && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
+                countV++; tr++;
+            }
 
+            return countV >= 3;
+        }
+
+        /**
+         * Finds a valid swap that produces a match, optionally restricted to a piece type.
+         *
+         * @param {number|null} onlyType When set, only returns a swap whose resulting match uses this piece type.
+         * @returns {{p1: object, p2: object}|null} The two pieces to swap, or null when none exist.
+         */
+        findMove(onlyType = null) {
             for (let r = 0; r < this.rows; r++) {
                 for (let c = 0; c < this.cols; c++) {
                     let temp;
@@ -312,7 +332,7 @@ define([], function() {
                         temp = this.grid[r][c].type;
                         this.grid[r][c].type = this.grid[r][c + 1].type;
                         this.grid[r][c + 1].type = temp;
-                        const matchR = isMatch(r, c) || isMatch(r, c + 1);
+                        const matchR = this.isMatchAt(r, c, onlyType) || this.isMatchAt(r, c + 1, onlyType);
 
                         temp = this.grid[r][c].type;
                         this.grid[r][c].type = this.grid[r][c + 1].type;
@@ -326,7 +346,7 @@ define([], function() {
                         temp = this.grid[r][c].type;
                         this.grid[r][c].type = this.grid[r + 1][c].type;
                         this.grid[r + 1][c].type = temp;
-                        const matchD = isMatch(r, c) || isMatch(r + 1, c);
+                        const matchD = this.isMatchAt(r, c, onlyType) || this.isMatchAt(r + 1, c, onlyType);
 
                         temp = this.grid[r][c].type;
                         this.grid[r][c].type = this.grid[r + 1][c].type;

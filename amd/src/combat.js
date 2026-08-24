@@ -155,7 +155,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
         executeBossTurn() {
             const me = this.scene;
-            const move = me.board.findMove();
+            const move = me.board.findMove(3) || me.board.findMove();
 
             if (move) {
                 me.tweens.add({
@@ -202,7 +202,6 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         question = ctx.gameConfig.questions[idx];
                     }
 
-                    const bossCorrect = Math.random() > 0.3;
                     const numOptions = question.options ? question.options.length : 0;
                     const bossPickIdx = (trigger === 'boss' && numOptions > 0)
                         ? Math.floor(Math.random() * numOptions) : -1;
@@ -311,36 +310,57 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                             });
 
                         } else {
-                            question.options.forEach((option, idx) => {
-                                const plainText = option.text.replace(/(<([^>]+)>)/gi, '');
-                                const btn = $(`<button class="${btnClass}" disabled>${option.text}</button>`);
+                            const bossPick = question.options[bossPickIdx];
 
-                                if (idx === bossPickIdx) {
-                                    if (bossCorrect) {
-                                        btn.removeClass('btn-outline-primary').addClass('btn-danger text-white');
-                                        btn.html(`<strong>${ctx.strings.bossansweredcorrect.replace('{$a}', plainText)}</strong>`);
+                            const renderBossResult = isBossCorrect => {
+                                question.options.forEach((option, idx) => {
+                                    const plainText = option.text.replace(/(<([^>]+)>)/gi, '');
+                                    const btn = $(`<button class="${btnClass}" disabled>${option.text}</button>`);
+
+                                    if (idx === bossPickIdx) {
+                                        if (isBossCorrect) {
+                                            btn.removeClass('btn-outline-primary').addClass('btn-danger text-white');
+                                            btn.html(
+                                                `<strong>${ctx.strings.bossansweredcorrect.replace('{$a}', plainText)}</strong>`
+                                            );
+                                        } else {
+                                            btn.removeClass('btn-outline-primary').addClass('btn-secondary text-white');
+                                            btn.html(
+                                                `<strong>${ctx.strings.bossansweredwrong.replace('{$a}', plainText)}</strong>`
+                                            );
+                                        }
                                     } else {
-                                        btn.removeClass('btn-outline-primary').addClass('btn-secondary text-white');
-                                        btn.html(`<strong>${ctx.strings.bossansweredwrong.replace('{$a}', plainText)}</strong>`);
+                                        btn.removeClass('btn-outline-primary').addClass('btn-light');
                                     }
-                                } else {
-                                    btn.removeClass('btn-outline-primary').addClass('btn-light');
-                                }
-                                answersContainer.append(btn);
-                            });
+                                    answersContainer.append(btn);
+                                });
 
-                            let bossFeedback;
-                            if (bossCorrect) {
-                                ctx.applyDamageToPlayer(ctx.baseDamage * 3);
-                                const dmgMsg = ctx.strings.bosscorrectfeedback.replace('{$a}', ctx.baseDamage * 3);
-                                bossFeedback = `<div class="alert alert-danger mt-2 mb-0"><strong>${dmgMsg}</strong></div>`;
-                            } else {
-                                const wfMsg = ctx.strings.bosswrongfeedback;
-                                bossFeedback = `<div class="alert alert-success mt-2 mb-0"><strong>${wfMsg}</strong></div>`;
-                            }
-                            answersContainer.append(bossFeedback);
-                            $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue).show()
-                                .off('click').on('click', closeModal);
+                                let bossFeedback;
+                                if (isBossCorrect) {
+                                    ctx.applyDamageToPlayer(ctx.baseDamage * 3);
+                                    const dmgMsg = ctx.strings.bosscorrectfeedback.replace('{$a}', ctx.baseDamage * 3);
+                                    bossFeedback = `<div class="alert alert-danger mt-2 mb-0"><strong>${dmgMsg}</strong></div>`;
+                                } else {
+                                    const wfMsg = ctx.strings.bosswrongfeedback;
+                                    bossFeedback = `<div class="alert alert-success mt-2 mb-0"><strong>${wfMsg}</strong></div>`;
+                                }
+                                answersContainer.append(bossFeedback);
+                                $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue).show()
+                                    .off('click').on('click', closeModal);
+                            };
+
+                            Ajax.call([{
+                                methodname: 'mod_playerpuzzle_validate_answer',
+                                args: {
+                                    cmid: ctx.gameConfig.cmid,
+                                    questionid: question.id,
+                                    answerid: bossPick.id,
+                                },
+                            }])[0].done(res => {
+                                renderBossResult(!!res.correct);
+                            }).fail(() => {
+                                renderBossResult(false);
+                            });
                         }
 
                     } else {

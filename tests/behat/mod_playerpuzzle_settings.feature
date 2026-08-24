@@ -18,7 +18,7 @@ Feature: PlayerPuzzle teacher-facing settings behaviour
   Scenario: A teacher adds a PlayerPuzzle activity and it appears on the course page
     Given I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
-    And I add a "PlayerPuzzle" activity to course "Course 1" section "1" and I fill the form with:
+    And I add a "playerpuzzle" activity to course "Course 1" section "1" and I fill the form with:
       | Name | Dungeon Quiz |
     When I am on "Course 1" course homepage
     Then I should see "Dungeon Quiz"

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260822" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260824" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -22,6 +22,16 @@
         <FIELD NAME="hud_coin_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID credited with leftover coins on victory (0 = unconfigured)"/>
         <FIELD NAME="hud_sword_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID read as the sword upgrade level (0 = unconfigured)"/>
         <FIELD NAME="hud_shield_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID read as the shield upgrade level (0 = unconfigured)"/>
+        <FIELD NAME="hud_potion_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID consumed 1 unit per Potion use (0 = local coin purchase only)"/>
+        <FIELD NAME="hud_retry_cost_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item charged from the 2nd attempt onwards (0 = free)"/>
+        <FIELD NAME="hud_retry_cost_qty" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Quantity charged per retry"/>
+        <FIELD NAME="hud_win_grant_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item granted on every win (0 = none)"/>
+        <FIELD NAME="hud_win_grant_qty" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Quantity granted per win"/>
+        <FIELD NAME="gamemode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="campaign" SEQUENCE="false" COMMENT="campaign | single"/>
+        <FIELD NAME="max_single_matches" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Single-match mode only; 0 = unlimited"/>
+        <FIELD NAME="grademethod" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Single-match mode only; mirrors PLAYERWORDS_GRADE_*"/>
+        <FIELD NAME="minquestions" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="3" SEQUENCE="false" COMMENT="0-10; applies to both modes; opt-out, not opt-in"/>
+        <FIELD NAME="considererrors" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boolean; only enableable when minquestions &gt;= 1"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>

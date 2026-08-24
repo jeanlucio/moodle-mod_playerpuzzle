@@ -116,5 +116,71 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026082202, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026082401) {
+        $table = new xmldb_table('playerpuzzle');
+
+        // Add hud_potion_item.
+        $field = new xmldb_field('hud_potion_item', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add hud_retry_cost_item.
+        $field = new xmldb_field('hud_retry_cost_item', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add hud_retry_cost_qty.
+        $field = new xmldb_field('hud_retry_cost_qty', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add hud_win_grant_item.
+        $field = new xmldb_field('hud_win_grant_item', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add hud_win_grant_qty.
+        $field = new xmldb_field('hud_win_grant_qty', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add gamemode.
+        $field = new xmldb_field('gamemode', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'campaign');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add max_single_matches.
+        $field = new xmldb_field('max_single_matches', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add grademethod.
+        $field = new xmldb_field('grademethod', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '1');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add minquestions.
+        $field = new xmldb_field('minquestions', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '3');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add considererrors.
+        $field = new xmldb_field('considererrors', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026082401, 'playerpuzzle');
+    }
+
     return true;
 }

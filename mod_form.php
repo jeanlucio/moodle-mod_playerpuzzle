@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
+require_once(__DIR__ . '/lib.php');
 
 /**
  * Module instance settings form.
@@ -44,9 +45,30 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
 
+        $mform->addElement(
+            'select',
+            'gamemode',
+            get_string('gamemode', 'mod_playerpuzzle'),
+            [
+                PLAYERPUZZLE_GAMEMODE_CAMPAIGN => get_string('gamemode_campaign', 'mod_playerpuzzle'),
+                PLAYERPUZZLE_GAMEMODE_SINGLE   => get_string('gamemode_single', 'mod_playerpuzzle'),
+            ]
+        );
+        $mform->setType('gamemode', PARAM_ALPHA);
+        $mform->setDefault('gamemode', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+        $mform->addHelpButton('gamemode', 'gamemode', 'mod_playerpuzzle');
+
         $this->standard_intro_elements();
 
+        $mform->addElement('header', 'studentsettings', get_string('studentsettings', 'mod_playerpuzzle'));
+
+        $mform->addElement('text', 'basestudenthp', get_string('basestudenthp', 'mod_playerpuzzle'));
+        $mform->setType('basestudenthp', PARAM_INT);
+        $mform->setDefault('basestudenthp', 100);
+        $mform->addHelpButton('basestudenthp', 'basestudenthp', 'mod_playerpuzzle');
+
         $mform->addElement('header', 'levelsandphases', get_string('levelsandphases', 'mod_playerpuzzle'));
+        $mform->hideIf('levelsandphases', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
 
         $leveloptions = [];
         for ($i = 1; $i <= 10; $i++) {
@@ -56,11 +78,35 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('maxlevels', PARAM_INT);
         $mform->setDefault('maxlevels', 1);
         $mform->addHelpButton('maxlevels', 'maxlevels', 'mod_playerpuzzle');
+        $mform->hideIf('maxlevels', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
 
-        $mform->addElement('text', 'basestudenthp', get_string('basestudenthp', 'mod_playerpuzzle'));
-        $mform->setType('basestudenthp', PARAM_INT);
-        $mform->setDefault('basestudenthp', 100);
-        $mform->addHelpButton('basestudenthp', 'basestudenthp', 'mod_playerpuzzle');
+        $mform->addElement('header', 'singlematchheader', get_string('singlematchheader', 'mod_playerpuzzle'));
+        $mform->hideIf('singlematchheader', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+
+        $singlematchoptions = [0 => get_string('unlimited', 'mod_playerpuzzle')];
+        for ($i = 1; $i <= 10; $i++) {
+            $singlematchoptions[$i] = $i;
+        }
+        $mform->addElement(
+            'select',
+            'max_single_matches',
+            get_string('max_single_matches', 'mod_playerpuzzle'),
+            $singlematchoptions
+        );
+        $mform->setType('max_single_matches', PARAM_INT);
+        $mform->setDefault('max_single_matches', 0);
+        $mform->hideIf('max_single_matches', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+
+        $mform->addElement(
+            'select',
+            'grademethod',
+            get_string('grademethod', 'mod_playerpuzzle'),
+            playerpuzzle_get_grademethod_options()
+        );
+        $mform->setType('grademethod', PARAM_INT);
+        $mform->setDefault('grademethod', PLAYERPUZZLE_GRADE_HIGHEST);
+        $mform->addHelpButton('grademethod', 'grademethod', 'mod_playerpuzzle');
+        $mform->hideIf('grademethod', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
 
         $mform->addElement('header', 'bosssettings', get_string('bosssettings', 'mod_playerpuzzle'));
 
@@ -145,6 +191,26 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('questioncategory', PARAM_INT);
         $mform->addRule('questioncategory', null, 'required', null, 'client');
 
+        $minquestionsoptions = [];
+        for ($i = 0; $i <= 10; $i++) {
+            $minquestionsoptions[$i] = $i;
+        }
+        $mform->addElement(
+            'select',
+            'minquestions',
+            get_string('minquestions', 'mod_playerpuzzle'),
+            $minquestionsoptions
+        );
+        $mform->setType('minquestions', PARAM_INT);
+        $mform->setDefault('minquestions', 3);
+        $mform->addHelpButton('minquestions', 'minquestions', 'mod_playerpuzzle');
+
+        $mform->addElement('advcheckbox', 'considererrors', get_string('considererrors', 'mod_playerpuzzle'));
+        $mform->setType('considererrors', PARAM_INT);
+        $mform->setDefault('considererrors', 0);
+        $mform->addHelpButton('considererrors', 'considererrors', 'mod_playerpuzzle');
+        $mform->disabledIf('considererrors', 'minquestions', 'eq', 0);
+
         $mform->addElement('header', 'rules', get_string('rules', 'mod_playerpuzzle'));
 
         $mform->addElement('text', 'timelimit', get_string('timelimit', 'mod_playerpuzzle'));
@@ -155,6 +221,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addElement('text', 'maxattempts', get_string('maxattempts', 'mod_playerpuzzle'));
         $mform->setType('maxattempts', PARAM_INT);
         $mform->setDefault('maxattempts', 0);
+        $mform->hideIf('maxattempts', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
 
         $this->add_hud_elements($mform, (int) $COURSE->id);
 
@@ -215,6 +282,67 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('hud_shield_item', PARAM_INT);
         $mform->setDefault('hud_shield_item', 0);
         $mform->addHelpButton('hud_shield_item', 'hud_shield_item', 'mod_playerpuzzle');
+
+        $mform->addElement(
+            'select',
+            'hud_potion_item',
+            get_string('hud_potion_item', 'mod_playerpuzzle'),
+            $this->add_stale_hud_item_option($itemoptions, $blockinstanceid, 'hud_potion_item')
+        );
+        $mform->setType('hud_potion_item', PARAM_INT);
+        $mform->setDefault('hud_potion_item', 0);
+        $mform->addHelpButton('hud_potion_item', 'hud_potion_item', 'mod_playerpuzzle');
+
+        $mform->addElement(
+            'select',
+            'hud_retry_cost_item',
+            get_string('hud_retry_cost_item', 'mod_playerpuzzle'),
+            $this->add_stale_hud_item_option($itemoptions, $blockinstanceid, 'hud_retry_cost_item')
+        );
+        $mform->setType('hud_retry_cost_item', PARAM_INT);
+        $mform->setDefault('hud_retry_cost_item', 0);
+        $mform->addHelpButton('hud_retry_cost_item', 'hud_retry_cost_item', 'mod_playerpuzzle');
+
+        $mform->addElement('text', 'hud_retry_cost_qty', get_string('hud_retry_cost_qty', 'mod_playerpuzzle'));
+        $mform->setType('hud_retry_cost_qty', PARAM_INT);
+        $mform->setDefault('hud_retry_cost_qty', 1);
+        $mform->hideIf('hud_retry_cost_qty', 'hud_retry_cost_item', 'eq', 0);
+
+        $mform->addElement(
+            'select',
+            'hud_win_grant_item',
+            get_string('hud_win_grant_item', 'mod_playerpuzzle'),
+            $this->add_stale_hud_item_option($itemoptions, $blockinstanceid, 'hud_win_grant_item')
+        );
+        $mform->setType('hud_win_grant_item', PARAM_INT);
+        $mform->setDefault('hud_win_grant_item', 0);
+        $mform->addHelpButton('hud_win_grant_item', 'hud_win_grant_item', 'mod_playerpuzzle');
+
+        $mform->addElement('text', 'hud_win_grant_qty', get_string('hud_win_grant_qty', 'mod_playerpuzzle'));
+        $mform->setType('hud_win_grant_qty', PARAM_INT);
+        $mform->setDefault('hud_win_grant_qty', 1);
+        $mform->hideIf('hud_win_grant_qty', 'hud_win_grant_item', 'eq', 0);
+    }
+
+    /**
+     * Custom validation for PlayerPuzzle settings.
+     *
+     * @param array $data Submitted form data.
+     * @param array $files Submitted files.
+     * @return array Validation errors, keyed by field name.
+     */
+    public function validation($data, $files): array {
+        $errors = parent::validation($data, $files);
+
+        if (!empty($data['hud_retry_cost_item']) && (int) $data['hud_retry_cost_qty'] < 1) {
+            $errors['hud_retry_cost_qty'] = get_string('error_hud_cost_qty', 'mod_playerpuzzle');
+        }
+
+        if (!empty($data['hud_win_grant_item']) && (int) $data['hud_win_grant_qty'] < 1) {
+            $errors['hud_win_grant_qty'] = get_string('error_hud_cost_qty', 'mod_playerpuzzle');
+        }
+
+        return $errors;
     }
 
     /**

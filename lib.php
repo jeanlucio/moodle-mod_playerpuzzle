@@ -22,6 +22,58 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/**
+ * Campaign game mode: levels/phases progression with server-scaled HP (§4.6).
+ */
+define('PLAYERPUZZLE_GAMEMODE_CAMPAIGN', 'campaign');
+
+/**
+ * Single-match game mode: one self-contained, repeatable match (§4.6).
+ */
+define('PLAYERPUZZLE_GAMEMODE_SINGLE', 'single');
+
+/**
+ * Grade method: highest score among all matches.
+ */
+define('PLAYERPUZZLE_GRADE_HIGHEST', 1);
+
+/**
+ * Grade method: average of the matches actually played.
+ */
+define('PLAYERPUZZLE_GRADE_AVERAGE', 2);
+
+/**
+ * Grade method: score of the first match only.
+ */
+define('PLAYERPUZZLE_GRADE_FIRST', 3);
+
+/**
+ * Grade method: score of the most recent match only.
+ */
+define('PLAYERPUZZLE_GRADE_LAST', 4);
+
+/**
+ * Grade method: sum of match scores divided by max_single_matches, so an unplayed match
+ * counts as zero. Requires max_single_matches to not be unlimited.
+ */
+define('PLAYERPUZZLE_GRADE_AVERAGE_ALL', 5);
+
+/**
+ * Returns the available grading method options for Single-match mode, keyed by their
+ * PLAYERPUZZLE_GRADE_* constant. Mirrors mod_playerwords/mod_playercross so the same
+ * mental model applies across the Player ecosystem (§4.6/§17).
+ *
+ * @return array<int, string>
+ */
+function playerpuzzle_get_grademethod_options(): array {
+    return [
+        PLAYERPUZZLE_GRADE_HIGHEST     => get_string('grademethod_highest', 'mod_playerpuzzle'),
+        PLAYERPUZZLE_GRADE_AVERAGE     => get_string('grademethod_average', 'mod_playerpuzzle'),
+        PLAYERPUZZLE_GRADE_FIRST       => get_string('grademethod_first', 'mod_playerpuzzle'),
+        PLAYERPUZZLE_GRADE_LAST        => get_string('grademethod_last', 'mod_playerpuzzle'),
+        PLAYERPUZZLE_GRADE_AVERAGE_ALL => get_string('grademethod_average_all', 'mod_playerpuzzle'),
+    ];
+}
 
 /**
  * Indicates API features that the playerpuzzle supports.

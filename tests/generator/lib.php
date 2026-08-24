@@ -38,19 +38,29 @@ class mod_playerpuzzle_generator extends testing_module_generator {
         $record = (object) (array) $record;
 
         $defaults = [
-            'maxlevels'        => 1,
-            'basestudenthp'    => 100,
-            'bossavatar'       => 'slime.png',
-            'basebosshp'       => 1000,
-            'bossdamage'       => 10,
+            'maxlevels'           => 1,
+            'basestudenthp'       => 100,
+            'bossavatar'          => 'slime.png',
+            'basebosshp'          => 1000,
+            'bossdamage'          => 10,
             // Not a real foreign key in install.xml — tests that exercise the question
             // engine itself must override this with a genuine question_categories id.
-            'questioncategory' => 0,
-            'timelimit'        => 0,
-            'maxattempts'      => 0,
-            'hud_coin_item'    => 0,
-            'hud_sword_item'   => 0,
-            'hud_shield_item'  => 0,
+            'questioncategory'    => 0,
+            'timelimit'           => 0,
+            'maxattempts'         => 0,
+            'hud_coin_item'       => 0,
+            'hud_sword_item'      => 0,
+            'hud_shield_item'     => 0,
+            'hud_potion_item'     => 0,
+            'hud_retry_cost_item' => 0,
+            'hud_retry_cost_qty'  => 1,
+            'hud_win_grant_item'  => 0,
+            'hud_win_grant_qty'   => 1,
+            'gamemode'            => 'campaign',
+            'max_single_matches'  => 0,
+            'grademethod'         => 1,
+            'minquestions'        => 3,
+            'considererrors'      => 0,
         ];
 
         foreach ($defaults as $field => $value) {

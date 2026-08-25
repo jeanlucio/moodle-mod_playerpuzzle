@@ -50,7 +50,19 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.currentHp = this.maxBossHp;
         }
 
-        processEffects(destroyedPieces) {
+        /**
+         * Combo-size multiplier for pieces whose effect scales with match size (Sword/Coin,
+         * §4.3/§4.9, Fase 3.5): 3 pieces = x1.0 (unchanged baseline), +0.5x per extra piece
+         * beyond 3 (4 = x1.5, 5 = x2.0, extrapolating linearly for any longer run).
+         *
+         * @param {number} size Number of pieces in the matched run.
+         * @returns {number} The combo multiplier.
+         */
+        comboMultiplier(size) {
+            return 1 + (0.5 * Math.max(0, size - 3));
+        }
+
+        processEffects(destroyedPieces, matchGroups) {
             const me = this.scene;
             let questionTriggered = false;
             let triggeredBy = null;
@@ -80,10 +92,6 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                     }
                 }
 
-                if (piece.type === 3) {
-                    damageDealt += (this.baseDamage / 3);
-                }
-
                 me.board.grid[piece.row][piece.col] = null;
                 me.tweens.add({
                     targets: piece, scaleX: 0, scaleY: 0, duration: 200,
@@ -91,6 +99,15 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         targets[0].destroy();
                     }
                 });
+            }
+
+            // Sword damage is computed per match group (not per piece) so combo size drives the
+            // multiplier directly: a 3-piece group always resolves to exactly baseDamage, matching
+            // the pre-Fase-3.5 baseline (§4.3/§17).
+            for (const group of matchGroups) {
+                if (group.type === 3) {
+                    damageDealt += this.baseDamage * this.comboMultiplier(group.pieces.length);
+                }
             }
 
             this.playerMultiplier = Math.round(this.playerMultiplier * 10) / 10;

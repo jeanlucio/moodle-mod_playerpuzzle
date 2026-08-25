@@ -183,6 +183,7 @@ final class game_page_service_test extends \advanced_testcase {
             'gamemode'      => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
             'basebosshp'    => 100,
             'basestudenthp' => 100,
+            'bossdamage'    => 10,
         ]);
         $context = \context_module::instance($cm->id);
 
@@ -198,6 +199,8 @@ final class game_page_service_test extends \advanced_testcase {
         // Level 5, Phase 1 with base 100: boss 300, student 220 (§4.6 worked example).
         $this->assertSame(300, $config['bosshp']);
         $this->assertSame(220, $config['studenthp']);
+        // Combat damage reuses the same boss HP growth curve (§17): base 10 -> 30 at Level 5/Phase 1.
+        $this->assertSame(30, $config['bossdamage']);
         $this->assertSame(5, $config['currentlevel']);
         $this->assertSame(1, $config['currentphase']);
         $this->assertNotSame($token, $config['token']);
@@ -214,6 +217,7 @@ final class game_page_service_test extends \advanced_testcase {
             'gamemode'      => PLAYERPUZZLE_GAMEMODE_SINGLE,
             'basebosshp'    => 250,
             'basestudenthp' => 80,
+            'bossdamage'    => 15,
         ]);
         $context = \context_module::instance($cm->id);
 
@@ -221,5 +225,6 @@ final class game_page_service_test extends \advanced_testcase {
 
         $this->assertSame(250, $config['bosshp']);
         $this->assertSame(80, $config['studenthp']);
+        $this->assertSame(15, $config['bossdamage']);
     }
 }

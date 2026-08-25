@@ -78,9 +78,9 @@ class game_page_service {
 
     /**
      * Resumes or creates the attempt, and assembles the full JS game config: the scaled
-     * boss/student HP for the attempt's current level/phase (Single Match always resolves
-     * to the base HP unchanged, since its attempts stay at Level 1, Phase 1 — §4.6), the
-     * anti-replay token, sprites, and the blind (JSON Cego) question set.
+     * boss/student HP and combat damage for the attempt's current level/phase (Single Match
+     * always resolves to the base values unchanged, since its attempts stay at Level 1,
+     * Phase 1 — §4.6), the anti-replay token, sprites, and the blind (JSON Cego) question set.
      *
      * @param stdClass $cm Course module.
      * @param stdClass $instance Activity instance.
@@ -110,6 +110,13 @@ class game_page_service {
             $attemptinfo->currentlevel,
             $attemptinfo->currentphase
         );
+        // Reuses the boss HP formula for combat damage: same shape of growth (§17), and it keeps a
+        // single source of truth for "how much combat should scale" at this level/phase.
+        $bossdamage = combat::calculate_boss_hp(
+            (int) $instance->bossdamage,
+            $attemptinfo->currentlevel,
+            $attemptinfo->currentphase
+        );
 
         $questions = question_fetcher::get_questions_for_frontend((int) $instance->questioncategory, $context);
 
@@ -131,7 +138,7 @@ class game_page_service {
             'maxlevels'    => (int) $instance->maxlevels,
             'bosshp'       => $bosshp,
             'studenthp'    => $studenthp,
-            'bossdamage'   => (int) $instance->bossdamage,
+            'bossdamage'   => $bossdamage,
             'bossavatar'   => $instance->bossavatar,
             'bossurl'      => $bossurl,
             'bgurl'        => $bgurl,

@@ -225,44 +225,87 @@ define([], function() {
             });
         }
 
-        checkHorizontal(toDestroy) {
+        /**
+         * Registers one detected run as a match group, adding its pieces to the flat,
+         * deduplicated destroy list too. Shared by checkHorizontal()/checkVertical() to keep
+         * both scans within the project's max block-nesting depth.
+         *
+         * @param {Array} pieces Pieces belonging to this run, in order.
+         * @param {Array} toDestroy Flat, deduplicated list of pieces to destroy (mutated in place).
+         * @param {Array} matchGroups List of {type, pieces} match groups (mutated in place).
+         */
+        registerRun(pieces, toDestroy, matchGroups) {
+            for (const piece of pieces) {
+                if (toDestroy.indexOf(piece) === -1) {
+                    toDestroy.push(piece);
+                }
+            }
+            matchGroups.push({type: pieces[0].type, pieces});
+        }
+
+        /**
+         * Scans every row for contiguous same-type runs of 3+ pieces, each pushed as its own
+         * match group (with the exact run length) alongside the flat, deduplicated destroy list
+         * — combo-size-aware effects (Sword/Coin, §4.3/§4.9) read group sizes; every other piece
+         * effect still reads the flat list exactly as before this refactor (Fase 3.5, §17).
+         *
+         * @param {Array} toDestroy Flat, deduplicated list of pieces to destroy (mutated in place).
+         * @param {Array} matchGroups List of {type, pieces} match groups (mutated in place).
+         */
+        checkHorizontal(toDestroy, matchGroups) {
             for (let r = 0; r < this.rows; r++) {
-                for (let c = 0; c < this.cols - 2; c++) {
-                    const p1 = this.grid[r][c];
-                    const p2 = this.grid[r][c + 1];
-                    const p3 = this.grid[r][c + 2];
-                    if (p1 && p2 && p3 && p1.type === p2.type && p2.type === p3.type) {
-                        if (toDestroy.indexOf(p1) === -1) {
-                            toDestroy.push(p1);
-                        }
-                        if (toDestroy.indexOf(p2) === -1) {
-                            toDestroy.push(p2);
-                        }
-                        if (toDestroy.indexOf(p3) === -1) {
-                            toDestroy.push(p3);
-                        }
+                let c = 0;
+                while (c < this.cols) {
+                    const p = this.grid[r][c];
+                    if (!p) {
+                        c++;
+                        continue;
                     }
+                    let runEnd = c;
+                    while (runEnd + 1 < this.cols && this.grid[r][runEnd + 1] &&
+                            this.grid[r][runEnd + 1].type === p.type) {
+                        runEnd++;
+                    }
+                    if (runEnd - c + 1 >= 3) {
+                        const pieces = [];
+                        for (let i = c; i <= runEnd; i++) {
+                            pieces.push(this.grid[r][i]);
+                        }
+                        this.registerRun(pieces, toDestroy, matchGroups);
+                    }
+                    c = runEnd + 1;
                 }
             }
         }
 
-        checkVertical(toDestroy) {
+        /**
+         * Same as checkHorizontal(), scanning columns instead of rows.
+         *
+         * @param {Array} toDestroy Flat, deduplicated list of pieces to destroy (mutated in place).
+         * @param {Array} matchGroups List of {type, pieces} match groups (mutated in place).
+         */
+        checkVertical(toDestroy, matchGroups) {
             for (let c = 0; c < this.cols; c++) {
-                for (let r = 0; r < this.rows - 2; r++) {
-                    const p1 = this.grid[r][c];
-                    const p2 = this.grid[r + 1][c];
-                    const p3 = this.grid[r + 2][c];
-                    if (p1 && p2 && p3 && p1.type === p2.type && p2.type === p3.type) {
-                        if (toDestroy.indexOf(p1) === -1) {
-                            toDestroy.push(p1);
-                        }
-                        if (toDestroy.indexOf(p2) === -1) {
-                            toDestroy.push(p2);
-                        }
-                        if (toDestroy.indexOf(p3) === -1) {
-                            toDestroy.push(p3);
-                        }
+                let r = 0;
+                while (r < this.rows) {
+                    const p = this.grid[r][c];
+                    if (!p) {
+                        r++;
+                        continue;
                     }
+                    let runEnd = r;
+                    while (runEnd + 1 < this.rows && this.grid[runEnd + 1][c] &&
+                            this.grid[runEnd + 1][c].type === p.type) {
+                        runEnd++;
+                    }
+                    if (runEnd - r + 1 >= 3) {
+                        const pieces = [];
+                        for (let i = r; i <= runEnd; i++) {
+                            pieces.push(this.grid[i][c]);
+                        }
+                        this.registerRun(pieces, toDestroy, matchGroups);
+                    }
+                    r = runEnd + 1;
                 }
             }
         }
@@ -410,8 +453,8 @@ define([], function() {
 
             const hasInitialMatch = () => {
                 const toDestroy = [];
-                this.checkHorizontal(toDestroy);
-                this.checkVertical(toDestroy);
+                this.checkHorizontal(toDestroy, []);
+                this.checkVertical(toDestroy, []);
                 return toDestroy.length > 0;
             };
 
@@ -508,9 +551,10 @@ define([], function() {
         checkMatches() {
             const me = this.scene;
             const toDestroy = [];
+            const matchGroups = [];
 
-            this.checkHorizontal(toDestroy);
-            this.checkVertical(toDestroy);
+            this.checkHorizontal(toDestroy, matchGroups);
+            this.checkVertical(toDestroy, matchGroups);
 
             if (toDestroy.length === 0) {
                 if (this.lastSwap !== null) {
@@ -538,7 +582,7 @@ define([], function() {
 
             this.lastSwap = null;
 
-            const effects = me.combat.processEffects(toDestroy);
+            const effects = me.combat.processEffects(toDestroy, matchGroups);
             const damage = effects.damage;
 
             if (damage > 0) {

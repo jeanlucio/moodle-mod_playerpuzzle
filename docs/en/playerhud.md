@@ -23,6 +23,21 @@ Every one of these is a plain dropdown of the block's own configured items — t
 already used by the sibling `mod_playerwords`/`mod_playercross` activities — so adding this
 integration never required a change to `block_playerhud` itself.
 
+## Coin Gain and the Boss's Compensation
+
+Matching the Coin piece (see [How Combat Works](#combat)) earns coins on a combo curve: a
+3-piece match earns the configured "Coin gain" base value, a 4-piece match earns 1.5x that, and a
+5-piece match earns 2x — the same curve Sword damage uses. Unlike every other combat value, Coin
+gain deliberately does **not** scale by level or phase, so a teacher can set fixed consumable
+prices (Potion, Shield, Quick Magic, Hint) that stay balanced for the whole campaign instead of
+getting proportionally cheaper as it progresses.
+
+The boss also banks its own Coin total when it matches the piece on its own turn — it has no shop
+and never spends it. Its only purpose is to net against the student's balance at the end of the
+match: the student's final coin count is `max(0, student's coins − boss's coins)`, banked via
+PlayerHUD only on victory. This gives the boss's AI a reason to "compete" for the same piece the
+student wants, instead of it being inert whenever the AI happens to match it.
+
 ## What's Actually Wired Up Today
 
 * ✅ Crediting coins on victory.

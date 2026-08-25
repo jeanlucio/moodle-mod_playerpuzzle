@@ -3,8 +3,12 @@
 ## ✅ Implemented
 
 * ⚔️ **Match-3 Turn-Based Combat:** An 8×8 board (Phaser 3) where the student swaps pieces to
-  attack a boss. Combining "mana" pieces charges a question challenge; a correct answer deals
-  extra damage. See [How Combat Works](#combat).
+  attack a boss. Combining Question Orb pieces charges a question challenge; a correct answer
+  deals extra damage. See [How Combat Works](#combat).
+* 🔄 **Symmetric Boss AI:** All seven pieces resolve exactly the same way on the boss's own turn
+  as they do on the student's — the boss deals damage, stacks a critical-hit multiplier, poisons
+  the student, shields itself, heals, and banks its own gold to compensate the student's final
+  balance, instead of most pieces being inert whenever the AI happens to match them.
 * 🎮 **Two Game Modes:** **Campaign** (a continuous run through up to 10 levels × 10 phases each,
   where winning never costs a new attempt — only losing does) and **Single Match** (a self-
   contained round reusing the `grademethod` pattern from the PlayerGames ecosystem). See

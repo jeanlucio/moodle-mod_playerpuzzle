@@ -25,6 +25,22 @@ Cada um desses é um simples dropdown dos itens já configurados no bloco — o 
 usado pelas atividades irmãs `mod_playerwords`/`mod_playercross` — então adicionar essa
 integração nunca exigiu nenhuma mudança no `block_playerhud` em si.
 
+## Ganho de Moeda e a Compensação do Chefe
+
+Combinar a peça Moeda (veja [Como o Combate Funciona](#combat)) rende moedas numa curva de
+combo: uma combinação de 3 rende o valor base configurado em "Ganho de Moeda", uma de 4 rende
+1,5x esse valor, e uma de 5 rende 2x — a mesma curva que o dano da Espada usa. Diferente de todo
+o resto do combate, o Ganho de Moeda deliberadamente **não** escala por nível ou fase, então o
+professor pode configurar preços fixos de consumíveis (Poção, Escudo, Magia Rápida, Dica) que
+continuam equilibrados durante toda a campanha, em vez de ficarem proporcionalmente mais baratos
+conforme ela avança.
+
+O chefe também acumula sua própria conta de Moeda quando combina a peça no próprio turno — ele
+não tem loja e nunca gasta esse valor. Seu único propósito é compensar o saldo do estudante ao
+fim da partida: a contagem final de moedas do estudante é `max(0, moedas do estudante − moedas
+do chefe)`, creditada via PlayerHUD só em vitória. Isso dá à IA do chefe um motivo pra "competir"
+pela mesma peça que o estudante quer, em vez de ela ficar inerte sempre que a IA combiná-la.
+
 ## O Que Já Está Ligado Hoje
 
 * ✅ Creditar moedas na vitória.

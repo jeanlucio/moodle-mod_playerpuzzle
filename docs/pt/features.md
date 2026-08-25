@@ -3,8 +3,12 @@
 ## ✅ Implementado
 
 * ⚔️ **Combate por Turnos em Match-3:** Um tabuleiro 8×8 (Phaser 3) onde o estudante troca peças
-  para atacar um chefe. Combinar peças de "mana" carrega um desafio de pergunta; uma resposta
-  correta causa dano extra. Veja [Como o Combate Funciona](#combat).
+  para atacar um chefe. Combinar peças de Orbe de Interrogação carrega um desafio de pergunta;
+  uma resposta correta causa dano extra. Veja [Como o Combate Funciona](#combat).
+* 🔄 **IA do Chefe Simétrica:** as sete peças resolvem exatamente do mesmo jeito no turno do
+  chefe que no turno do estudante — o chefe causa dano, acumula multiplicador de crítico,
+  envenena o estudante, se protege, se cura e acumula sua própria moeda pra compensar o saldo
+  final do estudante, em vez da maioria das peças ficar inerte quando a IA as combina.
 * 🎮 **Dois Modos de Jogo:** **Campanha** (uma jornada contínua por até 10 níveis × 10 fases
   cada, onde vencer nunca consome uma nova tentativa — só perder consome) e **Partida Única**
   (uma rodada autocontida reaproveitando o padrão `grademethod` do ecossistema PlayerGames). Veja

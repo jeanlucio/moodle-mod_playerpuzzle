@@ -80,6 +80,8 @@ define(['jquery'], function($) {
                 fill: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
+            this.txtBossStar = me.add.text(L.bossUiX, L.bossHpY + 40, '⭐x1.0', styleStar)
+                .setOrigin(0, 0);
 
             me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.bossUiX, L.bossManaY, 300, 8);
             this.bossManaBar = me.add.graphics();
@@ -193,7 +195,7 @@ define(['jquery'], function($) {
             });
         }
 
-        updateBossBar(currentHp, maxHp, mana, poisonTurns) {
+        updateBossBar(currentHp, maxHp, mana, poisonTurns, multiplier) {
             const pctHp = Math.max(0, currentHp / maxHp);
             this.bossHpBar.clear()
                 .fillStyle(0xdd0000, 1)
@@ -206,6 +208,7 @@ define(['jquery'], function($) {
                 .fillRect(this.L.bossUiX + 2, this.L.bossManaY + 1, 296 * pctMana, 6);
 
             this.txtPoison.setAlpha(poisonTurns > 0 ? 1 : 0);
+            this.txtBossStar.setText(`⭐x${multiplier.toFixed(1)}`);
         }
 
         showExitConfirm() {

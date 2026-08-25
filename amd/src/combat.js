@@ -46,6 +46,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
             this.bossPoison = 0;
             this.bossMana = 0;
+            this.bossMultiplier = 1;
             this.maxBossHp = parseInt(gameConfig.bosshp) || 1000;
             this.currentHp = this.maxBossHp;
         }
@@ -89,6 +90,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 } else {
                     if (piece.type === 2) {
                         this.bossMana += 20;
+                    } else if (piece.type === 0) {
+                        this.bossMultiplier += 0.1;
                     }
                 }
 
@@ -111,6 +114,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             }
 
             this.playerMultiplier = Math.round(this.playerMultiplier * 10) / 10;
+            this.bossMultiplier = Math.round(this.bossMultiplier * 10) / 10;
             if (this.playerMana >= 100) {
                 this.playerMana -= 100;
                 questionTriggered = true;
@@ -131,7 +135,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 this.playerShield, this.playerGold, this.playerMultiplier
             );
             this.scene.ui.updateBossBar(
-                this.currentHp, this.maxBossHp, this.bossMana, this.bossPoison
+                this.currentHp, this.maxBossHp, this.bossMana, this.bossPoison, this.bossMultiplier
             );
         }
 
@@ -315,11 +319,18 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                                                 .addClass('btn-success text-white');
                                         }
                                         ctx.applyDamageToPlayer(30);
+                                        const lostMultiplier = ctx.playerMultiplier;
                                         ctx.playerMultiplier = 1;
                                         ctx.updateUI();
                                         const wrongMsg = ctx.strings.playerwrong.replace('{$a}', 30);
                                         feedbackMsg = '<div class="alert alert-danger mt-2 mb-0">'
                                             + `<strong>${wrongMsg}</strong></div>`;
+                                        if (lostMultiplier > 1) {
+                                            const lostMsg = ctx.strings.playerlostmultiplier
+                                                .replace('{$a}', lostMultiplier.toFixed(1));
+                                            feedbackMsg += '<div class="alert alert-warning mt-2 mb-0">'
+                                                + `<strong>${lostMsg}</strong></div>`;
+                                        }
                                     }
                                     answersContainer.append(feedbackMsg);
                                     $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
@@ -368,12 +379,23 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
                                 let bossFeedback;
                                 if (isBossCorrect) {
-                                    ctx.applyDamageToPlayer(ctx.baseDamage * 3);
-                                    const dmgMsg = ctx.strings.bosscorrectfeedback.replace('{$a}', ctx.baseDamage * 3);
+                                    const bossCritDamage = ctx.baseDamage * 3 * ctx.bossMultiplier;
+                                    ctx.applyDamageToPlayer(bossCritDamage);
+                                    const dmgMsg = ctx.strings.bosscorrectfeedback
+                                        .replace('{$a}', Math.round(bossCritDamage));
                                     bossFeedback = `<div class="alert alert-danger mt-2 mb-0"><strong>${dmgMsg}</strong></div>`;
                                 } else {
                                     const wfMsg = ctx.strings.bosswrongfeedback;
                                     bossFeedback = `<div class="alert alert-success mt-2 mb-0"><strong>${wfMsg}</strong></div>`;
+                                    const lostBossMultiplier = ctx.bossMultiplier;
+                                    ctx.bossMultiplier = 1;
+                                    ctx.updateUI();
+                                    if (lostBossMultiplier > 1) {
+                                        const lostMsg = ctx.strings.bosslostmultiplier
+                                            .replace('{$a}', lostBossMultiplier.toFixed(1));
+                                        bossFeedback += '<div class="alert alert-warning mt-2 mb-0">'
+                                            + `<strong>${lostMsg}</strong></div>`;
+                                    }
                                 }
                                 answersContainer.append(bossFeedback);
                                 $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue).show()

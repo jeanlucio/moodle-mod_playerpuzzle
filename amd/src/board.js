@@ -569,7 +569,9 @@ define([], function() {
                 if (me.combat.currentTurn === 'player') {
                     me.combat.passTurnToBoss();
                 } else {
-                    me.combat.passTurnToPlayer();
+                    if (me.combat.passTurnToPlayer()) {
+                        return;
+                    }
                     if (!this.hasAvailableMove()) {
                         this.shuffle();
                     } else {

@@ -37,6 +37,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.playerShield = 0;
             this.playerMultiplier = 1;
             this.playerMana = 0;
+            this.playerPoisonMeter = 0;
+            this.playerPoisonRounds = 0;
             // The studenthp/bosshp config values are already scaled server-side for the
             // attempt's current level/phase (combat::calculate_boss_hp()/calculate_student_hp())
             // — Single Match always resolves to the base HP unchanged, so no branching is
@@ -44,7 +46,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.maxPlayerHp = parseInt(gameConfig.studenthp) || 100;
             this.currentPlayerHp = this.maxPlayerHp;
 
-            this.bossPoison = 0;
+            this.bossPoisonMeter = 0;
+            this.bossPoisonRounds = 0;
             this.bossMana = 0;
             this.bossMultiplier = 1;
             this.maxBossHp = parseInt(gameConfig.bosshp) || 1000;
@@ -83,7 +86,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                     } else if (piece.type === 4) {
                         this.playerShield += 5;
                     } else if (piece.type === 1) {
-                        this.bossPoison += 3;
+                        this.playerPoisonMeter += 10;
                     } else if (piece.type === 2) {
                         this.playerMana += 20;
                     }
@@ -92,6 +95,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         this.bossMana += 20;
                     } else if (piece.type === 0) {
                         this.bossMultiplier += 0.1;
+                    } else if (piece.type === 1) {
+                        this.bossPoisonMeter += 10;
                     }
                 }
 
@@ -115,6 +120,20 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
             this.playerMultiplier = Math.round(this.playerMultiplier * 10) / 10;
             this.bossMultiplier = Math.round(this.bossMultiplier * 10) / 10;
+
+            // Filling a poison meter arms 3 damage rounds against the opponent (ticked once per
+            // their own turn in passTurnToBoss()/passTurnToPlayer()) and resets subtracting 100,
+            // preserving any overshoot for the next fill — same overflow behaviour as the mana
+            // meters below. Independent of the mana trigger: both can be ready at once.
+            if (this.playerPoisonMeter >= 100) {
+                this.playerPoisonMeter -= 100;
+                this.bossPoisonRounds += 3;
+            }
+            if (this.bossPoisonMeter >= 100) {
+                this.bossPoisonMeter -= 100;
+                this.playerPoisonRounds += 3;
+            }
+
             if (this.playerMana >= 100) {
                 this.playerMana -= 100;
                 questionTriggered = true;
@@ -131,11 +150,11 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
         updateUI() {
             this.scene.ui.updatePlayerBar(
-                this.currentPlayerHp, this.maxPlayerHp, this.playerMana,
-                this.playerShield, this.playerGold, this.playerMultiplier
+                this.currentPlayerHp, this.maxPlayerHp, this.playerMana, this.playerShield,
+                this.playerGold, this.playerMultiplier, this.playerPoisonRounds
             );
             this.scene.ui.updateBossBar(
-                this.currentHp, this.maxBossHp, this.bossMana, this.bossPoison, this.bossMultiplier
+                this.currentHp, this.maxBossHp, this.bossMana, this.bossPoisonRounds, this.bossMultiplier
             );
         }
 
@@ -165,14 +184,17 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.currentTurn = 'boss';
             me.input.enabled = false;
 
-            if (this.bossPoison > 0) {
-                this.currentHp = Math.max(0, this.currentHp - 5);
-                this.bossPoison--;
+            if (this.bossPoisonRounds > 0) {
+                this.currentHp = Math.max(0, this.currentHp - this.baseDamage);
+                this.bossPoisonRounds--;
                 this.updateUI();
                 me.ui.bossSprite.setTint(0xff00ff);
                 me.time.delayedCall(300, () => {
                     me.ui.bossSprite.clearTint();
                 });
+                if (this.checkGameOver()) {
+                    return;
+                }
             }
 
             me.time.delayedCall(800, this.executeBossTurn, [], this);
@@ -195,8 +217,28 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             }
         }
 
+        /**
+         * Passes the turn to the player, applying a pending poison tick (mirrors
+         * passTurnToBoss()'s own tick) if the boss has armed one.
+         *
+         * @returns {boolean} True when the tick itself ended the game, so the caller
+         * (board.js) knows to skip re-enabling input for a turn that no longer happens.
+         */
         passTurnToPlayer() {
+            const me = this.scene;
             this.currentTurn = 'player';
+
+            if (this.playerPoisonRounds > 0) {
+                this.currentPlayerHp = Math.max(0, this.currentPlayerHp - this.baseDamage);
+                this.playerPoisonRounds--;
+                this.updateUI();
+                me.cameras.main.shake(200, 0.008);
+                if (this.checkGameOver()) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         checkGameOver() {

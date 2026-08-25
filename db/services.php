@@ -41,4 +41,12 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_advance_phase' => [
+        'classname'    => 'mod_playerpuzzle\external\advance_phase',
+        'methodname'   => 'execute',
+        'description'  => 'Advances a Campaign attempt to its next phase after the boss is defeated.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
 ];

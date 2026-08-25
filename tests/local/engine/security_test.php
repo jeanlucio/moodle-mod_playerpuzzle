@@ -169,4 +169,116 @@ final class security_test extends \advanced_testcase {
             $this->assertSame($status, $attempt->status);
         }
     }
+
+    /**
+     * Tests that resuming with no existing in-progress attempt creates a brand new one
+     * at Level 1, Phase 1 — the same defaults generate_attempt_token() itself leaves.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_creates_fresh_attempt_when_none_inprogress(): void {
+        global $DB;
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame(1, $result->currentlevel);
+        $this->assertSame(1, $result->currentphase);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $result->token], '*', MUST_EXIST);
+        $this->assertSame('inprogress', $attempt->status);
+    }
+
+    /**
+     * Tests that resuming an existing in-progress attempt preserves its currentlevel/
+     * currentphase, rather than restarting the Campaign at Level 1, Phase 1 (§4.6 — an
+     * attempt is a continuous winning streak, not reset by reloading play.php).
+     *
+     * @return void
+     */
+    public function test_resume_or_create_preserves_level_and_phase(): void {
+        global $DB;
+
+        $firsttoken = security::generate_attempt_token(1, 2);
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 3, ['token' => $firsttoken]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 7, ['token' => $firsttoken]);
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame(3, $result->currentlevel);
+        $this->assertSame(7, $result->currentphase);
+    }
+
+    /**
+     * Tests that resuming rotates the token — the stale one from the abandoned session
+     * is invalid immediately, closing the anti-replay gap a page reload would otherwise
+     * leave open.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_rotates_the_token(): void {
+        $oldtoken = security::generate_attempt_token(1, 2);
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertNotSame($oldtoken, $result->token);
+        $this->assertFalse(security::validate_and_consume_token($oldtoken, 1, 2, 'won'));
+    }
+
+    /**
+     * Tests that resuming keeps the attempt on the same row (same id), never inserting a
+     * second one.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_does_not_insert_a_new_row(): void {
+        global $DB;
+
+        $firsttoken = security::generate_attempt_token(1, 2);
+        $originalid = $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $firsttoken]);
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame(1, $DB->count_records('playerpuzzle_attempts', ['playerpuzzleid' => 1, 'userid' => 2]));
+        $resumedid = $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $result->token]);
+        $this->assertSame((int) $originalid, (int) $resumedid);
+    }
+
+    /**
+     * Tests that resuming ignores an in-progress attempt belonging to a different
+     * instance or user — cross-instance/cross-user isolation, same guarantee
+     * validate_and_consume_token() already gives at submission time.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_ignores_other_instance_and_user(): void {
+        security::generate_attempt_token(999, 2);
+        security::generate_attempt_token(1, 999);
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame(1, $result->currentlevel);
+        $this->assertSame(1, $result->currentphase);
+    }
+
+    /**
+     * Tests that, when more than one stale in-progress row exists for the same user/
+     * instance (a site upgraded from before this method existed, when every play.php
+     * load inserted a fresh row), the most recently created one is resumed — the only
+     * sane resolution, since get_record() alone would fatal on more than one match.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_picks_most_recent_when_multiple_stale_rows_exist(): void {
+        global $DB;
+
+        $oldtoken = security::generate_attempt_token(1, 2);
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 1, ['token' => $oldtoken]);
+        $DB->set_field('playerpuzzle_attempts', 'timecreated', time() - 100, ['token' => $oldtoken]);
+
+        $newtoken = security::generate_attempt_token(1, 2);
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 4, ['token' => $newtoken]);
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame(4, $result->currentlevel);
+    }
 }

@@ -100,6 +100,7 @@ $string['maxattemptsreached'] = 'You have used all the attempts available for th
 $string['maxlevels'] = 'Number of levels';
 $string['maxlevels_help'] = 'Each level contains 10 phases of increasing difficulty. 1 level = 10 phases; 10 levels = 100 phases.';
 $string['maxmultiplier'] = 'Max multiplier:';
+$string['maxsinglematchesreached'] = 'You have used all the matches available for this activity.';
 $string['minquestions'] = 'Minimum questions per match';
 $string['minquestions_help'] = 'The student must answer at least this many questions (right or wrong) before the match can end in victory. If the boss reaches 0 HP before the counter is reached, the boss revives at 50% HP and combat continues. Set to 0 to disable this requirement.';
 $string['modulename'] = 'PlayerPuzzle';
@@ -110,6 +111,8 @@ $string['musicon'] = '🎵 Music';
 $string['name'] = 'Phase name';
 $string['noanswers'] = 'No answers available.';
 $string['nocategories'] = 'No question categories found.';
+$string['nonextphase'] = 'There is no next phase to advance to — finish the campaign instead.';
+$string['phasenotwon'] = 'The reported damage does not clear this phase\'s boss HP.';
 $string['playercorrect'] = '✓ Correct! The boss takes damage!';
 $string['playerpuzzle:addinstance'] = 'Add a new PlayerPuzzle';
 $string['playerpuzzle:view'] = 'View PlayerPuzzle activity';

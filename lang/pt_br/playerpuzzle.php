@@ -100,6 +100,7 @@ $string['maxattemptsreached'] = 'Você já usou todas as tentativas disponíveis
 $string['maxlevels'] = 'Número de níveis';
 $string['maxlevels_help'] = 'Cada nível contém 10 fases de dificuldade crescente. 1 nível = 10 fases; 10 níveis = 100 fases.';
 $string['maxmultiplier'] = 'Multiplicador máximo:';
+$string['maxsinglematchesreached'] = 'Você já usou todas as partidas disponíveis para esta atividade.';
 $string['minquestions'] = 'Mínimo de perguntas por partida';
 $string['minquestions_help'] = 'O estudante precisa responder pelo menos essa quantidade de perguntas (certas ou erradas) antes que a partida possa terminar em vitória. Se o chefe chegar a 0 de HP antes do contador atingir esse valor, o chefe revive com 50% do HP e o combate continua. Defina como 0 para desativar essa exigência.';
 $string['modulename'] = 'PlayerPuzzle';
@@ -110,6 +111,8 @@ $string['musicon'] = '🎵 Música';
 $string['name'] = 'Nome da fase';
 $string['noanswers'] = 'Nenhuma resposta disponível.';
 $string['nocategories'] = 'Nenhuma categoria de questões encontrada.';
+$string['nonextphase'] = 'Não há próxima fase para avançar — termine a campanha em vez disso.';
+$string['phasenotwon'] = 'O dano reportado não elimina o HP do chefe desta fase.';
 $string['playercorrect'] = '✓ Correto! O chefe sofre dano!';
 $string['playerpuzzle:addinstance'] = 'Adicionar um novo PlayerPuzzle';
 $string['playerpuzzle:view'] = 'Visualizar atividade PlayerPuzzle';

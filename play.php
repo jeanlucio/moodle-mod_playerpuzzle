@@ -23,6 +23,7 @@
  */
 
 require_once(__DIR__ . '/../../config.php');
+require_once(__DIR__ . '/lib.php');
 
 $id = required_param('id', PARAM_INT);
 
@@ -40,19 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 require_sesskey();
 
-if ((int) $playerpuzzle->maxattempts > 0) {
-    $finishedattempts = $DB->count_records_select(
-        'playerpuzzle_attempts',
-        'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress',
-        ['ppid' => $playerpuzzle->id, 'uid' => $USER->id, 'inprogress' => 'inprogress']
-    );
-    if ($finishedattempts >= (int) $playerpuzzle->maxattempts) {
-        throw new moodle_exception('maxattemptsreached', 'mod_playerpuzzle', new moodle_url(
-            '/mod/playerpuzzle/view.php',
-            ['id' => $cm->id]
-        ));
-    }
-}
+$returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
+\mod_playerpuzzle\local\game_page_service::check_attempt_limit($playerpuzzle, (int) $USER->id, $returnurl);
 
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));
@@ -68,34 +58,13 @@ if ($ismobile) {
     $PAGE->blocks->show_only_fake_blocks();
 }
 
-$token = \mod_playerpuzzle\local\engine\security::generate_attempt_token((int)$playerpuzzle->id, (int)$USER->id);
-
-$categoryid = (int)$playerpuzzle->questioncategory;
-
-$questions = \mod_playerpuzzle\local\engine\question_fetcher::get_questions_for_frontend($categoryid, $context);
-
-$spriteurls = [];
-for ($i = 0; $i < 7; $i++) {
-    $spriteurls[] = $OUTPUT->image_url('sprites/item' . $i, 'mod_playerpuzzle')->out(false);
-}
-
-$bossbasename = str_replace('.png', '', $playerpuzzle->bossavatar);
-$bossurl = $OUTPUT->image_url('bosses/' . $bossbasename, 'mod_playerpuzzle')->out(false);
-$bgurl = $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false);
-
-$jsconfig = [
-    'cmid'       => $cm->id,
-    'token'      => $token,
-    'basebosshp' => $playerpuzzle->basebosshp,
-    'bossdamage' => $playerpuzzle->bossdamage,
-    'bossavatar' => $playerpuzzle->bossavatar,
-    'bossurl'    => $bossurl,
-    'bgurl'      => $bgurl,
-    'spriteurls' => $spriteurls,
-    'questions'  => $questions,
-    'mobile'     => $ismobile,
-    'viewurl'    => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
-];
+$jsconfig = \mod_playerpuzzle\local\game_page_service::build_game_config(
+    $cm,
+    $playerpuzzle,
+    $context,
+    (int) $USER->id,
+    $ismobile
+);
 
 // Phaser must be loaded globally before the AMD module initialises.
 $PAGE->requires->js(new moodle_url('/mod/playerpuzzle/javascript/phaser.min.js'));

@@ -60,6 +60,57 @@ class security {
     public const FINAL_STATUSES = ['won', 'lost', 'timeout', 'abandoned'];
 
     /**
+     * Resumes the most recent in-progress attempt for this user/instance, if one exists,
+     * or creates a brand new one otherwise. Resuming rotates the token (the old one, tied
+     * to whatever session left the attempt in progress, becomes invalid immediately) but
+     * preserves currentlevel/currentphase, so a Campaign student who left mid-campaign
+     * continues where they stopped instead of restarting at Level 1, Phase 1 (§4.6 — an
+     * attempt is a continuous winning streak, not reset by simply reloading the page).
+     *
+     * Uses get_records() rather than get_record(): a site upgraded from before this method
+     * existed may already have more than one stale in-progress row for the same user/
+     * instance (every play.php load used to insert a fresh one). Picking the most recently
+     * created one is the only sane resolution; the older rows are left as harmless clutter,
+     * never resumable again since they no longer hold the current token.
+     *
+     * @param int $playerpuzzleid The instance ID.
+     * @param int $userid The user ID.
+     * @return \stdClass Object with ->token, ->currentlevel, ->currentphase.
+     */
+    public static function resume_or_create_attempt_token(int $playerpuzzleid, int $userid): \stdClass {
+        global $DB;
+
+        $existing = $DB->get_records(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $playerpuzzleid, 'userid' => $userid, 'status' => 'inprogress'],
+            'timecreated DESC',
+            '*',
+            0,
+            1
+        );
+        $attempt = reset($existing);
+
+        if ($attempt) {
+            $token = bin2hex(random_bytes(32));
+            $attempt->token = $token;
+            $attempt->timemodified = time();
+            $DB->update_record('playerpuzzle_attempts', $attempt);
+
+            return (object) [
+                'token' => $token,
+                'currentlevel' => (int) $attempt->currentlevel,
+                'currentphase' => (int) $attempt->currentphase,
+            ];
+        }
+
+        return (object) [
+            'token' => self::generate_attempt_token($playerpuzzleid, $userid),
+            'currentlevel' => 1,
+            'currentphase' => 1,
+        ];
+    }
+
+    /**
      * Validates and consumes a token to prevent replay attacks.
      *
      * Moves the attempt straight to its final status in the same update that consumes the

@@ -66,8 +66,9 @@ $jsconfig = \mod_playerpuzzle\local\game_page_service::build_game_config(
     $ismobile
 );
 
-// Phaser must be loaded globally before the AMD module initialises.
-$PAGE->requires->js(new moodle_url('/mod/playerpuzzle/javascript/phaser.min.js'));
+// Phaser itself is loaded dynamically from inside game_boot.js (mirrors
+// filter_mathjaxloader's loadMathJax()), not queued here as a static <script> — see the
+// loadPhaser() comment in amd/src/game_boot.js for why.
 $PAGE->requires->js_call_amd('mod_playerpuzzle/game_boot', 'init', []);
 
 $templatedata = [

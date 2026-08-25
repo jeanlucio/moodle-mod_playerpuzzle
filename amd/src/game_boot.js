@@ -32,6 +32,28 @@ define([
 ], function(notification, Str, UIHandler, CombatHandler, BoardHandler) {
     'use strict';
 
+    let phaserLoadPromise = null;
+
+    // Loads Phaser as a dynamically-injected <script>, resolved via its onload event, instead
+    // of a static <script> tag queued through $PAGE->requires->js(). A static tag there would
+    // sit in the page's footer output and race core_message/message_drawer.js, which expects
+    // its own drawer markup (rendered further down the same footer) to already be in the DOM
+    // by the time its own require() callback runs — same pattern as filter_mathjaxloader's
+    // loadMathJax() (filter/mathjaxloader/amd/src/loader.js), see SCOPE.md §17.
+    const loadPhaser = (url) => {
+        if (!phaserLoadPromise) {
+            phaserLoadPromise = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.onload = resolve;
+                script.onerror = reject;
+                script.src = url;
+                document.getElementsByTagName('head')[0].appendChild(script);
+            });
+        }
+        return phaserLoadPromise;
+    };
+
     // Phaser requires regular functions for preload/create so it can bind `this` to the scene.
     const startPhaser = (gameConfig, strings) => {
 
@@ -200,18 +222,29 @@ define([
                     strings[key] = values[i];
                 });
 
+                const onLoadError = (err) => {
+                    window.console.error('Phaser load error:', err);
+                    const errContainer = document.getElementById('playerpuzzle-canvas-container');
+                    if (errContainer) {
+                        errContainer.innerHTML = `<p class="text-danger">${strings.requirejserror}</p>`;
+                    }
+                };
+
+                try {
+                    await loadPhaser(`${M.cfg.wwwroot}/mod/playerpuzzle/javascript/phaser.min.js`);
+                } catch (err) {
+                    onLoadError(err);
+                    return;
+                }
+
+                // Phaser's UMD bundle self-registers as the AMD module "Phaser" the moment it
+                // executes (checked above via its own onload), so this resolves immediately.
                 require(['Phaser'], PhaserObj => {
                     if (PhaserObj) {
                         window.Phaser = PhaserObj;
                     }
                     startPhaser(config, strings);
-                }, err => {
-                    window.console.error('RequireJS error:', err);
-                    const errContainer = document.getElementById('playerpuzzle-canvas-container');
-                    if (errContainer) {
-                        errContainer.innerHTML = `<p class="text-danger">${strings.requirejserror}</p>`;
-                    }
-                });
+                }, onLoadError);
             } catch (error) {
                 notification.exception(error);
             }

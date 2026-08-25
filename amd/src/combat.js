@@ -34,7 +34,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.currentTurn = 'player';
 
             this.playerGold = 0;
-            this.playerShield = 0;
+            this.playerShieldMeter = 0;
+            this.playerShieldReady = false;
             this.playerMultiplier = 1;
             this.playerMana = 0;
             this.playerPoisonMeter = 0;
@@ -48,6 +49,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
             this.bossPoisonMeter = 0;
             this.bossPoisonRounds = 0;
+            this.bossShieldMeter = 0;
+            this.bossShieldReady = false;
             this.bossMana = 0;
             this.bossMultiplier = 1;
             this.maxBossHp = parseInt(gameConfig.bosshp) || 1000;
@@ -64,6 +67,40 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
          */
         comboMultiplier(size) {
             return 1 + (0.5 * Math.max(0, size - 3));
+        }
+
+        /**
+         * Resolves both poison meters: filling one arms 3 damage rounds against the opponent
+         * (ticked once per their own turn in passTurnToBoss()/passTurnToPlayer()) and resets
+         * subtracting 100, preserving any overshoot for the next fill — same overflow
+         * behaviour as the mana meters.
+         */
+        resolvePoisonMeters() {
+            if (this.playerPoisonMeter >= 100) {
+                this.playerPoisonMeter -= 100;
+                this.bossPoisonRounds += 3;
+            }
+            if (this.bossPoisonMeter >= 100) {
+                this.bossPoisonMeter -= 100;
+                this.playerPoisonRounds += 3;
+            }
+        }
+
+        /**
+         * Resolves both shield meters: filling one arms a single full block of the next hit
+         * *received by that same side* (self-defence, unlike the poison meters) and resets to
+         * 0 flat — no overflow preserved, since there is nothing to carry forward once the
+         * block is armed.
+         */
+        resolveShieldMeters() {
+            if (this.playerShieldMeter >= 100) {
+                this.playerShieldMeter = 0;
+                this.playerShieldReady = true;
+            }
+            if (this.bossShieldMeter >= 100) {
+                this.bossShieldMeter = 0;
+                this.bossShieldReady = true;
+            }
         }
 
         processEffects(destroyedPieces, matchGroups) {
@@ -84,7 +121,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                     } else if (piece.type === 0) {
                         this.playerMultiplier += 0.1;
                     } else if (piece.type === 4) {
-                        this.playerShield += 5;
+                        this.playerShieldMeter += 10;
                     } else if (piece.type === 1) {
                         this.playerPoisonMeter += 10;
                     } else if (piece.type === 2) {
@@ -97,6 +134,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         this.bossMultiplier += 0.1;
                     } else if (piece.type === 1) {
                         this.bossPoisonMeter += 10;
+                    } else if (piece.type === 4) {
+                        this.bossShieldMeter += 10;
                     }
                 }
 
@@ -120,19 +159,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
             this.playerMultiplier = Math.round(this.playerMultiplier * 10) / 10;
             this.bossMultiplier = Math.round(this.bossMultiplier * 10) / 10;
-
-            // Filling a poison meter arms 3 damage rounds against the opponent (ticked once per
-            // their own turn in passTurnToBoss()/passTurnToPlayer()) and resets subtracting 100,
-            // preserving any overshoot for the next fill — same overflow behaviour as the mana
-            // meters below. Independent of the mana trigger: both can be ready at once.
-            if (this.playerPoisonMeter >= 100) {
-                this.playerPoisonMeter -= 100;
-                this.bossPoisonRounds += 3;
-            }
-            if (this.bossPoisonMeter >= 100) {
-                this.bossPoisonMeter -= 100;
-                this.playerPoisonRounds += 3;
-            }
+            this.resolvePoisonMeters();
+            this.resolveShieldMeters();
 
             if (this.playerMana >= 100) {
                 this.playerMana -= 100;
@@ -150,16 +178,22 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
         updateUI() {
             this.scene.ui.updatePlayerBar(
-                this.currentPlayerHp, this.maxPlayerHp, this.playerMana, this.playerShield,
+                this.currentPlayerHp, this.maxPlayerHp, this.playerMana, this.playerShieldReady,
                 this.playerGold, this.playerMultiplier, this.playerPoisonRounds
             );
             this.scene.ui.updateBossBar(
-                this.currentHp, this.maxBossHp, this.bossMana, this.bossPoisonRounds, this.bossMultiplier
+                this.currentHp, this.maxBossHp, this.bossMana, this.bossPoisonRounds,
+                this.bossMultiplier, this.bossShieldReady
             );
         }
 
         applyDamageToBoss(amount) {
             const me = this.scene;
+            if (this.bossShieldReady) {
+                this.bossShieldReady = false;
+                amount = 0;
+            }
+
             this.currentHp = Math.max(0, this.currentHp - amount);
             this.updateUI();
             me.ui.bossSprite.setTint(0xff0000);
@@ -170,9 +204,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
         applyDamageToPlayer(amount) {
             const me = this.scene;
-            const blocked = Math.min(amount, this.playerShield);
-            this.playerShield -= blocked;
-            amount -= blocked;
+            if (this.playerShieldReady) {
+                this.playerShieldReady = false;
+                amount = 0;
+            }
 
             this.currentPlayerHp = Math.max(0, this.currentPlayerHp - amount);
             this.updateUI();

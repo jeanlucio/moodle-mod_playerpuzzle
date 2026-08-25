@@ -70,7 +70,7 @@ define(['jquery'], function($) {
             const styleGold = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
             const styleStar = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
 
-            this.txtShield = me.add.text(L.shieldX, L.playerHpY + 40, '🛡️: 0', styleShield);
+            this.txtShield = me.add.text(L.shieldX, L.playerHpY + 40, '🛡️: —', styleShield);
             this.txtGold = me.add.text(L.goldX, L.playerHpY + 40, '🪙: 0', styleGold)
                 .setOrigin(0.5, 0);
             this.txtStar = me.add.text(L.starX, L.playerHpY + 40, '⭐x1.0', styleStar)
@@ -83,8 +83,10 @@ define(['jquery'], function($) {
                 fill: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
-            this.txtBossStar = me.add.text(L.bossUiX, L.bossHpY + 40, '⭐x1.0', styleStar)
-                .setOrigin(0, 0);
+            this.txtBossStar = me.add.text(L.bossStarX, L.bossStarY, '⭐x1.0', styleStar)
+                .setOrigin(0, 0.5);
+            this.txtBossShield = me.add.text(L.bossShieldX, L.bossShieldY, '🛡️: —', styleShield)
+                .setOrigin(0, 0.5);
 
             me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.bossUiX, L.bossManaY, 300, 8);
             this.bossManaBar = me.add.graphics();
@@ -198,7 +200,7 @@ define(['jquery'], function($) {
             });
         }
 
-        updateBossBar(currentHp, maxHp, mana, poisonTurns, multiplier) {
+        updateBossBar(currentHp, maxHp, mana, poisonTurns, multiplier, shieldReady) {
             const pctHp = Math.max(0, currentHp / maxHp);
             this.bossHpBar.clear()
                 .fillStyle(0xdd0000, 1)
@@ -212,6 +214,7 @@ define(['jquery'], function($) {
 
             this.txtPoison.setAlpha(poisonTurns > 0 ? 1 : 0);
             this.txtBossStar.setText(`⭐x${multiplier.toFixed(1)}`);
+            this.txtBossShield.setText(shieldReady ? '🛡️: ✓' : '🛡️: —');
         }
 
         showExitConfirm() {
@@ -265,7 +268,7 @@ define(['jquery'], function($) {
             });
         }
 
-        updatePlayerBar(currentHp, maxHp, mana, shield, gold, multiplier, poisonRounds) {
+        updatePlayerBar(currentHp, maxHp, mana, shieldReady, gold, multiplier, poisonRounds) {
             const pctHp = Math.max(0, currentHp / maxHp);
             this.playerHpBar.clear()
                 .fillStyle(0x00cc00, 1)
@@ -279,7 +282,7 @@ define(['jquery'], function($) {
                 .fillStyle(0x0088ff, 1)
                 .fillRect(this.L.playerUiX + 2, this.L.playerManaY + 1, 296 * pctMana, 6);
 
-            this.txtShield.setText(`🛡️: ${shield}`);
+            this.txtShield.setText(shieldReady ? '🛡️: ✓' : '🛡️: —');
             this.txtGold.setText(`🪙: ${gold}`);
             this.txtStar.setText(`⭐x${multiplier.toFixed(1)}`);
             this.txtPlayerPoison.setAlpha(poisonRounds > 0 ? 1 : 0);

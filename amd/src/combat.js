@@ -587,8 +587,26 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             });
 
             $('#btn-pp-restart').on('click', () => {
-                $('#playerpuzzle-gameover').remove();
-                me.scene.restart();
+                // A Phaser scene.restart() only resets client-side state — it keeps reusing the
+                // gameConfig.token already consumed by the save_progress call above, so the next
+                // attempt's own save always fails with an invalid-token error. A real POST to
+                // play.php (mirroring the Lobby's own "Jogar" form) forces the server to mint a
+                // fresh anti-replay token for a brand new attempt, exactly like starting over
+                // from the Lobby would.
+                const restartForm = document.createElement('form');
+                restartForm.method = 'POST';
+                let restarturl = `${M.cfg.wwwroot}/mod/playerpuzzle/play.php?id=${this.gameConfig.cmid}`;
+                if (this.gameConfig.mobile) {
+                    restarturl += '&mobile=1';
+                }
+                restartForm.action = restarturl;
+                const sesskeyInput = document.createElement('input');
+                sesskeyInput.type = 'hidden';
+                sesskeyInput.name = 'sesskey';
+                sesskeyInput.value = M.cfg.sesskey;
+                restartForm.appendChild(sesskeyInput);
+                document.body.appendChild(restartForm);
+                restartForm.submit();
             });
             $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;

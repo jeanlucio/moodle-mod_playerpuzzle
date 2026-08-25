@@ -37,8 +37,8 @@ use moodle_exception;
  * the boss for the current phase has genuinely been defeated.
  *
  * Unlike save_progress, the attempt is never finalised here: it stays 'inprogress' and
- * the same row continues, matching §4.6 — winning a phase never opens a new attempt. The
- * token is rotated on every call (the old one becomes invalid immediately), the same
+ * the same row continues — winning a phase never opens a new attempt. The token is
+ * rotated on every call (the old one becomes invalid immediately), the same
  * anti-replay guarantee save_progress gives its own final submission, so a captured
  * advance_phase request cannot be replayed to skip ahead a second time.
  */
@@ -96,9 +96,9 @@ class advance_phase extends external_api {
         $currentlevel = (int) $attempt->currentlevel;
         $currentphase = (int) $attempt->currentphase;
 
-        // Sanity check (Pilar 2, §4.16): the client cannot simply claim victory — the
-        // reported damage must genuinely clear the boss HP the server itself calculated
-        // for the phase being left, or advancing is refused outright.
+        // Sanity check: the client cannot simply claim victory — the reported damage
+        // must genuinely clear the boss HP the server itself calculated for the phase
+        // being left, or advancing is refused outright.
         $currentbosshp = combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase);
         if ($params['damage'] < $currentbosshp) {
             throw new moodle_exception('phasenotwon', 'mod_playerpuzzle');

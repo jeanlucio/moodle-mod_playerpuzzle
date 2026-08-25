@@ -64,8 +64,8 @@ class security {
      * or creates a brand new one otherwise. Resuming rotates the token (the old one, tied
      * to whatever session left the attempt in progress, becomes invalid immediately) but
      * preserves currentlevel/currentphase, so a Campaign student who left mid-campaign
-     * continues where they stopped instead of restarting at Level 1, Phase 1 (§4.6 — an
-     * attempt is a continuous winning streak, not reset by simply reloading the page).
+     * continues where they stopped instead of restarting at Level 1, Phase 1 — an
+     * attempt is a continuous winning streak, not reset by simply reloading the page.
      *
      * Uses get_records() rather than get_record(): a site upgraded from before this method
      * existed may already have more than one stale in-progress row for the same user/

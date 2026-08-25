@@ -150,10 +150,10 @@ body.pagelayout-embedded #playerpuzzle-canvas-container {
 }
 
 /**
- * Question modal: native <dialog> (§4.4/§17 — chosen over a Bootstrap modal
- * specifically here for native focus/ESC/top-layer handling). The UA stylesheet
- * supplies its own border/padding/background by default, all reset here for full
- * control; showModal() centers it in the viewport automatically.
+ * Question modal: native <dialog>, chosen over a Bootstrap modal specifically here for
+ * native focus/ESC/top-layer handling. The UA stylesheet supplies its own
+ * border/padding/background by default, all reset here for full control; showModal()
+ * centers it in the viewport automatically.
  */
 body.path-mod-playerpuzzle .pp-question-modal {
     max-width: 500px;

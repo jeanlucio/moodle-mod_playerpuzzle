@@ -100,7 +100,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
      * mirrors timecreated or timefinished, both already declared. Asserted against
      * the real schema via $DB->get_columns() rather than a fixed key list, so a
      * future column silently added to install.xml without a privacy decision fails
-     * this test (CLAUDE.md global § Privacy API — declared table column drift).
+     * this test instead of just going undeclared by omission.
      *
      * @return void
      */

@@ -189,8 +189,8 @@ final class security_test extends \advanced_testcase {
 
     /**
      * Tests that resuming an existing in-progress attempt preserves its currentlevel/
-     * currentphase, rather than restarting the Campaign at Level 1, Phase 1 (§4.6 — an
-     * attempt is a continuous winning streak, not reset by reloading play.php).
+     * currentphase, rather than restarting the Campaign at Level 1, Phase 1 — an
+     * attempt is a continuous winning streak, not reset by reloading play.php.
      *
      * @return void
      */

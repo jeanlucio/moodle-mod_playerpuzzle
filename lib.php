@@ -23,12 +23,12 @@
  */
 
 /**
- * Campaign game mode: levels/phases progression with server-scaled HP (§4.6).
+ * Campaign game mode: levels/phases progression with server-scaled HP.
  */
 define('PLAYERPUZZLE_GAMEMODE_CAMPAIGN', 'campaign');
 
 /**
- * Single-match game mode: one self-contained, repeatable match (§4.6).
+ * Single-match game mode: one self-contained, repeatable match.
  */
 define('PLAYERPUZZLE_GAMEMODE_SINGLE', 'single');
 
@@ -61,7 +61,7 @@ define('PLAYERPUZZLE_GRADE_AVERAGE_ALL', 5);
 /**
  * Returns the available grading method options for Single-match mode, keyed by their
  * PLAYERPUZZLE_GRADE_* constant. Mirrors mod_playerwords/mod_playercross so the same
- * mental model applies across the Player ecosystem (§4.6/§17).
+ * mental model applies across the Player ecosystem.
  *
  * @return array<int, string>
  */

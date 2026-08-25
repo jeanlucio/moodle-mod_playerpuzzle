@@ -1,9 +1,8 @@
-Plaintext
-# Dependências do Node (Grunt)
+# Node dependencies (Grunt)
 node_modules/
 .grunt/
 
-# Arquivos de sistema
+# System files
 .DS_Store
 Thumbs.db
 

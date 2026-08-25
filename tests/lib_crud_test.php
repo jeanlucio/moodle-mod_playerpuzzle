@@ -101,8 +101,9 @@ final class lib_crud_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that deleting an instance also deletes its attempts — the instance-delete
-     * cleanup rule from CLAUDE.md global § Security Review Checklist item 21.
+     * Tests that deleting an instance also deletes its attempts — every plugin table
+     * keyed by the instance's own ID must be cleared when the instance is deleted, not
+     * just the instance's own row.
      *
      * @return void
      */

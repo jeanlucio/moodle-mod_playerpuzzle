@@ -39,7 +39,7 @@ class game_page_service {
     /**
      * Checks the attempt limit for the instance's own game mode, throwing when it has
      * already been reached. Campaign counts finished attempts against `maxattempts`
-     * (failures/restarts across the whole campaign, §4.6); Single Match counts finished
+     * (failures/restarts across the whole campaign); Single Match counts finished
      * attempts against `max_single_matches` (each match played, win or lose, spends one).
      * Both are 0 = unlimited, and both only count attempts already in a final status —
      * an abandoned in-progress row is resumed by resume_or_create_attempt_token(), never
@@ -80,7 +80,7 @@ class game_page_service {
      * Resumes or creates the attempt, and assembles the full JS game config: the scaled
      * boss/student HP and combat damage for the attempt's current level/phase (Single Match
      * always resolves to the base values unchanged, since its attempts stay at Level 1,
-     * Phase 1 — §4.6), the anti-replay token, sprites, and the blind (JSON Cego) question set.
+     * Phase 1), the anti-replay token, sprites, and the Blind JSON question set.
      *
      * @param stdClass $cm Course module.
      * @param stdClass $instance Activity instance.
@@ -110,7 +110,7 @@ class game_page_service {
             $attemptinfo->currentlevel,
             $attemptinfo->currentphase
         );
-        // Reuses the boss HP formula for combat damage: same shape of growth (§17), and it keeps a
+        // Reuses the boss HP formula for combat damage: same shape of growth, and it keeps a
         // single source of truth for "how much combat should scale" at this level/phase.
         $bossdamage = combat::calculate_boss_hp(
             (int) $instance->bossdamage,

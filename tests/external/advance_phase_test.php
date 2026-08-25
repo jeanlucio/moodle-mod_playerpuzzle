@@ -157,8 +157,8 @@ final class advance_phase_test extends \advanced_testcase {
             'damage' => 100,
         ]);
 
-        // Level 1, Phase 2 with base 100: boss 110, student 105 (§4.6 worked example
-        // formula, one phase step past the Phase 1 baseline).
+        // Level 1, Phase 2 with base 100: boss 110, student 105 — one phase step past
+        // the Phase 1 baseline.
         $this->assertFalse($result['error']);
         $this->assertSame(110, $result['data']['bosshp']);
         $this->assertSame(105, $result['data']['studenthp']);
@@ -208,7 +208,7 @@ final class advance_phase_test extends \advanced_testcase {
 
     /**
      * Tests that the attempt row stays 'inprogress' after advancing — winning a phase
-     * never opens or closes an attempt, it is the same continuous streak (§4.6).
+     * never opens or closes an attempt, it is the same continuous streak.
      *
      * @return void
      */

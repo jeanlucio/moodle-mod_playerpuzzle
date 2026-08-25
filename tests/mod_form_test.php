@@ -358,7 +358,8 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that minquestions defaults to 3 — opt-out, not opt-in (§17, v3.4).
+     * Tests that minquestions defaults to 3 — opt-out, not opt-in: a teacher who never
+     * touches this setting still gets a minimum content-knowledge check by default.
      *
      * @return void
      */

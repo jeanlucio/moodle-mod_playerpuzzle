@@ -18,9 +18,9 @@
     @template mod_playerpuzzle/question_modal
 
     The in-combat question challenge, as a native HTML <dialog> — chosen over a
-    Bootstrap modal specifically for this element (§4.4/§17) so focus trapping, ESC
-    handling, and top-layer stacking are all handled natively by the browser instead of
-    depending on Bootstrap's own modal JS. combat.js opens it with showModal() only once
+    Bootstrap modal specifically for this element so focus trapping, ESC handling, and
+    top-layer stacking are all handled natively by the browser instead of depending on
+    Bootstrap's own modal JS. combat.js opens it with showModal() only once
     its content (question text, answer buttons) is already in the DOM, so the browser's
     own auto-focus lands on a real answer button, and saves/restores focus to whatever
     triggered it.

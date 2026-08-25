@@ -25,11 +25,11 @@
 namespace mod_playerpuzzle\local\engine;
 
 /**
- * Calculates boss/student HP scaling by level and phase (Campaign mode only, §4.6).
+ * Calculates boss/student HP scaling by level and phase (Campaign mode only).
  *
- * Single Match mode has no scaling ("dificuldade única"): its attempts always carry
- * currentlevel = currentphase = 1, which these formulas map back to the configured base
- * HP unchanged, so callers never need to branch on gamemode themselves.
+ * Single Match mode has no scaling: its attempts always carry currentlevel =
+ * currentphase = 1, which these formulas map back to the configured base HP unchanged,
+ * so callers never need to branch on gamemode themselves.
  */
 class combat {
     /**

@@ -73,7 +73,8 @@ final class question_fetcher_test extends \advanced_testcase {
 
     /**
      * Tests that the frontend payload never carries the fraction or any other
-     * correctness signal alongside an option — the "JSON Cego" contract (§4.16 Pilar 1).
+     * correctness signal alongside an option — the Blind JSON contract: the correct
+     * answer must never reach the client before the server validates it.
      *
      * @return void
      */

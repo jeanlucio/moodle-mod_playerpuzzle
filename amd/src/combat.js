@@ -38,9 +38,9 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.playerMultiplier = 1;
             this.playerMana = 0;
             // The studenthp/bosshp config values are already scaled server-side for the
-            // attempt's current level/phase (combat::calculate_boss_hp()/calculate_student_hp(),
-            // §4.6) — Single Match always resolves to the base HP unchanged, so no branching
-            // is needed here for game mode.
+            // attempt's current level/phase (combat::calculate_boss_hp()/calculate_student_hp())
+            // — Single Match always resolves to the base HP unchanged, so no branching is
+            // needed here for game mode.
             this.maxPlayerHp = parseInt(gameConfig.studenthp) || 100;
             this.currentPlayerHp = this.maxPlayerHp;
 
@@ -52,9 +52,9 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
         }
 
         /**
-         * Combo-size multiplier for pieces whose effect scales with match size (Sword/Coin,
-         * §4.3/§4.9, Fase 3.5): 3 pieces = x1.0 (unchanged baseline), +0.5x per extra piece
-         * beyond 3 (4 = x1.5, 5 = x2.0, extrapolating linearly for any longer run).
+         * Combo-size multiplier for pieces whose effect scales with match size (Sword/Coin):
+         * 3 pieces = x1.0 (unchanged baseline), +0.5x per extra piece beyond 3 (4 = x1.5,
+         * 5 = x2.0, extrapolating linearly for any longer run).
          *
          * @param {number} size Number of pieces in the matched run.
          * @returns {number} The combo multiplier.
@@ -106,7 +106,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
             // Sword damage is computed per match group (not per piece) so combo size drives the
             // multiplier directly: a 3-piece group always resolves to exactly baseDamage, matching
-            // the pre-Fase-3.5 baseline (§4.3/§17).
+            // the original flat-per-piece baseline.
             for (const group of matchGroups) {
                 if (group.type === 3) {
                     damageDealt += this.baseDamage * this.comboMultiplier(group.pieces.length);
@@ -224,8 +224,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                     // Native <dialog> restores no focus of its own on close() — the
                     // element that had focus when the dialog opened (typically nothing,
                     // since Phaser's canvas is not itself focusable) is saved here and
-                    // restored explicitly (§4.4: "Foco retorna ao elemento anterior ao
-                    // fechar").
+                    // restored explicitly to it when the dialog closes.
                     const previouslyFocused = document.activeElement;
 
                     let question = {text: ctx.strings.questionerror, options: []};

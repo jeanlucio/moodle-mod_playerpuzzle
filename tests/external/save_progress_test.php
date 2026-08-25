@@ -226,7 +226,7 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
-        // Boss HP at Level 5, Phase 1 with basebosshp=100 is 300 (§4.6 worked example).
+        // Boss HP at Level 5, Phase 1 with basebosshp=100 is 300.
         // 250 damage is well within that, so it must not be clamped down to 100.
         $this->assertSame(50, (int) $attempt->bosshp_remaining);
         $this->assertEqualsWithDelta(83.33333, (float) $attempt->score, 0.001);

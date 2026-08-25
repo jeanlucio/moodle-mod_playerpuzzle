@@ -143,10 +143,10 @@ class lobby_page_service {
     }
 
     /**
-     * Builds the Minimum Questions notice context (§4.6): the match can require a
-     * number of answered questions before it can end in victory, reviving the boss if
-     * needed — this must be visible to the student before they start, or the revive
-     * would look like a bug.
+     * Builds the Minimum Questions notice context: the match can require a number of
+     * answered questions before it can end in victory, reviving the boss if needed —
+     * this must be visible to the student before they start, or the revive would look
+     * like a bug.
      *
      * @param stdClass $instance Activity instance.
      * @return array

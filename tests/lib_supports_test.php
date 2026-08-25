@@ -42,7 +42,7 @@ final class lib_supports_test extends \basic_testcase {
      * Known features return their declared support value, and an unrecognised feature
      * returns null. Asserts the honest current state of the plugin — backup, gradebook
      * and completion rules are declared unsupported until their real implementation
-     * lands (§16 Fases 6), not the aspirational end state.
+     * lands, not the aspirational end state.
      *
      * @return void
      */

@@ -196,10 +196,10 @@ final class game_page_service_test extends \advanced_testcase {
 
         $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
 
-        // Level 5, Phase 1 with base 100: boss 300, student 220 (§4.6 worked example).
+        // Level 5, Phase 1 with base 100: boss 300, student 220.
         $this->assertSame(300, $config['bosshp']);
         $this->assertSame(220, $config['studenthp']);
-        // Combat damage reuses the same boss HP growth curve (§17): base 10 -> 30 at Level 5/Phase 1.
+        // Combat damage reuses the same boss HP growth curve: base 10 -> 30 at Level 5/Phase 1.
         $this->assertSame(30, $config['bossdamage']);
         $this->assertSame(5, $config['currentlevel']);
         $this->assertSame(1, $config['currentphase']);

@@ -246,8 +246,8 @@ define([], function() {
         /**
          * Scans every row for contiguous same-type runs of 3+ pieces, each pushed as its own
          * match group (with the exact run length) alongside the flat, deduplicated destroy list
-         * — combo-size-aware effects (Sword/Coin, §4.3/§4.9) read group sizes; every other piece
-         * effect still reads the flat list exactly as before this refactor (Fase 3.5, §17).
+         * — combo-size-aware effects (Sword/Coin) read group sizes; every other piece effect
+         * still reads the flat list exactly as before this refactor.
          *
          * @param {Array} toDestroy Flat, deduplicated list of pieces to destroy (mutated in place).
          * @param {Array} matchGroups List of {type, pieces} match groups (mutated in place).

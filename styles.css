@@ -183,3 +183,15 @@ body.pagelayout-embedded #playerpuzzle-btn-confirm,
 body.pagelayout-embedded #playerpuzzle-btn-skip {
     font-size: 0.875rem;
 }
+
+/**
+ * Lobby stats row (coin balance, Sword/Shield level): plain CSS gap instead of the
+ * Bootstrap 5-only .gap-* utility, so spacing is consistent on Moodle 4.5 (Bootstrap 4) too.
+ */
+body.path-mod-playerpuzzle .pp-lobby-stats {
+    gap: 0.5rem;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-progress {
+    color: var(--gray-700, #495057);
+}

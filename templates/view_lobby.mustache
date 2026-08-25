@@ -25,11 +25,34 @@
         "playurl": "/mod/playerpuzzle/play.php?id=1",
         "playtext": "Play Game",
         "sesskey": "abc123example",
-        "ismobile": false
+        "ismobile": false,
+        "hasstats": true,
+        "coinstext": "Coins: 42",
+        "swordtext": "Sword level: 3",
+        "shieldtext": "Shield level: 1",
+        "progresstext": "Current progress: Level 2, Phase 5",
+        "minquestionstext": "This match requires answering at least 3 question(s)."
     }
 }}
 <div class="pp-lobby text-center mb-5">
     <p class="lead mt-4">{{welcomemsg}}</p>
+
+    {{#hasstats}}
+    <div class="pp-lobby-stats d-flex flex-wrap justify-content-center mb-3">
+        {{#coinstext}}<span class="badge bg-warning text-dark">{{coinstext}}</span>{{/coinstext}}
+        {{#swordtext}}<span class="badge bg-primary">{{swordtext}}</span>{{/swordtext}}
+        {{#shieldtext}}<span class="badge bg-info text-dark">{{shieldtext}}</span>{{/shieldtext}}
+    </div>
+    {{/hasstats}}
+
+    {{#progresstext}}
+    <p class="pp-lobby-progress">{{progresstext}}</p>
+    {{/progresstext}}
+
+    {{#minquestionstext}}
+    <p class="alert alert-info py-2 mb-3 pp-lobby-minquestions">{{minquestionstext}}</p>
+    {{/minquestionstext}}
+
     <form method="post" action="{{{playurl}}}" class="mt-3" {{#ismobile}}target="_blank"{{/ismobile}}>
         <input type="hidden" name="sesskey" value="{{sesskey}}">
         <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fs-4 fw-bold shadow-sm">

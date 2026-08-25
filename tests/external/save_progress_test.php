@@ -198,6 +198,41 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the damage clamp uses the boss HP scaled for the attempt's own
+     * level/phase (combat::calculate_boss_hp()), not the raw configured base — a
+     * student mid-Campaign at Level 5, Phase 1 has a boss with 300 HP (basebosshp=100),
+     * not 100. Before this was fixed, every Campaign attempt past Level 1 Phase 1 was
+     * wrongly capped to the base value.
+     *
+     * @return void
+     */
+    public function test_damage_is_clamped_to_phase_scaled_hp_not_base(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 5, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 1, ['token' => $token]);
+
+        $result = $this->call_save_progress([
+            'cmid'    => $instance->cmid,
+            'token'   => $token,
+            'gold'    => 0,
+            'victory' => 1,
+            'damage'  => 250,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        // Boss HP at Level 5, Phase 1 with basebosshp=100 is 300 (§4.6 worked example).
+        // 250 damage is well within that, so it must not be clamped down to 100.
+        $this->assertSame(50, (int) $attempt->bosshp_remaining);
+        $this->assertEqualsWithDelta(83.33333, (float) $attempt->score, 0.001);
+    }
+
+    /**
      * Tests that an unknown/forged token is rejected with the dedicated exception —
      * never silently accepted, never a generic coding error.
      *

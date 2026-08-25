@@ -29,6 +29,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
 use moodle_exception;
@@ -95,10 +96,19 @@ class save_progress extends external_api {
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
 
-        // Sanity check: damage can never exceed the boss HP the server itself configured.
-        $safedamage = max(0, min($params['damage'], (int) $playerpuzzle->basebosshp));
-        $attempt->bosshp_remaining = max(0, (int) $playerpuzzle->basebosshp - $safedamage);
-        $attempt->score = round(($safedamage / max(1, (int) $playerpuzzle->basebosshp)) * 100, 5);
+        // Sanity check: damage can never exceed the boss HP the server itself calculated for
+        // the attempt's own level/phase — never the raw configured base, which would wrongly
+        // cap every Campaign attempt to the Level 1, Phase 1 value regardless of how far the
+        // student actually progressed (Single Match always carries currentlevel = currentphase
+        // = 1, so the formula returns the base HP unchanged there).
+        $bosshp = combat::calculate_boss_hp(
+            (int) $playerpuzzle->basebosshp,
+            (int) $attempt->currentlevel,
+            (int) $attempt->currentphase
+        );
+        $safedamage = max(0, min($params['damage'], $bosshp));
+        $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);
+        $attempt->score = round(($safedamage / max(1, $bosshp)) * 100, 5);
         $DB->update_record('playerpuzzle_attempts', $attempt);
 
         $coinsbanked = 0;

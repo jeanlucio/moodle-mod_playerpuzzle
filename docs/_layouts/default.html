@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="{{ page.lang | default: 'en' }}">
+<head>
+  {% include head.html %}
+</head>
+<body>
+  {% include header.html %}
+
+  <div class="layout">
+    <nav class="sidebar" aria-label="Table of contents">
+      {% if page.lang == 'pt' %}
+        <div class="sidebar-group">
+          <ul>
+            <li><a class="sidebar-link" href="#screenshots">🖼️ Capturas de Tela</a></li>
+            <li><a class="sidebar-link" href="#features">✨ Funcionalidades</a></li>
+            <li><a class="sidebar-link" href="#combat">⚔️ Como o Combate Funciona</a></li>
+            <li><a class="sidebar-link" href="#questions">🎯 Motor de Questões</a></li>
+            <li><a class="sidebar-link" href="#game-modes">🎮 Modos de Jogo</a></li>
+            <li><a class="sidebar-link" href="#playerhud">💰 Integração com o PlayerHUD</a></li>
+            <li><a class="sidebar-link" href="#accessibility">♿ Acessibilidade</a></li>
+            <li><a class="sidebar-link" href="#security">🔐 Segurança e Anti-Trapaça</a></li>
+            <li><a class="sidebar-link" href="#educational-purpose">🎓 Finalidade Educacional</a></li>
+            <li><a class="sidebar-link" href="#ecosystem">🕹️ Ecossistema Player</a></li>
+            <li><a class="sidebar-link" href="#requirements">📦 Requisitos</a></li>
+            <li><a class="sidebar-link" href="#installation">🛠️ Instalação e Configuração</a></li>
+            <li><a class="sidebar-link" href="#usage">📖 Como Usar</a></li>
+            <li><a class="sidebar-link" href="#testing">🧪 Testes Automatizados</a></li>
+            <li><a class="sidebar-link" href="#third-party">🔎 Divulgação de Serviço de Terceiros</a></li>
+            <li><a class="sidebar-link" href="#license">📄 Licença</a></li>
+          </ul>
+        </div>
+      {% else %}
+        <div class="sidebar-group">
+          <ul>
+            <li><a class="sidebar-link" href="#screenshots">🖼️ Screenshots</a></li>
+            <li><a class="sidebar-link" href="#features">✨ Features</a></li>
+            <li><a class="sidebar-link" href="#combat">⚔️ How Combat Works</a></li>
+            <li><a class="sidebar-link" href="#questions">🎯 Question Engine</a></li>
+            <li><a class="sidebar-link" href="#game-modes">🎮 Game Modes</a></li>
+            <li><a class="sidebar-link" href="#playerhud">💰 PlayerHUD Integration</a></li>
+            <li><a class="sidebar-link" href="#accessibility">♿ Accessibility</a></li>
+            <li><a class="sidebar-link" href="#security">🔐 Security & Anti-Cheat</a></li>
+            <li><a class="sidebar-link" href="#educational-purpose">🎓 Educational Purpose</a></li>
+            <li><a class="sidebar-link" href="#ecosystem">🕹️ Player Ecosystem</a></li>
+            <li><a class="sidebar-link" href="#requirements">📦 Requirements</a></li>
+            <li><a class="sidebar-link" href="#installation">🛠️ Installation & Configuration</a></li>
+            <li><a class="sidebar-link" href="#usage">📖 Usage</a></li>
+            <li><a class="sidebar-link" href="#testing">🧪 Automated Tests</a></li>
+            <li><a class="sidebar-link" href="#third-party">🔎 Third-party Service Disclosure</a></li>
+            <li><a class="sidebar-link" href="#license">📄 License</a></li>
+          </ul>
+        </div>
+      {% endif %}
+    </nav>
+
+    <main class="content">
+      {{ content }}
+    </main>
+  </div>
+
+  {% include footer.html %}
+</body>
+</html>

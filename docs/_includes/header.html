@@ -1,0 +1,27 @@
+<header class="page-header">
+  <img
+    class="page-header-banner"
+    src="{{ '/assets/img/screenshots/gameplay.jpg' | relative_url }}"
+    alt="PlayerPuzzle Match-3 combat screen with HP bars and campaign progress indicator"
+  >
+</header>
+
+<div class="intro">
+  <h1 class="project-name">{{ site.title }}</h1>
+  <p class="project-tagline">
+    {% if page.lang == 'pt' %}
+      Atividade gamificada Match-3 RPG por turnos para o Moodle — documentação completa.
+    {% else %}
+      {{ site.description }}
+    {% endif %}
+  </p>
+  <p class="lang-switch">
+    {% if page.lang == 'pt' %}
+      <a href="{{ '/' | relative_url }}">English</a> | <strong>Português</strong>
+    {% else %}
+      <strong>English</strong> | <a href="{{ '/pt.html' | relative_url }}">Português</a>
+    {% endif %}
+  </p>
+  <a class="btn" href="https://github.com/{{ site.repository }}">View on GitHub</a>
+  <a class="btn" href="https://github.com/{{ site.repository }}/archive/refs/heads/main.zip">Download .zip</a>
+</div>

@@ -1,0 +1,15 @@
+# Each entry needs an image at docs/assets/img/screenshots/<file>, plus an
+# English and a Portuguese caption. The screenshots.md pages (en/pt) loop over
+# this list, so adding a new screenshot never touches the gallery markup.
+- file: lobby.png
+  caption_en: "The Lobby: current Campaign progress, the minimum-questions notice and the Play button, before the student ever enters the match"
+  caption_pt: "O Lobby: progresso atual da Campanha, o aviso de mínimo de questões e o botão de jogar, antes mesmo do estudante entrar na partida"
+- file: gameplay.jpg
+  caption_en: "Combat in progress: the 8×8 Match-3 board, scaled HP bars for a mid-campaign phase (Level 3, Phase 4), and the progress indicator"
+  caption_pt: "Combate em andamento: o tabuleiro Match-3 8×8, barras de HP escaladas para uma fase intermediária da campanha (Nível 3, Fase 4), e o indicador de progresso"
+- file: question-dialog.jpg
+  caption_en: "The question challenge as a native HTML dialog — centered, focus-managed, no Bootstrap JS dependency"
+  caption_pt: "O desafio de pergunta como um diálogo HTML nativo — centralizado, com gerenciamento de foco, sem depender do JS do Bootstrap"
+- file: settings-form.png
+  caption_en: "Teacher-facing activity settings: game mode, question source and the PlayerHUD integration sections"
+  caption_pt: "Configurações da atividade para o professor: modo de jogo, fonte das questões e as seções de integração com o PlayerHUD"

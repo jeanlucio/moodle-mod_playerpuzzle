@@ -23,6 +23,12 @@ body {
   color: var(--text);
 }
 
+.page-header-banner {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .intro {
   max-width: 1100px;
   margin: 0 auto;

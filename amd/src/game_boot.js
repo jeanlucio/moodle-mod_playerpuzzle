@@ -210,14 +210,14 @@ define([
 
                 const strKeys = [
                     'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
-                    'bosstrigger', 'bosswrongfeedback', 'btnattack', 'btncontinue',
-                    'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
+                    'bosslostmultiplier', 'bosstrigger', 'bosswrongfeedback', 'btnattack',
+                    'btncontinue', 'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
                     'coinscollected', 'defeat', 'exitwarning', 'expand',
                     'hpboss', 'hpyou', 'loading', 'maxmultiplier',
                     'musicoff', 'musicon', 'noanswers', 'playercorrect',
-                    'playerwrong', 'progressindicator', 'progresssaved', 'questionerror',
-                    'requirejserror', 'saveerror', 'savingprogress', 'sfxoff', 'sfxon', 'shrink',
-                    'shuffling', 'victory'
+                    'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
+                    'questionerror', 'requirejserror', 'saveerror', 'savingprogress', 'sfxoff',
+                    'sfxon', 'shrink', 'shuffling', 'victory'
                 ];
 
                 const values = await Str.get_strings(

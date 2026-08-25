@@ -107,6 +107,10 @@ define(['jquery'], function($) {
             const thickness = 4;
 
             if (!this.rings[key]) {
+                // A solid backing plate is required here: the ring sits directly over the
+                // battle background (grass, trees, sky), which bleeds through a stroke-only
+                // circle and makes the icon inside unreadable at this size.
+                this.scene.add.circle(x, y, radius + 3, 0x1a1a1a, 0.9);
                 this.scene.add.graphics().lineStyle(thickness, 0x222222, 1).strokeCircle(x, y, radius);
                 this.scene.add.image(x, y, spriteKey).setDisplaySize(22, 22);
                 this.rings[key] = this.scene.add.graphics();

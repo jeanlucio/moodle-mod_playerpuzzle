@@ -7,7 +7,7 @@
   correta causa dano extra. Veja [Como o Combate Funciona](#combat).
 * 🎮 **Dois Modos de Jogo:** **Campanha** (uma jornada contínua por até 10 níveis × 10 fases
   cada, onde vencer nunca consome uma nova tentativa — só perder consome) e **Partida Única**
-  (uma rodada autocontida reaproveitando o padrão `grademethod` do ecossistema Player). Veja
+  (uma rodada autocontida reaproveitando o padrão `grademethod` do ecossistema PlayerGames). Veja
   [Modos de Jogo](#game-modes).
 * 📈 **Escala Linear de HP:** o HP do chefe e do estudante escalam com o nível/fase atual usando
   uma fórmula linear fixa (`base × (1 + taxa × (nível−1) + taxa × (fase−1))`), calculada uma vez

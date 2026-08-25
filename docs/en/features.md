@@ -7,7 +7,7 @@
   extra damage. See [How Combat Works](#combat).
 * 🎮 **Two Game Modes:** **Campaign** (a continuous run through up to 10 levels × 10 phases each,
   where winning never costs a new attempt — only losing does) and **Single Match** (a self-
-  contained round reusing the `grademethod` pattern from the Player ecosystem). See
+  contained round reusing the `grademethod` pattern from the PlayerGames ecosystem). See
   [Game Modes](#game-modes).
 * 📈 **Linear HP Scaling:** Boss and student HP scale with the current level/phase using a fixed
   formula (`base × (1 + rate × (level−1) + rate × (phase−1))`), computed once server-side and

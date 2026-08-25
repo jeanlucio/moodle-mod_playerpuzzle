@@ -8,7 +8,7 @@ lang: pt
 ![Licença](https://img.shields.io/badge/Licen%C3%A7a-GPLv3-blue?style=flat)
 ![Status](https://img.shields.io/badge/Status-Alpha-red?style=flat)
 [![Última Versão](https://img.shields.io/github/v/release/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/releases)
-[![Ecossistema Player](https://img.shields.io/badge/Player-Ecossistema-6f42c1?style=flat&logo=gamepad&logoColor=white)](#ecosystem)
+[![PlayerGames Ecosystem](https://img.shields.io/badge/PlayerGames-Ecosystem-6f42c1?style=flat&logo=gamepad&logoColor=white)](https://jeanlucio.github.io/playergames/)
 [![Autor](https://img.shields.io/badge/por-Jean_Lucio-6f42c1?style=flat)](https://github.com/jeanlucio/)
 
 [![Moodle Plugin CI](https://github.com/jeanlucio/moodle-mod_playerpuzzle/actions/workflows/ci.yml/badge.svg)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/actions/workflows/ci.yml)

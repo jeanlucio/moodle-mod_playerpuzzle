@@ -546,12 +546,16 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             // The boss's own Coin total (bossGold) never buys it anything — it exists purely to
             // net against the student's balance here, the only place it is spent.
             const netGold = Math.round(Math.max(0, this.playerGold - this.bossGold));
+            // A defeat/timeout discards the session's coins server-side — showing the collected
+            // total here first, only to contradict it with "0" once the save confirms, reads as
+            // a bug. Showing the true outcome (0) up front avoids that.
+            const displayGold = victory ? netGold : 0;
 
             const context = {
                 colorclass: victory ? 'text-success' : 'text-danger',
                 msg: victory ? strings.victory : strings.defeat,
                 coinscollected: strings.coinscollected,
-                playergold: netGold,
+                playergold: displayGold,
                 maxmultiplier: strings.maxmultiplier,
                 playermultiplier: this.playerMultiplier.toFixed(1),
                 savingprogress: strings.savingprogress,

@@ -117,7 +117,9 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                     if (piece.type === 6) {
                         this.playerGold += 10;
                     } else if (piece.type === 5) {
-                        this.currentPlayerHp = Math.min(this.maxPlayerHp, this.currentPlayerHp + 5);
+                        this.currentPlayerHp = Math.min(
+                            this.maxPlayerHp, this.currentPlayerHp + (this.baseDamage / 6)
+                        );
                     } else if (piece.type === 0) {
                         this.playerMultiplier += 0.1;
                     } else if (piece.type === 4) {
@@ -136,6 +138,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         this.bossPoisonMeter += 10;
                     } else if (piece.type === 4) {
                         this.bossShieldMeter += 10;
+                    } else if (piece.type === 5) {
+                        this.currentHp = Math.min(this.maxBossHp, this.currentHp + (this.baseDamage / 6));
                     }
                 }
 

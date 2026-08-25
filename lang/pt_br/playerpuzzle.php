@@ -132,6 +132,7 @@ $string['privacy:metadata:timecreated'] = 'O momento em que este registro foi cr
 $string['privacy:metadata:timefinished'] = 'O momento em que a tentativa terminou.';
 $string['privacy:metadata:timemodified'] = 'O momento em que este registro foi modificado pela última vez.';
 $string['privacy:metadata:userid'] = 'O ID do usuário ao qual este registro pertence.';
+$string['progressindicator'] = 'Nível {$a->level} — Fase {$a->phase} de 10';
 $string['progresssaved'] = 'Progresso salvo! (Total de moedas: {$a})';
 $string['questioncategory'] = 'Categoria de perguntas';
 $string['questionchallenge'] = '⚔️ Desafio Mágico!';

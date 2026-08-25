@@ -187,8 +187,8 @@ define([
                     'coinscollected', 'defeat', 'exitwarning', 'expand',
                     'hpboss', 'hpyou', 'loading', 'maxmultiplier',
                     'musicoff', 'musicon', 'noanswers', 'playercorrect',
-                    'playerwrong', 'progresssaved', 'questionerror', 'requirejserror',
-                    'saveerror', 'savingprogress', 'sfxoff', 'sfxon', 'shrink',
+                    'playerwrong', 'progressindicator', 'progresssaved', 'questionerror',
+                    'requirejserror', 'saveerror', 'savingprogress', 'sfxoff', 'sfxon', 'shrink',
                     'shuffling', 'victory'
                 ];
 

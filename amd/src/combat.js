@@ -37,12 +37,16 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.playerShield = 0;
             this.playerMultiplier = 1;
             this.playerMana = 0;
-            this.maxPlayerHp = 100;
+            // The studenthp/bosshp config values are already scaled server-side for the
+            // attempt's current level/phase (combat::calculate_boss_hp()/calculate_student_hp(),
+            // §4.6) — Single Match always resolves to the base HP unchanged, so no branching
+            // is needed here for game mode.
+            this.maxPlayerHp = parseInt(gameConfig.studenthp) || 100;
             this.currentPlayerHp = this.maxPlayerHp;
 
             this.bossPoison = 0;
             this.bossMana = 0;
-            this.maxBossHp = gameConfig.basebosshp;
+            this.maxBossHp = parseInt(gameConfig.bosshp) || 1000;
             this.currentHp = this.maxBossHp;
         }
 
@@ -193,9 +197,16 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
             setTimeout(() => {
                 me.scene.pause();
-                const modalMoodle = $('#playerpuzzle-modal');
+                const dialogEl = document.getElementById('playerpuzzle-modal');
 
-                if (modalMoodle.length > 0) {
+                if (dialogEl) {
+                    // Native <dialog> restores no focus of its own on close() — the
+                    // element that had focus when the dialog opened (typically nothing,
+                    // since Phaser's canvas is not itself focusable) is saved here and
+                    // restored explicitly (§4.4: "Foco retorna ao elemento anterior ao
+                    // fechar").
+                    const previouslyFocused = document.activeElement;
+
                     let question = {text: ctx.strings.questionerror, options: []};
                     if (ctx.gameConfig.questions && ctx.gameConfig.questions.length > 0) {
                         const idx = Math.floor(Math.random() * ctx.gameConfig.questions.length);
@@ -217,7 +228,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                     $('#playerpuzzle-btn-skip').hide().off('click');
 
                     const closeModal = () => {
-                        modalMoodle.removeClass('show');
+                        dialogEl.close();
+                        if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+                            previouslyFocused.focus();
+                        }
                         me.scene.resume();
                         me.time.delayedCall(250, me.board.applyGravity, [], me.board);
                     };
@@ -371,7 +385,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                             .off('click').on('click', closeModal);
                     }
 
-                    modalMoodle.addClass('show');
+                    // Content (question text, answer buttons) is already in the DOM at
+                    // this point, so the browser's own auto-focus on showModal() lands on
+                    // a real answer button — no extra JS-driven focus call needed.
+                    dialogEl.showModal();
                 } else {
                     me.scene.resume();
                     me.time.delayedCall(250, me.board.applyGravity, [], me.board);

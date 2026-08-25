@@ -150,19 +150,59 @@ body.pagelayout-embedded #playerpuzzle-canvas-container {
 }
 
 /**
- * Question modal: reduce font sizes on mobile without breaking accessibility.
- * Question text stays at 1rem (16px) — accepted body text minimum.
- * Answer buttons (.pp-answer-btn) use 0.875rem (14px) — acceptable for form
- * controls per WCAG. Bootstrap utilities mb-3/mb-4 are removed at source
- * (template and JS) so margin can be controlled here without !important.
- * max-height + overflow-y: auto on modal-body prevents viewport overflow on
- * very long questions.
+ * Question modal: native <dialog> (§4.4/§17 — chosen over a Bootstrap modal
+ * specifically here for native focus/ESC/top-layer handling). The UA stylesheet
+ * supplies its own border/padding/background by default, all reset here for full
+ * control; showModal() centers it in the viewport automatically.
  */
-body.pagelayout-embedded #playerpuzzle-modal .modal-dialog {
-    margin: 0.5rem;
+body.path-mod-playerpuzzle .pp-question-modal {
+    max-width: 500px;
+    width: calc(100% - 2rem);
+    padding: 0;
+    border: 2px solid var(--primary, #0d6efd);
+    border-radius: 0.5rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
 }
 
-body.pagelayout-embedded #playerpuzzle-modal .modal-body {
+body.path-mod-playerpuzzle .pp-question-modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal-header {
+    background-color: var(--primary, #0d6efd);
+    color: var(--white, #ffffff);
+    padding: 1rem 1.25rem;
+    border-radius: 0.25rem 0.25rem 0 0;
+}
+
+body.path-mod-playerpuzzle .pp-question-modal-title {
+    margin: 0;
+}
+
+body.path-mod-playerpuzzle .pp-question-modal-body {
+    padding: 1.25rem;
+}
+
+body.path-mod-playerpuzzle .pp-question-modal-footer {
+    background-color: var(--light, #f8f9fa);
+    padding: 0.75rem 1.25rem;
+    border-radius: 0 0 0.25rem 0.25rem;
+}
+
+/**
+ * Question modal on mobile: reduce font sizes without breaking accessibility.
+ * Question text stays at 1rem (16px) — accepted body text minimum. Answer buttons
+ * (.pp-answer-btn) use 0.875rem (14px) — acceptable for form controls per WCAG.
+ * max-height + overflow-y: auto on the body prevents viewport overflow on very
+ * long questions.
+ */
+body.pagelayout-embedded .pp-question-modal {
+    /* Width only, never margin: <dialog> centers itself via the UA stylesheet's own
+       margin: auto, which an explicit margin here would override and de-center. */
+    width: calc(100% - 1rem);
+}
+
+body.pagelayout-embedded .pp-question-modal-body {
     padding: 0.75rem;
     max-height: 65vh;
     overflow-y: auto;

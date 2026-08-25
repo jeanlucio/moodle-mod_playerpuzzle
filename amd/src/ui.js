@@ -95,7 +95,29 @@ define(['jquery'], function($) {
             me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.playerUiX, L.playerManaY, 300, 8);
             this.playerManaBar = me.add.graphics();
 
+            this.setupProgressIndicator();
             this.setupButtons();
+        }
+
+        /**
+         * Shows "Level X — Phase Y of 10" in the HUD for Campaign mode. Single Match has
+         * no levels/phases, so the indicator is skipped entirely for it.
+         */
+        setupProgressIndicator() {
+            if (this.gameConfig.gamemode !== 'campaign') {
+                return;
+            }
+
+            const me = this.scene;
+            const L = this.L;
+
+            const text = this.strings.progressindicator
+                .replace('{$a->level}', this.gameConfig.currentlevel)
+                .replace('{$a->phase}', this.gameConfig.currentphase);
+
+            this.progressText = me.add.text(L.w / 2, 20, text, {
+                fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
+            }).setOrigin(0.5, 0).setDepth(10);
         }
 
         setupButtons() {

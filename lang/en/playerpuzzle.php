@@ -132,6 +132,7 @@ $string['privacy:metadata:timecreated'] = 'The time at which this record was cre
 $string['privacy:metadata:timefinished'] = 'The time at which the attempt ended.';
 $string['privacy:metadata:timemodified'] = 'The time at which this record was last modified.';
 $string['privacy:metadata:userid'] = 'The ID of the user this record belongs to.';
+$string['progressindicator'] = 'Level {$a->level} — Phase {$a->phase} of 10';
 $string['progresssaved'] = 'Progress saved! (Total coins: {$a})';
 $string['questioncategory'] = 'Question category';
 $string['questionchallenge'] = '⚔️ Magic Challenge!';

@@ -32,6 +32,7 @@ define(['jquery'], function($) {
             this.L = layout;
             this.gameConfig = gameConfig;
             this.strings = strings;
+            this.rings = {};
         }
 
         setupLoader() {
@@ -59,22 +60,11 @@ define(['jquery'], function($) {
             this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
                 .setDisplaySize(L.bossScale, L.bossScale);
 
-            this.txtPoison = me.add.text(L.poisonX, L.bossTxtY, '☠️', {fontSize: '16px'})
-                .setOrigin(0.5)
-                .setAlpha(0);
-            this.txtPlayerPoison = me.add.text(L.playerPoisonX, L.playerTxtY, '☠️', {fontSize: '16px'})
-                .setOrigin(0.5)
-                .setAlpha(0);
-
-            const styleShield = {fontSize: '16px', fill: '#aaaaff', fontStyle: 'bold'};
             const styleGold = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
             const styleStar = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
 
-            this.txtShield = me.add.text(L.shieldX, L.playerHpY + 40, '🛡️: —', styleShield);
-            this.txtGold = me.add.text(L.goldX, L.playerHpY + 40, '🪙: 0', styleGold)
-                .setOrigin(0.5, 0);
-            this.txtStar = me.add.text(L.starX, L.playerHpY + 40, '⭐x1.0', styleStar)
-                .setOrigin(1, 0);
+            this.txtGold = me.add.text(L.goldX, L.goldY, '🪙: 0', styleGold).setOrigin(0.5, 0);
+            this.txtStar = me.add.text(L.starX, L.starY, '⭐x1.0', styleStar).setOrigin(1, 0);
 
             me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.bossUiX, L.bossHpY, 300, 22);
             this.bossHpBar = me.add.graphics();
@@ -85,11 +75,6 @@ define(['jquery'], function($) {
             }).setOrigin(0.5);
             this.txtBossStar = me.add.text(L.bossStarX, L.bossStarY, '⭐x1.0', styleStar)
                 .setOrigin(0, 0.5);
-            this.txtBossShield = me.add.text(L.bossShieldX, L.bossShieldY, '🛡️: —', styleShield)
-                .setOrigin(0, 0.5);
-
-            me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.bossUiX, L.bossManaY, 300, 8);
-            this.bossManaBar = me.add.graphics();
 
             me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.playerUiX, L.playerHpY, 300, 22);
             this.playerHpBar = me.add.graphics();
@@ -99,11 +84,47 @@ define(['jquery'], function($) {
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
-            me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.playerUiX, L.playerManaY, 300, 8);
-            this.playerManaBar = me.add.graphics();
-
             this.setupProgressIndicator();
             this.setupButtons();
+        }
+
+        /**
+         * Creates (on first call) or updates (on later calls) a radial-ring meter: an arc
+         * filling clockwise around a static piece-sprite icon, from 0% to 100% of `pct`. Used
+         * for the Grimoire/Shield/Question-Orb meters, each of which already fills 0–100
+         * (Fase 3.5 visual redesign) — replaces the earlier flat progress bar / text indicator
+         * these three used before.
+         *
+         * @param {string} key Unique identifier for this ring instance (e.g. 'playerGrimoire').
+         * @param {number} x Center X.
+         * @param {number} y Center Y.
+         * @param {string} spriteKey Texture key of the piece sprite centered inside the ring.
+         * @param {number} pct Fill progress, 0–1.
+         * @param {number} color Stroke color (hex) for the filled arc.
+         */
+        updateRing(key, x, y, spriteKey, pct, color) {
+            const radius = 16;
+            const thickness = 4;
+
+            if (!this.rings[key]) {
+                this.scene.add.graphics().lineStyle(thickness, 0x222222, 1).strokeCircle(x, y, radius);
+                this.scene.add.image(x, y, spriteKey).setDisplaySize(22, 22);
+                this.rings[key] = this.scene.add.graphics();
+            }
+
+            const arc = this.rings[key];
+            arc.clear();
+            if (pct <= 0) {
+                return;
+            }
+            arc.lineStyle(thickness, color, 1);
+            arc.beginPath();
+            arc.arc(
+                x, y, radius,
+                Phaser.Math.DegToRad(-90), Phaser.Math.DegToRad(-90 + (360 * pct)),
+                false
+            );
+            arc.strokePath();
         }
 
         /**
@@ -200,21 +221,28 @@ define(['jquery'], function($) {
             });
         }
 
-        updateBossBar(currentHp, maxHp, mana, poisonTurns, multiplier, shieldReady) {
+        updateBossBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, multiplier) {
+            const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
             this.bossHpBar.clear()
                 .fillStyle(0xdd0000, 1)
-                .fillRect(this.L.bossUiX + 2, this.L.bossHpY + 2, 296 * pctHp, 18);
+                .fillRect(L.bossUiX + 2, L.bossHpY + 2, 296 * pctHp, 18);
             this.bossHpText.setText(`${this.strings.hpboss} ${Math.round(currentHp)}`);
-
-            const pctMana = Math.min(1, mana / 100);
-            this.bossManaBar.clear()
-                .fillStyle(0x0088ff, 1)
-                .fillRect(this.L.bossUiX + 2, this.L.bossManaY + 1, 296 * pctMana, 6);
-
-            this.txtPoison.setAlpha(poisonTurns > 0 ? 1 : 0);
             this.txtBossStar.setText(`⭐x${multiplier.toFixed(1)}`);
-            this.txtBossShield.setText(shieldReady ? '🛡️: ✓' : '🛡️: —');
+
+            // Poison ring: purple while filling toward the next trigger; turns red whenever a
+            // damage round is currently pending, regardless of the meter's own fresh progress.
+            this.updateRing(
+                'bossGrimoire', L.bossGrimoireX, L.bossRingY, 'item1',
+                poisonRounds > 0 ? 1 : (poisonMeter / 100), poisonRounds > 0 ? 0xff3333 : 0x9933cc
+            );
+            // Shield ring: blue while filling; forced to a full gold ring while a block is
+            // armed, since the meter itself already reset to 0 the instant it triggered.
+            this.updateRing(
+                'bossShieldRing', L.bossShieldRingX, L.bossRingY, 'item4',
+                shieldReady ? 1 : (shieldMeter / 100), shieldReady ? 0xffcc00 : 0x3388ff
+            );
+            this.updateRing('bossOrb', L.bossOrbX, L.bossRingY, 'item2', mana / 100, 0x0088ff);
         }
 
         showExitConfirm() {
@@ -268,24 +296,27 @@ define(['jquery'], function($) {
             });
         }
 
-        updatePlayerBar(currentHp, maxHp, mana, shieldReady, gold, multiplier, poisonRounds) {
+        updatePlayerBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
+            const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
             this.playerHpBar.clear()
                 .fillStyle(0x00cc00, 1)
-                .fillRect(this.L.playerUiX + 2, this.L.playerHpY + 2, 296 * pctHp, 18);
+                .fillRect(L.playerUiX + 2, L.playerHpY + 2, 296 * pctHp, 18);
             this.playerHpText.setText(
                 `${this.strings.hpyou} ${Math.round(currentHp)} / ${maxHp}`
             );
-
-            const pctMana = Math.min(1, mana / 100);
-            this.playerManaBar.clear()
-                .fillStyle(0x0088ff, 1)
-                .fillRect(this.L.playerUiX + 2, this.L.playerManaY + 1, 296 * pctMana, 6);
-
-            this.txtShield.setText(shieldReady ? '🛡️: ✓' : '🛡️: —');
             this.txtGold.setText(`🪙: ${Math.round(gold)}`);
             this.txtStar.setText(`⭐x${multiplier.toFixed(1)}`);
-            this.txtPlayerPoison.setAlpha(poisonRounds > 0 ? 1 : 0);
+
+            this.updateRing(
+                'playerGrimoire', L.playerGrimoireX, L.playerRingY, 'item1',
+                poisonRounds > 0 ? 1 : (poisonMeter / 100), poisonRounds > 0 ? 0xff3333 : 0x9933cc
+            );
+            this.updateRing(
+                'playerShieldRing', L.playerShieldRingX, L.playerRingY, 'item4',
+                shieldReady ? 1 : (shieldMeter / 100), shieldReady ? 0xffcc00 : 0x3388ff
+            );
+            this.updateRing('playerOrb', L.playerOrbX, L.playerRingY, 'item2', mana / 100, 0x0088ff);
         }
     }
 

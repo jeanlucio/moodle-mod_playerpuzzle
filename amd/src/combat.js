@@ -199,12 +199,16 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
         updateUI() {
             this.scene.ui.updatePlayerBar(
-                this.currentPlayerHp, this.maxPlayerHp, this.playerMana, this.playerShieldReady,
-                this.playerGold, this.playerMultiplier, this.playerPoisonRounds
+                this.currentPlayerHp, this.maxPlayerHp,
+                this.playerPoisonMeter, this.playerPoisonRounds,
+                this.playerShieldMeter, this.playerShieldReady,
+                this.playerMana, this.playerGold, this.playerMultiplier
             );
             this.scene.ui.updateBossBar(
-                this.currentHp, this.maxBossHp, this.bossMana, this.bossPoisonRounds,
-                this.bossMultiplier, this.bossShieldReady
+                this.currentHp, this.maxBossHp,
+                this.bossPoisonMeter, this.bossPoisonRounds,
+                this.bossShieldMeter, this.bossShieldReady,
+                this.bossMana, this.bossMultiplier
             );
         }
 

@@ -95,20 +95,24 @@ define([
                 w: 1280, h: 720, aspect: '16/9', maxW: '100%',
                 bgX: 640, bgY: 360, bgW: 1280, bgH: 720,
                 bossX: 1040, bossY: 260, bossScale: 180,
-                bossUiX: 890, bossHpY: 380, bossManaY: 405, bossTxtY: 391, poisonX: 1200,
-                bossStarX: 890, bossStarY: 420, bossShieldX: 990, bossShieldY: 420,
-                playerUiX: 90, playerHpY: 380, playerManaY: 405, playerTxtY: 391, playerPoisonX: 400,
-                shieldX: 90, goldX: 240, starX: 390,
+                bossUiX: 890, bossHpY: 380, bossTxtY: 391,
+                bossRingY: 425, bossGrimoireX: 940, bossShieldRingX: 1040, bossOrbX: 1140,
+                bossStarX: 890, bossStarY: 450,
+                playerUiX: 90, playerHpY: 380, playerTxtY: 391,
+                playerRingY: 425, playerGrimoireX: 140, playerShieldRingX: 240, playerOrbX: 340,
+                goldX: 240, goldY: 450, starX: 390, starY: 450,
                 boardOffX: 447.5, boardOffY: 167.5, btnExpX: 1260, btnExpY: 20
             } : {
                 w: 540, h: 960, aspect: '9/16', maxW: '540px',
                 bgX: 270, bgY: 480, bgW: 540, bgH: 960,
                 bossX: 270, bossY: 75, bossScale: 100,
-                bossUiX: 120, bossHpY: 135, bossManaY: 158, bossTxtY: 146, poisonX: 430,
-                bossStarX: 120, bossStarY: 146, bossShieldX: 455, bossShieldY: 146,
-                playerUiX: 120, playerHpY: 175, playerManaY: 198, playerTxtY: 186, playerPoisonX: 430,
-                shieldX: 120, goldX: 270, starX: 420,
-                boardOffX: 77.5, boardOffY: 280, btnExpX: 520, btnExpY: 20
+                bossUiX: 120, bossHpY: 135, bossTxtY: 146,
+                bossRingY: 180, bossGrimoireX: 170, bossShieldRingX: 270, bossOrbX: 370,
+                bossStarX: 120, bossStarY: 214,
+                playerUiX: 120, playerHpY: 237, playerTxtY: 248,
+                playerRingY: 282, playerGrimoireX: 170, playerShieldRingX: 270, playerOrbX: 370,
+                goldX: 270, goldY: 298, starX: 420, starY: 298,
+                boardOffX: 77.5, boardOffY: 330, btnExpX: 520, btnExpY: 20
             };
 
             const containerDOM = document.getElementById('playerpuzzle-canvas-container');

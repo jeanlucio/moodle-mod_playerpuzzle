@@ -14,7 +14,7 @@
         <FIELD NAME="maxlevels" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Number of levels enabled (1-10); each level has 10 phases"/>
         <FIELD NAME="basestudenthp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Base student HP at Level 1 Phase 1; scales automatically per phase"/>
         <FIELD NAME="bossavatar" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="slime.png" SEQUENCE="false" COMMENT="Boss image filename"/>
-        <FIELD NAME="basebosshp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1000" SEQUENCE="false" COMMENT="Base boss HP at Level 1 Phase 1; scales automatically per phase"/>
+        <FIELD NAME="basebosshp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Base boss HP at Level 1 Phase 1; scales automatically per phase"/>
         <FIELD NAME="bossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Damage dealt by boss per turn"/>
         <FIELD NAME="coingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Base coins per 3-piece Coin match; combo curve applies, does not scale by level/phase"/>
         <FIELD NAME="questioncategory" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID from question_categories table"/>

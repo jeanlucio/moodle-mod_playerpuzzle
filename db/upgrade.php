@@ -194,5 +194,19 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026082502, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026082504) {
+        $table = new xmldb_table('playerpuzzle');
+
+        // Lower the default basebosshp from 1000 to 100: at Level 1 Phase 1 (before any
+        // level/phase scaling), a 10x HP ratio against the default 100 student HP made the
+        // boss effectively unbeatable out of the box.
+        $field = new xmldb_field('basebosshp', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '100');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026082504, 'playerpuzzle');
+    }
+
     return true;
 }

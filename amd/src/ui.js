@@ -283,7 +283,7 @@ define(['jquery'], function($) {
                 .fillRect(this.L.playerUiX + 2, this.L.playerManaY + 1, 296 * pctMana, 6);
 
             this.txtShield.setText(shieldReady ? '🛡️: ✓' : '🛡️: —');
-            this.txtGold.setText(`🪙: ${gold}`);
+            this.txtGold.setText(`🪙: ${Math.round(gold)}`);
             this.txtStar.setText(`⭐x${multiplier.toFixed(1)}`);
             this.txtPlayerPoison.setAlpha(poisonRounds > 0 ? 1 : 0);
         }

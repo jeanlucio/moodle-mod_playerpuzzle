@@ -139,6 +139,10 @@ class game_page_service {
             'bosshp'       => $bosshp,
             'studenthp'    => $studenthp,
             'bossdamage'   => $bossdamage,
+            // Deliberately not scaled by level/phase, unlike bossdamage above: a teacher's
+            // fixed-price consumable shop would otherwise get proportionally cheaper as a
+            // campaign progresses.
+            'coingain'     => (int) $instance->coingain,
             'bossavatar'   => $instance->bossavatar,
             'bossurl'      => $bossurl,
             'bgurl'        => $bgurl,

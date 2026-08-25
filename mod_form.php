@@ -126,6 +126,12 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addElement('text', 'bossdamage', get_string('bossdamage', 'mod_playerpuzzle'));
         $mform->setType('bossdamage', PARAM_INT);
         $mform->setDefault('bossdamage', 10);
+        $mform->addHelpButton('bossdamage', 'bossdamage', 'mod_playerpuzzle');
+
+        $mform->addElement('text', 'coingain', get_string('coingain', 'mod_playerpuzzle'));
+        $mform->setType('coingain', PARAM_INT);
+        $mform->setDefault('coingain', 10);
+        $mform->addHelpButton('coingain', 'coingain', 'mod_playerpuzzle');
 
         $mform->addElement('header', 'questionsettings', get_string('questionsettings', 'mod_playerpuzzle'));
 

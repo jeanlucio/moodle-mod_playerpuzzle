@@ -43,6 +43,7 @@ class mod_playerpuzzle_generator extends testing_module_generator {
             'bossavatar'          => 'slime.png',
             'basebosshp'          => 1000,
             'bossdamage'          => 10,
+            'coingain'            => 10,
             // Not a real foreign key in install.xml — tests that exercise the question
             // engine itself must override this with a genuine question_categories id.
             'questioncategory'    => 0,

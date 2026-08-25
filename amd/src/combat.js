@@ -31,6 +31,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.strings = strings;
 
             this.baseDamage = parseInt(gameConfig.bossdamage) || 10;
+            // Deliberately never scaled by level/phase, unlike baseDamage — a teacher's
+            // fixed-price consumable shop would otherwise get proportionally cheaper as a
+            // campaign progresses.
+            this.coinGain = parseInt(gameConfig.coingain) || 10;
             this.currentTurn = 'player';
 
             this.playerGold = 0;
@@ -47,6 +51,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.maxPlayerHp = parseInt(gameConfig.studenthp) || 100;
             this.currentPlayerHp = this.maxPlayerHp;
 
+            this.bossGold = 0;
             this.bossPoisonMeter = 0;
             this.bossPoisonRounds = 0;
             this.bossShieldMeter = 0;
@@ -114,9 +119,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             for (const piece of destroyedPieces) {
                 if (this.currentTurn === 'player') {
                     me.sfxHit.play();
-                    if (piece.type === 6) {
-                        this.playerGold += 10;
-                    } else if (piece.type === 5) {
+                    if (piece.type === 5) {
                         this.currentPlayerHp = Math.min(
                             this.maxPlayerHp, this.currentPlayerHp + (this.baseDamage / 6)
                         );
@@ -158,6 +161,20 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             for (const group of matchGroups) {
                 if (group.type === 3) {
                     damageDealt += this.baseDamage * this.comboMultiplier(group.pieces.length);
+                }
+            }
+
+            // Coin reuses the same combo curve as Sword, over the separately configurable
+            // coinGain base. The boss's own Coin total never buys anything (it has no shop) —
+            // it exists purely to net against the student's balance in showEndScreen().
+            for (const group of matchGroups) {
+                if (group.type === 6) {
+                    const coins = this.coinGain * this.comboMultiplier(group.pieces.length);
+                    if (this.currentTurn === 'player') {
+                        this.playerGold += coins;
+                    } else {
+                        this.bossGold += coins;
+                    }
                 }
             }
 
@@ -522,11 +539,15 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             me.input.enabled = false;
             me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
 
+            // The boss's own Coin total (bossGold) never buys it anything — it exists purely to
+            // net against the student's balance here, the only place it is spent.
+            const netGold = Math.round(Math.max(0, this.playerGold - this.bossGold));
+
             const context = {
                 colorclass: victory ? 'text-success' : 'text-danger',
                 msg: victory ? strings.victory : strings.defeat,
                 coinscollected: strings.coinscollected,
-                playergold: this.playerGold,
+                playergold: netGold,
                 maxmultiplier: strings.maxmultiplier,
                 playermultiplier: this.playerMultiplier.toFixed(1),
                 savingprogress: strings.savingprogress,
@@ -542,7 +563,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 args: {
                     cmid: this.gameConfig.cmid,
                     token: this.gameConfig.token,
-                    gold: this.playerGold,
+                    gold: netGold,
                     victory: victory ? 1 : 0,
                     damage: this.maxBossHp - this.currentHp,
                 },

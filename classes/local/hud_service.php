@@ -27,8 +27,8 @@ namespace mod_playerpuzzle\local;
 /**
  * Provides coin and upgrade-level integration between mod_playerpuzzle and block_playerhud.
  *
- * PlayerPuzzle has no permanent economy of its own: SCOPE.md decides that a teacher who has
- * not added a block_playerhud instance to the course gets no persistent progression at all
+ * PlayerPuzzle has no permanent economy of its own: a teacher who has not added a
+ * block_playerhud instance to the course gets no persistent progression at all
  * (only the per-attempt tactical balance spent on in-game consumables, which never touches
  * this class). Where PlayerHUD is available, the teacher picks, per instance, which of the
  * block's own items stand in for "coins", "sword level", and "shield level" — the same
@@ -119,8 +119,8 @@ class hud_service {
      * (e.g. "Sword level 3" means the student holds 3 units of the configured sword item).
      *
      * Zero when the item is unconfigured (id 0), does not belong to $blockinstanceid, or
-     * PlayerHUD is not installed — all three collapse to "no upgrade", matching SCOPE.md's
-     * base multiplier for a student with no PlayerHUD progression.
+     * PlayerHUD is not installed — all three collapse to "no upgrade", the base multiplier
+     * for a student with no PlayerHUD progression.
      *
      * @param int $blockinstanceid Block instance ID the item must belong to.
      * @param int $userid User ID.

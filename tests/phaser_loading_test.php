@@ -26,7 +26,7 @@
 namespace mod_playerpuzzle;
 
 /**
- * The bug this guards against (SCOPE.md §17) is a client-side timing race, not something
+ * The bug this guards against is a client-side timing race, not something
  * that can be reproduced deterministically in PHPUnit (server-side) or reliably in Behat
  * (depends on RequireJS module cache state at the time of the run). The only defensible
  * automated guard is asserting the structural invariant that prevents the race in the

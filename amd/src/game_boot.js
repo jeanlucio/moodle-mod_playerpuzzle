@@ -39,7 +39,7 @@ define([
     // sit in the page's footer output and race core_message/message_drawer.js, which expects
     // its own drawer markup (rendered further down the same footer) to already be in the DOM
     // by the time its own require() callback runs — same pattern as filter_mathjaxloader's
-    // loadMathJax() (filter/mathjaxloader/amd/src/loader.js), see SCOPE.md §17.
+    // loadMathJax() (filter/mathjaxloader/amd/src/loader.js).
     const loadPhaser = (url) => {
         if (!phaserLoadPromise) {
             phaserLoadPromise = new Promise((resolve, reject) => {

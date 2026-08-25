@@ -95,7 +95,7 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         // Drop playerpuzzle_inventory: coins and upgrade levels are no longer stored locally.
         // Coins are banked into block_playerhud's own PlayerCoin item and upgrade levels are
         // read from teacher-picked block_playerhud items (see hud_service); with no PlayerHUD
-        // installed there is no permanent progression at all, matching SCOPE.md's design.
+        // installed there is no permanent progression at all.
         $inventorytable = new xmldb_table('playerpuzzle_inventory');
         if ($dbman->table_exists($inventorytable)) {
             $dbman->drop_table($inventorytable);

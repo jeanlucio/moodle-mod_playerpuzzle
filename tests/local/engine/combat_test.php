@@ -32,9 +32,9 @@ namespace mod_playerpuzzle\local\engine;
  */
 final class combat_test extends \basic_testcase {
     /**
-     * Tests calculate_boss_hp() against every value in the SCOPE.md §4.6 worked example
-     * table (base_boss_hp = 100), a direct regression guard against the documented
-     * formula ever silently drifting.
+     * Tests calculate_boss_hp() against every value in the documented worked-example
+     * table (base_boss_hp = 100), a direct regression guard against the formula ever
+     * silently drifting.
      *
      * @return void
      */

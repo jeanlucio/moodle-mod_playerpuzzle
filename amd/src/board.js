@@ -68,8 +68,8 @@ define([], function() {
             const ry = this.offsetY - (this.pieceSize / 2);
 
             // The fill (not the border or the grid lines below, which still trace the real
-            // playable area) extends upward by the same panelOverlap the side panels use, so
-            // the board's own backdrop rises to meet them instead of leaving a visible step.
+            // playable area) extends upward by panelOverlap, on purpose: the board reads as a
+            // raised platform poking above the flanking side panels, which stay flush.
             const overlap = this.L.panelOverlap || 0;
             graphics.fillStyle(0x000000, 0.85).fillRect(rx, ry - overlap, gridWidth, gridHeight + overlap);
             graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, gridWidth, gridHeight);

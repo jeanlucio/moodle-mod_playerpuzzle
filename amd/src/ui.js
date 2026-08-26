@@ -64,14 +64,15 @@ define(['jquery'], function($) {
                 // Side panel backing: a solid plate behind each player/boss resource cluster,
                 // flush against the board's own edges (panelW is derived from board size).
                 // Uses panelY, not boardOffX/Y — those are a piece-center reference for
-                // board.js, not this rect's top-left corner (see the comment on panelY).
-                // panelOverlap extends the plate a little above panelY on purpose, so it
-                // visibly overlaps stage_bg at the seam instead of just touching it.
-                const panelTop = L.panelY - L.panelOverlap;
+                // board.js, not this rect's top-left corner (see the comment on panelY). Sits
+                // flush at panelY, not overlapping — only the board itself (board.js) rises
+                // into the stage band, on purpose: the board reads as a raised platform
+                // between the two panels, matching the reference screenshot the plugin is
+                // modeled after.
                 me.add.graphics().fillStyle(0x1a1410, 0.88)
-                    .fillRect(0, panelTop, L.panelW, L.h - panelTop);
+                    .fillRect(0, L.panelY, L.panelW, L.h - L.panelY);
                 me.add.graphics().fillStyle(0x1a1410, 0.88)
-                    .fillRect(L.w - L.panelW, panelTop, L.panelW, L.h - panelTop);
+                    .fillRect(L.w - L.panelW, L.panelY, L.panelW, L.h - L.panelY);
 
                 me.add.image(L.playerX, L.playerY, 'player')
                     .setDisplaySize(L.playerScale, L.playerScale);

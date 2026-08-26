@@ -96,6 +96,8 @@ define([
             }
 
             const urlPix = `${M.cfg.wwwroot}/mod/playerpuzzle/pix/`;
+            this.load.image('panelstone', `${urlPix}panel_stone.png`);
+            this.load.image('scrollbanner', `${urlPix}scroll_banner.png`);
             this.load.audio('bg_music', `${urlPix}music.mp3`);
             this.load.audio('sfx_swap', `${urlPix}swap.mp3`);
             this.load.audio('sfx_match', `${urlPix}match.mp3`);
@@ -161,32 +163,43 @@ define([
                 // as a plain top-left-origin rectangle (e.g. the side panels).
                 boardOffX: 447.5, boardOffY: 293.5,
 
-                // HP bars now live inside the panel, above the resource row.
+                // HP bars now live inside the panel, above the resource row. Centered within
+                // the panel's own width ((420 - hpBarW) / 2 = 60) — clears panel_stone.png's
+                // carved border on both sides (was 40/940, sitting under the border on one
+                // side and asymmetric within the panel on the other).
                 hpBarW: 300, hpBarH: 28, hpBarRadius: 14,
-                bossUiX: 940, bossHpY: 300, bossTxtY: 314,
-                playerUiX: 40, playerHpY: 300, playerTxtY: 314,
+                bossUiX: 920, bossHpY: 300, bossTxtY: 314,
+                playerUiX: 60, playerHpY: 300, playerTxtY: 314,
 
-                // Centered within the panel's own width (420) so the row keeps an even margin
-                // on both sides — away from the outer/screen edge and away from the board —
-                // instead of hugging the board edge with the outer side left mostly empty.
-                goldX: 70, goldY: 375, starX: 185, starY: 375,
+                // Margins tightened (gap between chips 36 -> 18) to clear panel_stone.png's
+                // carved border on both sides — that border eats ~57px of the panel's own
+                // width on each edge, more than the flat fillRect background it replaced ever
+                // did, so the wider margins tuned for that flat background no longer fit
+                // without the row spilling under the border texture.
+                goldX: 85, goldY: 375, starX: 185, starY: 375,
                 // Potion purchase icon, same resource row as Coin/Star, right after the Star
                 // chip's real text width.
-                potionX: 330, potionY: 375,
+                potionX: 315, potionY: 375,
                 // Boss side is the player row translated by the panel offset (860), same as
                 // the ring row below it: Gold, Star, Potion read left-to-right in that order
                 // on both sides — Potion is shown here only for visual parity (no boss shop) —
                 // with the same even margins as the player side.
-                bossGoldX: 930, bossGoldY: 375, bossStarX: 1045, bossStarY: 375,
-                bossPotionX: 1190, bossPotionY: 375,
-                bossRingY: 455, bossGrimoireX: 950, bossShieldRingX: 1070, bossOrbX: 1190,
-                playerRingY: 455, playerGrimoireX: 90, playerShieldRingX: 210, playerOrbX: 330,
+                bossGoldX: 945, bossGoldY: 375, bossStarX: 1045, bossStarY: 375,
+                bossPotionX: 1175, bossPotionY: 375,
+                // Gap between ring centers tightened 120 -> 100 (was 90/210/330) — same border
+                // as the HP bar/resource row above, now clearing it on both sides instead of
+                // sitting almost flush against it.
+                bossRingY: 455, bossGrimoireX: 970, bossShieldRingX: 1070, bossOrbX: 1170,
+                playerRingY: 455, playerGrimoireX: 110, playerShieldRingX: 210, playerOrbX: 310,
 
                 ringRadius: 32, ringThickness: 7, ringIconSize: 40, resourceIconSize: 60,
 
                 // Action history: 5 lines per side, below the rings. Desktop-only, same as
-                // the player character and resource chips — no mobile equivalent yet.
-                historyTitleY: 500, historyLineY: 520, historyLineHeight: 24,
+                // the player character and resource chips — no mobile equivalent yet. Title Y
+                // (and the line Y that follows it) both shifted down — at the old 500/520 the
+                // scroll banner behind the title (see ui.js createHistoryLog()) overlapped the
+                // bottom of the ring row above it.
+                historyTitleY: 528, historyLineY: 565, historyLineHeight: 24,
 
                 btnExpX: 1260, btnExpY: 20
             } : {

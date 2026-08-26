@@ -63,18 +63,22 @@ define(['jquery'], function($) {
             if (L.hasCharacterStage) {
                 me.add.image(L.stageBgX, L.stageBgY, 'stagebg').setDisplaySize(L.stageBgW, L.stageBgH);
 
-                // Side panel backing: a solid plate behind each player/boss resource cluster,
-                // flush against the board's own edges (panelW is derived from board size).
-                // Uses panelY, not boardOffX/Y — those are a piece-center reference for
-                // board.js, not this rect's top-left corner (see the comment on panelY). Sits
-                // flush at panelY, not overlapping — only the board itself (board.js) rises
-                // into the stage band, on purpose: the board reads as a raised platform
-                // between the two panels, matching the reference screenshot the plugin is
-                // modeled after.
-                me.add.graphics().fillStyle(0x1a1410, 0.88)
-                    .fillRect(0, L.panelY, L.panelW, L.h - L.panelY);
-                me.add.graphics().fillStyle(0x1a1410, 0.88)
-                    .fillRect(L.w - L.panelW, L.panelY, L.panelW, L.h - L.panelY);
+                // Side panel backing: a carved stone tablet image behind each player/boss
+                // resource cluster, flush against the board's own edges (panelW is derived
+                // from board size). Uses panelY, not boardOffX/Y — those are a piece-center
+                // reference for board.js, not this rect's top-left corner (see the comment on
+                // panelY). Sits flush at panelY, not overlapping — only the board itself
+                // (board.js) rises into the stage band, on purpose: the board reads as a
+                // raised platform between the two panels, matching the reference screenshot
+                // the plugin is modeled after. Boss side is the same image flipped
+                // horizontally, so the carved border reads as a mirrored pair instead of two
+                // identical copies.
+                const panelH = L.h - L.panelY;
+                me.add.image(L.panelW / 2, L.panelY + (panelH / 2), 'panelstone')
+                    .setDisplaySize(L.panelW, panelH);
+                me.add.image(L.w - (L.panelW / 2), L.panelY + (panelH / 2), 'panelstone')
+                    .setDisplaySize(L.panelW, panelH)
+                    .setFlipX(true);
 
                 me.add.image(L.playerX, L.playerY, 'player')
                     .setDisplaySize(L.playerScale, L.playerScale);
@@ -150,9 +154,10 @@ define(['jquery'], function($) {
         }
 
         /**
-         * Creates the 5-line action history box for one side: a Grimoire icon + title, then
-         * 5 empty text lines below it, top line pre-filled with the "no moves yet" string.
-         * Returns the line objects for pushHistoryLog() to update later via .setText().
+         * Creates the 5-line action history box for one side: a parchment banner behind the
+         * title (replacing the old Grimoire-icon-plus-plain-text title), then 5 empty text
+         * lines below it, top line pre-filled with the "no moves yet" string. Returns the
+         * line objects for pushHistoryLog() to update later via .setText().
          *
          * @param {number} x Left edge X shared by the title and every line (matches the HP
          * bar's own left edge on that side, for a consistent left margin within the panel).
@@ -162,10 +167,20 @@ define(['jquery'], function($) {
             const L = this.L;
             const me = this.scene;
 
-            me.add.image(x + 8, L.historyTitleY, 'item1').setDisplaySize(16, 16);
-            me.add.text(x + 20, L.historyTitleY, this.strings.historylogtitle, {
+            // Sized to the scroll_banner.png source's own aspect ratio (~1.74:1) rather than
+            // stretched to a specific width, so the parchment doesn't visibly distort — the
+            // wider "Status" banner this leaves room for (§17 SCOPE.md) is a follow-up, not
+            // solved by stretching this asset today.
+            const scrollH = 52;
+            me.add.image(x, L.historyTitleY, 'scrollbanner')
+                .setOrigin(0, 0.5)
+                .setDisplaySize(scrollH * 1.738, scrollH);
+            // Dark ink-brown, not the old tan/gold — that color relied on contrast against
+            // the flat dark panel background and reads poorly against the parchment now
+            // behind it.
+            me.add.text(x + 14, L.historyTitleY, this.strings.historylogtitle, {
                 fontSize: '12px',
-                fill: '#b8a878',
+                fill: '#4a2f16',
                 fontStyle: 'bold'
             }).setOrigin(0, 0.5);
 
@@ -177,7 +192,47 @@ define(['jquery'], function($) {
                 }).setOrigin(0, 0));
             }
             lines[0].setText(this.strings.historylogempty);
+            this.createStatusPreview(x);
             return lines;
+        }
+
+        /**
+         * Visual mockup only for the "Status" panel decided in SCOPE.md §17 (26/08/2026) — not
+         * wired to real poison/shield state, purely to see the layout. Sits in the space that
+         * opens up to the right of the history scroll banner, one small badge per active
+         * effect, side by side (never dividing shared space between them, per that same
+         * decision). Only the two statuses that exist today (Veneno/Escudo) are mocked here;
+         * a third badge would just repeat this same pattern one more time.
+         *
+         * @param {number} x Same left edge passed to createHistoryLog(), used to anchor the
+         * badges right after the scroll banner's own width.
+         */
+        createStatusPreview(x) {
+            const L = this.L;
+            const me = this.scene;
+            const badgeY = L.historyTitleY;
+            const badgeR = 15;
+            const gap = 38;
+            const scrollW = 52 * 1.738;
+            const startX = x + scrollW + 24 + badgeR;
+
+            const previewStatuses = [
+                {icon: 'item1', count: '3'},
+                {icon: 'item4', count: '✓'}
+            ];
+
+            previewStatuses.forEach((status, i) => {
+                const cx = startX + (i * gap);
+                me.add.circle(cx, badgeY, badgeR, 0x1a1410, 0.85).setStrokeStyle(1, 0x6a4a2a);
+                me.add.image(cx, badgeY, status.icon).setDisplaySize(badgeR * 1.3, badgeR * 1.3);
+                me.add.circle(cx + badgeR - 4, badgeY + badgeR - 4, 8, 0x2a1a10)
+                    .setStrokeStyle(1, 0xffffff);
+                me.add.text(cx + badgeR - 4, badgeY + badgeR - 4, status.count, {
+                    fontSize: '9px',
+                    fill: '#ffffff',
+                    fontStyle: 'bold'
+                }).setOrigin(0.5);
+            });
         }
 
         /**

@@ -97,31 +97,37 @@ define([
                 w: 1280, h: 720, aspect: '16/9', maxW: '100%',
                 hasCharacterStage: true,
 
-                // Character stage band: student/boss standing in front of stage_bg, HP
-                // anchored under each. stage_bg reaches all the way to y=0 — the top buttons
-                // already carry their own opaque background, so there's no seam to hide.
-                // Board+panels band (panelY) starts exactly where this one ends, at y=280.
+                // Character stage band: student/boss standing in front of stage_bg. stage_bg
+                // reaches all the way to y=0 — the top buttons already carry their own opaque
+                // background, so there's no seam to hide there.
                 stageBgX: 640, stageBgY: 140, stageBgW: 1280, stageBgH: 280,
                 bossScale: 190, playerScale: 190,
                 bossX: 1090, bossY: 150,
                 playerX: 190, playerY: 150,
-                bossUiX: 940, bossHpY: 250, bossTxtY: 261,
-                playerUiX: 40, playerHpY: 250, playerTxtY: 261,
 
-                // Board + side panels band. panelW is derived from the board's own size (not
-                // independent), so both panels always sit flush against its edges, no gap.
-                // panelY is the band's true top edge; boardOffX/Y is a *different* number fed
-                // to board.js, which treats it as the center of the first cell (pieces are
-                // origin-centered images) rather than the grid's top-left corner — it's
-                // panelY/boardOffX's corner (280, 420) plus half a cell (27.5) to compensate.
-                // Conflating the two (reusing boardOffY for the panel rect) is exactly the bug
-                // fixed here: it pushed the panel 27.5px below the stage band, leaving a gap.
-                panelY: 280, panelW: 420,
+                // Board + side panels band. panelY is the band's true top edge; panelOverlap
+                // pulls the panel backing plate a little further up into the stage band on
+                // purpose, so it visibly overlaps stage_bg at the seam instead of just
+                // touching it — matches the reference screenshot the plugin is modeled after.
+                // panelW is derived from the board's own size (not independent), so both
+                // panels always sit flush against its edges, no gap.
+                panelY: 280, panelOverlap: 14, panelW: 420,
+                // A different pair, boardOffX/Y, is fed only to board.js: it treats this pair
+                // as the center of the first cell (pieces are origin-centered images) rather
+                // than the grid's top-left corner — it's panelY/boardOffX's own corner
+                // (280, 420) plus half a cell (27.5) to compensate. Never reuse this pair for
+                // anything drawn as a plain top-left-origin rectangle (e.g. the panel itself).
                 boardOffX: 447.5, boardOffY: 307.5,
-                bossRingY: 400, bossGrimoireX: 950, bossShieldRingX: 1070, bossOrbX: 1190,
-                playerRingY: 400, playerGrimoireX: 90, playerShieldRingX: 210, playerOrbX: 330,
-                goldX: 140, goldY: 330, starX: 280, starY: 330,
-                bossGoldX: 1000, bossGoldY: 330, bossStarX: 1140, bossStarY: 330,
+
+                // HP bars now live inside the panel, above the resource row.
+                hpBarW: 300, hpBarH: 28, hpBarRadius: 14,
+                bossUiX: 940, bossHpY: 300, bossTxtY: 314,
+                playerUiX: 40, playerHpY: 300, playerTxtY: 314,
+
+                goldX: 140, goldY: 375, starX: 280, starY: 375,
+                bossGoldX: 1000, bossGoldY: 375, bossStarX: 1140, bossStarY: 375,
+                bossRingY: 455, bossGrimoireX: 950, bossShieldRingX: 1070, bossOrbX: 1190,
+                playerRingY: 455, playerGrimoireX: 90, playerShieldRingX: 210, playerOrbX: 330,
 
                 ringRadius: 32, ringThickness: 7, ringIconSize: 40, resourceIconSize: 60,
                 btnExpX: 1260, btnExpY: 20
@@ -130,6 +136,7 @@ define([
                 hasCharacterStage: false,
                 bgX: 270, bgY: 480, bgW: 540, bgH: 960,
                 bossX: 270, bossY: 75, bossScale: 100,
+                hpBarW: 300, hpBarH: 22, hpBarRadius: 0,
                 bossUiX: 120, bossHpY: 135, bossTxtY: 146,
                 bossRingY: 180, bossGrimoireX: 170, bossShieldRingX: 270, bossOrbX: 370,
                 bossStarX: 120, bossStarY: 214,

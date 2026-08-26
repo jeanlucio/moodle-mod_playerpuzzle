@@ -65,10 +65,13 @@ define(['jquery'], function($) {
                 // flush against the board's own edges (panelW is derived from board size).
                 // Uses panelY, not boardOffX/Y — those are a piece-center reference for
                 // board.js, not this rect's top-left corner (see the comment on panelY).
+                // panelOverlap extends the plate a little above panelY on purpose, so it
+                // visibly overlaps stage_bg at the seam instead of just touching it.
+                const panelTop = L.panelY - L.panelOverlap;
                 me.add.graphics().fillStyle(0x1a1410, 0.88)
-                    .fillRect(0, L.panelY, L.panelW, L.h - L.panelY);
+                    .fillRect(0, panelTop, L.panelW, L.h - panelTop);
                 me.add.graphics().fillStyle(0x1a1410, 0.88)
-                    .fillRect(L.w - L.panelW, L.panelY, L.panelW, L.h - L.panelY);
+                    .fillRect(L.w - L.panelW, panelTop, L.panelW, L.h - panelTop);
 
                 me.add.image(L.playerX, L.playerY, 'player')
                     .setDisplaySize(L.playerScale, L.playerScale);
@@ -91,17 +94,19 @@ define(['jquery'], function($) {
                     .setOrigin(0, 0.5);
             }
 
-            me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.bossUiX, L.bossHpY, 300, 22);
+            me.add.graphics().fillStyle(0x000000, 0.8)
+                .fillRoundedRect(L.bossUiX, L.bossHpY, L.hpBarW, L.hpBarH, this.hpBarCorners());
             this.bossHpBar = me.add.graphics();
-            this.bossHpText = me.add.text(L.bossUiX + 150, L.bossTxtY, '', {
+            this.bossHpText = me.add.text(L.bossUiX + (L.hpBarW / 2), L.bossTxtY, '', {
                 fontSize: '15px',
                 fill: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
-            me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.playerUiX, L.playerHpY, 300, 22);
+            me.add.graphics().fillStyle(0x000000, 0.8)
+                .fillRoundedRect(L.playerUiX, L.playerHpY, L.hpBarW, L.hpBarH, this.hpBarCorners());
             this.playerHpBar = me.add.graphics();
-            this.playerHpText = me.add.text(L.playerUiX + 150, L.playerTxtY, '', {
+            this.playerHpText = me.add.text(L.playerUiX + (L.hpBarW / 2), L.playerTxtY, '', {
                 fontSize: '15px',
                 fill: '#ffffff',
                 fontStyle: 'bold'
@@ -130,6 +135,47 @@ define(['jquery'], function($) {
                 fill: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0, 0.5);
+        }
+
+        /**
+         * Corner-radius object for an HP bar's backdrop (all four corners rounded).
+         *
+         * @return {object} {tl, tr, bl, br} corner radii, all set to L.hpBarRadius.
+         */
+        hpBarCorners() {
+            const r = this.L.hpBarRadius;
+            return {tl: r, tr: r, bl: r, br: r};
+        }
+
+        /**
+         * Draws an HP bar's colored fill, rounded only on the left/start edge — the right
+         * edge stays square, since that's where the bar visually "cuts off" as HP drops, and
+         * a full rounded corner there would look wrong once little HP is left. Adds a faint
+         * highlight along the top third for a glossy look consistent with the game's icons.
+         *
+         * @param {Phaser.GameObjects.Graphics} bar The bar's own graphics object.
+         * @param {number} x Backdrop left edge X.
+         * @param {number} y Backdrop top edge Y.
+         * @param {number} pct Fill progress, 0–1.
+         * @param {number} color Fill color (hex).
+         */
+        drawHpFill(bar, x, y, pct, color) {
+            const L = this.L;
+            const inset = 3;
+            const fillW = Math.max(0, (L.hpBarW - (inset * 2)) * Math.max(0, pct));
+            const fillH = L.hpBarH - (inset * 2);
+            const r = Math.max(0, L.hpBarRadius - inset);
+
+            bar.clear();
+            if (fillW <= 0) {
+                return;
+            }
+
+            bar.fillStyle(color, 1);
+            bar.fillRoundedRect(x + inset, y + inset, fillW, fillH, {tl: r, bl: r, tr: 0, br: 0});
+
+            bar.fillStyle(0xffffff, 0.22);
+            bar.fillRoundedRect(x + inset, y + inset, fillW, fillH * 0.4, {tl: r, bl: 0, tr: 0, br: 0});
         }
 
         /**
@@ -273,9 +319,7 @@ define(['jquery'], function($) {
         updateBossBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
-            this.bossHpBar.clear()
-                .fillStyle(0xdd0000, 1)
-                .fillRect(L.bossUiX + 2, L.bossHpY + 2, 296 * pctHp, 18);
+            this.drawHpFill(this.bossHpBar, L.bossUiX, L.bossHpY, pctHp, 0xdd0000);
             this.bossHpText.setText(`${this.strings.hpboss} ${Math.round(currentHp)}`);
 
             if (L.hasCharacterStage) {
@@ -354,9 +398,7 @@ define(['jquery'], function($) {
         updatePlayerBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
-            this.playerHpBar.clear()
-                .fillStyle(0x00cc00, 1)
-                .fillRect(L.playerUiX + 2, L.playerHpY + 2, 296 * pctHp, 18);
+            this.drawHpFill(this.playerHpBar, L.playerUiX, L.playerHpY, pctHp, 0x00cc00);
             this.playerHpText.setText(
                 `${this.strings.hpyou} ${Math.round(currentHp)} / ${maxHp}`
             );

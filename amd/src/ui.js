@@ -33,6 +33,8 @@ define(['jquery'], function($) {
             this.gameConfig = gameConfig;
             this.strings = strings;
             this.rings = {};
+            this.playerLog = [];
+            this.bossLog = [];
         }
 
         setupLoader() {
@@ -83,6 +85,9 @@ define(['jquery'], function($) {
                 this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0');
                 this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
                 this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
+
+                this.playerLogLines = this.createHistoryLog(L.playerUiX);
+                this.bossLogLines = this.createHistoryLog(L.bossUiX);
             } else {
                 me.add.image(L.bgX, L.bgY, 'bg').setDisplaySize(L.bgW, L.bgH);
 
@@ -136,6 +141,62 @@ define(['jquery'], function($) {
                 fill: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0, 0.5);
+        }
+
+        /**
+         * Creates the 5-line action history box for one side: a Grimoire icon + title, then
+         * 5 empty text lines below it, top line pre-filled with the "no moves yet" string.
+         * Returns the line objects for pushHistoryLog() to update later via .setText().
+         *
+         * @param {number} x Left edge X shared by the title and every line (matches the HP
+         * bar's own left edge on that side, for a consistent left margin within the panel).
+         * @return {Phaser.GameObjects.Text[]} The 5 line text objects, index 0 = most recent.
+         */
+        createHistoryLog(x) {
+            const L = this.L;
+            const me = this.scene;
+
+            me.add.image(x + 8, L.historyTitleY, 'item1').setDisplaySize(16, 16);
+            me.add.text(x + 20, L.historyTitleY, this.strings.historylogtitle, {
+                fontSize: '12px',
+                fill: '#b8a878',
+                fontStyle: 'bold'
+            }).setOrigin(0, 0.5);
+
+            const lines = [];
+            for (let i = 0; i < 5; i++) {
+                lines.push(me.add.text(x, L.historyLineY + (i * L.historyLineHeight), '', {
+                    fontSize: '13px',
+                    fill: '#e9e6dd'
+                }).setOrigin(0, 0));
+            }
+            lines[0].setText(this.strings.historylogempty);
+            return lines;
+        }
+
+        /**
+         * Appends one line to a side's action history (newest first, oldest dropped past 5)
+         * and re-renders that side's 5 line objects to match. No-ops on layouts without a
+         * character stage (mobile), where the history box was never created.
+         *
+         * @param {string} side 'player' or 'boss' — picks which side's history to update.
+         * @param {string} text The new line to show at the top.
+         */
+        pushHistoryLog(side, text) {
+            if (!this.L.hasCharacterStage) {
+                return;
+            }
+            const log = side === 'player' ? this.playerLog : this.bossLog;
+            const lines = side === 'player' ? this.playerLogLines : this.bossLogLines;
+
+            log.unshift(text);
+            if (log.length > lines.length) {
+                log.length = lines.length;
+            }
+            lines.forEach((line, i) => {
+                line.setText(log[i] || '');
+                line.setColor(i === 0 ? '#d9973f' : '#e9e6dd');
+            });
         }
 
         /**

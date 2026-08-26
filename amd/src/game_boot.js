@@ -134,6 +134,11 @@ define([
                 playerRingY: 455, playerGrimoireX: 90, playerShieldRingX: 210, playerOrbX: 330,
 
                 ringRadius: 32, ringThickness: 7, ringIconSize: 40, resourceIconSize: 60,
+
+                // Action history: 5 lines per side, below the rings. Desktop-only, same as
+                // the player character and resource chips — no mobile equivalent yet.
+                historyTitleY: 500, historyLineY: 520, historyLineHeight: 24,
+
                 btnExpX: 1260, btnExpY: 20
             } : {
                 w: 540, h: 960, aspect: '9/16', maxW: '540px',
@@ -249,6 +254,11 @@ define([
                     'bosslostmultiplier', 'bosstrigger', 'bosswrongfeedback', 'btnattack',
                     'btncontinue', 'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
                     'coinscollected', 'defeat', 'exitwarning', 'expand',
+                    'historylogattack', 'historylogcoins', 'historylogcritical', 'historylogempty',
+                    'historylogheal', 'historylogmana', 'historylogmultiplier',
+                    'historylogmultiplierlost', 'historylogpoisoncharge', 'historylogpoisontick',
+                    'historylogshieldblock', 'historylogshieldcharge', 'historylogtitle',
+                    'historylogwronganswer',
                     'hpboss', 'hpyou', 'loading', 'maxmultiplier',
                     'musicoff', 'musicon', 'noanswers', 'playercorrect',
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',

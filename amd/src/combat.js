@@ -113,6 +113,12 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             let questionTriggered = false;
             let triggeredBy = null;
             let damageDealt = 0;
+            let coinsGained = 0;
+            let healGained = 0;
+            let multiplierGained = 0;
+            let shieldGained = 0;
+            let poisonGained = 0;
+            let manaGained = 0;
 
             me.sfxMatch.play();
 
@@ -120,29 +126,39 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 if (this.currentTurn === 'player') {
                     me.sfxHit.play();
                     if (piece.type === 5) {
-                        this.currentPlayerHp = Math.min(
-                            this.maxPlayerHp, this.currentPlayerHp + (this.baseDamage / 6)
-                        );
+                        const heal = this.baseDamage / 6;
+                        this.currentPlayerHp = Math.min(this.maxPlayerHp, this.currentPlayerHp + heal);
+                        healGained += heal;
                     } else if (piece.type === 0) {
                         this.playerMultiplier += 0.1;
+                        multiplierGained += 0.1;
                     } else if (piece.type === 4) {
                         this.playerShieldMeter += 10;
+                        shieldGained += 10;
                     } else if (piece.type === 1) {
                         this.playerPoisonMeter += 10;
+                        poisonGained += 10;
                     } else if (piece.type === 2) {
                         this.playerMana += 20;
+                        manaGained += 20;
                     }
                 } else {
                     if (piece.type === 2) {
                         this.bossMana += 20;
+                        manaGained += 20;
                     } else if (piece.type === 0) {
                         this.bossMultiplier += 0.1;
+                        multiplierGained += 0.1;
                     } else if (piece.type === 1) {
                         this.bossPoisonMeter += 10;
+                        poisonGained += 10;
                     } else if (piece.type === 4) {
                         this.bossShieldMeter += 10;
+                        shieldGained += 10;
                     } else if (piece.type === 5) {
-                        this.currentHp = Math.min(this.maxBossHp, this.currentHp + (this.baseDamage / 6));
+                        const heal = this.baseDamage / 6;
+                        this.currentHp = Math.min(this.maxBossHp, this.currentHp + heal);
+                        healGained += heal;
                     }
                 }
 
@@ -170,6 +186,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             for (const group of matchGroups) {
                 if (group.type === 6) {
                     const coins = this.coinGain * this.comboMultiplier(group.pieces.length);
+                    coinsGained += coins;
                     if (this.currentTurn === 'player') {
                         this.playerGold += coins;
                     } else {
@@ -182,6 +199,9 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.bossMultiplier = Math.round(this.bossMultiplier * 10) / 10;
             this.resolvePoisonMeters();
             this.resolveShieldMeters();
+            this.logTurnEffects(
+                damageDealt, coinsGained, healGained, multiplierGained, shieldGained, poisonGained, manaGained
+            );
 
             if (this.playerMana >= 100) {
                 this.playerMana -= 100;
@@ -195,6 +215,49 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
             this.updateUI();
             return {damage: damageDealt, question: questionTriggered, trigger: triggeredBy};
+        }
+
+        /**
+         * Appends one action-history line per non-zero effect resolved by this turn's match,
+         * to the acting side's own history panel (this.currentTurn). Damage is logged here
+         * even though it is only actually applied later by the caller (board.js, via
+         * applyDamageToBoss()/applyDamageToPlayer()) — the amount logged is exactly what will
+         * be applied, so this is not misleading, just slightly ahead of the HP bar update.
+         *
+         * @param {number} damage Sword damage dealt this turn.
+         * @param {number} coins Coin gained this turn.
+         * @param {number} heal Potion healing applied this turn.
+         * @param {number} multiplier Star multiplier gained this turn.
+         * @param {number} shield Shield meter gained this turn.
+         * @param {number} poison Poison meter gained this turn.
+         * @param {number} mana Mana gained this turn.
+         */
+        logTurnEffects(damage, coins, heal, multiplier, shield, poison, mana) {
+            const s = this.strings;
+            const side = this.currentTurn;
+            const ui = this.scene.ui;
+
+            if (damage > 0) {
+                ui.pushHistoryLog(side, s.historylogattack.replace('{$a}', Math.round(damage)));
+            }
+            if (coins > 0) {
+                ui.pushHistoryLog(side, s.historylogcoins.replace('{$a}', Math.round(coins)));
+            }
+            if (heal > 0) {
+                ui.pushHistoryLog(side, s.historylogheal.replace('{$a}', Math.round(heal)));
+            }
+            if (multiplier > 0) {
+                ui.pushHistoryLog(side, s.historylogmultiplier.replace('{$a}', multiplier.toFixed(1)));
+            }
+            if (shield > 0) {
+                ui.pushHistoryLog(side, s.historylogshieldcharge.replace('{$a}', shield));
+            }
+            if (poison > 0) {
+                ui.pushHistoryLog(side, s.historylogpoisoncharge.replace('{$a}', poison));
+            }
+            if (mana > 0) {
+                ui.pushHistoryLog(side, s.historylogmana.replace('{$a}', mana));
+            }
         }
 
         updateUI() {
@@ -217,6 +280,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             if (this.bossShieldReady) {
                 this.bossShieldReady = false;
                 amount = 0;
+                me.ui.pushHistoryLog('boss', this.strings.historylogshieldblock);
             }
 
             this.currentHp = Math.max(0, this.currentHp - amount);
@@ -232,6 +296,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             if (this.playerShieldReady) {
                 this.playerShieldReady = false;
                 amount = 0;
+                me.ui.pushHistoryLog('player', this.strings.historylogshieldblock);
             }
 
             this.currentPlayerHp = Math.max(0, this.currentPlayerHp - amount);
@@ -249,6 +314,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 this.bossPoisonRounds--;
                 this.updateUI();
                 me.ui.bossSprite.setTint(0xff00ff);
+                me.ui.pushHistoryLog('boss', this.strings.historylogpoisontick.replace('{$a}', this.baseDamage));
                 me.time.delayedCall(300, () => {
                     me.ui.bossSprite.clearTint();
                 });
@@ -293,6 +359,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 this.playerPoisonRounds--;
                 this.updateUI();
                 me.cameras.main.shake(200, 0.008);
+                me.ui.pushHistoryLog('player', this.strings.historylogpoisontick.replace('{$a}', this.baseDamage));
                 if (this.checkGameOver()) {
                     return true;
                 }
@@ -399,7 +466,11 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                                     if (isCorrect) {
                                         answersContainer.find('.btn-warning')
                                             .removeClass('btn-warning').addClass('btn-success text-white');
-                                        ctx.applyDamageToBoss(ctx.baseDamage * 3 * ctx.playerMultiplier);
+                                        const critDamage = ctx.baseDamage * 3 * ctx.playerMultiplier;
+                                        ctx.applyDamageToBoss(critDamage);
+                                        me.ui.pushHistoryLog(
+                                            'player', ctx.strings.historylogcritical.replace('{$a}', Math.round(critDamage))
+                                        );
                                         me.ui.bossSprite.setTint(0x0088ff);
                                         me.tweens.add({
                                             targets: me.ui.bossSprite, y: me.ui.bossSprite.y - 20,
@@ -420,6 +491,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                                                 .addClass('btn-success text-white');
                                         }
                                         ctx.applyDamageToPlayer(30);
+                                        me.ui.pushHistoryLog('player', ctx.strings.historylogwronganswer.replace('{$a}', 30));
                                         const lostMultiplier = ctx.playerMultiplier;
                                         ctx.playerMultiplier = 1;
                                         ctx.updateUI();
@@ -431,6 +503,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                                                 .replace('{$a}', lostMultiplier.toFixed(1));
                                             feedbackMsg += '<div class="alert alert-warning mt-2 mb-0">'
                                                 + `<strong>${lostMsg}</strong></div>`;
+                                            me.ui.pushHistoryLog('player', ctx.strings.historylogmultiplierlost);
                                         }
                                     }
                                     answersContainer.append(feedbackMsg);
@@ -482,6 +555,9 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                                 if (isBossCorrect) {
                                     const bossCritDamage = ctx.baseDamage * 3 * ctx.bossMultiplier;
                                     ctx.applyDamageToPlayer(bossCritDamage);
+                                    me.ui.pushHistoryLog(
+                                        'boss', ctx.strings.historylogcritical.replace('{$a}', Math.round(bossCritDamage))
+                                    );
                                     const dmgMsg = ctx.strings.bosscorrectfeedback
                                         .replace('{$a}', Math.round(bossCritDamage));
                                     bossFeedback = `<div class="alert alert-danger mt-2 mb-0"><strong>${dmgMsg}</strong></div>`;
@@ -496,6 +572,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                                             .replace('{$a}', lostBossMultiplier.toFixed(1));
                                         bossFeedback += '<div class="alert alert-warning mt-2 mb-0">'
                                             + `<strong>${lostMsg}</strong></div>`;
+                                        me.ui.pushHistoryLog('boss', ctx.strings.historylogmultiplierlost);
                                     }
                                 }
                                 answersContainer.append(bossFeedback);

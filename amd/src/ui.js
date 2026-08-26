@@ -148,10 +148,11 @@ define(['jquery'], function($) {
         }
 
         /**
-         * Draws an HP bar's colored fill, rounded only on the left/start edge — the right
-         * edge stays square, since that's where the bar visually "cuts off" as HP drops, and
-         * a full rounded corner there would look wrong once little HP is left. Adds a faint
-         * highlight along the top third for a glossy look consistent with the game's icons.
+         * Draws an HP bar's colored fill, rounded on all four corners to match the backdrop
+         * capsule. The radius shrinks with the fill itself (never exceeding half its own
+         * width/height), so a nearly-empty bar degrades gracefully into a small rounded blob
+         * instead of self-intersecting arcs. Adds a faint highlight along the top third for a
+         * glossy look consistent with the game's icons.
          *
          * @param {Phaser.GameObjects.Graphics} bar The bar's own graphics object.
          * @param {number} x Backdrop left edge X.
@@ -164,7 +165,7 @@ define(['jquery'], function($) {
             const inset = 3;
             const fillW = Math.max(0, (L.hpBarW - (inset * 2)) * Math.max(0, pct));
             const fillH = L.hpBarH - (inset * 2);
-            const r = Math.max(0, L.hpBarRadius - inset);
+            const r = Math.max(0, Math.min(L.hpBarRadius - inset, fillW / 2, fillH / 2));
 
             bar.clear();
             if (fillW <= 0) {
@@ -172,10 +173,10 @@ define(['jquery'], function($) {
             }
 
             bar.fillStyle(color, 1);
-            bar.fillRoundedRect(x + inset, y + inset, fillW, fillH, {tl: r, bl: r, tr: 0, br: 0});
+            bar.fillRoundedRect(x + inset, y + inset, fillW, fillH, r);
 
             bar.fillStyle(0xffffff, 0.22);
-            bar.fillRoundedRect(x + inset, y + inset, fillW, fillH * 0.4, {tl: r, bl: 0, tr: 0, br: 0});
+            bar.fillRoundedRect(x + inset, y + inset, fillW, fillH * 0.4, {tl: r, tr: r, bl: 0, br: 0});
         }
 
         /**

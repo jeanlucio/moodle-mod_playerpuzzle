@@ -67,7 +67,11 @@ define([], function() {
             const rx = this.offsetX - (this.pieceSize / 2);
             const ry = this.offsetY - (this.pieceSize / 2);
 
-            graphics.fillStyle(0x000000, 0.85).fillRect(rx, ry, gridWidth, gridHeight);
+            // The fill (not the border or the grid lines below, which still trace the real
+            // playable area) extends upward by the same panelOverlap the side panels use, so
+            // the board's own backdrop rises to meet them instead of leaving a visible step.
+            const overlap = this.L.panelOverlap || 0;
+            graphics.fillStyle(0x000000, 0.85).fillRect(rx, ry - overlap, gridWidth, gridHeight + overlap);
             graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, gridWidth, gridHeight);
             graphics.lineStyle(2, 0x333333, 0.4);
             graphics.beginPath();

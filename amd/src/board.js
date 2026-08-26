@@ -88,8 +88,11 @@ define([], function() {
             // stays covered instead of showing bare canvas. Alpha bumped from the original
             // 0.85 to 0.95: at 0.85, the pieces now sitting in the overlap read against the
             // bright stage_bg image behind them, and enough of it bled through the gaps
-            // between pieces to look like a brown stripe instead of a solid platform.
-            graphics.fillStyle(0x000000, 0.95).fillRect(rx, ry, gridWidth, gridHeight + overlap);
+            // between pieces to look like a brown stripe instead of a solid platform. Warm
+            // dark brown (was pure black) — ties the board into the same leather/stone palette
+            // as panel_stone.png instead of reading as a flat black cutout, while staying dark
+            // enough for the piece icons' own colors to keep full contrast.
+            graphics.fillStyle(0x2b1f16, 0.95).fillRect(rx, ry, gridWidth, gridHeight + overlap);
             // Bronze/gold accent line, sampled directly from panel_stone.png's own inlay
             // color — frames the board as a distinct object instead of blending into the
             // panels, which share a similarly dark palette now.

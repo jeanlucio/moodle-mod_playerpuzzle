@@ -97,9 +97,11 @@ define([
                 w: 1280, h: 720, aspect: '16/9', maxW: '100%',
                 hasCharacterStage: true,
 
-                // Character stage band: jogador/chefe standing in front of stage_bg, HP
-                // anchored under each. Board+panels band starts exactly where this one ends.
-                stageBgX: 640, stageBgY: 165, stageBgW: 1280, stageBgH: 230,
+                // Character stage band: student/boss standing in front of stage_bg, HP
+                // anchored under each. stage_bg reaches all the way to y=0 — the top buttons
+                // already carry their own opaque background, so there's no seam to hide.
+                // Board+panels band (panelY) starts exactly where this one ends, at y=280.
+                stageBgX: 640, stageBgY: 140, stageBgW: 1280, stageBgH: 280,
                 bossScale: 190, playerScale: 190,
                 bossX: 1090, bossY: 150,
                 playerX: 190, playerY: 150,
@@ -108,10 +110,13 @@ define([
 
                 // Board + side panels band. panelW is derived from the board's own size (not
                 // independent), so both panels always sit flush against its edges, no gap.
-                // board.js treats boardOffX/Y as the center of the first cell (pieces are
-                // origin-centered images), not the grid's top-left corner — so both are the
-                // intended corner (420, 280) plus half a cell (27.5) to compensate.
-                panelW: 420,
+                // panelY is the band's true top edge; boardOffX/Y is a *different* number fed
+                // to board.js, which treats it as the center of the first cell (pieces are
+                // origin-centered images) rather than the grid's top-left corner — it's
+                // panelY/boardOffX's corner (280, 420) plus half a cell (27.5) to compensate.
+                // Conflating the two (reusing boardOffY for the panel rect) is exactly the bug
+                // fixed here: it pushed the panel 27.5px below the stage band, leaving a gap.
+                panelY: 280, panelW: 420,
                 boardOffX: 447.5, boardOffY: 307.5,
                 bossRingY: 400, bossGrimoireX: 950, bossShieldRingX: 1070, bossOrbX: 1190,
                 playerRingY: 400, playerGrimoireX: 90, playerShieldRingX: 210, playerOrbX: 330,

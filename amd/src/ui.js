@@ -63,10 +63,12 @@ define(['jquery'], function($) {
 
                 // Side panel backing: a solid plate behind each player/boss resource cluster,
                 // flush against the board's own edges (panelW is derived from board size).
+                // Uses panelY, not boardOffX/Y — those are a piece-center reference for
+                // board.js, not this rect's top-left corner (see the comment on panelY).
                 me.add.graphics().fillStyle(0x1a1410, 0.88)
-                    .fillRect(0, L.boardOffY, L.panelW, L.h - L.boardOffY);
+                    .fillRect(0, L.panelY, L.panelW, L.h - L.panelY);
                 me.add.graphics().fillStyle(0x1a1410, 0.88)
-                    .fillRect(L.w - L.panelW, L.boardOffY, L.panelW, L.h - L.boardOffY);
+                    .fillRect(L.w - L.panelW, L.panelY, L.panelW, L.h - L.panelY);
 
                 me.add.image(L.playerX, L.playerY, 'player')
                     .setDisplaySize(L.playerScale, L.playerScale);

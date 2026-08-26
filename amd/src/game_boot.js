@@ -175,22 +175,26 @@ define([
                 // carved border on both sides — that border eats ~57px of the panel's own
                 // width on each edge, more than the flat fillRect background it replaced ever
                 // did, so the wider margins tuned for that flat background no longer fit
-                // without the row spilling under the border texture.
-                goldX: 85, goldY: 375, starX: 185, starY: 375,
+                // without the row spilling under the border texture. Also shifted down 20px
+                // together with everything else below the HP bar (ring row, history) to open
+                // up room for the Status badges hanging off the HP bar's own bottom edge (see
+                // ui.js createStatusPreview()) without needing to shrink them — the panel had
+                // slack left at the bottom for it.
+                goldX: 85, goldY: 395, starX: 185, starY: 395,
                 // Potion purchase icon, same resource row as Coin/Star, right after the Star
                 // chip's real text width.
-                potionX: 315, potionY: 375,
+                potionX: 315, potionY: 395,
                 // Boss side is the player row translated by the panel offset (860), same as
                 // the ring row below it: Gold, Star, Potion read left-to-right in that order
                 // on both sides — Potion is shown here only for visual parity (no boss shop) —
                 // with the same even margins as the player side.
-                bossGoldX: 945, bossGoldY: 375, bossStarX: 1045, bossStarY: 375,
-                bossPotionX: 1175, bossPotionY: 375,
+                bossGoldX: 945, bossGoldY: 395, bossStarX: 1045, bossStarY: 395,
+                bossPotionX: 1175, bossPotionY: 395,
                 // Gap between ring centers tightened 120 -> 100 (was 90/210/330) — same border
                 // as the HP bar/resource row above, now clearing it on both sides instead of
                 // sitting almost flush against it.
-                bossRingY: 455, bossGrimoireX: 970, bossShieldRingX: 1070, bossOrbX: 1170,
-                playerRingY: 455, playerGrimoireX: 110, playerShieldRingX: 210, playerOrbX: 310,
+                bossRingY: 475, bossGrimoireX: 970, bossShieldRingX: 1070, bossOrbX: 1170,
+                playerRingY: 475, playerGrimoireX: 110, playerShieldRingX: 210, playerOrbX: 310,
 
                 ringRadius: 32, ringThickness: 7, ringIconSize: 40, resourceIconSize: 60,
 
@@ -199,7 +203,7 @@ define([
                 // (and the line Y that follows it) both shifted down — at the old 500/520 the
                 // scroll banner behind the title (see ui.js createHistoryLog()) overlapped the
                 // bottom of the ring row above it.
-                historyTitleY: 528, historyLineY: 565, historyLineHeight: 24,
+                historyTitleY: 548, historyLineY: 585, historyLineHeight: 24,
 
                 btnExpX: 1260, btnExpY: 20
             } : {

@@ -88,13 +88,24 @@ define(['jquery'], function($) {
                 this.txtGold = this.addResourceChip(L.goldX, L.goldY, 'item6', '0');
                 this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0');
                 // Layout placement only — the purchase endpoint (buy_consumable) doesn't exist
-                // yet, so this is a static price label, not wired to a real balance or click.
-                this.addResourceChip(L.potionX, L.potionY, 'item5', '8');
+                // yet. The bare "8" this chip used to show read as a stray number floating
+                // after the icon — replaced with the same coin-badge convention as the
+                // Escudo/Grimório rings below, so it reads clearly as a price everywhere.
+                me.add.image(L.potionX, L.potionY, 'item5')
+                    .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
+                this.createPurchaseBadge(L.potionX, L.potionY, '8');
                 this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
                 this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
                 // Mirrors the player-side Potion chip for visual parity only — the boss has no
-                // shop, so this is a static icon, never wired to a balance or click either.
+                // shop, so this stays a plain icon+number, never the purchase badge (that would
+                // incorrectly imply the boss can buy something).
                 this.addResourceChip(L.bossPotionX, L.bossPotionY, 'item5', '8');
+
+                // Purchase badges for the two consumíveis unified with their own board piece
+                // (Escudo, Magia Rápida/Grimório) — see createPurchaseBadge() below. Not shown
+                // for the boss (no shop) or the mana Orb ring (not a purchasable consumível).
+                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12');
+                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10');
 
                 this.playerLogLines = this.createHistoryLog(L.playerUiX);
                 this.bossLogLines = this.createHistoryLog(L.bossUiX);
@@ -128,6 +139,11 @@ define(['jquery'], function($) {
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
+            if (L.hasCharacterStage) {
+                this.createStatusPreview(L.bossUiX + L.hpBarW, L.bossHpY + L.hpBarH);
+                this.createStatusPreview(L.playerUiX + L.hpBarW, L.playerHpY + L.hpBarH);
+            }
+
             this.setupProgressIndicator();
             this.setupButtons();
         }
@@ -151,6 +167,45 @@ define(['jquery'], function($) {
                 fill: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0, 0.5);
+        }
+
+        /**
+         * Visual mockup only — the purchase badge decided for Escudo and Magia Rápida
+         * (SCOPE.md §17/§4.9, both unified with their own board piece), also reused here for
+         * the Poção icon so all three purchasable consumíveis share one price convention.
+         * Overlaps the target icon's own bottom-right corner; not wired to buy_consumable()
+         * (doesn't exist yet) — meant to double as the click target once it does.
+         *
+         * Sized at 46x34 logical units, not shrunk to fit tighter — with the game embed now
+         * capped at 960px (a6fb4ec), that's the smallest size clearing the 24x24px real
+         * touch-target minimum (WCAG 2.5.8) at the embed's own maximum size (960/1280 scale =
+         * 0.75, so 24 / 0.75 = 32 logical units is the floor). Below 960px real width the
+         * margin shrinks further; a hard guarantee at every width needs the parallel HTML
+         * layer planned for Fase 7 (§4.4), not a canvas-scaled badge.
+         *
+         * @param {number} iconX Target icon's center X (ring or resource chip).
+         * @param {number} iconY Target icon's center Y.
+         * @param {string} price Price text, e.g. "10".
+         */
+        createPurchaseBadge(iconX, iconY, price) {
+            const me = this.scene;
+            const w = 46;
+            const h = 34;
+            const cx = iconX + 20;
+            const cy = iconY + 20;
+
+            me.add.graphics()
+                .fillStyle(0x1c1712, 1)
+                .fillRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6)
+                .lineStyle(2, 0x9c6b2e, 1)
+                .strokeRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6)
+                .setDepth(5);
+            me.add.image(cx - 10, cy, 'item6').setDisplaySize(16, 16).setDepth(6);
+            me.add.text(cx + 4, cy, price, {
+                fontSize: '15px',
+                fill: '#ffffaa',
+                fontStyle: 'bold'
+            }).setOrigin(0.5).setDepth(6);
         }
 
         /**
@@ -192,29 +247,25 @@ define(['jquery'], function($) {
                 }).setOrigin(0, 0));
             }
             lines[0].setText(this.strings.historylogempty);
-            this.createStatusPreview(x);
             return lines;
         }
 
         /**
          * Visual mockup only for the "Status" panel decided in SCOPE.md §17 (26/08/2026) — not
-         * wired to real poison/shield state, purely to see the layout. Sits in the space that
-         * opens up to the right of the history scroll banner, one small badge per active
-         * effect, side by side (never dividing shared space between them, per that same
-         * decision). Only the two statuses that exist today (Veneno/Escudo) are mocked here;
-         * a third badge would just repeat this same pattern one more time.
+         * wired to real poison/shield state, purely to see the layout. Hangs off the HP bar's
+         * own bottom-right corner (moved there from beside the history scroll banner, per
+         * user feedback — see §17), one small badge per active effect, side by side (never
+         * dividing shared space between them, per that same decision). Only the two statuses
+         * that exist today (Veneno/Escudo) are mocked here; a third badge would just repeat
+         * this same pattern one more time, reading further left.
          *
-         * @param {number} x Same left edge passed to createHistoryLog(), used to anchor the
-         * badges right after the scroll banner's own width.
+         * @param {number} cornerX HP bar's own right edge (playerUiX/bossUiX + hpBarW).
+         * @param {number} cornerY HP bar's own bottom edge (playerHpY/bossHpY + hpBarH).
          */
-        createStatusPreview(x) {
-            const L = this.L;
+        createStatusPreview(cornerX, cornerY) {
             const me = this.scene;
-            const badgeY = L.historyTitleY;
             const badgeR = 15;
-            const gap = 38;
-            const scrollW = 52 * 1.738;
-            const startX = x + scrollW + 24 + badgeR;
+            const gap = 34;
 
             const previewStatuses = [
                 {icon: 'item1', count: '3'},
@@ -222,12 +273,12 @@ define(['jquery'], function($) {
             ];
 
             previewStatuses.forEach((status, i) => {
-                const cx = startX + (i * gap);
-                me.add.circle(cx, badgeY, badgeR, 0x1a1410, 0.85).setStrokeStyle(1, 0x6a4a2a);
-                me.add.image(cx, badgeY, status.icon).setDisplaySize(badgeR * 1.3, badgeR * 1.3);
-                me.add.circle(cx + badgeR - 4, badgeY + badgeR - 4, 8, 0x2a1a10)
+                const cx = cornerX - badgeR - (i * gap);
+                me.add.circle(cx, cornerY, badgeR, 0x1a1410, 0.85).setStrokeStyle(1, 0x6a4a2a);
+                me.add.image(cx, cornerY, status.icon).setDisplaySize(badgeR * 1.3, badgeR * 1.3);
+                me.add.circle(cx + badgeR - 4, cornerY + badgeR - 4, 8, 0x2a1a10)
                     .setStrokeStyle(1, 0xffffff);
-                me.add.text(cx + badgeR - 4, badgeY + badgeR - 4, status.count, {
+                me.add.text(cx + badgeR - 4, cornerY + badgeR - 4, status.count, {
                     fontSize: '9px',
                     fill: '#ffffff',
                     fontStyle: 'bold'

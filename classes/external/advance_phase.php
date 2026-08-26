@@ -30,6 +30,7 @@ use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\engine\combat;
+use mod_playerpuzzle\local\hud_service;
 use moodle_exception;
 
 /**
@@ -53,25 +54,29 @@ class advance_phase extends external_api {
             'cmid'   => new external_value(PARAM_INT, 'Course module ID'),
             'token'  => new external_value(PARAM_ALPHANUM, 'Anti-replay token issued when the attempt started'),
             'damage' => new external_value(PARAM_INT, 'Damage dealt to the boss this phase'),
+            'gold'   => new external_value(PARAM_INT, 'Gold coins earned this phase'),
         ]);
     }
 
     /**
      * Validates the phase was genuinely won, advances the attempt to its next phase (or
-     * level), and returns the scaled HP for the new phase together with a fresh token.
+     * level), banks this phase's coins, and returns the scaled HP for the new phase
+     * together with a fresh token.
      *
      * @param int $cmid Course module ID.
      * @param string $token Anti-replay token issued when the attempt started.
      * @param int $damage Damage dealt to the boss this phase.
-     * @return array Result with the new token, level, phase, and scaled boss/student HP.
+     * @param int $gold Gold coins earned this phase.
+     * @return array Result with the new token, level, phase, scaled boss/student HP, and coins banked.
      */
-    public static function execute(int $cmid, string $token, int $damage): array {
+    public static function execute(int $cmid, string $token, int $damage, int $gold): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid'   => $cmid,
             'token'  => $token,
             'damage' => $damage,
+            'gold'   => $gold,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -124,12 +129,31 @@ class advance_phase extends external_api {
         $attempt->timemodified = time();
         $DB->update_record('playerpuzzle_attempts', $attempt);
 
+        // Coins are banked per phase won, not only at the end of the whole campaign — a
+        // student clearing several phases before eventually losing still keeps what they
+        // earned along the way, mirroring save_progress's own victory banking below.
+        $coinsbanked = 0;
+        $safegold = max(0, $params['gold']);
+        if ($safegold > 0) {
+            $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
+            if ($blockinstanceid !== null) {
+                $banked = hud_service::credit_coins(
+                    $blockinstanceid,
+                    (int) $USER->id,
+                    (int) $playerpuzzle->hud_coin_item,
+                    $safegold
+                );
+                $coinsbanked = $banked ? $safegold : 0;
+            }
+        }
+
         return [
             'token'        => $newtoken,
             'currentlevel' => $newlevel,
             'currentphase' => $newphase,
             'bosshp'       => combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $newlevel, $newphase),
             'studenthp'    => combat::calculate_student_hp((int) $playerpuzzle->basestudenthp, $newlevel, $newphase),
+            'coinsbanked'  => $coinsbanked,
         ];
     }
 
@@ -145,6 +169,7 @@ class advance_phase extends external_api {
             'currentphase' => new external_value(PARAM_INT, 'Phase the attempt is now on'),
             'bosshp'       => new external_value(PARAM_INT, 'Scaled boss HP for the new phase'),
             'studenthp'    => new external_value(PARAM_INT, 'Scaled student HP for the new phase'),
+            'coinsbanked'  => new external_value(PARAM_INT, 'Coins banked into PlayerHUD for this phase'),
         ]);
     }
 }

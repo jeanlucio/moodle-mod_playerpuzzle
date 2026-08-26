@@ -24,6 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['advancingphase'] = 'Advancing to the next phase...';
 $string['basebosshp'] = 'Base boss HP';
 $string['basebosshp_help'] = 'Boss HP at Level 1, Phase 1. Scales automatically for later phases.';
 $string['basestudenthp'] = 'Base student HP';
@@ -127,9 +128,13 @@ $string['modulenameplural'] = 'PlayerPuzzles';
 $string['musicoff'] = '🔇 Music';
 $string['musicon'] = '🎵 Music';
 $string['name'] = 'Phase name';
+$string['nextlevel'] = 'Next level: {$a}';
+$string['nextphase'] = 'Next phase: {$a}';
 $string['noanswers'] = 'No answers available.';
 $string['nocategories'] = 'No question categories found.';
 $string['nonextphase'] = 'There is no next phase to advance to — finish the campaign instead.';
+$string['phaseadvanceerror'] = 'Error advancing to the next phase.';
+$string['phasecompletetitle'] = '🏆 Phase complete!';
 $string['phasenotwon'] = 'The reported damage does not clear this phase\'s boss HP.';
 $string['playercorrect'] = '✓ Correct! The boss takes damage!';
 $string['playerlostmultiplier'] = 'You lost your {$a}x multiplier!';

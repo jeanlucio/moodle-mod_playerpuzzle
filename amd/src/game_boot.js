@@ -250,6 +250,7 @@ define([
                 }
 
                 const strKeys = [
+                    'advancingphase',
                     'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
                     'bosslostmultiplier', 'bosstrigger', 'bosswrongfeedback', 'btnattack',
                     'btncontinue', 'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
@@ -260,7 +261,8 @@ define([
                     'historylogshieldblock', 'historylogshieldcharge', 'historylogtitle',
                     'historylogwronganswer',
                     'hpboss', 'hpyou', 'loading', 'maxmultiplier',
-                    'musicoff', 'musicon', 'noanswers', 'playercorrect',
+                    'musicoff', 'musicon', 'nextlevel', 'nextphase', 'noanswers',
+                    'phaseadvanceerror', 'phasecompletetitle', 'playercorrect',
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
                     'questionerror', 'requirejserror', 'saveerror', 'savingprogress', 'sfxoff',
                     'sfxon', 'shrink', 'shuffling', 'victory'

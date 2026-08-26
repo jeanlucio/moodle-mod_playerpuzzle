@@ -25,9 +25,11 @@
 
 namespace mod_playerpuzzle\external;
 
+use context_course;
 use context_module;
 use core_external\external_api;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\hud_service;
 
 /**
  * Tests for the mod_playerpuzzle_advance_phase web service.
@@ -66,6 +68,47 @@ final class advance_phase_test extends \advanced_testcase {
             'maxlevels' => 10,
         ], $overrides);
         return $generator->create_instance($record);
+    }
+
+    /**
+     * Inserts a block_playerhud block instance and one item in the course, returning
+     * both IDs.
+     *
+     * @return array{0: int, 1: int} [$blockinstanceid, $itemid]
+     */
+    private function make_hud_item(): array {
+        global $DB;
+
+        if (!$DB->get_manager()->table_exists('block_playerhud_items')) {
+            $this->markTestSkipped('block_playerhud not installed.');
+        }
+
+        $ctx = context_course::instance($this->course->id);
+        $biid = $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => $ctx->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'subpagepattern'    => null,
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new \stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $biid,
+            'name'            => 'Gold Coin',
+            'xp'              => 0,
+            'image'           => '',
+            'description'     => '',
+            'enabled'         => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        return [$biid, $itemid];
     }
 
     /**
@@ -111,6 +154,7 @@ final class advance_phase_test extends \advanced_testcase {
             'cmid'   => $instance->cmid,
             'token'  => $token,
             'damage' => 170,
+            'gold'   => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -133,6 +177,7 @@ final class advance_phase_test extends \advanced_testcase {
             'cmid'   => $instance->cmid,
             'token'  => $token,
             'damage' => 290,
+            'gold'   => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -155,6 +200,7 @@ final class advance_phase_test extends \advanced_testcase {
             'cmid'   => $instance->cmid,
             'token'  => $token,
             'damage' => 100,
+            'gold'   => 0,
         ]);
 
         // Level 1, Phase 2 with base 100: boss 110, student 105 — one phase step past
@@ -175,7 +221,7 @@ final class advance_phase_test extends \advanced_testcase {
         $this->setUser($this->student);
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
-        $args = ['cmid' => $instance->cmid, 'token' => $token, 'damage' => 100];
+        $args = ['cmid' => $instance->cmid, 'token' => $token, 'damage' => 100, 'gold' => 0];
         $first = $this->call_advance_phase($args);
         $second = $this->call_advance_phase($args);
 
@@ -200,6 +246,7 @@ final class advance_phase_test extends \advanced_testcase {
             'cmid'   => $instance->cmid,
             'token'  => $token,
             'damage' => 500,
+            'gold'   => 0,
         ]);
 
         $this->assertTrue($result['error']);
@@ -219,7 +266,9 @@ final class advance_phase_test extends \advanced_testcase {
         $this->setUser($this->student);
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
-        $result = $this->call_advance_phase(['cmid' => $instance->cmid, 'token' => $token, 'damage' => 100]);
+        $result = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100, 'gold' => 0,
+        ]);
 
         $newtoken = $result['data']['token'];
         $status = $DB->get_field('playerpuzzle_attempts', 'status', ['token' => $newtoken]);
@@ -245,10 +294,35 @@ final class advance_phase_test extends \advanced_testcase {
             'cmid'   => $instance->cmid,
             'token'  => $token,
             'damage' => 290,
+            'gold'   => 0,
         ]);
 
         $this->assertTrue($result['error']);
         $this->assertSame('nonextphase', $result['exception']->errorcode);
+    }
+
+    /**
+     * Tests that advancing a phase credits the configured coin item with the exact gold
+     * amount, the same banking the final save_progress victory itself performs.
+     *
+     * @return void
+     */
+    public function test_advance_phase_credits_configured_coin_item(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        $instance = $this->make_instance(['basebosshp' => 100, 'hud_coin_item' => $itemid]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+
+        $result = $this->call_advance_phase([
+            'cmid'   => $instance->cmid,
+            'token'  => $token,
+            'damage' => 100,
+            'gold'   => 42,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(42, $result['data']['coinsbanked']);
+        $this->assertSame(42, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
     }
 
     /**
@@ -264,6 +338,7 @@ final class advance_phase_test extends \advanced_testcase {
             'cmid'   => $instance->cmid,
             'token'  => str_repeat('a', 64),
             'damage' => 1000,
+            'gold'   => 0,
         ]);
 
         $this->assertTrue($result['error']);
@@ -291,6 +366,6 @@ final class advance_phase_test extends \advanced_testcase {
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
         $this->expectException(\core\exception\require_login_exception::class);
-        advance_phase::execute($instance->cmid, $token, 100);
+        advance_phase::execute($instance->cmid, $token, 100, 0);
     }
 }

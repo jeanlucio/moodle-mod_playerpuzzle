@@ -24,6 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['advancingphase'] = 'Avançando para a próxima fase...';
 $string['basebosshp'] = 'HP base do chefe';
 $string['basebosshp_help'] = 'HP do chefe no Nível 1, Fase 1. Escala automaticamente nas fases seguintes.';
 $string['basestudenthp'] = 'HP base do estudante';
@@ -127,9 +128,13 @@ $string['modulenameplural'] = 'PlayerPuzzles';
 $string['musicoff'] = '🔇 Música';
 $string['musicon'] = '🎵 Música';
 $string['name'] = 'Nome da fase';
+$string['nextlevel'] = 'Próximo nível: {$a}';
+$string['nextphase'] = 'Próxima fase: {$a}';
 $string['noanswers'] = 'Nenhuma resposta disponível.';
 $string['nocategories'] = 'Nenhuma categoria de questões encontrada.';
 $string['nonextphase'] = 'Não há próxima fase para avançar — termine a campanha em vez disso.';
+$string['phaseadvanceerror'] = 'Erro ao avançar de fase.';
+$string['phasecompletetitle'] = '🏆 Fase concluída!';
 $string['phasenotwon'] = 'O dano reportado não elimina o HP do chefe desta fase.';
 $string['playercorrect'] = '✓ Correto! O chefe sofre dano!';
 $string['playerlostmultiplier'] = 'Você perdeu o multiplicador de {$a}x!';

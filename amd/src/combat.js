@@ -370,7 +370,11 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
         checkGameOver() {
             if (this.currentHp <= 0) {
-                this.showEndScreen(true);
+                if (this.hasNextPhase()) {
+                    this.showPhaseCompleteScreen();
+                } else {
+                    this.showEndScreen(true);
+                }
                 return true;
             }
             if (this.currentPlayerHp <= 0) {
@@ -378,6 +382,117 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 return true;
             }
             return false;
+        }
+
+        /**
+         * Whether this victory is a mid-Campaign phase win (more phases/levels remain)
+         * rather than the end of the whole attempt — mirrors the boundary check
+         * advance_phase.php itself enforces server-side.
+         *
+         * @returns {boolean} True when a next phase or level exists to advance to.
+         */
+        hasNextPhase() {
+            const cfg = this.gameConfig;
+            if (cfg.gamemode !== 'campaign') {
+                return false;
+            }
+            const phase = parseInt(cfg.currentphase, 10) || 1;
+            const level = parseInt(cfg.currentlevel, 10) || 1;
+            const maxlevels = parseInt(cfg.maxlevels, 10) || 1;
+            return phase < 10 || level < maxlevels;
+        }
+
+        /**
+         * Submits a real POST to play.php, mirroring the Lobby's own "Jogar" form. A Phaser
+         * scene.restart() would only reset client-side state and keep reusing a token the
+         * server has already rotated or consumed, so the next attempt's own save/advance
+         * call would always fail with an invalid-token error.
+         */
+        submitRestartForm() {
+            const restartForm = document.createElement('form');
+            restartForm.method = 'POST';
+            let restarturl = `${M.cfg.wwwroot}/mod/playerpuzzle/play.php?id=${this.gameConfig.cmid}`;
+            if (this.gameConfig.mobile) {
+                restarturl += '&mobile=1';
+            }
+            restartForm.action = restarturl;
+            const sesskeyInput = document.createElement('input');
+            sesskeyInput.type = 'hidden';
+            sesskeyInput.name = 'sesskey';
+            sesskeyInput.value = M.cfg.sesskey;
+            restartForm.appendChild(sesskeyInput);
+            document.body.appendChild(restartForm);
+            restartForm.submit();
+        }
+
+        /**
+         * Shown instead of showEndScreen() when a Campaign attempt wins a phase that is not
+         * the last phase of the last level: advances the attempt server-side (banking this
+         * phase's coins) and, on success, offers to continue into the newly advanced phase
+         * via a full reload of play.php — the same resumed 'inprogress' row picks up the new
+         * currentlevel/currentphase there, so no game config needs to be threaded through by
+         * hand on this side.
+         */
+        async showPhaseCompleteScreen() {
+            const me = this.scene;
+            const strings = this.strings;
+            me.input.enabled = false;
+            me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
+
+            const netGold = Math.round(Math.max(0, this.playerGold - this.bossGold));
+
+            const context = {
+                msg: strings.phasecompletetitle,
+                coinscollected: strings.coinscollected,
+                playergold: netGold,
+                advancingphase: strings.advancingphase,
+                btncontinue: strings.btncontinue,
+                btnexitgame: strings.btnexitgame,
+            };
+
+            const html = await Templates.render('mod_playerpuzzle/phase_complete_overlay', context);
+            $('#playerpuzzle-canvas-container').append(html);
+
+            let advanced = false;
+
+            const attemptAdvance = () => {
+                $('#pp-phase-status').removeClass('text-success text-danger').addClass('text-muted')
+                    .text(strings.advancingphase);
+                $('#btn-pp-continue-phase').prop('disabled', true);
+
+                Ajax.call([{
+                    methodname: 'mod_playerpuzzle_advance_phase',
+                    args: {
+                        cmid: this.gameConfig.cmid,
+                        token: this.gameConfig.token,
+                        damage: this.maxBossHp - this.currentHp,
+                        gold: netGold,
+                    },
+                }])[0].done(res => {
+                    advanced = true;
+                    const nextinfo = strings.nextlevel.replace('{$a}', res.currentlevel)
+                        + ' — ' + strings.nextphase.replace('{$a}', res.currentphase);
+                    $('#pp-phase-status').removeClass('text-muted').addClass('text-success').text(nextinfo);
+                    $('#btn-pp-continue-phase').prop('disabled', false);
+                }).fail(() => {
+                    $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
+                        .text(strings.phaseadvanceerror);
+                    $('#btn-pp-continue-phase').prop('disabled', false);
+                });
+            };
+
+            $('#btn-pp-continue-phase').on('click', () => {
+                if (advanced) {
+                    this.submitRestartForm();
+                } else {
+                    attemptAdvance();
+                }
+            });
+            $('#btn-pp-exit-phase').on('click', () => {
+                window.location.href = this.gameConfig.viewurl;
+            });
+
+            attemptAdvance();
         }
 
         openQuestionModal(trigger) {
@@ -664,26 +779,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             });
 
             $('#btn-pp-restart').on('click', () => {
-                // A Phaser scene.restart() only resets client-side state — it keeps reusing the
-                // gameConfig.token already consumed by the save_progress call above, so the next
-                // attempt's own save always fails with an invalid-token error. A real POST to
-                // play.php (mirroring the Lobby's own "Jogar" form) forces the server to mint a
-                // fresh anti-replay token for a brand new attempt, exactly like starting over
-                // from the Lobby would.
-                const restartForm = document.createElement('form');
-                restartForm.method = 'POST';
-                let restarturl = `${M.cfg.wwwroot}/mod/playerpuzzle/play.php?id=${this.gameConfig.cmid}`;
-                if (this.gameConfig.mobile) {
-                    restarturl += '&mobile=1';
-                }
-                restartForm.action = restarturl;
-                const sesskeyInput = document.createElement('input');
-                sesskeyInput.type = 'hidden';
-                sesskeyInput.name = 'sesskey';
-                sesskeyInput.value = M.cfg.sesskey;
-                restartForm.appendChild(sesskeyInput);
-                document.body.appendChild(restartForm);
-                restartForm.submit();
+                this.submitRestartForm();
             });
             $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;

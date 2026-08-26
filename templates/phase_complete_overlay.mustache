@@ -1,0 +1,48 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_playerpuzzle/phase_complete_overlay
+
+    Phase complete overlay rendered client-side inside the canvas container via core/templates,
+    shown instead of the game-over overlay when a Campaign attempt wins a phase that is not the
+    last phase of the last level.
+
+    Example context (json):
+    {
+        "msg": "Phase complete!",
+        "coinscollected": "Coins collected:",
+        "playergold": 150,
+        "advancingphase": "Advancing to the next phase...",
+        "btncontinue": "Continue",
+        "btnexitgame": "Exit game"
+    }
+}}
+<div id="playerpuzzle-phasecomplete" class="d-flex flex-column justify-content-center align-items-center">
+    <h1 class="display-4 pp-bold text-warning mb-3">{{msg}}</h1>
+    <p class="lead text-white mb-4">
+        {{coinscollected}} <strong class="text-warning">{{playergold}}</strong>
+    </p>
+    <p id="pp-phase-status" class="text-light small">{{advancingphase}}</p>
+    <div class="pp-gameover-buttons">
+        <button id="btn-pp-continue-phase" disabled class="btn btn-primary btn-lg shadow">
+            {{btncontinue}}
+        </button>
+        <button id="btn-pp-exit-phase" class="btn btn-secondary btn-lg shadow">
+            {{btnexitgame}}
+        </button>
+    </div>
+</div>

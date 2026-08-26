@@ -108,9 +108,11 @@ body.path-mod-playerpuzzle #pp-progress-bar {
 }
 
 /**
- * Game over overlay: replaces inline style injected by showEndScreen().
+ * Game over / phase complete overlays: replaces inline style injected by
+ * showEndScreen()/showPhaseCompleteScreen().
  */
-body.path-mod-playerpuzzle #playerpuzzle-gameover {
+body.path-mod-playerpuzzle #playerpuzzle-gameover,
+body.path-mod-playerpuzzle #playerpuzzle-phasecomplete {
     position: absolute;
     inset-block-start: 0;
     inset-inline-start: 0;

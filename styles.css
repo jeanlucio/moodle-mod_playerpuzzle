@@ -61,18 +61,6 @@ body.path-mod-playerpuzzle .pp-loading-text {
 }
 
 /**
- * Hide the Moodle course index / block drawer toggle button while inside the game.
- * It overlaps the canvas on mobile viewports and cannot be interacted with during gameplay.
- * body. prefix raises specificity to (0,2,1), beating the theme's (0,2,0).
- */
-body.path-mod-playerpuzzle [data-region="drawer-toggle"],
-body.path-mod-playerpuzzle .drawer-toggler,
-body.path-mod-playerpuzzle #courseindex-toggle-btn,
-body.path-mod-playerpuzzle .btn-footer-popover {
-    display: none;
-}
-
-/**
  * Embedded layout: full-screen canvas for mobile play.
  * No inline style or Bootstrap utilities on the element means no !important needed —
  * the ID selector here (1,1,1) beats the class selector of .pp-canvas-container (0,2,1),

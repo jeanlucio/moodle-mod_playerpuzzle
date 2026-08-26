@@ -66,6 +66,18 @@ define([], function() {
             const gridHeight = this.rows * this.pieceSize;
             const rx = this.offsetX - (this.pieceSize / 2);
             const ry = this.offsetY - (this.pieceSize / 2);
+            const overlap = this.L.panelOverlap || 0;
+
+            // Soft shadow halo behind the board — a few expanding, fading rects standing in
+            // for a blur (Phaser Graphics has no native blur filter) — helps the board read as
+            // its own object in front of the side panels now that panel_stone.png is a busy,
+            // similarly dark texture there, instead of the flat contrast a plain dark panel
+            // background gave for free.
+            for (let i = 4; i >= 1; i--) {
+                graphics.fillStyle(0x000000, 0.08 * i).fillRect(
+                    rx - (i * 3), ry - (i * 3), gridWidth + (i * 6), gridHeight + (i * 6) + overlap
+                );
+            }
 
             // The offsetY passed in (boardOffY) is already shifted up by panelOverlap at the
             // source, in game_boot.js — the grid itself rises into the stage band above, not
@@ -77,8 +89,11 @@ define([], function() {
             // 0.85 to 0.95: at 0.85, the pieces now sitting in the overlap read against the
             // bright stage_bg image behind them, and enough of it bled through the gaps
             // between pieces to look like a brown stripe instead of a solid platform.
-            const overlap = this.L.panelOverlap || 0;
             graphics.fillStyle(0x000000, 0.95).fillRect(rx, ry, gridWidth, gridHeight + overlap);
+            // Bronze/gold accent line, sampled directly from panel_stone.png's own inlay
+            // color — frames the board as a distinct object instead of blending into the
+            // panels, which share a similarly dark palette now.
+            graphics.lineStyle(2, 0x9c6b2e, 0.8).strokeRect(rx - 4, ry - 4, gridWidth + 8, gridHeight + 8);
             graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, gridWidth, gridHeight);
             graphics.lineStyle(2, 0x333333, 0.4);
             graphics.beginPath();

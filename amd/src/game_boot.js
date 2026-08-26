@@ -128,16 +128,19 @@ define([
                 bossUiX: 940, bossHpY: 300, bossTxtY: 314,
                 playerUiX: 40, playerHpY: 300, playerTxtY: 314,
 
-                // Shifted 55px toward the panel's own outer edge (was 140/280) — matches the
-                // ring row's own left margin below it (55px), reclaiming space that was
-                // unused here to make room for Potion on the right at full size.
-                goldX: 85, goldY: 375, starX: 225, starY: 375,
+                // Centered within the panel's own width (420) so the row keeps an even margin
+                // on both sides — away from the outer/screen edge and away from the board —
+                // instead of hugging the board edge with the outer side left mostly empty.
+                goldX: 70, goldY: 375, starX: 185, starY: 375,
                 // Potion purchase icon, same resource row as Coin/Star, right after the Star
-                // chip's real text width — the boss has no shop, so no boss-side counterpart.
-                potionX: 355, potionY: 375,
-                // Boss side shifted the mirrored direction (+55, toward its own outer/right
-                // edge) to keep both panels visually symmetric.
-                bossGoldX: 1055, bossGoldY: 375, bossStarX: 1195, bossStarY: 375,
+                // chip's real text width.
+                potionX: 330, potionY: 375,
+                // Boss side is the player row translated by the panel offset (860), same as
+                // the ring row below it: Gold, Star, Potion read left-to-right in that order
+                // on both sides — Potion is shown here only for visual parity (no boss shop) —
+                // with the same even margins as the player side.
+                bossGoldX: 930, bossGoldY: 375, bossStarX: 1045, bossStarY: 375,
+                bossPotionX: 1190, bossPotionY: 375,
                 bossRingY: 455, bossGrimoireX: 950, bossShieldRingX: 1070, bossOrbX: 1190,
                 playerRingY: 455, playerGrimoireX: 90, playerShieldRingX: 210, playerOrbX: 330,
 

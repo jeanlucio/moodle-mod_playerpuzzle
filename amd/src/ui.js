@@ -88,6 +88,9 @@ define(['jquery'], function($) {
                 this.addResourceChip(L.potionX, L.potionY, 'item5', '8');
                 this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
                 this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
+                // Mirrors the player-side Potion chip for visual parity only — the boss has no
+                // shop, so this is a static icon, never wired to a balance or click either.
+                this.addResourceChip(L.bossPotionX, L.bossPotionY, 'item5', '8');
 
                 this.playerLogLines = this.createHistoryLog(L.playerUiX);
                 this.bossLogLines = this.createHistoryLog(L.bossUiX);
@@ -386,7 +389,7 @@ define(['jquery'], function($) {
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
             this.drawHpFill(this.bossHpBar, L.bossUiX, L.bossHpY, pctHp, 0xdd0000);
-            this.bossHpText.setText(`${this.strings.hpboss} ${Math.round(currentHp)}`);
+            this.bossHpText.setText(`${this.strings.hpboss} ${Math.round(currentHp)} / ${maxHp}`);
 
             if (L.hasCharacterStage) {
                 this.txtBossGold.setText(`${Math.round(gold)}`);

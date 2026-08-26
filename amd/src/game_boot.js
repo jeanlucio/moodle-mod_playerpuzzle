@@ -105,19 +105,23 @@ define([
                 bossX: 1090, bossY: 150,
                 playerX: 190, playerY: 150,
 
-                // Board + side panels band. panelY is the band's true top edge; panelOverlap
-                // pulls the panel backing plate a little further up into the stage band on
-                // purpose, so it visibly overlaps stage_bg at the seam instead of just
-                // touching it — matches the reference screenshot the plugin is modeled after.
-                // panelW is derived from the board's own size (not independent), so both
-                // panels always sit flush against its edges, no gap.
+                // Board + side panels band. panelY is the side panels' true top edge — they
+                // stay flush against it, no overlap. panelW is derived from the board's own
+                // size (not independent), so both panels always sit flush against its edges,
+                // no gap. panelOverlap is consumed by the board instead: it rises above panelY
+                // by that much, on purpose, reading as a raised platform poking up between the
+                // two flanking panels — matches the reference screenshot the plugin is modeled
+                // after — and board.js reuses the same number to extend its own backdrop fill
+                // past the grid's real bottom edge, so the gap that rise opens up before the
+                // true canvas bottom (720) stays covered.
                 panelY: 280, panelOverlap: 14, panelW: 420,
                 // A different pair, boardOffX/Y, is fed only to board.js: it treats this pair
                 // as the center of the first cell (pieces are origin-centered images) rather
-                // than the grid's top-left corner — it's panelY/boardOffX's own corner
-                // (280, 420) plus half a cell (27.5) to compensate. Never reuse this pair for
-                // anything drawn as a plain top-left-origin rectangle (e.g. the panel itself).
-                boardOffX: 447.5, boardOffY: 307.5,
+                // than the grid's top-left corner — it's the grid's own corner (420, 280)
+                // minus panelOverlap on Y (the platform rise) plus half a cell (27.5) to
+                // compensate for the center-origin. Never reuse this pair for anything drawn
+                // as a plain top-left-origin rectangle (e.g. the side panels).
+                boardOffX: 447.5, boardOffY: 293.5,
 
                 // HP bars now live inside the panel, above the resource row.
                 hpBarW: 300, hpBarH: 28, hpBarRadius: 14,

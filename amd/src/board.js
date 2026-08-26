@@ -67,17 +67,18 @@ define([], function() {
             const rx = this.offsetX - (this.pieceSize / 2);
             const ry = this.offsetY - (this.pieceSize / 2);
 
-            // A flap above the border/grid lines (which still trace the real playable area)
-            // extends upward by panelOverlap, on purpose: the board reads as a raised platform
-            // poking above the flanking side panels, which stay flush. Drawn near-opaque, not
-            // at the body's own 0.85 alpha: sitting directly over the bright stage_bg image,
-            // that alpha let 15% of it bleed through and read as a brown stripe instead of a
-            // solid platform.
+            // The offsetY passed in (boardOffY) is already shifted up by panelOverlap at the
+            // source, in game_boot.js — the grid itself rises into the stage band above, not
+            // just a decorative strip glued on top of it, so real pieces sit in the overlap
+            // and the border/grid lines below trace their true position with no extra math
+            // here. The fill extends panelOverlap further down past the grid's real bottom
+            // edge, so the gap that shift opens up before the true panel/canvas bottom (720)
+            // stays covered instead of showing bare canvas. Alpha bumped from the original
+            // 0.85 to 0.95: at 0.85, the pieces now sitting in the overlap read against the
+            // bright stage_bg image behind them, and enough of it bled through the gaps
+            // between pieces to look like a brown stripe instead of a solid platform.
             const overlap = this.L.panelOverlap || 0;
-            if (overlap > 0) {
-                graphics.fillStyle(0x000000, 0.97).fillRect(rx, ry - overlap, gridWidth, overlap);
-            }
-            graphics.fillStyle(0x000000, 0.85).fillRect(rx, ry, gridWidth, gridHeight);
+            graphics.fillStyle(0x000000, 0.95).fillRect(rx, ry, gridWidth, gridHeight + overlap);
             graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, gridWidth, gridHeight);
             graphics.lineStyle(2, 0x333333, 0.4);
             graphics.beginPath();

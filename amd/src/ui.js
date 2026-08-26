@@ -83,6 +83,9 @@ define(['jquery'], function($) {
 
                 this.txtGold = this.addResourceChip(L.goldX, L.goldY, 'item6', '0');
                 this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0');
+                // Layout placement only — the purchase endpoint (buy_consumable) doesn't exist
+                // yet, so this is a static price label, not wired to a real balance or click.
+                this.addResourceChip(L.potionX, L.potionY, 'item5', '8');
                 this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
                 this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
 

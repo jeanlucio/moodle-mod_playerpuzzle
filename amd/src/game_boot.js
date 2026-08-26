@@ -128,8 +128,16 @@ define([
                 bossUiX: 940, bossHpY: 300, bossTxtY: 314,
                 playerUiX: 40, playerHpY: 300, playerTxtY: 314,
 
-                goldX: 140, goldY: 375, starX: 280, starY: 375,
-                bossGoldX: 1000, bossGoldY: 375, bossStarX: 1140, bossStarY: 375,
+                // Shifted 55px toward the panel's own outer edge (was 140/280) — matches the
+                // ring row's own left margin below it (55px), reclaiming space that was
+                // unused here to make room for Potion on the right at full size.
+                goldX: 85, goldY: 375, starX: 225, starY: 375,
+                // Potion purchase icon, same resource row as Coin/Star, right after the Star
+                // chip's real text width — the boss has no shop, so no boss-side counterpart.
+                potionX: 355, potionY: 375,
+                // Boss side shifted the mirrored direction (+55, toward its own outer/right
+                // edge) to keep both panels visually symmetric.
+                bossGoldX: 1055, bossGoldY: 375, bossStarX: 1195, bossStarY: 375,
                 bossRingY: 455, bossGrimoireX: 950, bossShieldRingX: 1070, bossOrbX: 1190,
                 playerRingY: 455, playerGrimoireX: 90, playerShieldRingX: 210, playerOrbX: 330,
 

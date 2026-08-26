@@ -126,7 +126,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 if (this.currentTurn === 'player') {
                     me.sfxHit.play();
                     if (piece.type === 5) {
-                        const heal = this.baseDamage / 6;
+                        const heal = this.baseDamage / 4;
                         this.currentPlayerHp = Math.min(this.maxPlayerHp, this.currentPlayerHp + heal);
                         healGained += heal;
                     } else if (piece.type === 0) {
@@ -156,7 +156,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         this.bossShieldMeter += 10;
                         shieldGained += 10;
                     } else if (piece.type === 5) {
-                        const heal = this.baseDamage / 6;
+                        const heal = this.baseDamage / 4;
                         this.currentHp = Math.min(this.maxBossHp, this.currentHp + heal);
                         healGained += heal;
                     }

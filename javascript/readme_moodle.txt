@@ -1,8 +1,8 @@
 Description: Phaser is a fast, free and fun HTML5 game framework.
-Version: 3.90.0
+Version: 4.2.1
 License: MIT
-Source: https://github.com/phaserjs/phaser/releases/tag/v3.90.0
-Download: https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js
+Source: https://github.com/phaserjs/phaser/releases/tag/v4.2.1
+Download: https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js
 
 Changes made to the original library:
 - None. Using the official minified distribution file.

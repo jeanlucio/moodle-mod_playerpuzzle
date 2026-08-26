@@ -135,8 +135,12 @@ define([], function() {
                 }
 
                 this.swipePiece.clearTint();
-                const dx = pointer.x - this.startX;
-                const dy = pointer.y - this.startY;
+                // Uses worldX/worldY, not the raw x/y: those are canvas-backing-store pixels,
+                // which the camera zoom (see game_boot.js SUPERSAMPLE) no longer maps 1:1 to
+                // this board's own 1280x720-space coordinates. worldX/worldY already divide
+                // that zoom back out, keeping the threshold below meaningful regardless of it.
+                const dx = pointer.worldX - this.startX;
+                const dy = pointer.worldY - this.startY;
                 const threshold = 20;
 
                 if (Math.abs(dx) <= threshold && Math.abs(dy) <= threshold) {
@@ -170,8 +174,8 @@ define([], function() {
             }
             this.resetHint();
             this.swipePiece = piece;
-            this.startX = pointer.x;
-            this.startY = pointer.y;
+            this.startX = pointer.worldX;
+            this.startY = pointer.worldY;
             piece.setTint(0xdddddd);
         }
 

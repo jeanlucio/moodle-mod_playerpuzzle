@@ -54,6 +54,19 @@ define([
         return phaserLoadPromise;
     };
 
+    // Scale.FIT stretches the game canvas up via CSS to fill however wide the page actually
+    // renders the container — up to the full course content column on desktop — while the
+    // canvas' own backing store stays fixed at the logical size below. Without supersampling,
+    // that CSS stretch blurs both sprites and Phaser Text alike on any screen wider than the
+    // logical size. Rendering at SUPERSAMPLE times the logical size and then zooming the main
+    // camera by the same factor (see create()) fixes this without touching a single coordinate
+    // in the L layout objects below — those still describe the original 1280x720 / 540x960
+    // design space, the zoomed camera just projects it into the bigger backing store, which
+    // CSS then mostly scales back down instead of up. 2x matches the standard Retina/HiDPI
+    // baseline: comfortably crisp on both a wide desktop monitor at 1x device pixel ratio and
+    // a narrower one at 2x, without the GPU/memory cost of going higher.
+    const SUPERSAMPLE = 2;
+
     // Phaser requires regular functions for preload/create so it can bind `this` to the scene.
     const startPhaser = (gameConfig, strings) => {
 
@@ -92,6 +105,31 @@ define([
         // Must be regular function: Phaser binds `this` to the scene instance.
         const create = function() {
             const isDesk = window.innerWidth > window.innerHeight;
+
+            // Camera zoom projects the L layout's 1280x720 / 540x960 design coordinates into
+            // the SUPERSAMPLE-times-bigger canvas backing store set up below — see the
+            // SUPERSAMPLE comment above for why. Must match 1:1 or every draw call in this
+            // scene would land at the wrong scale relative to the backing store.
+            //
+            // setZoom() alone re-centers the view instead of pinning it to the origin: on a
+            // fresh camera (default view spanning 0,0 - config.width/height at zoom 1, so
+            // centered on config.width/2, config.height/2), zooming in shifts the visible world
+            // away from true (0, 0) — worldView ends up centered on that same point instead,
+            // e.g. (config.width/4, config.height/4) off from the corner our L layout actually
+            // draws into. Bounding the camera to exactly the visible area at this zoom (the
+            // unzoomed design size) leaves it nowhere to scroll, forcing worldView back to
+            // (0, 0) deterministically — unlike setScroll(0, 0) / setting scrollX/scrollY
+            // directly, which don't reliably override that re-centering in this Phaser version.
+            const applyZoom = () => {
+                this.cameras.main.setZoom(SUPERSAMPLE);
+                this.cameras.main.setBounds(0, 0, isDesk ? 1280 : 540, isDesk ? 720 : 960);
+            };
+            applyZoom();
+            // The Scale Manager also resizes (and re-centers) every camera on its own resize
+            // pass — triggered by the container class toggle further down in this function, by
+            // window resize, and by the fullscreen toggle — silently undoing the zoom set
+            // above. Reapply on every one of those instead of only once at boot.
+            this.scale.on(Phaser.Scale.Events.RESIZE, applyZoom);
 
             const L = isDesk ? {
                 w: 1280, h: 720, aspect: '16/9', maxW: '100%',
@@ -227,8 +265,8 @@ define([
             scale: {
                 mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.CENTER_BOTH,
-                width: isDesk ? 1280 : 540,
-                height: isDesk ? 720 : 960,
+                width: (isDesk ? 1280 : 540) * SUPERSAMPLE,
+                height: (isDesk ? 720 : 960) * SUPERSAMPLE,
                 fullscreenTarget: document.getElementById('playerpuzzle-canvas-container')
             },
             input: {

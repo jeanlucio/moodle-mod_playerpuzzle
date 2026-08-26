@@ -108,8 +108,11 @@ define([
 
                 // Board + side panels band. panelW is derived from the board's own size (not
                 // independent), so both panels always sit flush against its edges, no gap.
+                // board.js treats boardOffX/Y as the center of the first cell (pieces are
+                // origin-centered images), not the grid's top-left corner — so both are the
+                // intended corner (420, 280) plus half a cell (27.5) to compensate.
                 panelW: 420,
-                boardOffX: 420, boardOffY: 280,
+                boardOffX: 447.5, boardOffY: 307.5,
                 bossRingY: 400, bossGrimoireX: 950, bossShieldRingX: 1070, bossOrbX: 1190,
                 playerRingY: 400, playerGrimoireX: 90, playerShieldRingX: 210, playerOrbX: 330,
                 goldX: 140, goldY: 330, starX: 280, starY: 330,

@@ -55,16 +55,39 @@ define(['jquery'], function($) {
             const me = this.scene;
             const L = this.L;
 
-            me.add.image(L.bgX, L.bgY, 'bg').setDisplaySize(L.bgW, L.bgH);
-
-            this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
-                .setDisplaySize(L.bossScale, L.bossScale);
-
             const styleGold = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
             const styleStar = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
 
-            this.txtGold = me.add.text(L.goldX, L.goldY, '🪙: 0', styleGold).setOrigin(0.5, 0);
-            this.txtStar = me.add.text(L.starX, L.starY, '⭐x1.0', styleStar).setOrigin(1, 0);
+            if (L.hasCharacterStage) {
+                me.add.image(L.stageBgX, L.stageBgY, 'stagebg').setDisplaySize(L.stageBgW, L.stageBgH);
+
+                // Side panel backing: a solid plate behind each player/boss resource cluster,
+                // flush against the board's own edges (panelW is derived from board size).
+                me.add.graphics().fillStyle(0x1a1410, 0.88)
+                    .fillRect(0, L.boardOffY, L.panelW, L.h - L.boardOffY);
+                me.add.graphics().fillStyle(0x1a1410, 0.88)
+                    .fillRect(L.w - L.panelW, L.boardOffY, L.panelW, L.h - L.boardOffY);
+
+                me.add.image(L.playerX, L.playerY, 'player')
+                    .setDisplaySize(L.playerScale, L.playerScale);
+                this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
+                    .setDisplaySize(L.bossScale, L.bossScale);
+
+                this.txtGold = this.addResourceChip(L.goldX, L.goldY, 'item6', '0');
+                this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0');
+                this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
+                this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
+            } else {
+                me.add.image(L.bgX, L.bgY, 'bg').setDisplaySize(L.bgW, L.bgH);
+
+                this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
+                    .setDisplaySize(L.bossScale, L.bossScale);
+
+                this.txtGold = me.add.text(L.goldX, L.goldY, '🪙: 0', styleGold).setOrigin(0.5, 0);
+                this.txtStar = me.add.text(L.starX, L.starY, '⭐x1.0', styleStar).setOrigin(1, 0);
+                this.txtBossStar = me.add.text(L.bossStarX, L.bossStarY, '⭐x1.0', styleStar)
+                    .setOrigin(0, 0.5);
+            }
 
             me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.bossUiX, L.bossHpY, 300, 22);
             this.bossHpBar = me.add.graphics();
@@ -73,8 +96,6 @@ define(['jquery'], function($) {
                 fill: '#ffffff',
                 fontStyle: 'bold'
             }).setOrigin(0.5);
-            this.txtBossStar = me.add.text(L.bossStarX, L.bossStarY, '⭐x1.0', styleStar)
-                .setOrigin(0, 0.5);
 
             me.add.graphics().fillStyle(0x000000, 0.8).fillRect(L.playerUiX, L.playerHpY, 300, 22);
             this.playerHpBar = me.add.graphics();
@@ -86,6 +107,27 @@ define(['jquery'], function($) {
 
             this.setupProgressIndicator();
             this.setupButtons();
+        }
+
+        /**
+         * Creates an icon + text "chip" for a resource value (Coin/Star), replacing the flat
+         * emoji-text these used before the character-stage redesign. Returns the text object
+         * so callers can keep updating it with `.setText()`, same as the emoji-text version.
+         *
+         * @param {number} x Icon center X.
+         * @param {number} y Icon center Y.
+         * @param {string} spriteKey Texture key of the icon (item6 = Coin, item0 = Star).
+         * @param {string} initialText Text shown next to the icon before the first update.
+         * @return {Phaser.GameObjects.Text} The text object, for later .setText() calls.
+         */
+        addResourceChip(x, y, spriteKey, initialText) {
+            const size = this.L.resourceIconSize;
+            this.scene.add.image(x, y, spriteKey).setDisplaySize(size, size);
+            return this.scene.add.text(x + (size / 2) + 8, y, initialText, {
+                fontSize: '18px',
+                fill: '#ffffff',
+                fontStyle: 'bold'
+            }).setOrigin(0, 0.5);
         }
 
         /**
@@ -103,8 +145,9 @@ define(['jquery'], function($) {
          * @param {number} color Stroke color (hex) for the filled arc.
          */
         updateRing(key, x, y, spriteKey, pct, color) {
-            const radius = 16;
-            const thickness = 4;
+            const radius = this.L.ringRadius;
+            const thickness = this.L.ringThickness;
+            const iconSize = this.L.ringIconSize;
 
             if (!this.rings[key]) {
                 // A solid backing plate is required here: the ring sits directly over the
@@ -112,7 +155,7 @@ define(['jquery'], function($) {
                 // circle and makes the icon inside unreadable at this size.
                 this.scene.add.circle(x, y, radius + 3, 0x1a1a1a, 0.9);
                 this.scene.add.graphics().lineStyle(thickness, 0x222222, 1).strokeCircle(x, y, radius);
-                this.scene.add.image(x, y, spriteKey).setDisplaySize(22, 22);
+                this.scene.add.image(x, y, spriteKey).setDisplaySize(iconSize, iconSize);
                 this.rings[key] = this.scene.add.graphics();
             }
 
@@ -225,14 +268,20 @@ define(['jquery'], function($) {
             });
         }
 
-        updateBossBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, multiplier) {
+        updateBossBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
             this.bossHpBar.clear()
                 .fillStyle(0xdd0000, 1)
                 .fillRect(L.bossUiX + 2, L.bossHpY + 2, 296 * pctHp, 18);
             this.bossHpText.setText(`${this.strings.hpboss} ${Math.round(currentHp)}`);
-            this.txtBossStar.setText(`⭐x${multiplier.toFixed(1)}`);
+
+            if (L.hasCharacterStage) {
+                this.txtBossGold.setText(`${Math.round(gold)}`);
+                this.txtBossStar.setText(`x${multiplier.toFixed(1)}`);
+            } else {
+                this.txtBossStar.setText(`⭐x${multiplier.toFixed(1)}`);
+            }
 
             // Poison ring: purple while filling toward the next trigger; turns red whenever a
             // damage round is currently pending, regardless of the meter's own fresh progress.
@@ -309,8 +358,14 @@ define(['jquery'], function($) {
             this.playerHpText.setText(
                 `${this.strings.hpyou} ${Math.round(currentHp)} / ${maxHp}`
             );
-            this.txtGold.setText(`🪙: ${Math.round(gold)}`);
-            this.txtStar.setText(`⭐x${multiplier.toFixed(1)}`);
+
+            if (L.hasCharacterStage) {
+                this.txtGold.setText(`${Math.round(gold)}`);
+                this.txtStar.setText(`x${multiplier.toFixed(1)}`);
+            } else {
+                this.txtGold.setText(`🪙: ${Math.round(gold)}`);
+                this.txtStar.setText(`⭐x${multiplier.toFixed(1)}`);
+            }
 
             this.updateRing(
                 'playerGrimoire', L.playerGrimoireX, L.playerRingY, 'item1',

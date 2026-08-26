@@ -127,6 +127,10 @@ class game_page_service {
 
         $bossbasename = str_replace('.png', '', $instance->bossavatar);
         $bossurl = $OUTPUT->image_url('bosses/' . $bossbasename, 'mod_playerpuzzle')->out(false);
+        $playerurl = $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false);
+        $stagebgurl = $OUTPUT->image_url('stage_bg', 'mod_playerpuzzle')->out(false);
+        // Mobile still uses the original full-canvas background (a dedicated mobile layout
+        // pass hasn't happened yet); desktop moved to the stage band + panels below instead.
         $bgurl = $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false);
 
         return [
@@ -145,6 +149,8 @@ class game_page_service {
             'coingain'     => (int) $instance->coingain,
             'bossavatar'   => $instance->bossavatar,
             'bossurl'      => $bossurl,
+            'playerurl'    => $playerurl,
+            'stagebgurl'   => $stagebgurl,
             'bgurl'        => $bgurl,
             'spriteurls'   => $spriteurls,
             'questions'    => $questions,

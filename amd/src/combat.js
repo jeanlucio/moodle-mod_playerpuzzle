@@ -208,7 +208,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 this.currentHp, this.maxBossHp,
                 this.bossPoisonMeter, this.bossPoisonRounds,
                 this.bossShieldMeter, this.bossShieldReady,
-                this.bossMana, this.bossMultiplier
+                this.bossMana, this.bossGold, this.bossMultiplier
             );
         }
 

@@ -41,7 +41,11 @@ body.path-mod-playerpuzzle .pp-canvas-container {
 
 body.path-mod-playerpuzzle .pp-canvas-desktop {
     aspect-ratio: 16/9;
-    max-width: 100%;
+    /* Capped instead of 100%, so the game embeds at a modest, playerland-style footprint
+       (960x540) rather than stretching edge to edge of the course content column — the
+       Expandir button (Phaser's own Scale.FIT + the browser Fullscreen API) still fills the
+       whole screen on request, since fullscreen sizing is independent of this cap. */
+    max-width: 960px;
 }
 
 body.path-mod-playerpuzzle .pp-loading-text {

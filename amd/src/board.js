@@ -67,11 +67,17 @@ define([], function() {
             const rx = this.offsetX - (this.pieceSize / 2);
             const ry = this.offsetY - (this.pieceSize / 2);
 
-            // The fill (not the border or the grid lines below, which still trace the real
-            // playable area) extends upward by panelOverlap, on purpose: the board reads as a
-            // raised platform poking above the flanking side panels, which stay flush.
+            // A flap above the border/grid lines (which still trace the real playable area)
+            // extends upward by panelOverlap, on purpose: the board reads as a raised platform
+            // poking above the flanking side panels, which stay flush. Drawn near-opaque, not
+            // at the body's own 0.85 alpha: sitting directly over the bright stage_bg image,
+            // that alpha let 15% of it bleed through and read as a brown stripe instead of a
+            // solid platform.
             const overlap = this.L.panelOverlap || 0;
-            graphics.fillStyle(0x000000, 0.85).fillRect(rx, ry - overlap, gridWidth, gridHeight + overlap);
+            if (overlap > 0) {
+                graphics.fillStyle(0x000000, 0.97).fillRect(rx, ry - overlap, gridWidth, overlap);
+            }
+            graphics.fillStyle(0x000000, 0.85).fillRect(rx, ry, gridWidth, gridHeight);
             graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, gridWidth, gridHeight);
             graphics.lineStyle(2, 0x333333, 0.4);
             graphics.beginPath();

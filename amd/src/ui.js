@@ -57,9 +57,6 @@ define(['jquery'], function($) {
             const me = this.scene;
             const L = this.L;
 
-            const styleGold = {fontSize: '16px', fill: '#ffffaa', fontStyle: 'bold'};
-            const styleStar = {fontSize: '16px', fill: '#ffddaa', fontStyle: 'bold'};
-
             if (L.hasCharacterStage) {
                 me.add.image(L.stageBgX, L.stageBgY, 'stagebg').setDisplaySize(L.stageBgW, L.stageBgH);
 
@@ -112,13 +109,42 @@ define(['jquery'], function($) {
             } else {
                 me.add.image(L.bgX, L.bgY, 'bg').setDisplaySize(L.bgW, L.bgH);
 
+                // Simplified panel backing — a plain translucent rounded rect per cluster, not
+                // panel_stone.png/scroll_banner.png (those are sized for the desktop's wide
+                // 16:9 stage band, which this 9:16 column doesn't have — every extra px of
+                // chrome here is a px stolen from the board). Decided after prototyping the
+                // whole column as an interactive artifact (SCOPE.md §17, 26/08/2026).
+                this.drawSimplePanel(L.panelTopBoss, L.panelBottomBoss);
+                this.drawSimplePanel(L.panelTopPlayer, L.panelBottomPlayer);
+
                 this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
                     .setDisplaySize(L.bossScale, L.bossScale);
+                // Beside the bar/resource/ring stack, in the panel's own left margin — not
+                // centered above like the boss's sprite (see playerX/Y/Scale's own comment in
+                // game_boot.js for why).
+                me.add.image(L.playerX, L.playerY, 'player')
+                    .setDisplaySize(L.playerScale, L.playerScale);
 
-                this.txtGold = me.add.text(L.goldX, L.goldY, '🪙: 0', styleGold).setOrigin(0.5, 0);
-                this.txtStar = me.add.text(L.starX, L.starY, '⭐x1.0', styleStar).setOrigin(1, 0);
-                this.txtBossStar = me.add.text(L.bossStarX, L.bossStarY, '⭐x1.0', styleStar)
-                    .setOrigin(0, 0.5);
+                // Icon chips (reused from the desktop redesign), not raw emoji text — the old
+                // "🪙: 0" read poorly against the sky background at this size. Also fixes a
+                // pre-existing gap: the boss's own coin count was never shown here at all.
+                this.txtGold = this.addResourceChip(L.goldX, L.goldY, 'item6', '0');
+                this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0');
+                me.add.image(L.potionX, L.potionY, 'item5')
+                    .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
+                this.createPurchaseBadge(L.potionX, L.potionY, '8', L.badgeScale);
+                this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
+                this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
+
+                // Purchase badges for Escudo/Magia Rápida, scaled down (see
+                // createPurchaseBadge()'s own docblock) — mobile's rings are themselves half
+                // desktop's radius, and the WCAG 24x24 real-px floor is met here without the
+                // desktop's full 46x34 size, since mobile's canvas has no 0.75 CSS shrink to
+                // compensate for. Not shown for the boss (no shop) or the mana Orb ring.
+                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12', L.badgeScale);
+                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10', L.badgeScale);
+
+                this.setupHistoryButtonMobile();
             }
 
             me.add.graphics().fillStyle(0x000000, 0.8)
@@ -139,10 +165,10 @@ define(['jquery'], function($) {
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
-            if (L.hasCharacterStage) {
-                this.createStatusPreview(L.bossUiX + L.hpBarW, L.bossHpY + L.hpBarH);
-                this.createStatusPreview(L.playerUiX + L.hpBarW, L.playerHpY + L.hpBarH);
-            }
+            // Status badges (visual mockup, SCOPE.md §17) now sit on both layouts — mobile
+            // included since 26/08/2026, no longer desktop-only.
+            this.createStatusPreview(L.bossUiX + L.hpBarW, L.bossHpY + L.hpBarH);
+            this.createStatusPreview(L.playerUiX + L.hpBarW, L.playerHpY + L.hpBarH);
 
             this.setupProgressIndicator();
             this.setupButtons();
@@ -176,33 +202,41 @@ define(['jquery'], function($) {
          * Overlaps the target icon's own bottom-right corner; not wired to buy_consumable()
          * (doesn't exist yet) — meant to double as the click target once it does.
          *
-         * Sized at 46x34 logical units, not shrunk to fit tighter — with the game embed now
-         * capped at 960px (a6fb4ec), that's the smallest size clearing the 24x24px real
-         * touch-target minimum (WCAG 2.5.8) at the embed's own maximum size (960/1280 scale =
-         * 0.75, so 24 / 0.75 = 32 logical units is the floor). Below 960px real width the
-         * margin shrinks further; a hard guarantee at every width needs the parallel HTML
-         * layer planned for Fase 7 (§4.4), not a canvas-scaled badge.
+         * Sized at 46x34 logical units at scale 1 (desktop's default, every call site below
+         * except the mobile branch of setupStaticUI) — with the game embed capped at 960px
+         * (a6fb4ec), that's the smallest size clearing the 24x24px real touch-target minimum
+         * (WCAG 2.5.8) at the embed's own maximum size (960/1280 scale = 0.75, so 24 / 0.75 =
+         * 32 logical units is the floor). Mobile's canvas has no such shrink (its own
+         * `.pp-canvas-container` caps at the same 540px as the logical design width, a true
+         * 1:1 CSS scale — see styles.css), so the floor there is the raw 24 logical units;
+         * more importantly, mobile's rings are themselves half desktop's radius (16 vs 32,
+         * see game_boot.js's two L objects), and the default 46x34 badge is bigger than the
+         * ring itself, swallowing its colored arc entirely. Mobile's three purchase-badge
+         * calls pass a smaller scale for this reason — verified live (27/08/2026) that the
+         * ring's own arc/icon stays visible next to the badge at that size.
          *
          * @param {number} iconX Target icon's center X (ring or resource chip).
          * @param {number} iconY Target icon's center Y.
          * @param {string} price Price text, e.g. "10".
+         * @param {number} scale Size multiplier off the 46x34/20px-offset desktop baseline.
          */
-        createPurchaseBadge(iconX, iconY, price) {
+        createPurchaseBadge(iconX, iconY, price, scale = 1) {
             const me = this.scene;
-            const w = 46;
-            const h = 34;
-            const cx = iconX + 20;
-            const cy = iconY + 20;
+            const w = 46 * scale;
+            const h = 34 * scale;
+            const offset = 20 * scale;
+            const cx = iconX + offset;
+            const cy = iconY + offset;
 
             me.add.graphics()
                 .fillStyle(0x1c1712, 1)
-                .fillRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6)
+                .fillRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6 * scale)
                 .lineStyle(2, 0x9c6b2e, 1)
-                .strokeRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6)
+                .strokeRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6 * scale)
                 .setDepth(5);
-            me.add.image(cx - 10, cy, 'item6').setDisplaySize(16, 16).setDepth(6);
-            me.add.text(cx + 4, cy, price, {
-                fontSize: '15px',
+            me.add.image(cx - (10 * scale), cy, 'item6').setDisplaySize(16 * scale, 16 * scale).setDepth(6);
+            me.add.text(cx + (4 * scale), cy, price, {
+                fontSize: `${Math.round(15 * scale)}px`,
                 fill: '#ffffaa',
                 fontStyle: 'bold'
             }).setOrigin(0.5).setDepth(6);
@@ -287,28 +321,172 @@ define(['jquery'], function($) {
         }
 
         /**
-         * Appends one line to a side's action history (newest first, oldest dropped past 5)
-         * and re-renders that side's 5 line objects to match. No-ops on layouts without a
-         * character stage (mobile), where the history box was never created.
+         * Simplified panel backing for mobile (SCOPE.md §17, 26/08/2026): a plain translucent
+         * rounded rect spanning most of the column's width behind one HUD cluster, standing in
+         * for the desktop's carved-stone artwork — that art is sized for a wide 16:9 stage band
+         * this 9:16 column doesn't have, and every extra px of chrome here is a px stolen from
+         * the board.
+         *
+         * @param {number} topY Panel top edge Y.
+         * @param {number} bottomY Panel bottom edge Y.
+         */
+        drawSimplePanel(topY, bottomY) {
+            const margin = 16;
+            const L = this.L;
+            this.scene.add.graphics()
+                .fillStyle(0x1a1410, 0.55)
+                .fillRoundedRect(margin, topY, L.w - (margin * 2), bottomY - topY, 12)
+                .lineStyle(1, 0x6a4a2a, 0.6)
+                .strokeRoundedRect(margin, topY, L.w - (margin * 2), bottomY - topY, 12);
+        }
+
+        /**
+         * Mobile-only replacement for desktop's two always-visible 5-line history boxes — no
+         * room for both at this aspect ratio. A single button opens a modal with Você/Chefe
+         * tabs instead. See showHistoryModalMobile().
+         */
+        setupHistoryButtonMobile() {
+            const me = this.scene;
+            const L = this.L;
+
+            const btn = me.add.text(L.w / 2, L.historyBtnY, this.strings.historylogtitle, {
+                fontSize: '16px', fill: '#ffffff', backgroundColor: '#3a2a1a', padding: {x: 12, y: 8}
+            }).setOrigin(0.5, 0).setInteractive().setDepth(10);
+
+            btn.on('pointerdown', () => this.showHistoryModalMobile());
+        }
+
+        /**
+         * Opens the mobile history modal: created fresh on open, fully destroyed on close.
+         * Both sides' logs are shown at once, stacked (Você above Chefe) — an earlier version
+         * used click-to-switch tabs instead, but the user only discovered the Chefe side
+         * existed by accident and expected both visible without an extra tap (27/08/2026);
+         * stacking, not side-by-side columns, keeps each line's own width close to the
+         * modal's own 85%-of-canvas width, since Portuguese history strings ("💥 Crítico! -33
+         * HP") don't comfortably fit a half-width column at this font size. Content is filled
+         * by renderHistoryModalLines(), which pushHistoryLog() also calls while the modal
+         * stays open so a new action shows up immediately without a close/reopen round-trip.
+         */
+        showHistoryModalMobile() {
+            if (this._historyModalOpen) {
+                return;
+            }
+            this._historyModalOpen = true;
+
+            const me = this.scene;
+            const L = this.L;
+            const cx = L.w / 2;
+            const boxW = Math.round(L.w * 0.85);
+            const boxH = 460;
+            const boxX = cx - (boxW / 2);
+            const boxY = (L.h - boxH) / 2;
+            const lineX = boxX + 20;
+
+            const overlay = me.add.graphics().setDepth(20);
+            overlay.fillStyle(0x000000, 0.75);
+            overlay.fillRect(0, 0, L.w, L.h);
+            overlay.fillStyle(0x222018, 1);
+            overlay.fillRoundedRect(boxX, boxY, boxW, boxH, 16);
+
+            // Section headers are plain labels now, not buttons — colored to match each side's
+            // own HP bar (green/red) so the two blocks stay visually distinct at a glance.
+            const headerYouY = boxY + 28;
+            me.add.text(lineX, headerYouY, this.strings.hpyou, {
+                fontSize: '15px', fill: '#5fd95f', fontStyle: 'bold'
+            }).setOrigin(0, 0.5).setDepth(21);
+
+            const playerLines = [];
+            const linesYouStartY = headerYouY + 26;
+            for (let i = 0; i < 5; i++) {
+                playerLines.push(me.add.text(lineX, linesYouStartY + (i * 24), '', {
+                    fontSize: '13px', fill: '#e9e6dd'
+                }).setOrigin(0, 0).setDepth(21));
+            }
+
+            const headerChefeY = linesYouStartY + (5 * 24) + 30;
+            me.add.text(lineX, headerChefeY, this.strings.hpboss, {
+                fontSize: '15px', fill: '#ff6b6b', fontStyle: 'bold'
+            }).setOrigin(0, 0.5).setDepth(21);
+
+            const bossLines = [];
+            const linesChefeStartY = headerChefeY + 26;
+            for (let i = 0; i < 5; i++) {
+                bossLines.push(me.add.text(lineX, linesChefeStartY + (i * 24), '', {
+                    fontSize: '13px', fill: '#e9e6dd'
+                }).setOrigin(0, 0).setDepth(21));
+            }
+
+            const btnClose = me.add.text(cx, boxY + boxH - 35, this.strings.btncontinue, {
+                fontSize: '16px', fill: '#ffffff', backgroundColor: '#882222', padding: {x: 16, y: 8}
+            }).setOrigin(0.5).setInteractive().setDepth(21);
+
+            this._historyModal = {playerLines, bossLines};
+
+            btnClose.on('pointerdown', () => {
+                this._historyModalOpen = false;
+                overlay.destroy();
+                playerLines.forEach(line => line.destroy());
+                bossLines.forEach(line => line.destroy());
+                btnClose.destroy();
+                this._historyModal = null;
+            });
+
+            this.renderHistoryModalLines();
+        }
+
+        /**
+         * Fills the open mobile history modal's line objects from both sides' log arrays at
+         * once — no active-tab state to track since both blocks are always visible. No-ops
+         * when the modal isn't open — pushHistoryLog() calls this unconditionally so it
+         * doesn't need to track modal state itself.
+         *
+         * An empty log shows the same "no moves yet" placeholder desktop's createHistoryLog()
+         * pre-fills line 0 with — without it, an empty Chefe block (real: the boss hasn't
+         * landed a loggable match yet, since its own turns share this same log path) looked
+         * identical to a broken one (27/08/2026).
+         */
+        renderHistoryModalLines() {
+            if (!this._historyModalOpen) {
+                return;
+            }
+            const fill = (lines, log) => {
+                lines.forEach((line, i) => {
+                    line.setText(log[i] || (i === 0 ? this.strings.historylogempty : ''));
+                    line.setColor(i === 0 ? '#d9973f' : '#e9e6dd');
+                });
+            };
+            fill(this._historyModal.playerLines, this.playerLog);
+            fill(this._historyModal.bossLines, this.bossLog);
+        }
+
+        /**
+         * Appends one line to a side's action history (newest first, oldest dropped once the
+         * side's display can no longer show it) and re-renders that side's display: desktop's
+         * always-visible 5-line boxes, or the mobile history modal when it happens to be open.
          *
          * @param {string} side 'player' or 'boss' — picks which side's history to update.
          * @param {string} text The new line to show at the top.
          */
         pushHistoryLog(side, text) {
-            if (!this.L.hasCharacterStage) {
-                return;
-            }
             const log = side === 'player' ? this.playerLog : this.bossLog;
-            const lines = side === 'player' ? this.playerLogLines : this.bossLogLines;
+            // 5 lines either way: desktop's own always-visible boxes, or the mobile modal's
+            // per-side block (stacked Você/Chefe, 27/08/2026 — see showHistoryModalMobile()).
+            const maxLines = this.L.hasCharacterStage ? this.playerLogLines.length : 5;
 
             log.unshift(text);
-            if (log.length > lines.length) {
-                log.length = lines.length;
+            if (log.length > maxLines) {
+                log.length = maxLines;
             }
-            lines.forEach((line, i) => {
-                line.setText(log[i] || '');
-                line.setColor(i === 0 ? '#d9973f' : '#e9e6dd');
-            });
+
+            if (this.L.hasCharacterStage) {
+                const lines = side === 'player' ? this.playerLogLines : this.bossLogLines;
+                lines.forEach((line, i) => {
+                    line.setText(log[i] || '');
+                    line.setColor(i === 0 ? '#d9973f' : '#e9e6dd');
+                });
+            } else {
+                this.renderHistoryModalLines();
+            }
         }
 
         /**
@@ -399,7 +577,10 @@ define(['jquery'], function($) {
 
         /**
          * Shows "Level X — Phase Y of 10" in the HUD for Campaign mode. Single Match has
-         * no levels/phases, so the indicator is skipped entirely for it.
+         * no levels/phases, so the indicator is skipped entirely for it. Desktop keeps it on
+         * the button row (y:20); mobile gives it a dedicated row below the buttons instead —
+         * live measurement showed only ~104px free between Efeitos and Expandir there, not
+         * enough at any readable size (SCOPE.md §17, 26/08/2026).
          */
         setupProgressIndicator() {
             if (this.gameConfig.gamemode !== 'campaign') {
@@ -408,12 +589,13 @@ define(['jquery'], function($) {
 
             const me = this.scene;
             const L = this.L;
+            const y = L.hasCharacterStage ? 20 : L.progressIndicatorY;
 
             const text = this.strings.progressindicator
                 .replace('{$a->level}', this.gameConfig.currentlevel)
                 .replace('{$a->phase}', this.gameConfig.currentphase);
 
-            this.progressText = me.add.text(L.w / 2, 20, text, {
+            this.progressText = me.add.text(L.w / 2, y, text, {
                 fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
             }).setOrigin(0.5, 0).setDepth(10);
         }
@@ -423,30 +605,27 @@ define(['jquery'], function($) {
             const L = this.L;
             const strings = this.strings;
 
-            if (this.gameConfig.mobile) {
-                const btnExit = me.add.text(L.btnExpX, L.btnExpY, strings.btnexit, {
-                    fontSize: '20px', fill: '#ffffff', backgroundColor: '#882222', padding: {x: 8, y: 8}
-                }).setOrigin(1, 0).setInteractive().setDepth(10);
-                btnExit.on('pointerdown', () => this.showExitConfirm());
-            } else {
-                const btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, strings.expand, {
-                    fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-                }).setOrigin(1, 0).setInteractive().setDepth(10);
+            // Same Expandir/Encolher fullscreen toggle on every device (27/08/2026) — mobile
+            // used to show a red "Exit" button here instead, tied to the chromeless
+            // popup-window flow that has since been removed; the game now always lives in the
+            // normal page, so there's no separate exit flow to offer.
+            const btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, strings.expand, {
+                fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
+            }).setOrigin(1, 0).setInteractive().setDepth(10);
 
-                btnFullscreen.on('pointerdown', () => {
-                    me.cameras.main.fadeOut(200, 0, 0, 0);
-                    me.time.delayedCall(200, () => {
-                        if (me.scale.isFullscreen) {
-                            me.scale.stopFullscreen();
-                            btnFullscreen.setText(this.strings.expand);
-                        } else {
-                            me.scale.startFullscreen();
-                            btnFullscreen.setText(this.strings.shrink);
-                        }
-                        me.cameras.main.fadeIn(200, 0, 0, 0);
-                    });
+            btnFullscreen.on('pointerdown', () => {
+                me.cameras.main.fadeOut(200, 0, 0, 0);
+                me.time.delayedCall(200, () => {
+                    if (me.scale.isFullscreen) {
+                        me.scale.stopFullscreen();
+                        btnFullscreen.setText(this.strings.expand);
+                    } else {
+                        me.scale.startFullscreen();
+                        btnFullscreen.setText(this.strings.shrink);
+                    }
+                    me.cameras.main.fadeIn(200, 0, 0, 0);
                 });
-            }
+            });
 
             me.musicOn = true;
             me.sfxOn = true;
@@ -497,12 +676,8 @@ define(['jquery'], function($) {
             this.drawHpFill(this.bossHpBar, L.bossUiX, L.bossHpY, pctHp, 0xdd0000);
             this.bossHpText.setText(`${this.strings.hpboss} ${Math.round(currentHp)} / ${maxHp}`);
 
-            if (L.hasCharacterStage) {
-                this.txtBossGold.setText(`${Math.round(gold)}`);
-                this.txtBossStar.setText(`x${multiplier.toFixed(1)}`);
-            } else {
-                this.txtBossStar.setText(`⭐x${multiplier.toFixed(1)}`);
-            }
+            this.txtBossGold.setText(`${Math.round(gold)}`);
+            this.txtBossStar.setText(`x${multiplier.toFixed(1)}`);
 
             // Poison ring: purple while filling toward the next trigger; turns red whenever a
             // damage round is currently pending, regardless of the meter's own fresh progress.
@@ -519,57 +694,6 @@ define(['jquery'], function($) {
             this.updateRing('bossOrb', L.bossOrbX, L.bossRingY, 'item2', mana / 100, 0x0088ff);
         }
 
-        showExitConfirm() {
-            if (this._confirmOpen) {
-                return;
-            }
-            this._confirmOpen = true;
-            const me = this.scene;
-            const L = this.L;
-            const cx = L.w / 2;
-            const cy = L.h / 2;
-            const boxW = Math.round(L.w * 0.78);
-            const boxH = 200;
-            const boxX = cx - boxW / 2;
-            const boxY = cy - boxH / 2;
-
-            const overlay = me.add.graphics().setDepth(20);
-            overlay.fillStyle(0x000000, 0.75);
-            overlay.fillRect(0, 0, L.w, L.h);
-            overlay.fillStyle(0x222222, 1);
-            overlay.fillRoundedRect(boxX, boxY, boxW, boxH, 16);
-
-            const txtWarn = me.add.text(cx, boxY + 55, this.strings.exitwarning, {
-                fontSize: '20px', fill: '#ffcc00', align: 'center'
-            }).setOrigin(0.5).setDepth(21);
-
-            const btnContinue = me.add.text(cx - 70, boxY + 145, this.strings.btncontinue, {
-                fontSize: '18px', fill: '#ffffff', backgroundColor: '#224488', padding: {x: 14, y: 10}
-            }).setOrigin(0.5).setInteractive().setDepth(21);
-
-            const btnConfirmExit = me.add.text(cx + 70, boxY + 145, this.strings.btnquit, {
-                fontSize: '18px', fill: '#ffffff', backgroundColor: '#882222', padding: {x: 22, y: 10}
-            }).setOrigin(0.5).setInteractive().setDepth(21);
-
-            const cleanup = () => {
-                this._confirmOpen = false;
-                overlay.destroy();
-                txtWarn.destroy();
-                btnContinue.destroy();
-                btnConfirmExit.destroy();
-            };
-
-            btnContinue.on('pointerdown', cleanup);
-
-            const viewurl = this.gameConfig.viewurl;
-            btnConfirmExit.on('pointerdown', () => {
-                window.close();
-                setTimeout(() => {
-                    window.location.href = viewurl;
-                }, 300);
-            });
-        }
-
         updatePlayerBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
@@ -578,13 +702,8 @@ define(['jquery'], function($) {
                 `${this.strings.hpyou} ${Math.round(currentHp)} / ${maxHp}`
             );
 
-            if (L.hasCharacterStage) {
-                this.txtGold.setText(`${Math.round(gold)}`);
-                this.txtStar.setText(`x${multiplier.toFixed(1)}`);
-            } else {
-                this.txtGold.setText(`🪙: ${Math.round(gold)}`);
-                this.txtStar.setText(`⭐x${multiplier.toFixed(1)}`);
-            }
+            this.txtGold.setText(`${Math.round(gold)}`);
+            this.txtStar.setText(`x${multiplier.toFixed(1)}`);
 
             this.updateRing(
                 'playerGrimoire', L.playerGrimoireX, L.playerRingY, 'item1',

@@ -61,22 +61,6 @@ body.path-mod-playerpuzzle .pp-loading-text {
 }
 
 /**
- * Embedded layout: full-screen canvas for mobile play.
- * No inline style or Bootstrap utilities on the element means no !important needed —
- * the ID selector here (1,1,1) beats the class selector of .pp-canvas-container (0,2,1),
- * and the JS containerDOM.css() call is skipped when gameConfig.mobile is true.
- */
-body.pagelayout-embedded .playerpuzzle-game-wrapper {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-}
-
-body.pagelayout-embedded .playerpuzzle-game-wrapper > h3 {
-    display: none;
-}
-
-/**
  * Loading screen overlay: replaces inline style injected by setupLoader().
  * Covers the canvas container while Phaser assets load.
  */
@@ -132,17 +116,6 @@ body.path-mod-playerpuzzle .pp-bold {
     font-weight: bold;
 }
 
-body.pagelayout-embedded #playerpuzzle-canvas-container {
-    width: 100vw;
-    max-width: 100vw;
-    height: 100vh;
-    aspect-ratio: unset;
-    margin: 0;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-}
-
 /**
  * Question modal: native <dialog>, chosen over a Bootstrap modal specifically here for
  * native focus/ESC/top-layer handling. The UA stylesheet supplies its own
@@ -184,38 +157,46 @@ body.path-mod-playerpuzzle .pp-question-modal-footer {
 }
 
 /**
- * Question modal on mobile: reduce font sizes without breaking accessibility.
+ * Question modal on narrow viewports: reduce font sizes without breaking accessibility.
  * Question text stays at 1rem (16px) — accepted body text minimum. Answer buttons
  * (.pp-answer-btn) use 0.875rem (14px) — acceptable for form controls per WCAG.
  * max-height + overflow-y: auto on the body prevents viewport overflow on very
  * long questions.
+ *
+ * Gated on a max-width media query, not a device/pagelayout check (27/08/2026) — the modal
+ * is a page-level <dialog>, independent of the game canvas, and a real phone's viewport is
+ * narrow regardless of whether Moodle's own navigation is showing around it. The .pp-answer-btn
+ * class itself is still only added by combat.js on devices game_page_service detected as
+ * mobile — this query is just where its narrower sizing lives.
  */
-body.pagelayout-embedded .pp-question-modal {
-    /* Width only, never margin: <dialog> centers itself via the UA stylesheet's own
-       margin: auto, which an explicit margin here would override and de-center. */
-    width: calc(100% - 1rem);
-}
+@media (max-width: 600px) {
+    body.path-mod-playerpuzzle .pp-question-modal {
+        /* Width only, never margin: <dialog> centers itself via the UA stylesheet's own
+           margin: auto, which an explicit margin here would override and de-center. */
+        width: calc(100% - 1rem);
+    }
 
-body.pagelayout-embedded .pp-question-modal-body {
-    padding: 0.75rem;
-    max-height: 65vh;
-    overflow-y: auto;
-}
+    body.path-mod-playerpuzzle .pp-question-modal-body {
+        padding: 0.75rem;
+        max-height: 65vh;
+        overflow-y: auto;
+    }
 
-body.pagelayout-embedded #playerpuzzle-question-text {
-    font-size: 1rem;
-    margin-bottom: 0.75rem;
-}
+    body.path-mod-playerpuzzle #playerpuzzle-question-text {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+    }
 
-body.pagelayout-embedded .pp-answer-btn {
-    font-size: 0.875rem;
-    padding: 0.4rem 0.75rem;
-    margin-bottom: 0.375rem;
-}
+    body.path-mod-playerpuzzle .pp-answer-btn {
+        font-size: 0.875rem;
+        padding: 0.4rem 0.75rem;
+        margin-bottom: 0.375rem;
+    }
 
-body.pagelayout-embedded #playerpuzzle-btn-confirm,
-body.pagelayout-embedded #playerpuzzle-btn-skip {
-    font-size: 0.875rem;
+    body.path-mod-playerpuzzle #playerpuzzle-btn-confirm,
+    body.path-mod-playerpuzzle #playerpuzzle-btn-skip {
+        font-size: 0.875rem;
+    }
 }
 
 /**

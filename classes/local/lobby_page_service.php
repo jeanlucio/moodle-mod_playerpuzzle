@@ -47,6 +47,9 @@ class lobby_page_service {
         stdClass $instance,
         int $userid
     ): array {
+        // Carried through to play.php's own game config purely as a CSS sizing hint for the
+        // question modal's answer buttons (see game_page_service::build_game_config()) — it no
+        // longer picks a different page layout or opens a new window (27/08/2026).
         $ismobile = core_useragent::is_ios() || core_useragent::is_webkit_android();
         $playparams = ['id' => $cm->id];
         if ($ismobile) {
@@ -58,7 +61,6 @@ class lobby_page_service {
             'playurl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
             'playtext' => get_string('playgame', 'mod_playerpuzzle'),
             'sesskey' => sesskey(),
-            'ismobile' => $ismobile,
         ];
 
         $data += self::build_hud_stats_context((int) $course->id, $instance, $userid);

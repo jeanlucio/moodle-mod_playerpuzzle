@@ -70,18 +70,6 @@ define([
     // Phaser requires regular functions for preload/create so it can bind `this` to the scene.
     const startPhaser = (gameConfig, strings) => {
 
-        let onExitConfirm = null;
-
-        if (gameConfig.mobile) {
-            history.pushState({ppgame: true}, '');
-            window.addEventListener('popstate', () => {
-                history.pushState({ppgame: true}, '');
-                if (onExitConfirm) {
-                    onExitConfirm();
-                }
-            });
-        }
-
         // Must be regular function: Phaser binds `this` to the scene instance.
         const preload = function() {
             this.ui = new UIHandler(this, null, gameConfig, strings);
@@ -207,26 +195,95 @@ define([
 
                 btnExpX: 1260, btnExpY: 20
             } : {
+                // Reorganized (26/08/2026) after the mobile layout was found broken, not just
+                // unpolished: the level/phase indicator text was clipped by the Expandir
+                // button (see progressIndicatorFontSize/X below), Coin/Star were raw emoji
+                // text nearly unreadable against the sky background, and nothing visually
+                // grouped the boss's own HUD cluster from the player's. Prototyped first as an
+                // interactive artifact (sliders for cluster height/chip gaps, a live readout of
+                // the purchase badge's real touch-pixel size at several embed widths) before
+                // committing to these numbers — see SCOPE.md §17. Deliberately simpler than the
+                // desktop redesign: a plain translucent rounded panel per cluster (see
+                // ui.js::drawSimplePanel()), not the panel_stone.png/scroll_banner.png artwork
+                // — those are sized for a wide 16:9 stage band this 9:16 column doesn't have,
+                // and every extra px of vertical chrome here is a px stolen from the board.
                 w: 540, h: 960, aspect: '9/16', maxW: '540px',
                 hasCharacterStage: false,
                 bgX: 270, bgY: 480, bgW: 540, bgH: 960,
-                bossX: 270, bossY: 75, bossScale: 100,
-                hpBarW: 300, hpBarH: 22, hpBarRadius: 0,
-                bossUiX: 120, bossHpY: 135, bossTxtY: 146,
-                bossRingY: 180, bossGrimoireX: 170, bossShieldRingX: 270, bossOrbX: 370,
-                bossStarX: 120, bossStarY: 214,
-                playerUiX: 120, playerHpY: 237, playerTxtY: 248,
-                playerRingY: 282, playerGrimoireX: 170, playerShieldRingX: 270, playerOrbX: 370,
-                goldX: 270, goldY: 298, starX: 420, starY: 298,
-                boardOffX: 77.5, boardOffY: 330, btnExpX: 520, btnExpY: 20,
-                ringRadius: 16, ringThickness: 4, ringIconSize: 22
+
+                // Top bar: buttons stay on row 1 (y:20, same hardcoded Y ui.js::setupButtons()
+                // already uses for Música/Efeitos on both layouts). The level/phase indicator
+                // gets its own row 2 below instead of squeezing into row 1 between the button
+                // clusters — measured live, that gap is only ~104px wide (Efeitos' own text +
+                // padding reaches to ~x276, Expandir's to ~x380), nowhere near enough for the
+                // full pt_BR string at any readable size. Everything below shifted down 40px
+                // to fit this second row; the column still closes with ~90px of slack at the
+                // very bottom (verify after any further change here).
+                progressIndicatorY: 58,
+                btnExpX: 520, btnExpY: 20,
+
+                // Boss cluster: sprite, HP bar (+Status badges hanging off its own corner),
+                // Coin/Star (no Potion — boss has no shop; also fixes a pre-existing gap where
+                // the boss's own coin count was never shown on mobile at all, unlike Star),
+                // then Grimório/Escudo/Orbe (no purchase badges, same reason). panelTop/Bottom
+                // bound the translucent backing rect drawn behind this whole cluster.
+                panelTopBoss: 92, panelBottomBoss: 254,
+                bossX: 270, bossY: 115, bossScale: 90,
+                hpBarW: 300, hpBarH: 22, hpBarRadius: 11,
+                bossUiX: 120, bossHpY: 144, bossTxtY: 155,
+                bossGoldX: 200, bossGoldY: 185, bossStarX: 340, bossStarY: 185,
+                bossRingY: 224, bossGrimoireX: 170, bossShieldRingX: 270, bossOrbX: 370,
+
+                // Board: fixed 440x440 (board.js hardcodes pieceSize 55 regardless of layout),
+                // centered horizontally ((540-440)/2 = 50), sitting directly below the boss
+                // cluster with an 8px gap — boardOffY is the piece-center reference board.js
+                // expects (panel top-left 262 + half a cell 27.5), same convention as the
+                // desktop boardOffX/Y comment above.
+                boardOffX: 77.5, boardOffY: 289.5,
+
+                // Player cluster: same structure as the boss's, plus Potion in the resource row
+                // and purchase badges on Potion/Escudo/Grimório, all absent from the boss's
+                // copy since the boss has no shop.
+                panelTopPlayer: 710, panelBottomPlayer: 828,
+                // Player sprite sits beside the bar/resource/ring stack, in the panel's own
+                // left margin (16 to playerUiX's 120, a 104px gap) — not centered above like
+                // the boss's, per the user's own suggestion (27/08/2026): the boss can afford
+                // that because its panel is taller (162px vs this one's 118), and matching that
+                // approach here would have meant growing this panel too, cascading into
+                // re-tuning the board position and every row below it. 76px keeps a ~14px
+                // margin on both sides of the gap; centered on the vertical midpoint of the
+                // whole HP-bar-to-ring-row content block (~769), verified live to clear both
+                // the panel's own top/bottom edges and its rounded corners.
+                playerX: 68, playerY: 769, playerScale: 76,
+                playerUiX: 120, playerHpY: 718, playerTxtY: 729,
+                goldX: 160, goldY: 759, starX: 270, starY: 759,
+                potionX: 380, potionY: 759,
+                playerRingY: 798, playerGrimoireX: 170, playerShieldRingX: 270, playerOrbX: 370,
+
+                // History: one button (not two always-visible 5-line blocks like desktop —
+                // there's no room) opening a modal with Você/Chefe tabs, see
+                // ui.js::showHistoryModalMobile().
+                historyBtnY: 838,
+
+                resourceIconSize: 32,
+                ringRadius: 16, ringThickness: 4, ringIconSize: 22,
+
+                // Purchase badge scale for ui.js::createPurchaseBadge() — found live
+                // (27/08/2026) that the desktop's default 46x34 badge is bigger than mobile's
+                // own 32px-diameter ring, swallowing its colored arc entirely. 0.72 is the
+                // smallest scale that still clears the WCAG 24x24 real-px floor at mobile's
+                // true 1:1 CSS scale (34 * 0.72 ≈ 24.5), leaving the ring's own icon/arc
+                // visible next to it. See createPurchaseBadge()'s own docblock for the full
+                // scale math (desktop vs mobile canvas CSS shrink).
+                badgeScale: 0.72
             };
 
             const containerDOM = document.getElementById('playerpuzzle-canvas-container');
             containerDOM.querySelectorAll('p').forEach(el => el.remove());
-            if (!gameConfig.mobile) {
-                containerDOM.classList.toggle('pp-canvas-desktop', isDesk);
-            }
+            // Applied regardless of device (27/08/2026): mobile no longer gets a separate
+            // full-viewport embedded layout, so a phone rotated to landscape gets the same
+            // capped 16:9 desktop treatment a wide browser window would.
+            containerDOM.classList.toggle('pp-canvas-desktop', isDesk);
             containerDOM.appendChild(document.getElementById('playerpuzzle-modal'));
 
             this.ui.L = L;
@@ -266,12 +323,6 @@ define([
             this.board = new BoardHandler(this, L, strings);
 
             this.combat.updateUI();
-
-            if (gameConfig.mobile) {
-                onExitConfirm = () => {
-                    me.ui.showExitConfirm();
-                };
-            }
         };
 
         const isDesk = window.innerWidth > window.innerHeight;
@@ -311,7 +362,7 @@ define([
                 const config = JSON.parse(configStr);
 
                 // Apply desktop layout immediately so the loading screen renders at the correct size.
-                if (!config.mobile && window.innerWidth > window.innerHeight) {
+                if (window.innerWidth > window.innerHeight) {
                     container.classList.add('pp-canvas-desktop');
                 }
 
@@ -319,8 +370,8 @@ define([
                     'advancingphase',
                     'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
                     'bosslostmultiplier', 'bosstrigger', 'bosswrongfeedback', 'btnattack',
-                    'btncontinue', 'btnexit', 'btnexitgame', 'btnplayagain', 'btnquit',
-                    'coinscollected', 'defeat', 'exitwarning', 'expand',
+                    'btncontinue', 'btnexitgame', 'btnplayagain',
+                    'coinscollected', 'defeat', 'expand',
                     'historylogattack', 'historylogcoins', 'historylogcritical', 'historylogempty',
                     'historylogheal', 'historylogmana', 'historylogmultiplier',
                     'historylogmultiplierlost', 'historylogpoisoncharge', 'historylogpoisontick',

@@ -25,7 +25,6 @@
         "playurl": "/mod/playerpuzzle/play.php?id=1",
         "playtext": "Play Game",
         "sesskey": "abc123example",
-        "ismobile": false,
         "hasstats": true,
         "coinstext": "Coins: 42",
         "swordtext": "Sword level: 3",
@@ -53,13 +52,10 @@
     <p class="alert alert-info py-2 mb-3 pp-lobby-minquestions">{{minquestionstext}}</p>
     {{/minquestionstext}}
 
-    <form method="post" action="{{{playurl}}}" class="mt-3" {{#ismobile}}target="_blank"{{/ismobile}}>
+    <form method="post" action="{{{playurl}}}" class="mt-3">
         <input type="hidden" name="sesskey" value="{{sesskey}}">
         <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fs-4 fw-bold shadow-sm">
             {{playtext}}
-            {{#ismobile}}
-                <span class="visually-hidden">({{#str}}opensinnewwindow, core{{/str}})</span>
-            {{/ismobile}}
         </button>
     </form>
 </div>

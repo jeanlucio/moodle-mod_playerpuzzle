@@ -129,8 +129,8 @@ class game_page_service {
         $bossurl = $OUTPUT->image_url('bosses/' . $bossbasename, 'mod_playerpuzzle')->out(false);
         $playerurl = $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false);
         $stagebgurl = $OUTPUT->image_url('stage_bg', 'mod_playerpuzzle')->out(false);
-        // Mobile still uses the original full-canvas background (a dedicated mobile layout
-        // pass hasn't happened yet); desktop moved to the stage band + panels below instead.
+        // Mobile's own layout (game_boot.js's 9:16 L object) still fills its full canvas with
+        // this same background image; desktop moved to the stage band + panels instead.
         $bgurl = $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false);
 
         return [

@@ -159,25 +159,25 @@ define([
                 bossUiX: 920, bossHpY: 300, bossTxtY: 314,
                 playerUiX: 60, playerHpY: 300, playerTxtY: 314,
 
-                // Margins tightened (gap between chips 36 -> 18) to clear panel_stone.png's
-                // carved border on both sides — that border eats ~57px of the panel's own
-                // width on each edge, more than the flat fillRect background it replaced ever
-                // did, so the wider margins tuned for that flat background no longer fit
-                // without the row spilling under the border texture. Also shifted down 20px
-                // together with everything else below the HP bar (ring row, history) to open
-                // up room for the Status badges hanging off the HP bar's own bottom edge (see
-                // ui.js createStatusPreview()) without needing to shrink them — the panel had
-                // slack left at the bottom for it.
-                goldX: 85, goldY: 395, starX: 185, starY: 395,
-                // Potion purchase icon, same resource row as Coin/Star, right after the Star
-                // chip's real text width.
-                potionX: 315, potionY: 395,
-                // Boss side is the player row translated by the panel offset (860), same as
-                // the ring row below it: Gold, Star, Potion read left-to-right in that order
-                // on both sides — Potion is shown here only for visual parity (no boss shop) —
-                // with the same even margins as the player side.
-                bossGoldX: 945, bossGoldY: 395, bossStarX: 1045, bossStarY: 395,
-                bossPotionX: 1175, bossPotionY: 395,
+                // Consumables row: the two purchasable consumíveis with no meter of their own
+                // (Poção, Espada). Escudo and Magia Rápida fill a ring instead, so their buy
+                // badges live on that ring, not here. Coin/Star used to share this row but
+                // they're passive readouts, not buttons — moved down beside the history block
+                // (goldX/starX below), leaving this row to hold two items with room to breathe.
+                // Kept clear of panel_stone.png's carved border, which eats ~57px of panel
+                // width on each edge.
+                potionX: 130, potionY: 388, swordX: 290, swordY: 388,
+                // Boss side is the player row translated by the panel offset (860) — Potion and
+                // Espada shown for visual parity only (no boss shop), plain icon, no buy badge.
+                bossPotionX: 990, bossPotionY: 388, bossSwordX: 1150, bossSwordY: 388,
+
+                // Coin/Star: passive quantity readouts, moved out of the action area to sit
+                // beside the history block instead, stacked vertically just right of the scroll
+                // banner — the space freed up when the Status badges moved to the HP bar's own
+                // corner. Smaller icon (indicatorIconSize) than the consumable row's.
+                goldX: 250, goldY: 543, starX: 250, starY: 574,
+                bossGoldX: 1110, bossGoldY: 543, bossStarX: 1110, bossStarY: 574,
+                indicatorIconSize: 26,
                 // Gap between ring centers tightened 120 -> 100 (was 90/210/330) — same border
                 // as the HP bar/resource row above, now clearing it on both sides instead of
                 // sitting almost flush against it.
@@ -208,7 +208,7 @@ define([
                 // grouped the boss's own HUD cluster from the player's. Prototyped first as an
                 // interactive artifact (sliders for cluster height/chip gaps, a live readout of
                 // the purchase badge's real touch-pixel size at several embed widths) before
-                // committing to these numbers — see SCOPE.md §17. Deliberately simpler than the
+                // committing to these numbers. Deliberately simpler than the
                 // desktop redesign: a plain translucent rounded panel per cluster (see
                 // ui.js::drawSimplePanel()), not the panel_stone.png/scroll_banner.png artwork
                 // — those are sized for a wide 16:9 stage band this 9:16 column doesn't have,

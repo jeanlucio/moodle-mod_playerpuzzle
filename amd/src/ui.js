@@ -82,25 +82,39 @@ define(['jquery'], function($) {
                 this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
                     .setDisplaySize(L.bossScale, L.bossScale);
 
-                this.txtGold = this.addResourceChip(L.goldX, L.goldY, 'item6', '0');
-                this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0');
-                // Layout placement only — the purchase endpoint (buy_consumable) doesn't exist
-                // yet. The bare "8" this chip used to show read as a stray number floating
-                // after the icon — replaced with the same coin-badge convention as the
-                // Escudo/Grimório rings below, so it reads clearly as a price everywhere.
+                // Consumables row: Poção + Espada — the two purchasable consumíveis with no
+                // meter of their own (Escudo/Magia Rápida fill a ring, so their buy badges sit
+                // on that ring). Layout placement only — buy_consumable doesn't exist yet; the
+                // badge doubles as price label and, once it does, click target. Espada's own
+                // effect is an extra attack worth a 3-piece combo (1x boss damage).
                 me.add.image(L.potionX, L.potionY, 'item5')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
                 this.createPurchaseBadge(L.potionX, L.potionY, '8');
-                this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
-                this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
-                // Mirrors the player-side Potion chip for visual parity only — the boss has no
-                // shop, so this stays a plain icon+number, never the purchase badge (that would
-                // incorrectly imply the boss can buy something).
-                this.addResourceChip(L.bossPotionX, L.bossPotionY, 'item5', '8');
+                me.add.image(L.swordX, L.swordY, 'item3')
+                    .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
+                this.createPurchaseBadge(L.swordX, L.swordY, '10');
+
+                // Coin/Star: passive quantity readouts, not buttons — sit beside the history
+                // block (smaller icon than the consumable row), out of the action area.
+                this.txtGold = this.addResourceChip(L.goldX, L.goldY, 'item6', '0', L.indicatorIconSize);
+                this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0', L.indicatorIconSize);
+
+                // Boss side: same layout translated by the panel offset. Potion/Espada shown
+                // for visual parity only (no boss shop) — plain icon, never a purchase badge.
+                me.add.image(L.bossPotionX, L.bossPotionY, 'item5')
+                    .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
+                me.add.image(L.bossSwordX, L.bossSwordY, 'item3')
+                    .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
+                this.txtBossGold = this.addResourceChip(
+                    L.bossGoldX, L.bossGoldY, 'item6', '0', L.indicatorIconSize
+                );
+                this.txtBossStar = this.addResourceChip(
+                    L.bossStarX, L.bossStarY, 'item0', 'x1.0', L.indicatorIconSize
+                );
 
                 // Purchase badges for the two consumíveis unified with their own board piece
-                // (Escudo, Magia Rápida/Grimório) — see createPurchaseBadge() below. Not shown
-                // for the boss (no shop) or the mana Orb ring (not a purchasable consumível).
+                // (Escudo, Magia Rápida/Grimório). Not shown for the boss (no shop) or the mana
+                // Orb ring (not a purchasable consumível).
                 this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12');
                 this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10');
 
@@ -113,7 +127,7 @@ define(['jquery'], function($) {
                 // panel_stone.png/scroll_banner.png (those are sized for the desktop's wide
                 // 16:9 stage band, which this 9:16 column doesn't have — every extra px of
                 // chrome here is a px stolen from the board). Decided after prototyping the
-                // whole column as an interactive artifact (SCOPE.md §17, 26/08/2026).
+                // whole column as an interactive artifact (26/08/2026).
                 this.drawSimplePanel(L.panelTopBoss, L.panelBottomBoss);
                 this.drawSimplePanel(L.panelTopPlayer, L.panelBottomPlayer);
 
@@ -165,8 +179,8 @@ define(['jquery'], function($) {
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
-            // Status badges (visual mockup, SCOPE.md §17) now sit on both layouts — mobile
-            // included since 26/08/2026, no longer desktop-only.
+            // Status badges (visual mockup) now sit on both layouts — mobile included since
+            // 26/08/2026, no longer desktop-only.
             this.createStatusPreview(L.bossUiX + L.hpBarW, L.bossHpY + L.hpBarH);
             this.createStatusPreview(L.playerUiX + L.hpBarW, L.playerHpY + L.hpBarH);
 
@@ -183,12 +197,14 @@ define(['jquery'], function($) {
          * @param {number} y Icon center Y.
          * @param {string} spriteKey Texture key of the icon (item6 = Coin, item0 = Star).
          * @param {string} initialText Text shown next to the icon before the first update.
+         * @param {number} [size] Icon size; defaults to L.resourceIconSize (the consumable-row
+         * size). Callers beside the history block pass the smaller L.indicatorIconSize.
          * @return {Phaser.GameObjects.Text} The text object, for later .setText() calls.
          */
-        addResourceChip(x, y, spriteKey, initialText) {
-            const size = this.L.resourceIconSize;
-            this.scene.add.image(x, y, spriteKey).setDisplaySize(size, size);
-            return this.scene.add.text(x + (size / 2) + 8, y, initialText, {
+        addResourceChip(x, y, spriteKey, initialText, size) {
+            const iconSize = size || this.L.resourceIconSize;
+            this.scene.add.image(x, y, spriteKey).setDisplaySize(iconSize, iconSize);
+            return this.scene.add.text(x + (iconSize / 2) + 8, y, initialText, {
                 fontSize: '18px',
                 fill: '#ffffff',
                 fontStyle: 'bold'
@@ -196,11 +212,11 @@ define(['jquery'], function($) {
         }
 
         /**
-         * Visual mockup only — the purchase badge decided for Escudo and Magia Rápida
-         * (SCOPE.md §17/§4.9, both unified with their own board piece), also reused here for
-         * the Poção icon so all three purchasable consumíveis share one price convention.
-         * Overlaps the target icon's own bottom-right corner; not wired to buy_consumable()
-         * (doesn't exist yet) — meant to double as the click target once it does.
+         * Visual mockup only — the purchase badge for Escudo and Magia Rápida (both unified
+         * with their own board piece), also reused for the Poção and Espada icons so every
+         * purchasable consumível shares one price convention. Overlaps the target icon's own
+         * bottom-right corner; not wired to buy_consumable() (doesn't exist yet) — meant to
+         * double as the click target once it does.
          *
          * Sized at 46x34 logical units at scale 1 (desktop's default, every call site below
          * except the mobile branch of setupStaticUI) — with the game embed capped at 960px
@@ -257,9 +273,8 @@ define(['jquery'], function($) {
             const me = this.scene;
 
             // Sized to the scroll_banner.png source's own aspect ratio (~1.74:1) rather than
-            // stretched to a specific width, so the parchment doesn't visibly distort — the
-            // wider "Status" banner this leaves room for (§17 SCOPE.md) is a follow-up, not
-            // solved by stretching this asset today.
+            // stretched to a specific width, so the parchment doesn't visibly distort. The gap
+            // it leaves to its right is where the Coin/Star readouts now sit (see goldX/starX).
             const scrollH = 52;
             me.add.image(x, L.historyTitleY, 'scrollbanner')
                 .setOrigin(0, 0.5)
@@ -285,13 +300,13 @@ define(['jquery'], function($) {
         }
 
         /**
-         * Visual mockup only for the "Status" panel decided in SCOPE.md §17 (26/08/2026) — not
-         * wired to real poison/shield state, purely to see the layout. Hangs off the HP bar's
-         * own bottom-right corner (moved there from beside the history scroll banner, per
-         * user feedback — see §17), one small badge per active effect, side by side (never
-         * dividing shared space between them, per that same decision). Only the two statuses
-         * that exist today (Veneno/Escudo) are mocked here; a third badge would just repeat
-         * this same pattern one more time, reading further left.
+         * Visual mockup only for the persistent "Status" panel (26/08/2026) — not wired to
+         * real poison/shield state, purely to see the layout. Hangs off the HP bar's own
+         * bottom-right corner (moved there from beside the history scroll banner, per user
+         * feedback: it ties the effect to the character whose HP it is), one small badge per
+         * active effect, side by side, never dividing shared space between them. Only the two
+         * statuses that exist today (Veneno/Escudo) are mocked here; a third badge would just
+         * repeat this same pattern one more time, reading further left.
          *
          * @param {number} cornerX HP bar's own right edge (playerUiX/bossUiX + hpBarW).
          * @param {number} cornerY HP bar's own bottom edge (playerHpY/bossHpY + hpBarH).
@@ -321,7 +336,7 @@ define(['jquery'], function($) {
         }
 
         /**
-         * Simplified panel backing for mobile (SCOPE.md §17, 26/08/2026): a plain translucent
+         * Simplified panel backing for mobile (26/08/2026): a plain translucent
          * rounded rect spanning most of the column's width behind one HUD cluster, standing in
          * for the desktop's carved-stone artwork — that art is sized for a wide 16:9 stage band
          * this 9:16 column doesn't have, and every extra px of chrome here is a px stolen from
@@ -580,7 +595,7 @@ define(['jquery'], function($) {
          * no levels/phases, so the indicator is skipped entirely for it. Desktop keeps it on
          * the button row (y:20); mobile gives it a dedicated row below the buttons instead —
          * live measurement showed only ~104px free between Efeitos and Expandir there, not
-         * enough at any readable size (SCOPE.md §17, 26/08/2026).
+         * enough at any readable size (26/08/2026).
          */
         setupProgressIndicator() {
             if (this.gameConfig.gamemode !== 'campaign') {

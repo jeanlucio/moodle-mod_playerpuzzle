@@ -87,8 +87,9 @@ class game_page_service {
      * @param context_module $context Module context.
      * @param int $userid Current user ID.
      * @param bool $ismobile Whether the request is from a mobile device.
-     * @param string $difficulty Student-chosen difficulty for a fresh attempt; ignored when
-     *  an in-progress attempt is resumed (its own locked difficulty wins).
+     * @param string $difficulty Student-chosen difficulty for a fresh attempt; not applied
+     *  when an in-progress attempt is resumed (that attempt keeps its current phase's own
+     *  difficulty, which advance_phase changes between phases).
      * @return array JS game config for game_boot.js.
      */
     public static function build_game_config(

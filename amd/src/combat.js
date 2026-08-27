@@ -422,6 +422,11 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
          * scene.restart() would only reset client-side state and keep reusing a token the
          * server has already rotated or consumed, so the next attempt's own save/advance
          * call would always fail with an invalid-token error.
+         *
+         * Carries the current difficulty: on a post-defeat replay (no in-progress attempt)
+         * the new attempt is created with it, so the student stays on the difficulty they
+         * were playing; on a phase advance the attempt already exists and play.php ignores
+         * this in favour of the value advance_phase stored.
          */
         submitRestartForm() {
             const restartForm = document.createElement('form');
@@ -431,22 +436,43 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 restarturl += '&mobile=1';
             }
             restartForm.action = restarturl;
-            const sesskeyInput = document.createElement('input');
-            sesskeyInput.type = 'hidden';
-            sesskeyInput.name = 'sesskey';
-            sesskeyInput.value = M.cfg.sesskey;
-            restartForm.appendChild(sesskeyInput);
+            const fields = {
+                sesskey: M.cfg.sesskey,
+                difficulty: this.gameConfig.difficulty || 'normal',
+            };
+            Object.entries(fields).forEach(([name, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                restartForm.appendChild(input);
+            });
             document.body.appendChild(restartForm);
             restartForm.submit();
         }
 
         /**
+         * The three difficulty options for the phase-complete screen, pre-selecting the one
+         * the current phase was played on. Campaign lets the student re-pick at every phase
+         * transition (the choice is passed to advance_phase and stored on the attempt).
+         *
+         * @returns {Array<{value: string, label: string, checked: boolean}>}
+         */
+        difficultyChoices() {
+            const current = this.gameConfig.difficulty || 'normal';
+            return ['easy', 'normal', 'hard'].map(value => ({
+                value,
+                label: this.strings['difficulty_' + value],
+                checked: value === current,
+            }));
+        }
+
+        /**
          * Shown instead of showEndScreen() when a Campaign attempt wins a phase that is not
-         * the last phase of the last level: advances the attempt server-side (banking this
-         * phase's coins) and, on success, offers to continue into the newly advanced phase
-         * via a full reload of play.php — the same resumed 'inprogress' row picks up the new
-         * currentlevel/currentphase there, so no game config needs to be threaded through by
-         * hand on this side.
+         * the last phase of the last level. The student picks the next phase's difficulty
+         * and confirms; advance_phase then banks this phase's coins, stores the new
+         * difficulty and phase on the attempt, and the "Continue" flow reloads play.php,
+         * where the resumed 'inprogress' row picks everything up.
          */
         async showPhaseCompleteScreen() {
             const me = this.scene;
@@ -460,20 +486,19 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 msg: strings.phasecompletetitle,
                 coinscollected: strings.coinscollected,
                 playergold: netGold,
-                advancingphase: strings.advancingphase,
                 btncontinue: strings.btncontinue,
                 btnexitgame: strings.btnexitgame,
+                difficultylabel: strings.phasedifficulty,
+                difficultychoices: this.difficultyChoices(),
             };
 
             const html = await Templates.render('mod_playerpuzzle/phase_complete_overlay', context);
             $('#playerpuzzle-canvas-container').append(html);
 
-            let advanced = false;
-
-            const attemptAdvance = () => {
+            const advanceAndContinue = () => {
                 $('#pp-phase-status').removeClass('text-success text-danger').addClass('text-muted')
                     .text(strings.advancingphase);
-                $('#btn-pp-continue-phase').prop('disabled', true);
+                $('#btn-pp-continue-phase, #pp-phase-difficulty').prop('disabled', true);
 
                 Ajax.call([{
                     methodname: 'mod_playerpuzzle_advance_phase',
@@ -482,32 +507,21 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         token: this.gameConfig.token,
                         damage: this.maxBossHp - this.currentHp,
                         gold: netGold,
+                        difficulty: $('#pp-phase-difficulty').val() || 'normal',
                     },
-                }])[0].done(res => {
-                    advanced = true;
-                    const nextinfo = strings.nextlevel.replace('{$a}', res.currentlevel)
-                        + ' — ' + strings.nextphase.replace('{$a}', res.currentphase);
-                    $('#pp-phase-status').removeClass('text-muted').addClass('text-success').text(nextinfo);
-                    $('#btn-pp-continue-phase').prop('disabled', false);
+                }])[0].done(() => {
+                    this.submitRestartForm();
                 }).fail(() => {
                     $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
                         .text(strings.phaseadvanceerror);
-                    $('#btn-pp-continue-phase').prop('disabled', false);
+                    $('#btn-pp-continue-phase, #pp-phase-difficulty').prop('disabled', false);
                 });
             };
 
-            $('#btn-pp-continue-phase').on('click', () => {
-                if (advanced) {
-                    this.submitRestartForm();
-                } else {
-                    attemptAdvance();
-                }
-            });
+            $('#btn-pp-continue-phase').on('click', advanceAndContinue);
             $('#btn-pp-exit-phase').on('click', () => {
                 window.location.href = this.gameConfig.viewurl;
             });
-
-            attemptAdvance();
         }
 
         openQuestionModal(trigger) {

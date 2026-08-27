@@ -254,12 +254,13 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that difficulty is locked to the in-progress attempt's own value: resuming a
-     * run started on Hard ignores a later request for Easy.
+     * Tests that resuming an in-progress attempt keeps that attempt's own current-phase
+     * difficulty: a run whose attempt carries Hard ignores a later Lobby request for Easy
+     * (difficulty only changes between phases, via advance_phase).
      *
      * @return void
      */
-    public function test_build_game_config_difficulty_is_locked_on_resume(): void {
+    public function test_build_game_config_difficulty_is_kept_on_resume(): void {
         [$cm, $instance] = $this->make_cm_and_instance([
             'gamemode'   => PLAYERPUZZLE_GAMEMODE_SINGLE,
             'basebosshp' => 200,

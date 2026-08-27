@@ -311,13 +311,14 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
-     * Tests resume_or_create_token() returns the chosen difficulty on a fresh attempt, and
-     * keeps the in-progress attempt's own locked difficulty when resuming — a later call
-     * asking for a different difficulty does not change it.
+     * Tests resume_or_create_token() applies the chosen difficulty on a fresh attempt, and
+     * on resume returns the in-progress attempt's own stored difficulty unchanged — the
+     * requested value is not applied (advance_phase is what changes difficulty between
+     * Campaign phases).
      *
      * @return void
      */
-    public function test_resume_or_create_locks_difficulty_on_resume(): void {
+    public function test_resume_or_create_keeps_attempt_difficulty_on_resume(): void {
         $fresh = security::resume_or_create_attempt_token(1, 2, 'hard');
         $this->assertSame('hard', $fresh->difficulty);
 

@@ -388,6 +388,7 @@ define([
                     'bosslostmultiplier', 'bosstrigger', 'bosswrongfeedback', 'btnattack',
                     'btncontinue', 'btnexitgame', 'btnplayagain',
                     'coinscollected', 'defeat',
+                    'difficulty_easy', 'difficulty_hard', 'difficulty_normal',
                     'historylogattack', 'historylogcoins', 'historylogcritical', 'historylogempty',
                     'historylogheal', 'historylogmana', 'historylogmultiplier',
                     'historylogmultiplierlost', 'historylogpoisoncharge', 'historylogpoisontick',
@@ -395,7 +396,7 @@ define([
                     'historylogwronganswer',
                     'hpboss', 'hpyou', 'iconeffects', 'loading', 'maxmultiplier',
                     'musicoff', 'musicon', 'nextlevel', 'nextphase', 'noanswers',
-                    'phaseadvanceerror', 'phasecompletetitle', 'playercorrect',
+                    'phaseadvanceerror', 'phasecompletetitle', 'phasedifficulty', 'playercorrect',
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
                     'questionerror', 'requirejserror', 'saveerror', 'savingprogress',
                     'shuffling', 'victory'

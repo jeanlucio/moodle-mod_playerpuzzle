@@ -97,8 +97,9 @@ class security {
      *
      * @param int $playerpuzzleid The instance ID.
      * @param int $userid The user ID.
-     * @param string $difficulty Student-chosen difficulty for a fresh attempt; ignored when
-     *  resuming, since a run's difficulty is locked once it is in progress.
+     * @param string $difficulty Student-chosen difficulty for a fresh attempt. Not applied when
+     *  resuming: the attempt keeps the difficulty its current phase was entered at, which
+     *  advance_phase() is what changes between phases in Campaign mode.
      * @return \stdClass Object with ->token, ->currentlevel, ->currentphase, ->difficulty.
      */
     public static function resume_or_create_attempt_token(

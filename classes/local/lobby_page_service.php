@@ -149,10 +149,10 @@ class lobby_page_service {
     }
 
     /**
-     * Builds the difficulty picker context. While an attempt is in progress its difficulty
-     * is locked (resuming it keeps that choice), so only a read-only label is shown. With no
-     * attempt in progress, the three radio options are offered inside the Play form, Normal
-     * pre-selected.
+     * Builds the difficulty picker context. With an attempt in progress, resuming keeps that
+     * attempt's current-phase difficulty (the next choice happens on the phase-complete
+     * screen, not here), so only a read-only line is shown. With no attempt in progress, the
+     * picker is offered inside the Play form, Normal pre-selected.
      *
      * @param stdClass|null $attempt The most recent in-progress attempt, or null.
      * @return array
@@ -165,8 +165,8 @@ class lobby_page_service {
                 ? $attempt->difficulty
                 : PLAYERPUZZLE_DIFFICULTY_NORMAL;
             return [
-                'difficultylocked' => get_string(
-                    'lobby_difficulty_locked',
+                'difficultycurrent' => get_string(
+                    'lobby_difficulty_current',
                     'mod_playerpuzzle',
                     $options[$current]
                 ),

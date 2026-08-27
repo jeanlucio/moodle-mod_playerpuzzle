@@ -284,6 +284,38 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the difficulty chosen on the phase-complete screen is stored on the attempt
+     * for the next phase and reflected in the returned scaled HP — Campaign lets the student
+     * re-pick at every transition.
+     *
+     * @return void
+     */
+    public function test_advance_phase_stores_the_chosen_next_difficulty(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100, 'basestudenthp' => 100]);
+        $this->setUser($this->student);
+        // Fought this phase on Normal; boss HP here is 100.
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+
+        $result = $this->call_advance_phase([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'damage'     => 100,
+            'gold'       => 0,
+            'difficulty' => 'hard',
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame('hard', $result['data']['difficulty']);
+        // Phase 2 boss HP is 100 * (1 + 0.1) = 110; Hard doubles it to 220.
+        $this->assertSame(220, $result['data']['bosshp']);
+        // Student HP is never touched by difficulty: 100 * (1 + 0.05) = 105.
+        $this->assertSame(105, $result['data']['studenthp']);
+        $this->assertSame('hard', $DB->get_field('playerpuzzle_attempts', 'difficulty', ['token' => $result['data']['token']]));
+    }
+
+    /**
      * Tests that the attempt row stays 'inprogress' after advancing — winning a phase
      * never opens or closes an attempt, it is the same continuous streak.
      *

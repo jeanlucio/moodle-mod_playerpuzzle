@@ -39,7 +39,7 @@
             {"value": "normal", "label": "Normal", "checked": true},
             {"value": "hard", "label": "Hard", "checked": false}
         ],
-        "difficultylocked": ""
+        "difficultycurrent": ""
     }
 }}
 <div class="pp-lobby text-center mb-5">
@@ -65,9 +65,9 @@
     <form method="post" action="{{{playurl}}}" class="mt-3">
         <input type="hidden" name="sesskey" value="{{sesskey}}">
 
-        {{#difficultylocked}}
-        <p class="pp-lobby-difficulty-locked text-muted mb-3">{{difficultylocked}}</p>
-        {{/difficultylocked}}
+        {{#difficultycurrent}}
+        <p class="pp-lobby-difficulty-current text-muted mb-3">{{difficultycurrent}}</p>
+        {{/difficultycurrent}}
 
         {{#difficultylabel}}
         <div class="pp-lobby-difficulty mb-3 d-inline-block text-start">

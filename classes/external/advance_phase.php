@@ -30,6 +30,7 @@ use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\engine\combat;
+use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
 use moodle_exception;
 
@@ -51,10 +52,16 @@ class advance_phase extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid'   => new external_value(PARAM_INT, 'Course module ID'),
-            'token'  => new external_value(PARAM_ALPHANUM, 'Anti-replay token issued when the attempt started'),
-            'damage' => new external_value(PARAM_INT, 'Damage dealt to the boss this phase'),
-            'gold'   => new external_value(PARAM_INT, 'Gold coins earned this phase'),
+            'cmid'       => new external_value(PARAM_INT, 'Course module ID'),
+            'token'      => new external_value(PARAM_ALPHANUM, 'Anti-replay token issued when the attempt started'),
+            'damage'     => new external_value(PARAM_INT, 'Damage dealt to the boss this phase'),
+            'gold'       => new external_value(PARAM_INT, 'Gold coins earned this phase'),
+            'difficulty' => new external_value(
+                PARAM_ALPHA,
+                'Difficulty chosen for the next phase (easy/normal/hard); coerced to a known value',
+                VALUE_DEFAULT,
+                'normal'
+            ),
         ]);
     }
 
@@ -67,16 +74,18 @@ class advance_phase extends external_api {
      * @param string $token Anti-replay token issued when the attempt started.
      * @param int $damage Damage dealt to the boss this phase.
      * @param int $gold Gold coins earned this phase.
-     * @return array Result with the new token, level, phase, scaled boss/student HP, and coins banked.
+     * @param string $difficulty Difficulty chosen for the next phase.
+     * @return array Result with the new token, level, phase, difficulty, scaled boss/student HP, and coins banked.
      */
-    public static function execute(int $cmid, string $token, int $damage, int $gold): array {
+    public static function execute(int $cmid, string $token, int $damage, int $gold, string $difficulty = 'normal'): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
-            'cmid'   => $cmid,
-            'token'  => $token,
-            'damage' => $damage,
-            'gold'   => $gold,
+            'cmid'       => $cmid,
+            'token'      => $token,
+            'damage'     => $damage,
+            'gold'       => $gold,
+            'difficulty' => $difficulty,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -125,10 +134,16 @@ class advance_phase extends external_api {
             throw new moodle_exception('nonextphase', 'mod_playerpuzzle');
         }
 
+        // Difficulty is re-chosen at each phase transition (Campaign): the value fought this
+        // phase drove the win check above; from here on the attempt carries the newly chosen
+        // one, which the reloaded play.php will scale the next fight with.
+        $newdifficulty = security::clean_difficulty($params['difficulty']);
+
         $newtoken = bin2hex(random_bytes(32));
         $attempt->token = $newtoken;
         $attempt->currentlevel = $newlevel;
         $attempt->currentphase = $newphase;
+        $attempt->difficulty = $newdifficulty;
         $attempt->timemodified = time();
         $DB->update_record('playerpuzzle_attempts', $attempt);
 
@@ -155,7 +170,11 @@ class advance_phase extends external_api {
             'token'        => $newtoken,
             'currentlevel' => $newlevel,
             'currentphase' => $newphase,
-            'bosshp'       => combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $newlevel, $newphase),
+            'difficulty'   => $newdifficulty,
+            'bosshp'       => combat::apply_difficulty(
+                combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $newlevel, $newphase),
+                $newdifficulty
+            ),
             'studenthp'    => combat::calculate_student_hp((int) $playerpuzzle->basestudenthp, $newlevel, $newphase),
             'coinsbanked'  => $coinsbanked,
         ];
@@ -171,6 +190,7 @@ class advance_phase extends external_api {
             'token'        => new external_value(PARAM_ALPHANUM, 'New anti-replay token for the advanced phase'),
             'currentlevel' => new external_value(PARAM_INT, 'Level the attempt is now on'),
             'currentphase' => new external_value(PARAM_INT, 'Phase the attempt is now on'),
+            'difficulty'   => new external_value(PARAM_ALPHA, 'Difficulty the attempt now carries for the new phase'),
             'bosshp'       => new external_value(PARAM_INT, 'Scaled boss HP for the new phase'),
             'studenthp'    => new external_value(PARAM_INT, 'Scaled student HP for the new phase'),
             'coinsbanked'  => new external_value(PARAM_INT, 'Coins banked into PlayerHUD for this phase'),

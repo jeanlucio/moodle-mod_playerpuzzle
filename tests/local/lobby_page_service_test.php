@@ -274,7 +274,7 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
 
-        $this->assertArrayNotHasKey('difficultylocked', $data);
+        $this->assertArrayNotHasKey('difficultycurrent', $data);
         $this->assertCount(3, $data['difficultychoices']);
 
         $checked = array_values(array_filter($data['difficultychoices'], fn($c) => $c['checked']));
@@ -283,12 +283,13 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that an in-progress attempt locks the difficulty: the picker is replaced by a
-     * read-only label naming the run's own difficulty, and no choices are offered.
+     * Tests that with an attempt in progress the Lobby shows a read-only line naming the
+     * attempt's current difficulty (no picker) — the next choice is made on the
+     * phase-complete screen, not here.
      *
      * @return void
      */
-    public function test_build_page_data_locks_difficulty_while_attempt_in_progress(): void {
+    public function test_build_page_data_shows_current_difficulty_while_attempt_in_progress(): void {
         [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
 
         \mod_playerpuzzle\local\engine\security::generate_attempt_token(
@@ -301,10 +302,10 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $this->assertArrayNotHasKey('difficultychoices', $data);
         $expected = get_string(
-            'lobby_difficulty_locked',
+            'lobby_difficulty_current',
             'mod_playerpuzzle',
             get_string('difficulty_hard', 'mod_playerpuzzle')
         );
-        $this->assertSame($expected, $data['difficultylocked']);
+        $this->assertSame($expected, $data['difficultycurrent']);
     }
 }

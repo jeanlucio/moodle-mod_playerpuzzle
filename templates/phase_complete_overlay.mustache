@@ -26,9 +26,14 @@
         "msg": "Phase complete!",
         "coinscollected": "Coins collected:",
         "playergold": 150,
-        "advancingphase": "Advancing to the next phase...",
         "btncontinue": "Continue",
-        "btnexitgame": "Exit game"
+        "btnexitgame": "Exit game",
+        "difficultylabel": "Difficulty for the next phase",
+        "difficultychoices": [
+            {"value": "easy", "label": "Easy", "checked": false},
+            {"value": "normal", "label": "Normal", "checked": true},
+            {"value": "hard", "label": "Hard", "checked": false}
+        ]
     }
 }}
 <div id="playerpuzzle-phasecomplete" class="d-flex flex-column justify-content-center align-items-center">
@@ -36,9 +41,17 @@
     <p class="lead text-white mb-4">
         {{coinscollected}} <strong class="text-warning">{{playergold}}</strong>
     </p>
-    <p id="pp-phase-status" class="text-light small">{{advancingphase}}</p>
+    <div class="mb-3 text-center">
+        <label class="text-white d-block mb-1" for="pp-phase-difficulty">{{difficultylabel}}</label>
+        <select class="form-control d-inline-block w-auto" id="pp-phase-difficulty">
+            {{#difficultychoices}}
+            <option value="{{value}}" {{#checked}}selected{{/checked}}>{{label}}</option>
+            {{/difficultychoices}}
+        </select>
+    </div>
+    <p id="pp-phase-status" class="text-light small">&nbsp;</p>
     <div class="pp-gameover-buttons">
-        <button id="btn-pp-continue-phase" disabled class="btn btn-primary btn-lg shadow">
+        <button id="btn-pp-continue-phase" class="btn btn-primary btn-lg shadow">
             {{btncontinue}}
         </button>
         <button id="btn-pp-exit-phase" class="btn btn-secondary btn-lg shadow">

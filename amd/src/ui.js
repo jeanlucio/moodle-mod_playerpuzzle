@@ -600,55 +600,94 @@ define(['jquery'], function($) {
             }).setOrigin(0.5, 0).setDepth(10);
         }
 
+        /**
+         * Draws the shared dark-fill, bronze-bordered circular badge used by all 3 compact top
+         * buttons (Música/Efeitos/Expandir) — replaces the old bracket-text "[ Word ]" style
+         * (28/08/2026), which read as generic HTML/Bootstrap controls, with the same visual
+         * language already used for rings and purchase badges. The circle itself is the
+         * interactive target (Phaser auto-generates a matching circular hit area), not the
+         * icon glyph on top of it — sidesteps the old workaround of an oversized rectangular
+         * hit area to compensate for emoji bounding-box mismetrics.
+         *
+         * @param {number} x Center X.
+         * @param {number} y Center Y.
+         * @param {number} radius Badge radius, logical units.
+         * @return {Phaser.GameObjects.Arc} The interactive badge circle.
+         */
+        createButtonBadge(x, y, radius) {
+            return this.scene.add.circle(x, y, radius, 0x1c1712, 0.9)
+                .setStrokeStyle(2, 0x9c6b2e)
+                .setInteractive()
+                .setDepth(10);
+        }
+
+        /**
+         * Draws the Expandir/Encolher button's own icon: four corner brackets pointing outward
+         * from near the badge's edge (tap to enter fullscreen), or pulled toward the center and
+         * pointing outward from there (already fullscreen, tap to exit) — redrawn on each
+         * toggle since the shape itself changes, unlike Música/Efeitos which just dim.
+         *
+         * @param {Phaser.GameObjects.Graphics} g Graphics object to draw into (cleared first).
+         * @param {number} cx Center X.
+         * @param {number} cy Center Y.
+         * @param {number} r Badge radius — the icon is sized relative to it.
+         * @param {boolean} expanded True once fullscreen is active (draws the "exit" variant).
+         */
+        drawFullscreenIcon(g, cx, cy, r, expanded) {
+            g.clear();
+            g.lineStyle(3, 0xe8dcc8, 1);
+            // CornerRadius is the elbow point's true distance from center; elbowDist is that
+            // same distance split evenly across both axes (divided by sqrt(2)) so the elbow
+            // actually lands cornerRadius away, not cornerRadius on EACH axis — using the raw
+            // per-axis value as if it were the radial distance let both offsets compound
+            // diagonally past the circle's own edge, drawing the brackets outside the badge
+            // instead of inside it. armLen is kept well under elbowDist, not close to it —
+            // first attempt used ~1.1x elbowDist, which let each arm cross the center axis and
+            // overlap its mirrored twin from the opposite corner, fusing all 4 brackets into
+            // what read as one solid square instead of 4 separate corner marks.
+            const cornerRadius = expanded ? r * 0.3 : r * 0.62;
+            const elbowDist = cornerRadius / Math.SQRT2;
+            const armLen = elbowDist * 0.65;
+            const armSign = expanded ? 1 : -1;
+            [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => {
+                const ex = cx + (sx * elbowDist);
+                const ey = cy + (sy * elbowDist);
+                g.beginPath();
+                g.moveTo(ex + (sx * armSign * armLen), ey);
+                g.lineTo(ex, ey);
+                g.lineTo(ex, ey + (sy * armSign * armLen));
+                g.strokePath();
+            });
+        }
+
         setupButtons() {
             const me = this.scene;
             const L = this.L;
             const strings = this.strings;
 
-            // Same Expandir/Encolher fullscreen toggle on every device (27/08/2026) — mobile
-            // used to show a red "Exit" button here instead, tied to the chromeless
-            // popup-window flow that has since been removed; the game now always lives in the
-            // normal page, so there's no separate exit flow to offer.
-            const btnFullscreen = me.add.text(L.btnExpX, L.btnExpY, strings.expand, {
-                fontSize: '20px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-            }).setOrigin(1, 0).setInteractive().setDepth(10);
-
-            btnFullscreen.on('pointerdown', () => {
-                me.cameras.main.fadeOut(200, 0, 0, 0);
-                me.time.delayedCall(200, () => {
-                    if (me.scale.isFullscreen) {
-                        me.scale.stopFullscreen();
-                        btnFullscreen.setText(this.strings.expand);
-                    } else {
-                        me.scale.startFullscreen();
-                        btnFullscreen.setText(this.strings.shrink);
-                    }
-                    me.cameras.main.fadeIn(200, 0, 0, 0);
-                });
-            });
-
             me.musicOn = true;
             me.sfxOn = true;
 
-            // Explicit hit areas prevent emoji mismetrics from shrinking the tap zone on mobile.
-            // pointerup is more reliable than pointerdown for button taps on touch devices.
-            const hitRect = (w, h) => new Phaser.Geom.Rectangle(-4, -4, w, h);
+            // Row of 3 compact icon buttons, right-aligned — rightmost is Expandir, matching
+            // where the old bracket-text button always sat; Efeitos and Música step leftward
+            // from there by the same gap.
+            const y = L.topBtnY;
+            const r = L.topBtnRadius;
+            const gap = L.topBtnGap;
+            const xExpand = L.w - 30;
+            const xEffects = xExpand - gap;
+            const xMusic = xEffects - gap;
+            const iconStyle = {fontSize: `${Math.round(r * 1.15)}px`};
 
-            const btnMusic = me.add.text(20, 20, strings.musicon, {
-                fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-            }).setInteractive(hitRect(110, 44), Phaser.Geom.Rectangle.Contains).setDepth(10);
-
-            const btnSfx = me.add.text(140, 20, strings.sfxon, {
-                fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-            }).setInteractive(hitRect(120, 44), Phaser.Geom.Rectangle.Contains).setDepth(10);
-
-            btnMusic.on('pointerup', () => {
+            const badgeMusic = this.createButtonBadge(xMusic, y, r);
+            const iconMusic = me.add.text(xMusic, y, strings.musicon, iconStyle)
+                .setOrigin(0.5).setDepth(11);
+            badgeMusic.on('pointerup', () => {
                 if (me.board && me.board.swipePiece !== null) {
                     return;
                 }
                 me.musicOn = !me.musicOn;
-                btnMusic.setText(me.musicOn ? strings.musicon : strings.musicoff);
-                btnMusic.setStyle({fill: me.musicOn ? '#ffffff' : '#aaaaaa'});
+                iconMusic.setText(me.musicOn ? strings.musicon : strings.musicoff);
                 if (me.musicOn) {
                     me.bgMusic.resume();
                 } else {
@@ -656,17 +695,38 @@ define(['jquery'], function($) {
                 }
             });
 
-            btnSfx.on('pointerup', () => {
+            const badgeEffects = this.createButtonBadge(xEffects, y, r);
+            const iconEffects = me.add.text(xEffects, y, strings.iconeffects, iconStyle)
+                .setOrigin(0.5).setDepth(11);
+            badgeEffects.on('pointerup', () => {
                 if (me.board && me.board.swipePiece !== null) {
                     return;
                 }
                 me.sfxOn = !me.sfxOn;
-                btnSfx.setText(me.sfxOn ? strings.sfxon : strings.sfxoff);
-                btnSfx.setStyle({fill: me.sfxOn ? '#ffffff' : '#aaaaaa'});
+                // No natural "muted gear" glyph, unlike Música's own 🔊/🔇 pair — dims the icon
+                // instead, mirroring the fill-color dim the old text buttons used for the same
+                // purpose.
+                iconEffects.setAlpha(me.sfxOn ? 1 : 0.4);
                 const vol = me.sfxOn ? 1 : 0;
                 me.sfxSwap.setVolume(0.6 * vol);
                 me.sfxMatch.setVolume(0.5 * vol);
                 me.sfxHit.setVolume(0.8 * vol);
+            });
+
+            const badgeExpand = this.createButtonBadge(xExpand, y, r);
+            const iconExpand = me.add.graphics().setDepth(11);
+            this.drawFullscreenIcon(iconExpand, xExpand, y, r, false);
+            badgeExpand.on('pointerdown', () => {
+                me.cameras.main.fadeOut(200, 0, 0, 0);
+                me.time.delayedCall(200, () => {
+                    if (me.scale.isFullscreen) {
+                        me.scale.stopFullscreen();
+                    } else {
+                        me.scale.startFullscreen();
+                    }
+                    this.drawFullscreenIcon(iconExpand, xExpand, y, r, me.scale.isFullscreen);
+                    me.cameras.main.fadeIn(200, 0, 0, 0);
+                });
             });
         }
 

@@ -193,7 +193,13 @@ define([
                 // bottom of the ring row above it.
                 historyTitleY: 548, historyLineY: 585, historyLineHeight: 24,
 
-                btnExpX: 1260, btnExpY: 20
+                // Compact circular icon buttons (Música/Efeitos/Expandir), right-aligned —
+                // replaces the old bracket-text "[ Word ]" buttons (28/08/2026), which read as
+                // generic HTML/Bootstrap controls rather than the game's own bronze-accent
+                // dark-fill language already used for rings/badges. ui.js computes each
+                // button's own X from L.w, topBtnGap and its position in the row (rightmost =
+                // Expandir), so only the shared Y/radius/gap live here.
+                topBtnY: 26, topBtnRadius: 20, topBtnGap: 50
             } : {
                 // Reorganized (26/08/2026) after the mobile layout was found broken, not just
                 // unpolished: the level/phase indicator text was clipped by the Expandir
@@ -211,16 +217,16 @@ define([
                 hasCharacterStage: false,
                 bgX: 270, bgY: 480, bgW: 540, bgH: 960,
 
-                // Top bar: buttons stay on row 1 (y:20, same hardcoded Y ui.js::setupButtons()
-                // already uses for Música/Efeitos on both layouts). The level/phase indicator
-                // gets its own row 2 below instead of squeezing into row 1 between the button
-                // clusters — measured live, that gap is only ~104px wide (Efeitos' own text +
-                // padding reaches to ~x276, Expandir's to ~x380), nowhere near enough for the
-                // full pt_BR string at any readable size. Everything below shifted down 40px
-                // to fit this second row; the column still closes with ~90px of slack at the
-                // very bottom (verify after any further change here).
+                // Top bar: the icon-button row (Música/Efeitos/Expandir, see the desktop L's
+                // own topBtnY/Radius/Gap comment) stays on row 1. The level/phase indicator
+                // gets its own row 2 below instead of squeezing into row 1 alongside the
+                // buttons — even now that they're compact circles instead of the old wide
+                // bracket-text boxes, the full pt_BR progress string still doesn't fit at any
+                // readable size next to them. Everything below shifted down 40px to fit this
+                // second row; the column still closes with ~90px of slack at the very bottom
+                // (verify after any further change here).
                 progressIndicatorY: 58,
-                btnExpX: 520, btnExpY: 20,
+                topBtnY: 24, topBtnRadius: 18, topBtnGap: 44,
 
                 // Boss cluster: sprite, HP bar (+Status badges hanging off its own corner),
                 // Coin/Star (no Potion — boss has no shop; also fixes a pre-existing gap where
@@ -381,18 +387,18 @@ define([
                     'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
                     'bosslostmultiplier', 'bosstrigger', 'bosswrongfeedback', 'btnattack',
                     'btncontinue', 'btnexitgame', 'btnplayagain',
-                    'coinscollected', 'defeat', 'expand',
+                    'coinscollected', 'defeat',
                     'historylogattack', 'historylogcoins', 'historylogcritical', 'historylogempty',
                     'historylogheal', 'historylogmana', 'historylogmultiplier',
                     'historylogmultiplierlost', 'historylogpoisoncharge', 'historylogpoisontick',
                     'historylogshieldblock', 'historylogshieldcharge', 'historylogtitle',
                     'historylogwronganswer',
-                    'hpboss', 'hpyou', 'loading', 'maxmultiplier',
+                    'hpboss', 'hpyou', 'iconeffects', 'loading', 'maxmultiplier',
                     'musicoff', 'musicon', 'nextlevel', 'nextphase', 'noanswers',
                     'phaseadvanceerror', 'phasecompletetitle', 'playercorrect',
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
-                    'questionerror', 'requirejserror', 'saveerror', 'savingprogress', 'sfxoff',
-                    'sfxon', 'shrink', 'shuffling', 'victory'
+                    'questionerror', 'requirejserror', 'saveerror', 'savingprogress',
+                    'shuffling', 'victory'
                 ];
 
                 const values = await Str.get_strings(

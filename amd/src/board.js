@@ -147,6 +147,16 @@ define([], function() {
         }
 
         setupInputs() {
+            // Phaser's own touch.capture is off (game_boot.js) so this is the only place that
+            // blocks the browser's default touch handling — and only for a touch that starts
+            // on an actual board piece, so scrolling still works everywhere else on the canvas
+            // (HUD, panels, margins). Added directly on the canvas element, not through
+            // Phaser's input plugin, specifically so it stays non-passive and preventDefault()
+            // has any effect (28/08/2026).
+            this.scene.game.canvas.addEventListener(
+                'touchstart', event => this.maybeBlockScroll(event), {passive: false}
+            );
+
             this.scene.input.on('pointerup', pointer => {
                 if (this.scene.combat.currentTurn !== 'player' || this.swipePiece === null) {
                     return;
@@ -195,6 +205,38 @@ define([], function() {
             this.startX = pointer.worldX;
             this.startY = pointer.worldY;
             piece.setTint(0xdddddd);
+        }
+
+        /**
+         * Cancels the browser's default touch handling (scroll, pinch-zoom) only when a touch
+         * starts inside the board's own screen rectangle — anywhere else on the canvas keeps
+         * native scrolling (see setupInputs()'s own comment for why this listener exists at
+         * the DOM level instead of through Phaser). Reimplements the canvas' real-to-logical
+         * pixel conversion directly from its bounding rect rather than going through Phaser's
+         * pointer system, since this fires on the raw touchstart, before Phaser has processed
+         * it into a Pointer object.
+         *
+         * @param {TouchEvent} event Native touchstart event from the canvas element.
+         */
+        maybeBlockScroll(event) {
+            if (this.scene.combat.currentTurn !== 'player' || event.touches.length !== 1) {
+                return;
+            }
+
+            const rect = this.scene.game.canvas.getBoundingClientRect();
+            const touch = event.touches[0];
+            const scale = this.L.w / rect.width;
+            const lx = (touch.clientX - rect.x) * scale;
+            const ly = (touch.clientY - rect.y) * scale;
+
+            const left = this.offsetX - (this.pieceSize / 2);
+            const top = this.offsetY - (this.pieceSize / 2);
+            const width = this.cols * this.pieceSize;
+            const height = this.rows * this.pieceSize;
+
+            if (lx >= left && lx <= left + width && ly >= top && ly <= top + height) {
+                event.preventDefault();
+            }
         }
 
         handleClick(clickedPiece) {

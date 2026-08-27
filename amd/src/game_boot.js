@@ -341,8 +341,18 @@ define([
                 mouse: {
                     preventDefaultWheel: false
                 },
+                // False (28/08/2026): with capture:true, Phaser's own input manager calls
+                // preventDefault() on every touch anywhere over the canvas unconditionally —
+                // combined with the canvas' own touch-action CSS, that blocked page scroll
+                // through the ENTIRE canvas, not just the board, trapping mobile players who
+                // touched the game while trying to scroll past it. board.js now does its own
+                // narrowly-scoped preventDefault, only for a touch that actually starts on a
+                // board piece (see board.js::maybeBlockScroll()) — this flag has to stay off
+                // for that call to have any effect: Phaser attaches its underlying listener as
+                // passive when capture is off, but that only governs Phaser's OWN listener, not
+                // the separate one board.js adds directly on the canvas element.
                 touch: {
-                    capture: true
+                    capture: false
                 }
             },
             scene: {preload: preload, create: create}

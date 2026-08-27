@@ -77,7 +77,7 @@ define(['jquery'], function($) {
                     .setDisplaySize(L.panelW, panelH)
                     .setFlipX(true);
 
-                me.add.image(L.playerX, L.playerY, 'player')
+                this.playerSprite = me.add.image(L.playerX, L.playerY, 'player')
                     .setDisplaySize(L.playerScale, L.playerScale);
                 this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
                     .setDisplaySize(L.bossScale, L.bossScale);
@@ -122,7 +122,7 @@ define(['jquery'], function($) {
                 // Beside the bar/resource/ring stack, in the panel's own left margin — not
                 // centered above like the boss's sprite (see playerX/Y/Scale's own comment in
                 // game_boot.js for why).
-                me.add.image(L.playerX, L.playerY, 'player')
+                this.playerSprite = me.add.image(L.playerX, L.playerY, 'player')
                     .setDisplaySize(L.playerScale, L.playerScale);
 
                 // Icon chips (reused from the desktop redesign), not raw emoji text — the old

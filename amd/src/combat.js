@@ -301,7 +301,13 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
             this.currentPlayerHp = Math.max(0, this.currentPlayerHp - amount);
             this.updateUI();
-            me.cameras.main.shake(250, 0.015);
+            // Mirrors applyDamageToBoss()'s own tint flash (28/08/2026) — replaces a screen
+            // shake the player found disruptive, now that a player sprite actually exists on
+            // every layout (mobile included) to carry the same feedback the boss already had.
+            me.ui.playerSprite.setTint(0xff0000);
+            me.time.delayedCall(200, () => {
+                me.ui.playerSprite.clearTint();
+            });
         }
 
         passTurnToBoss() {
@@ -358,8 +364,13 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 this.currentPlayerHp = Math.max(0, this.currentPlayerHp - this.baseDamage);
                 this.playerPoisonRounds--;
                 this.updateUI();
-                me.cameras.main.shake(200, 0.008);
+                // Mirrors passTurnToBoss()'s own poison-tick tint (28/08/2026), replacing a
+                // screen shake — see applyDamageToPlayer()'s own comment for why.
+                me.ui.playerSprite.setTint(0xff00ff);
                 me.ui.pushHistoryLog('player', this.strings.historylogpoisontick.replace('{$a}', this.baseDamage));
+                me.time.delayedCall(300, () => {
+                    me.ui.playerSprite.clearTint();
+                });
                 if (this.checkGameOver()) {
                     return true;
                 }

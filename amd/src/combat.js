@@ -546,10 +546,6 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         question = ctx.gameConfig.questions[idx];
                     }
 
-                    const numOptions = question.options ? question.options.length : 0;
-                    const bossPickIdx = (trigger === 'boss' && numOptions > 0)
-                        ? Math.floor(Math.random() * numOptions) : -1;
-
                     const questionText = trigger === 'boss'
                         ? `<strong class="text-danger pp-bold">${ctx.strings.bosstrigger}</strong><br><br>${question.text}`
                         : question.text;
@@ -659,8 +655,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                                     methodname: 'mod_playerpuzzle_validate_answer',
                                     args: {
                                         cmid: ctx.gameConfig.cmid,
+                                        token: ctx.gameConfig.token,
                                         questionid: question.id,
                                         answerid: selectedAnswer.id,
+                                        forwhom: 'player',
                                     },
                                 }])[0].done(res => {
                                     applyResult(!!res.correct, res.correctanswerid || null);
@@ -670,14 +668,17 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                             });
 
                         } else {
-                            const bossPick = question.options[bossPickIdx];
-
-                            const renderBossResult = isBossCorrect => {
-                                question.options.forEach((option, idx) => {
+                            // The boss's answer is drawn server-side (validate_answer with
+                            // forwhom:'boss') so the client never learns the correct one —
+                            // its precision is the difficulty-weighted probability there.
+                            const renderBossResult = (isBossCorrect, pickedId) => {
+                                question.options.forEach(option => {
                                     const plainText = option.text.replace(/(<([^>]+)>)/gi, '');
                                     const btn = $(`<button class="${btnClass}" disabled>${option.text}</button>`);
 
-                                    if (idx === bossPickIdx) {
+                                    // Coerce both sides: the option id arrives as a string
+                                    // from the JSON config, pickedId as a number from the WS.
+                                    if (Number(option.id) === Number(pickedId)) {
                                         if (isBossCorrect) {
                                             btn.removeClass('btn-outline-primary').addClass('btn-danger text-white');
                                             btn.html(
@@ -728,13 +729,15 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                                 methodname: 'mod_playerpuzzle_validate_answer',
                                 args: {
                                     cmid: ctx.gameConfig.cmid,
+                                    token: ctx.gameConfig.token,
                                     questionid: question.id,
-                                    answerid: bossPick.id,
+                                    answerid: 0,
+                                    forwhom: 'boss',
                                 },
                             }])[0].done(res => {
-                                renderBossResult(!!res.correct);
+                                renderBossResult(!!res.correct, res.pickedanswerid || null);
                             }).fail(() => {
-                                renderBossResult(false);
+                                renderBossResult(false, null);
                             });
                         }
 

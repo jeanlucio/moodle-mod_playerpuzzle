@@ -29,7 +29,9 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\question_fetcher;
+use moodle_exception;
 
 /**
  * Validates whether the answer submitted by the player is correct.
@@ -43,26 +45,45 @@ class validate_answer extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'cmid'       => new external_value(PARAM_INT, 'Course module ID'),
+            'token'      => new external_value(PARAM_ALPHANUM, 'Anti-replay token of the in-progress attempt'),
             'questionid' => new external_value(PARAM_INT, 'Question ID'),
-            'answerid'   => new external_value(PARAM_INT, 'Answer ID submitted by the player'),
+            'answerid'   => new external_value(PARAM_INT, 'Answer ID submitted by the player; ignored for the boss'),
+            'forwhom'    => new external_value(
+                PARAM_ALPHA,
+                'Whose answer this is: "player" validates the submitted answer, "boss" draws the boss guess server-side',
+                VALUE_DEFAULT,
+                'player'
+            ),
         ]);
     }
 
     /**
-     * Validates the answer and returns correctness.
+     * Validates a player's answer, or draws the boss's guess server-side with the
+     * difficulty-weighted precision, and returns the outcome. The boss draw never happens
+     * on the client, so the correct answer is never revealed to it (Blind JSON).
      *
      * @param int $cmid Course module ID.
+     * @param string $token Anti-replay token of the in-progress attempt.
      * @param int $questionid Question ID.
-     * @param int $answerid Answer ID submitted.
+     * @param int $answerid Answer ID submitted (player only).
+     * @param string $forwhom "player" or "boss".
      * @return array Result matrix.
      */
-    public static function execute(int $cmid, int $questionid, int $answerid): array {
-        global $DB;
+    public static function execute(
+        int $cmid,
+        string $token,
+        int $questionid,
+        int $answerid,
+        string $forwhom = 'player'
+    ): array {
+        global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid'       => $cmid,
+            'token'      => $token,
             'questionid' => $questionid,
             'answerid'   => $answerid,
+            'forwhom'    => $forwhom,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -72,21 +93,36 @@ class validate_answer extends external_api {
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
         $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $cm->instance], '*', MUST_EXIST);
 
+        $attempt = $DB->get_record('playerpuzzle_attempts', [
+            'token'          => $params['token'],
+            'playerpuzzleid' => (int) $playerpuzzle->id,
+            'userid'         => (int) $USER->id,
+            'status'         => 'inprogress',
+        ]);
+        if (!$attempt) {
+            throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
+        }
+
+        // Instance isolation: the question must belong to this instance's own category,
+        // never validated by isolated PK.
         $sql = "SELECT 1
                   FROM {question_bank_entries} qbe
                   JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
                  WHERE qv.questionid = :qid
                    AND qbe.questioncategoryid = :catid";
-
         $valid = $DB->record_exists_sql($sql, [
             'qid'   => $params['questionid'],
             'catid' => (int) $playerpuzzle->questioncategory,
         ]);
+        if (!$valid) {
+            return ['correct' => false];
+        }
 
-        $correct = $valid && question_fetcher::is_answer_correct(
-            $params['questionid'],
-            $params['answerid']
-        );
+        if ($params['forwhom'] === 'boss') {
+            return self::draw_boss_guess($params['questionid'], (string) $attempt->difficulty);
+        }
+
+        $correct = question_fetcher::is_answer_correct($params['questionid'], $params['answerid']);
 
         $result = ['correct' => $correct];
         if (!$correct) {
@@ -100,16 +136,55 @@ class validate_answer extends external_api {
     }
 
     /**
+     * Draws the boss's answer for a question: with the difficulty/qtype-weighted probability
+     * it lands on the correct answer, otherwise on a random wrong one. Returns which answer
+     * it picked so the client can render it, but never which one was right.
+     *
+     * @param int $questionid Question ID.
+     * @param string $difficulty The attempt's current difficulty.
+     * @return array {correct: bool, pickedanswerid: int}
+     */
+    private static function draw_boss_guess(int $questionid, string $difficulty): array {
+        $qtype = question_fetcher::get_question_type($questionid) ?? 'multichoice';
+        $correctid = question_fetcher::get_correct_answer_id($questionid);
+        $answerids = question_fetcher::get_answer_ids($questionid);
+
+        $probability = combat::boss_guess_probability($difficulty, $qtype);
+        $hitscorrect = $correctid !== null && (mt_rand() / mt_getrandmax()) < $probability;
+
+        if ($hitscorrect) {
+            $pickedid = $correctid;
+        } else {
+            $wrongids = array_values(array_filter($answerids, fn($id) => $id !== $correctid));
+            if (!empty($wrongids)) {
+                $pickedid = $wrongids[array_rand($wrongids)];
+            } else {
+                $pickedid = $correctid ?? (empty($answerids) ? 0 : (int) reset($answerids));
+            }
+        }
+
+        return [
+            'correct'        => $pickedid === $correctid,
+            'pickedanswerid' => (int) $pickedid,
+        ];
+    }
+
+    /**
      * Returns the return value definitions.
      *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'correct'        => new external_value(PARAM_BOOL, 'Whether the answer is correct'),
+            'correct'         => new external_value(PARAM_BOOL, 'Whether the answer is correct'),
             'correctanswerid' => new external_value(
                 PARAM_INT,
-                'Correct answer ID for post-answer feedback',
+                'Correct answer ID for post-answer feedback (player path only, on a wrong answer)',
+                VALUE_OPTIONAL
+            ),
+            'pickedanswerid'  => new external_value(
+                PARAM_INT,
+                'The answer the boss picked (boss path only)',
                 VALUE_OPTIONAL
             ),
         ]);

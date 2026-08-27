@@ -201,4 +201,47 @@ final class question_fetcher_test extends \advanced_testcase {
 
         $this->assertNull(question_fetcher::get_correct_answer_id((int) $question->id));
     }
+
+    /**
+     * Tests get_question_type() reports the qtype, and null for an unknown id.
+     *
+     * @return void
+     */
+    public function test_get_question_type(): void {
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
+        $mc = $this->make_single_answer_question($cat->id);
+        $tf = $questiongenerator->create_question('truefalse', 'true', ['category' => $cat->id]);
+
+        $this->assertSame('multichoice', question_fetcher::get_question_type((int) $mc->id));
+        $this->assertSame('truefalse', question_fetcher::get_question_type((int) $tf->id));
+        $this->assertNull(question_fetcher::get_question_type(0));
+    }
+
+    /**
+     * Tests get_answer_ids() returns every answer id for a question, in id order, and
+     * includes the correct one.
+     *
+     * @return void
+     */
+    public function test_get_answer_ids(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
+        $question = $this->make_single_answer_question($cat->id);
+
+        $expected = array_map('intval', $DB->get_fieldset_select(
+            'question_answers',
+            'id',
+            'question = :qid ORDER BY id ASC',
+            ['qid' => $question->id]
+        ));
+
+        $ids = question_fetcher::get_answer_ids((int) $question->id);
+
+        $this->assertSame($expected, $ids);
+        $this->assertContains(question_fetcher::get_correct_answer_id((int) $question->id), $ids);
+        $this->assertCount(4, $ids);
+    }
 }

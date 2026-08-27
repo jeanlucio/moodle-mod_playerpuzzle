@@ -120,6 +120,35 @@ class question_fetcher {
     }
 
     /**
+     * Returns the qtype of a question ('multichoice' or 'truefalse'), or null if unknown.
+     *
+     * @param int $questionid The question ID.
+     * @return string|null
+     */
+    public static function get_question_type(int $questionid): ?string {
+        global $DB;
+
+        $qtype = $DB->get_field('question', 'qtype', ['id' => $questionid]);
+        return $qtype !== false ? (string) $qtype : null;
+    }
+
+    /**
+     * Returns every answer ID for a question, in id order. Used server-side to draw the
+     * boss's guess without the client ever choosing it (Blind JSON).
+     *
+     * @param int $questionid The question ID.
+     * @return int[]
+     */
+    public static function get_answer_ids(int $questionid): array {
+        global $DB;
+
+        return array_map(
+            'intval',
+            $DB->get_fieldset_select('question_answers', 'id', 'question = :qid ORDER BY id ASC', ['qid' => $questionid])
+        );
+    }
+
+    /**
      * Returns the ID of one correct answer for the question (for post-submission feedback only).
      *
      * @param int $questionid The question ID.

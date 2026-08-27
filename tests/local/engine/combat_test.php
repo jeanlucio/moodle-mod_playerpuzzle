@@ -121,4 +121,23 @@ final class combat_test extends \basic_testcase {
         $this->assertSame(13, combat::apply_difficulty(25, 'easy'));
         $this->assertSame(300, combat::apply_difficulty(300, 'bogus'));
     }
+
+    /**
+     * Tests the boss guess precision table: every difficulty/qtype cell, plus the fallback
+     * to the Normal/multichoice cell for unknown values.
+     *
+     * @return void
+     */
+    public function test_boss_guess_probability(): void {
+        $this->assertSame(0.33, combat::boss_guess_probability('easy', 'multichoice'));
+        $this->assertSame(0.5, combat::boss_guess_probability('easy', 'truefalse'));
+        $this->assertSame(0.66, combat::boss_guess_probability('normal', 'multichoice'));
+        $this->assertSame(0.75, combat::boss_guess_probability('normal', 'truefalse'));
+        $this->assertSame(1.0, combat::boss_guess_probability('hard', 'multichoice'));
+        $this->assertSame(1.0, combat::boss_guess_probability('hard', 'truefalse'));
+
+        // Unknown difficulty falls back to the Normal row; unknown qtype to multichoice.
+        $this->assertSame(0.66, combat::boss_guess_probability('bogus', 'multichoice'));
+        $this->assertSame(0.66, combat::boss_guess_probability('normal', 'shortanswer'));
+    }
 }

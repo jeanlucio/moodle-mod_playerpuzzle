@@ -67,6 +67,18 @@ class combat {
     private const DIFFICULTY_COIN_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 3.0];
 
     /**
+     * Probability the boss's guess lands on the correct answer, by difficulty and question
+     * type. The draw is done server-side (the client never learns which answer is right),
+     * so this concretises the "aggressive AI" of Hard mode. True/False starts at 0.5 rather
+     * than 0.33 because pure chance on a two-option question is already 50%.
+     */
+    private const BOSS_GUESS_PROBABILITIES = [
+        'easy'   => ['multichoice' => 0.33, 'truefalse' => 0.5],
+        'normal' => ['multichoice' => 0.66, 'truefalse' => 0.75],
+        'hard'   => ['multichoice' => 1.0, 'truefalse' => 1.0],
+    ];
+
+    /**
      * Calculates the boss HP for a given level/phase, scaled from the teacher-configured
      * base HP.
      *
@@ -131,5 +143,19 @@ class combat {
      */
     public static function apply_difficulty(int $scaledvalue, string $difficulty): int {
         return (int) round($scaledvalue * self::difficulty_boss_factor($difficulty));
+    }
+
+    /**
+     * Returns the probability the boss's guess should land on the correct answer, for a
+     * difficulty and question type. Unknown values fall back to the Normal / multichoice
+     * cell, never above it.
+     *
+     * @param string $difficulty One of the PLAYERPUZZLE_DIFFICULTY_* values.
+     * @param string $qtype 'multichoice' or 'truefalse'.
+     * @return float A probability in the 0..1 range.
+     */
+    public static function boss_guess_probability(string $difficulty, string $qtype): float {
+        $row = self::BOSS_GUESS_PROBABILITIES[$difficulty] ?? self::BOSS_GUESS_PROBABILITIES['normal'];
+        return $row[$qtype] ?? $row['multichoice'];
     }
 }

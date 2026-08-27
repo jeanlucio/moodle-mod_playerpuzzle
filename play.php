@@ -51,6 +51,11 @@ $PAGE->set_context($context);
 
 $ismobile = optional_param('mobile', 0, PARAM_INT) === 1;
 
+// Student's difficulty choice from the Lobby. Only used when a fresh attempt is created —
+// resuming an in-progress Campaign run keeps that run's own locked difficulty. Coerced to
+// a known value inside security::clean_difficulty().
+$difficulty = optional_param('difficulty', PLAYERPUZZLE_DIFFICULTY_NORMAL, PARAM_ALPHA);
+
 // Previously switched to a chromeless 'embedded' layout for mobile devices, opened in a new
 // tab by the Lobby's own form — removed per explicit user feedback (27/08/2026): the game now
 // always stays in the same window, in the normal course layout, using the same
@@ -65,7 +70,8 @@ $jsconfig = \mod_playerpuzzle\local\game_page_service::build_game_config(
     $playerpuzzle,
     $context,
     (int) $USER->id,
-    $ismobile
+    $ismobile,
+    $difficulty
 );
 
 // Phaser itself is loaded dynamically from inside game_boot.js (mirrors

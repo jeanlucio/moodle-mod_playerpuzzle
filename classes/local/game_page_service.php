@@ -87,6 +87,8 @@ class game_page_service {
      * @param context_module $context Module context.
      * @param int $userid Current user ID.
      * @param bool $ismobile Whether the request is from a mobile device.
+     * @param string $difficulty Student-chosen difficulty for a fresh attempt; ignored when
+     *  an in-progress attempt is resumed (its own locked difficulty wins).
      * @return array JS game config for game_boot.js.
      */
     public static function build_game_config(
@@ -94,16 +96,25 @@ class game_page_service {
         stdClass $instance,
         context_module $context,
         int $userid,
-        bool $ismobile
+        bool $ismobile,
+        string $difficulty = 'normal'
     ): array {
         global $OUTPUT;
 
-        $attemptinfo = security::resume_or_create_attempt_token((int) $instance->id, $userid);
+        $attemptinfo = security::resume_or_create_attempt_token((int) $instance->id, $userid, $difficulty);
+        $difficulty = $attemptinfo->difficulty;
 
-        $bosshp = combat::calculate_boss_hp(
-            (int) $instance->basebosshp,
-            $attemptinfo->currentlevel,
-            $attemptinfo->currentphase
+        // Boss HP and boss damage carry the level/phase scaling and then the difficulty
+        // factor on top (Easy halves, Hard doubles). Student HP is never touched by
+        // difficulty. save_progress/advance_phase apply the same factor to their own clamp,
+        // so the grade a run produces is unaffected by the difficulty chosen.
+        $bosshp = combat::apply_difficulty(
+            combat::calculate_boss_hp(
+                (int) $instance->basebosshp,
+                $attemptinfo->currentlevel,
+                $attemptinfo->currentphase
+            ),
+            $difficulty
         );
         $studenthp = combat::calculate_student_hp(
             (int) $instance->basestudenthp,
@@ -112,10 +123,13 @@ class game_page_service {
         );
         // Reuses the boss HP formula for combat damage: same shape of growth, and it keeps a
         // single source of truth for "how much combat should scale" at this level/phase.
-        $bossdamage = combat::calculate_boss_hp(
-            (int) $instance->bossdamage,
-            $attemptinfo->currentlevel,
-            $attemptinfo->currentphase
+        $bossdamage = combat::apply_difficulty(
+            combat::calculate_boss_hp(
+                (int) $instance->bossdamage,
+                $attemptinfo->currentlevel,
+                $attemptinfo->currentphase
+            ),
+            $difficulty
         );
 
         $questions = question_fetcher::get_questions_for_frontend((int) $instance->questioncategory, $context);
@@ -137,6 +151,11 @@ class game_page_service {
             'cmid'         => $cm->id,
             'token'        => $attemptinfo->token,
             'gamemode'     => $instance->gamemode,
+            'difficulty'   => $difficulty,
+            // Coin multiplier the client applies to its own gold display so the end screen
+            // matches what the server will actually bank (Easy 0.5x, Hard 3x). The client
+            // still sends the raw, unmultiplied gold; the server re-applies this factor.
+            'coinfactor'   => combat::difficulty_coin_factor($difficulty),
             'currentlevel' => $attemptinfo->currentlevel,
             'currentphase' => $attemptinfo->currentphase,
             'maxlevels'    => (int) $instance->maxlevels,

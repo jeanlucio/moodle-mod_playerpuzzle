@@ -29,13 +29,34 @@ namespace mod_playerpuzzle\local\engine;
  */
 class security {
     /**
+     * Difficulty values a new attempt may be created with. A value outside this set is
+     * coerced to 'normal' rather than trusted — the choice reaches here from a client POST.
+     */
+    public const DIFFICULTIES = ['easy', 'normal', 'hard'];
+
+    /**
+     * Coerces a client-supplied difficulty to a known value, defaulting to 'normal'.
+     *
+     * @param string $difficulty Raw value from the request.
+     * @return string One of self::DIFFICULTIES.
+     */
+    public static function clean_difficulty(string $difficulty): string {
+        return in_array($difficulty, self::DIFFICULTIES, true) ? $difficulty : 'normal';
+    }
+
+    /**
      * Generates a unique token for a new game attempt.
      *
      * @param int $playerpuzzleid The instance ID.
      * @param int $userid The user ID.
+     * @param string $difficulty Student-chosen difficulty; coerced to a known value.
      * @return string The generated secure token.
      */
-    public static function generate_attempt_token(int $playerpuzzleid, int $userid): string {
+    public static function generate_attempt_token(
+        int $playerpuzzleid,
+        int $userid,
+        string $difficulty = 'normal'
+    ): string {
         global $DB;
 
         // Generate a secure 64-character hex token using PHP 7+ random_bytes.
@@ -45,6 +66,7 @@ class security {
         $attempt->playerpuzzleid = $playerpuzzleid;
         $attempt->userid = $userid;
         $attempt->token = $token;
+        $attempt->difficulty = self::clean_difficulty($difficulty);
         $attempt->status = 'inprogress';
         $attempt->timecreated = time();
         $attempt->timemodified = $attempt->timecreated;
@@ -75,9 +97,15 @@ class security {
      *
      * @param int $playerpuzzleid The instance ID.
      * @param int $userid The user ID.
-     * @return \stdClass Object with ->token, ->currentlevel, ->currentphase.
+     * @param string $difficulty Student-chosen difficulty for a fresh attempt; ignored when
+     *  resuming, since a run's difficulty is locked once it is in progress.
+     * @return \stdClass Object with ->token, ->currentlevel, ->currentphase, ->difficulty.
      */
-    public static function resume_or_create_attempt_token(int $playerpuzzleid, int $userid): \stdClass {
+    public static function resume_or_create_attempt_token(
+        int $playerpuzzleid,
+        int $userid,
+        string $difficulty = 'normal'
+    ): \stdClass {
         global $DB;
 
         $existing = $DB->get_records(
@@ -100,13 +128,15 @@ class security {
                 'token' => $token,
                 'currentlevel' => (int) $attempt->currentlevel,
                 'currentphase' => (int) $attempt->currentphase,
+                'difficulty' => self::clean_difficulty((string) $attempt->difficulty),
             ];
         }
 
         return (object) [
-            'token' => self::generate_attempt_token($playerpuzzleid, $userid),
+            'token' => self::generate_attempt_token($playerpuzzleid, $userid, $difficulty),
             'currentlevel' => 1,
             'currentphase' => 1,
+            'difficulty' => self::clean_difficulty($difficulty),
         ];
     }
 

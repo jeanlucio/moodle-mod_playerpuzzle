@@ -35,6 +35,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             // fixed-price consumable shop would otherwise get proportionally cheaper as a
             // campaign progresses.
             this.coinGain = parseInt(gameConfig.coingain) || 10;
+            // Difficulty coin multiplier (Easy 0.5, Normal 1, Hard 3), applied to every coin
+            // gained so the HUD, the history log and the end screen all match what the server
+            // banks — the server takes the reported gold as-is (a full recompute is Phase 5).
+            this.coinFactor = parseFloat(gameConfig.coinfactor) || 1;
             this.currentTurn = 'player';
 
             this.playerGold = 0;
@@ -185,7 +189,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             // it exists purely to net against the student's balance in showEndScreen().
             for (const group of matchGroups) {
                 if (group.type === 6) {
-                    const coins = this.coinGain * this.comboMultiplier(group.pieces.length);
+                    const coins = this.coinGain * this.comboMultiplier(group.pieces.length) * this.coinFactor;
                     coinsGained += coins;
                     if (this.currentTurn === 'player') {
                         this.playerGold += coins;

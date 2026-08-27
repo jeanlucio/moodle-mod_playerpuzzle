@@ -281,4 +281,47 @@ final class security_test extends \advanced_testcase {
 
         $this->assertSame(4, $result->currentlevel);
     }
+
+    /**
+     * Tests clean_difficulty() keeps known values and coerces anything else to normal.
+     *
+     * @return void
+     */
+    public function test_clean_difficulty(): void {
+        $this->assertSame('easy', security::clean_difficulty('easy'));
+        $this->assertSame('normal', security::clean_difficulty('normal'));
+        $this->assertSame('hard', security::clean_difficulty('hard'));
+        $this->assertSame('normal', security::clean_difficulty('impossible'));
+        $this->assertSame('normal', security::clean_difficulty(''));
+    }
+
+    /**
+     * Tests a fresh attempt stores the chosen difficulty, coercing an unknown value.
+     *
+     * @return void
+     */
+    public function test_generate_attempt_token_stores_difficulty(): void {
+        global $DB;
+
+        $token = security::generate_attempt_token(1, 2, 'hard');
+        $this->assertSame('hard', $DB->get_field('playerpuzzle_attempts', 'difficulty', ['token' => $token]));
+
+        $token = security::generate_attempt_token(1, 2, 'bogus');
+        $this->assertSame('normal', $DB->get_field('playerpuzzle_attempts', 'difficulty', ['token' => $token]));
+    }
+
+    /**
+     * Tests resume_or_create_token() returns the chosen difficulty on a fresh attempt, and
+     * keeps the in-progress attempt's own locked difficulty when resuming — a later call
+     * asking for a different difficulty does not change it.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_locks_difficulty_on_resume(): void {
+        $fresh = security::resume_or_create_attempt_token(1, 2, 'hard');
+        $this->assertSame('hard', $fresh->difficulty);
+
+        $resumed = security::resume_or_create_attempt_token(1, 2, 'easy');
+        $this->assertSame('hard', $resumed->difficulty);
+    }
 }

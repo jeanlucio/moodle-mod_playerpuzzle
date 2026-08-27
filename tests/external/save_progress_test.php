@@ -233,6 +233,37 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the damage clamp also applies the run's difficulty factor: on Hard the
+     * boss has double the HP, so a partial run is scored against that doubled total rather
+     * than being wrongly capped at 100% for the Normal-sized boss.
+     *
+     * @return void
+     */
+    public function test_damage_clamp_respects_difficulty(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard');
+
+        // Hard boss HP at Level 1, Phase 1 with basebosshp=100 is 200. 150 damage is a
+        // 75% dent — the score, not a clamped-to-100 100%.
+        $result = $this->call_save_progress([
+            'cmid'    => $instance->cmid,
+            'token'   => $token,
+            'gold'    => 0,
+            'victory' => 0,
+            'damage'  => 150,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame(50, (int) $attempt->bosshp_remaining);
+        $this->assertEqualsWithDelta(75.0, (float) $attempt->score, 0.001);
+    }
+
+    /**
      * Tests that an unknown/forged token is rejected with the dedicated exception —
      * never silently accepted, never a generic coding error.
      *

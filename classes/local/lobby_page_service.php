@@ -47,6 +47,7 @@ class lobby_page_service {
         stdClass $instance,
         int $userid
     ): array {
+        global $DB;
         // Carried through to play.php's own game config purely as a CSS sizing hint for the
         // question modal's answer buttons (see game_page_service::build_game_config()) — it no
         // longer picks a different page layout or opens a new window (27/08/2026).
@@ -63,17 +64,32 @@ class lobby_page_service {
             'sesskey' => sesskey(),
         ];
 
+        // The most recently started in-progress attempt, if any — shared by the progress and
+        // difficulty panels below. Resuming this attempt keeps its own locked difficulty, so
+        // the Lobby offers no difficulty choice while it exists.
+        $inprogress = $DB->get_records(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'status' => 'inprogress'],
+            'timecreated DESC',
+            'id, currentlevel, currentphase, difficulty',
+            0,
+            1
+        );
+        $attempt = reset($inprogress) ?: null;
+
         $data += self::build_hud_stats_context((int) $course->id, $instance, $userid);
-        $data += self::build_progress_context($instance, $userid);
+        $data += self::build_progress_context($instance, $attempt);
         $data += self::build_minquestions_context($instance);
+        $data += self::build_difficulty_context($attempt);
 
         return $data;
     }
 
     /**
-     * Builds the PlayerHUD balances context: coins, Sword level, Shield level. Only the
-     * items the teacher actually configured are shown — an unconfigured item (id 0) has
-     * nothing meaningful to display.
+     * Builds the PlayerHUD balances context: the coin balance, and the stock the student is
+     * carrying of each consumable that has a PlayerHUD item configured (Espada, Escudo,
+     * Poção). Only the items the teacher actually configured are shown — an unconfigured
+     * item (id 0) has nothing meaningful to display.
      *
      * @param int $courseid Course ID.
      * @param stdClass $instance Activity instance.
@@ -91,48 +107,36 @@ class lobby_page_service {
                 $data['coinstext'] = get_string('lobby_coinbalance', 'mod_playerpuzzle', $balance);
             }
 
-            if ((int) $instance->hud_sword_item > 0) {
-                $swordlevel = hud_service::get_upgrade_level($blockinstanceid, $userid, (int) $instance->hud_sword_item);
-                $data['swordtext'] = get_string('lobby_swordlevel', 'mod_playerpuzzle', $swordlevel);
-            }
-
-            if ((int) $instance->hud_shield_item > 0) {
-                $shieldlevel = hud_service::get_upgrade_level($blockinstanceid, $userid, (int) $instance->hud_shield_item);
-                $data['shieldtext'] = get_string('lobby_shieldlevel', 'mod_playerpuzzle', $shieldlevel);
+            $stockitems = [
+                'swordtext' => ['field' => 'hud_sword_item', 'string' => 'lobby_swordstock'],
+                'shieldtext' => ['field' => 'hud_shield_item', 'string' => 'lobby_shieldstock'],
+                'potiontext' => ['field' => 'hud_potion_item', 'string' => 'lobby_potionstock'],
+            ];
+            foreach ($stockitems as $key => $meta) {
+                $itemid = (int) $instance->{$meta['field']};
+                if ($itemid > 0) {
+                    $stock = hud_service::get_upgrade_level($blockinstanceid, $userid, $itemid);
+                    $data[$key] = get_string($meta['string'], 'mod_playerpuzzle', $stock);
+                }
             }
         }
 
-        $data['hasstats'] = isset($data['coinstext']) || isset($data['swordtext']) || isset($data['shieldtext']);
+        $data['hasstats'] = isset($data['coinstext']) || isset($data['swordtext'])
+            || isset($data['shieldtext']) || isset($data['potiontext']);
 
         return $data;
     }
 
     /**
-     * Builds the current Campaign progress context: the most recently started
-     * in-progress attempt, if any. Single Match mode has no levels/phases to show, so
-     * this is skipped entirely for it.
+     * Builds the current Campaign progress context from the in-progress attempt, if any.
+     * Single Match mode has no levels/phases to show, so this is skipped entirely for it.
      *
      * @param stdClass $instance Activity instance.
-     * @param int $userid Current user ID.
+     * @param stdClass|null $attempt The most recent in-progress attempt, or null.
      * @return array
      */
-    private static function build_progress_context(stdClass $instance, int $userid): array {
-        global $DB;
-
-        if ($instance->gamemode !== PLAYERPUZZLE_GAMEMODE_CAMPAIGN) {
-            return [];
-        }
-
-        $inprogress = $DB->get_records(
-            'playerpuzzle_attempts',
-            ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'status' => 'inprogress'],
-            'timecreated DESC',
-            'id, currentlevel, currentphase',
-            0,
-            1
-        );
-        $attempt = reset($inprogress);
-        if (!$attempt) {
+    private static function build_progress_context(stdClass $instance, ?stdClass $attempt): array {
+        if ($instance->gamemode !== PLAYERPUZZLE_GAMEMODE_CAMPAIGN || $attempt === null) {
             return [];
         }
 
@@ -141,6 +145,47 @@ class lobby_page_service {
                 'level' => $attempt->currentlevel,
                 'phase' => $attempt->currentphase,
             ]),
+        ];
+    }
+
+    /**
+     * Builds the difficulty picker context. While an attempt is in progress its difficulty
+     * is locked (resuming it keeps that choice), so only a read-only label is shown. With no
+     * attempt in progress, the three radio options are offered inside the Play form, Normal
+     * pre-selected.
+     *
+     * @param stdClass|null $attempt The most recent in-progress attempt, or null.
+     * @return array
+     */
+    private static function build_difficulty_context(?stdClass $attempt): array {
+        $options = playerpuzzle_get_difficulty_options();
+
+        if ($attempt !== null) {
+            $current = array_key_exists($attempt->difficulty, $options)
+                ? $attempt->difficulty
+                : PLAYERPUZZLE_DIFFICULTY_NORMAL;
+            return [
+                'difficultylocked' => get_string(
+                    'lobby_difficulty_locked',
+                    'mod_playerpuzzle',
+                    $options[$current]
+                ),
+            ];
+        }
+
+        $choices = [];
+        foreach ($options as $value => $label) {
+            $choices[] = [
+                'value'   => $value,
+                'label'   => $label,
+                'checked' => $value === PLAYERPUZZLE_DIFFICULTY_NORMAL,
+            ];
+        }
+
+        return [
+            'difficultylabel'   => get_string('lobby_difficulty', 'mod_playerpuzzle'),
+            'difficultyhelp'    => get_string('lobby_difficulty_help', 'mod_playerpuzzle'),
+            'difficultychoices' => $choices,
         ];
     }
 

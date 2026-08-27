@@ -97,14 +97,19 @@ class save_progress extends external_api {
         }
 
         // Sanity check: damage can never exceed the boss HP the server itself calculated for
-        // the attempt's own level/phase — never the raw configured base, which would wrongly
-        // cap every Campaign attempt to the Level 1, Phase 1 value regardless of how far the
-        // student actually progressed (Single Match always carries currentlevel = currentphase
-        // = 1, so the formula returns the base HP unchanged there).
-        $bosshp = combat::calculate_boss_hp(
-            (int) $playerpuzzle->basebosshp,
-            (int) $attempt->currentlevel,
-            (int) $attempt->currentphase
+        // the attempt's own level/phase and difficulty — never the raw configured base, which
+        // would wrongly cap every Campaign attempt to the Level 1, Phase 1 value regardless of
+        // how far the student actually progressed (Single Match always carries currentlevel =
+        // currentphase = 1, so the formula returns the base HP unchanged there). The same
+        // difficulty factor game_page_service used to build the fight is applied here, so a
+        // Hard-mode loss is scored against the doubled boss HP it was really fighting.
+        $bosshp = combat::apply_difficulty(
+            combat::calculate_boss_hp(
+                (int) $playerpuzzle->basebosshp,
+                (int) $attempt->currentlevel,
+                (int) $attempt->currentphase
+            ),
+            (string) $attempt->difficulty
         );
         $safedamage = max(0, min($params['damage'], $bosshp));
         $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);
@@ -115,6 +120,9 @@ class save_progress extends external_api {
         if ($isvictory) {
             // Defeat/timeout discards the session's coins; only a win banks them, and only into
             // the item the teacher configured — PlayerPuzzle keeps no local currency of its own.
+            // The client already applied the difficulty coin factor to the gold it reports (so
+            // the HUD and end screen stay consistent with what is banked); a full server-side
+            // recompute of gold is Phase 5's "complete sanity check".
             $safegold = max(0, $params['gold']);
             $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
             if ($blockinstanceid !== null) {

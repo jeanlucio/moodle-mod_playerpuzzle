@@ -89,4 +89,36 @@ final class combat_test extends \basic_testcase {
         $this->assertSame(0, combat::calculate_boss_hp(0, 10, 10));
         $this->assertSame(0, combat::calculate_student_hp(0, 10, 10));
     }
+
+    /**
+     * Tests the difficulty factor lookups, including the fallback for a malformed value.
+     *
+     * @return void
+     */
+    public function test_difficulty_factors(): void {
+        $this->assertSame(0.5, combat::difficulty_boss_factor('easy'));
+        $this->assertSame(1.0, combat::difficulty_boss_factor('normal'));
+        $this->assertSame(2.0, combat::difficulty_boss_factor('hard'));
+        $this->assertSame(1.0, combat::difficulty_boss_factor('bogus'));
+
+        $this->assertSame(0.5, combat::difficulty_coin_factor('easy'));
+        $this->assertSame(1.0, combat::difficulty_coin_factor('normal'));
+        $this->assertSame(3.0, combat::difficulty_coin_factor('hard'));
+        $this->assertSame(1.0, combat::difficulty_coin_factor('bogus'));
+    }
+
+    /**
+     * Tests apply_difficulty() scales an already level/phase-scaled value and rounds to
+     * an integer, and that Normal is a no-op.
+     *
+     * @return void
+     */
+    public function test_apply_difficulty(): void {
+        $this->assertSame(150, combat::apply_difficulty(300, 'easy'));
+        $this->assertSame(300, combat::apply_difficulty(300, 'normal'));
+        $this->assertSame(600, combat::apply_difficulty(300, 'hard'));
+        // 25 * 0.5 = 12.5 -> rounds to 13.
+        $this->assertSame(13, combat::apply_difficulty(25, 'easy'));
+        $this->assertSame(300, combat::apply_difficulty(300, 'bogus'));
+    }
 }

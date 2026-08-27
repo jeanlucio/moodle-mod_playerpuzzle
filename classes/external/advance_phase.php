@@ -103,8 +103,11 @@ class advance_phase extends external_api {
 
         // Sanity check: the client cannot simply claim victory — the reported damage
         // must genuinely clear the boss HP the server itself calculated for the phase
-        // being left, or advancing is refused outright.
-        $currentbosshp = combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase);
+        // being left, including this run's difficulty factor, or advancing is refused.
+        $currentbosshp = combat::apply_difficulty(
+            combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase),
+            (string) $attempt->difficulty
+        );
         if ($params['damage'] < $currentbosshp) {
             throw new moodle_exception('phasenotwon', 'mod_playerpuzzle');
         }
@@ -131,7 +134,8 @@ class advance_phase extends external_api {
 
         // Coins are banked per phase won, not only at the end of the whole campaign — a
         // student clearing several phases before eventually losing still keeps what they
-        // earned along the way, mirroring save_progress's own victory banking below.
+        // earned along the way, mirroring save_progress's own victory banking below. The
+        // client already applied the difficulty coin factor to the gold it reports.
         $coinsbanked = 0;
         $safegold = max(0, $params['gold']);
         if ($safegold > 0) {

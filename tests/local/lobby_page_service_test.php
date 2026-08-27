@@ -149,6 +149,27 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertSame(get_string('lobby_coinbalance', 'mod_playerpuzzle', 42), $data['coinstext']);
         $this->assertArrayNotHasKey('swordtext', $data);
         $this->assertArrayNotHasKey('shieldtext', $data);
+        $this->assertArrayNotHasKey('potiontext', $data);
+    }
+
+    /**
+     * Tests that a configured consumable-stock item (Espada) shows the units the student
+     * currently holds, using the reframed "stock" label rather than the old "level" one.
+     *
+     * @return void
+     */
+    public function test_build_page_data_shows_consumable_stock(): void {
+        $this->skip_if_no_playerhud();
+        [$biid, $sworditemid] = $this->make_hud_item('Sword Token');
+
+        [$cm, $instance] = $this->make_cm_and_instance(['hud_sword_item' => $sworditemid]);
+
+        \block_playerhud\local\external_items::grant($biid, $sworditemid, (int) $this->student->id, 3, 'test', false);
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+
+        $this->assertTrue($data['hasstats']);
+        $this->assertSame(get_string('lobby_swordstock', 'mod_playerpuzzle', 3), $data['swordtext']);
     }
 
     /**
@@ -240,5 +261,50 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $expected = get_string('lobby_minquestions_notice', 'mod_playerpuzzle', 5);
         $this->assertSame($expected, $data['minquestionstext']);
+    }
+
+    /**
+     * Tests that the difficulty picker is offered (three choices, Normal pre-selected)
+     * when no attempt is in progress.
+     *
+     * @return void
+     */
+    public function test_build_page_data_offers_difficulty_choices(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+
+        $this->assertArrayNotHasKey('difficultylocked', $data);
+        $this->assertCount(3, $data['difficultychoices']);
+
+        $checked = array_values(array_filter($data['difficultychoices'], fn($c) => $c['checked']));
+        $this->assertCount(1, $checked);
+        $this->assertSame(PLAYERPUZZLE_DIFFICULTY_NORMAL, $checked[0]['value']);
+    }
+
+    /**
+     * Tests that an in-progress attempt locks the difficulty: the picker is replaced by a
+     * read-only label naming the run's own difficulty, and no choices are offered.
+     *
+     * @return void
+     */
+    public function test_build_page_data_locks_difficulty_while_attempt_in_progress(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+
+        \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'hard'
+        );
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+
+        $this->assertArrayNotHasKey('difficultychoices', $data);
+        $expected = get_string(
+            'lobby_difficulty_locked',
+            'mod_playerpuzzle',
+            get_string('difficulty_hard', 'mod_playerpuzzle')
+        );
+        $this->assertSame($expected, $data['difficultylocked']);
     }
 }

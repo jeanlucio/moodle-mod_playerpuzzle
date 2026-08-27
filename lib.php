@@ -59,6 +59,21 @@ define('PLAYERPUZZLE_GRADE_LAST', 4);
 define('PLAYERPUZZLE_GRADE_AVERAGE_ALL', 5);
 
 /**
+ * Difficulty: halves the boss HP/damage and the coin reward.
+ */
+define('PLAYERPUZZLE_DIFFICULTY_EASY', 'easy');
+
+/**
+ * Difficulty: the configured boss HP/damage and coin reward, unchanged.
+ */
+define('PLAYERPUZZLE_DIFFICULTY_NORMAL', 'normal');
+
+/**
+ * Difficulty: doubles the boss HP/damage and triples the coin reward.
+ */
+define('PLAYERPUZZLE_DIFFICULTY_HARD', 'hard');
+
+/**
  * Returns the available grading method options for Single-match mode, keyed by their
  * PLAYERPUZZLE_GRADE_* constant. Mirrors mod_playerwords/mod_playercross so the same
  * mental model applies across the Player ecosystem.
@@ -72,6 +87,20 @@ function playerpuzzle_get_grademethod_options(): array {
         PLAYERPUZZLE_GRADE_FIRST       => get_string('grademethod_first', 'mod_playerpuzzle'),
         PLAYERPUZZLE_GRADE_LAST        => get_string('grademethod_last', 'mod_playerpuzzle'),
         PLAYERPUZZLE_GRADE_AVERAGE_ALL => get_string('grademethod_average_all', 'mod_playerpuzzle'),
+    ];
+}
+
+/**
+ * Returns the difficulty options the student can pick in the Lobby, keyed by their
+ * PLAYERPUZZLE_DIFFICULTY_* string constant, valued by the localised label.
+ *
+ * @return array
+ */
+function playerpuzzle_get_difficulty_options(): array {
+    return [
+        PLAYERPUZZLE_DIFFICULTY_EASY   => get_string('difficulty_easy', 'mod_playerpuzzle'),
+        PLAYERPUZZLE_DIFFICULTY_NORMAL => get_string('difficulty_normal', 'mod_playerpuzzle'),
+        PLAYERPUZZLE_DIFFICULTY_HARD   => get_string('difficulty_hard', 'mod_playerpuzzle'),
     ];
 }
 

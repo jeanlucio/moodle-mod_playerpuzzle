@@ -36,10 +36,10 @@ use core_privacy\local\request\writer;
  * Privacy provider for mod_playerpuzzle.
  *
  * Personal data is stored only in playerpuzzle_attempts (userid, currentlevel, currentphase,
- * bosshp_remaining, questions_correct, questions_total, score, status): one row per attempt,
- * tied to the specific activity instance the attempt was made in. PlayerPuzzle keeps no
- * currency or upgrade-level data of its own — coins and upgrade levels live in
- * block_playerhud, which declares its own personal data independently.
+ * difficulty, bosshp_remaining, questions_correct, questions_total, score, status): one row
+ * per attempt, tied to the specific activity instance the attempt was made in. PlayerPuzzle
+ * keeps no currency data of its own — coins and consumable stock live in block_playerhud,
+ * which declares its own personal data independently.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -69,6 +69,7 @@ class provider implements
             'userid'            => 'privacy:metadata:userid',
             'currentlevel'      => 'privacy:metadata:currentlevel',
             'currentphase'      => 'privacy:metadata:currentphase',
+            'difficulty'        => 'privacy:metadata:difficulty',
             'bosshp_remaining'  => 'privacy:metadata:bosshp_remaining',
             'questions_correct' => 'privacy:metadata:questions_correct',
             'questions_total'   => 'privacy:metadata:questions_total',
@@ -157,7 +158,7 @@ class provider implements
 
         [$insql, $inparams] = $DB->get_in_or_equal(array_keys($contexts), SQL_PARAMS_NAMED, 'ctx');
 
-        $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.bosshp_remaining,
+        $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.difficulty, pa.bosshp_remaining,
                        pa.questions_correct, pa.questions_total, pa.score, pa.status,
                        pa.timecreated, pa.timefinished, ctx.id AS contextid
                   FROM {playerpuzzle_attempts} pa
@@ -174,6 +175,7 @@ class provider implements
             $allattempts[$record->contextid][] = (object) [
                 'currentlevel'     => $record->currentlevel,
                 'currentphase'     => $record->currentphase,
+                'difficulty'       => $record->difficulty,
                 'bosshpremaining'  => $record->bosshp_remaining,
                 'questionscorrect' => $record->questions_correct,
                 'questionstotal'   => $record->questions_total,

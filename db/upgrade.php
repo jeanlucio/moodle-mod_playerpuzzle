@@ -208,5 +208,19 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026082504, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026082704) {
+        $attemptstable = new xmldb_table('playerpuzzle_attempts');
+
+        // Add difficulty: the student's Easy/Normal/Hard choice for the run, made in the
+        // Lobby and locked once the attempt is in progress. Scales the boss HP/damage and
+        // the coin reward; never the grade.
+        $field = new xmldb_field('difficulty', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'normal', 'currentphase');
+        if (!$dbman->field_exists($attemptstable, $field)) {
+            $dbman->add_field($attemptstable, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026082704, 'playerpuzzle');
+    }
+
     return true;
 }

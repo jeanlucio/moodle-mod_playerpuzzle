@@ -254,6 +254,36 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the win check applies the run's difficulty factor: on Hard the boss has
+     * double the HP, so damage that would clear a Normal-sized boss is not enough to
+     * advance, but damage clearing the doubled HP is.
+     *
+     * @return void
+     */
+    public function test_advance_phase_win_check_respects_difficulty(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard');
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 1, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 1, ['token' => $token]);
+
+        // Normal boss HP here is 100; Hard doubles it to 200.
+        $tooweak = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 150, 'gold' => 0,
+        ]);
+        $this->assertTrue($tooweak['error']);
+        $this->assertSame('phasenotwon', $tooweak['exception']->errorcode);
+
+        $enough = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 200, 'gold' => 0,
+        ]);
+        $this->assertFalse($enough['error']);
+        $this->assertSame(2, $enough['data']['currentphase']);
+    }
+
+    /**
      * Tests that the attempt row stays 'inprogress' after advancing — winning a phase
      * never opens or closes an attempt, it is the same continuous streak.
      *

@@ -53,6 +53,20 @@ class combat {
     private const PHASE_STUDENT_FACTOR = 0.05;
 
     /**
+     * Boss HP and boss damage multiplier per student-chosen difficulty. Applied on top of
+     * the level/phase scaling, never to the student's own HP, and never to the grade
+     * directly — a win on any difficulty still clears 100% of that difficulty's own boss HP,
+     * so Easy is a safety net for weaker students rather than a grade penalty.
+     */
+    private const DIFFICULTY_BOSS_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 2.0];
+
+    /**
+     * Coin reward multiplier per difficulty. Easy earns less, Hard earns more; applied
+     * server-side when coins are banked, so the client cannot inflate it.
+     */
+    private const DIFFICULTY_COIN_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 3.0];
+
+    /**
      * Calculates the boss HP for a given level/phase, scaled from the teacher-configured
      * base HP.
      *
@@ -84,5 +98,38 @@ class combat {
             + self::LEVEL_STUDENT_FACTOR * ($level - 1)
             + self::PHASE_STUDENT_FACTOR * ($phase - 1)
         ));
+    }
+
+    /**
+     * Returns the boss HP/damage multiplier for a difficulty. Unknown values fall back to
+     * 1.0 (Normal), so a malformed stored value never crashes combat.
+     *
+     * @param string $difficulty One of the PLAYERPUZZLE_DIFFICULTY_* values.
+     * @return float
+     */
+    public static function difficulty_boss_factor(string $difficulty): float {
+        return self::DIFFICULTY_BOSS_FACTORS[$difficulty] ?? 1.0;
+    }
+
+    /**
+     * Returns the coin-reward multiplier for a difficulty. Unknown values fall back to 1.0.
+     *
+     * @param string $difficulty One of the PLAYERPUZZLE_DIFFICULTY_* values.
+     * @return float
+     */
+    public static function difficulty_coin_factor(string $difficulty): float {
+        return self::DIFFICULTY_COIN_FACTORS[$difficulty] ?? 1.0;
+    }
+
+    /**
+     * Applies the difficulty boss factor to an already level/phase-scaled value (boss HP or
+     * boss damage), rounding to an integer.
+     *
+     * @param int $scaledvalue A value already returned by calculate_boss_hp().
+     * @param string $difficulty One of the PLAYERPUZZLE_DIFFICULTY_* values.
+     * @return int
+     */
+    public static function apply_difficulty(int $scaledvalue, string $difficulty): int {
+        return (int) round($scaledvalue * self::difficulty_boss_factor($difficulty));
     }
 }

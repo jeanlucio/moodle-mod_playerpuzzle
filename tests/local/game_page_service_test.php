@@ -227,4 +227,55 @@ final class game_page_service_test extends \advanced_testcase {
         $this->assertSame(80, $config['studenthp']);
         $this->assertSame(15, $config['bossdamage']);
     }
+
+    /**
+     * Tests that difficulty scales the boss HP and boss damage (Hard doubles, Easy halves)
+     * on top of the level/phase scaling, never the student HP, and that the chosen
+     * difficulty and its coin factor are passed through to the JS config.
+     *
+     * @return void
+     */
+    public function test_build_game_config_applies_difficulty_to_boss_only(): void {
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode'      => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'basebosshp'    => 200,
+            'basestudenthp' => 100,
+            'bossdamage'    => 10,
+        ]);
+        $context = \context_module::instance($cm->id);
+
+        $studentid = (int) $this->student->id;
+        $hard = game_page_service::build_game_config($cm, $instance, $context, $studentid, false, 'hard');
+        $this->assertSame(400, $hard['bosshp']);
+        $this->assertSame(20, $hard['bossdamage']);
+        $this->assertSame(100, $hard['studenthp']);
+        $this->assertSame('hard', $hard['difficulty']);
+        $this->assertSame(3.0, $hard['coinfactor']);
+    }
+
+    /**
+     * Tests that difficulty is locked to the in-progress attempt's own value: resuming a
+     * run started on Hard ignores a later request for Easy.
+     *
+     * @return void
+     */
+    public function test_build_game_config_difficulty_is_locked_on_resume(): void {
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode'   => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'basebosshp' => 200,
+        ]);
+        $context = \context_module::instance($cm->id);
+
+        \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'hard'
+        );
+
+        $studentid = (int) $this->student->id;
+        $config = game_page_service::build_game_config($cm, $instance, $context, $studentid, false, 'easy');
+
+        $this->assertSame('hard', $config['difficulty']);
+        $this->assertSame(400, $config['bosshp']);
+    }
 }

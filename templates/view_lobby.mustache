@@ -27,10 +27,19 @@
         "sesskey": "abc123example",
         "hasstats": true,
         "coinstext": "Coins: 42",
-        "swordtext": "Sword level: 3",
-        "shieldtext": "Shield level: 1",
+        "swordtext": "Sword: 3",
+        "shieldtext": "Shield: 1",
+        "potiontext": "Potion: 2",
         "progresstext": "Current progress: Level 2, Phase 5",
-        "minquestionstext": "This match requires answering at least 3 question(s)."
+        "minquestionstext": "This match requires answering at least 3 question(s).",
+        "difficultylabel": "Choose your difficulty",
+        "difficultyhelp": "Easy halves the boss and the coins; Hard doubles the boss and triples the coins. The maximum grade is the same on all three.",
+        "difficultychoices": [
+            {"value": "easy", "label": "Easy", "checked": false},
+            {"value": "normal", "label": "Normal", "checked": true},
+            {"value": "hard", "label": "Hard", "checked": false}
+        ],
+        "difficultylocked": ""
     }
 }}
 <div class="pp-lobby text-center mb-5">
@@ -41,6 +50,7 @@
         {{#coinstext}}<span class="badge bg-warning text-dark">{{coinstext}}</span>{{/coinstext}}
         {{#swordtext}}<span class="badge bg-primary">{{swordtext}}</span>{{/swordtext}}
         {{#shieldtext}}<span class="badge bg-info text-dark">{{shieldtext}}</span>{{/shieldtext}}
+        {{#potiontext}}<span class="badge bg-success">{{potiontext}}</span>{{/potiontext}}
     </div>
     {{/hasstats}}
 
@@ -54,6 +64,23 @@
 
     <form method="post" action="{{{playurl}}}" class="mt-3">
         <input type="hidden" name="sesskey" value="{{sesskey}}">
+
+        {{#difficultylocked}}
+        <p class="pp-lobby-difficulty-locked text-muted mb-3">{{difficultylocked}}</p>
+        {{/difficultylocked}}
+
+        {{#difficultylabel}}
+        <div class="pp-lobby-difficulty mb-3 d-inline-block text-start">
+            <label class="fw-bold d-block" for="pp-difficulty">{{difficultylabel}}</label>
+            <select class="form-control" name="difficulty" id="pp-difficulty" aria-describedby="pp-difficulty-help">
+                {{#difficultychoices}}
+                <option value="{{value}}" {{#checked}}selected{{/checked}}>{{label}}</option>
+                {{/difficultychoices}}
+            </select>
+            <p id="pp-difficulty-help" class="text-muted small mt-1 mb-0">{{difficultyhelp}}</p>
+        </div>
+        {{/difficultylabel}}
+
         <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fs-4 fw-bold shadow-sm">
             {{playtext}}
         </button>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260825" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260827" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -21,8 +21,8 @@
         <FIELD NAME="timelimit" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Time limit in minutes (0 means no limit)"/>
         <FIELD NAME="maxattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Max attempts allowed (0 means unlimited)"/>
         <FIELD NAME="hud_coin_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID credited with leftover coins on victory (0 = unconfigured)"/>
-        <FIELD NAME="hud_sword_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID read as the sword upgrade level (0 = unconfigured)"/>
-        <FIELD NAME="hud_shield_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID read as the shield upgrade level (0 = unconfigured)"/>
+        <FIELD NAME="hud_sword_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID: stock for the Espada consumable, 1 unit per use (0 = local coin purchase only)"/>
+        <FIELD NAME="hud_shield_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID: stock for the Escudo consumable, 1 unit per use (0 = local coin purchase only)"/>
         <FIELD NAME="hud_potion_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID consumed 1 unit per Potion use (0 = local coin purchase only)"/>
         <FIELD NAME="hud_retry_cost_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item charged from the 2nd attempt onwards (0 = free)"/>
         <FIELD NAME="hud_retry_cost_qty" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Quantity charged per retry"/>
@@ -52,6 +52,7 @@
         <FIELD NAME="token" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="Security token for anti-cheat verification"/>
         <FIELD NAME="currentlevel" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Level this attempt was played on (1-10)"/>
         <FIELD NAME="currentphase" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Phase this attempt was played on (1-10)"/>
+        <FIELD NAME="difficulty" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="normal" SEQUENCE="false" COMMENT="Student-chosen difficulty for this run: easy, normal or hard. Locked once the attempt is in progress"/>
         <FIELD NAME="bosshp_remaining" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boss HP left when game ended"/>
         <FIELD NAME="questions_correct" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total questions answered correctly"/>
         <FIELD NAME="questions_total" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total questions prompted"/>

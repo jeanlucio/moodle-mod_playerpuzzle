@@ -177,6 +177,11 @@ function playerpuzzle_delete_instance(int $id): bool {
         return false;
     }
 
+    $DB->delete_records_select(
+        'playerpuzzle_attempt_questions',
+        'attemptid IN (SELECT id FROM {playerpuzzle_attempts} WHERE playerpuzzleid = :ppid)',
+        ['ppid' => $playerpuzzle->id]
+    );
     $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $playerpuzzle->id]);
     $DB->delete_records('playerpuzzle', ['id' => $playerpuzzle->id]);
 

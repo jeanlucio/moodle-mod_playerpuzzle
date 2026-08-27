@@ -272,6 +272,46 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
+     * Tests the answered-question log: it is declared in get_metadata, exported alongside
+     * the attempts, and removed when the owning attempt's data is deleted.
+     *
+     * @return void
+     */
+    public function test_attempt_questions_are_declared_exported_and_deleted(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('mod_playerpuzzle'));
+        $item = null;
+        foreach ($collection->get_collection() as $entry) {
+            if ($entry->get_name() === 'playerpuzzle_attempt_questions') {
+                $item = $entry;
+            }
+        }
+        $this->assertNotNull($item);
+        // Every real column except the structural id/attemptid/questionid must be declared.
+        $declared = array_keys($item->get_privacy_fields());
+        $real = array_diff(array_keys($DB->get_columns('playerpuzzle_attempt_questions')), ['id', 'attemptid', 'questionid']);
+        $this->assertEmpty(array_diff($real, $declared), 'Undeclared column in playerpuzzle_attempt_questions.');
+
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $user = $this->getDataGenerator()->create_user();
+        $attemptid = $this->make_attempt($user->id, (int) $cm->id);
+        \mod_playerpuzzle\local\attempt_questions::record($attemptid, 3, 1, 1, '<p>Q</p>', 'wrong', 'right', false);
+
+        $context = \context_module::instance($cm->cmid);
+        provider::export_user_data(new approved_contextlist($user, 'mod_playerpuzzle', [$context->id]));
+        $data = writer::with_context($context)->get_data([
+            get_string('privacy:metadata:playerpuzzle_attempt_questions', 'mod_playerpuzzle'),
+        ]);
+        $this->assertCount(1, $data->questions);
+        $this->assertSame('right', $data->questions[0]->correctanswer);
+
+        provider::delete_data_for_user(new approved_contextlist($user, 'mod_playerpuzzle', [$context->id]));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_attempt_questions', ['attemptid' => $attemptid]));
+    }
+
+    /**
      * Tests that delete_data_for_users removes data only for the listed users.
      *
      * @return void

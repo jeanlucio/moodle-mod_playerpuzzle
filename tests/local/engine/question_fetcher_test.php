@@ -219,6 +219,25 @@ final class question_fetcher_test extends \advanced_testcase {
     }
 
     /**
+     * Tests get_question_text() and get_answer_text() return formatted text, and an empty
+     * string when the id is unknown.
+     *
+     * @return void
+     */
+    public function test_get_question_and_answer_text(): void {
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
+        $question = $this->make_single_answer_question($cat->id);
+        $answerid = question_fetcher::get_correct_answer_id((int) $question->id);
+        $context = \context_system::instance();
+
+        $this->assertStringContainsString('One', question_fetcher::get_answer_text($answerid, $context));
+        $this->assertNotSame('', question_fetcher::get_question_text((int) $question->id, $context));
+        $this->assertSame('', question_fetcher::get_question_text(0, $context));
+        $this->assertSame('', question_fetcher::get_answer_text(0, $context));
+    }
+
+    /**
      * Tests get_answer_ids() returns every answer id for a question, in id order, and
      * includes the correct one.
      *

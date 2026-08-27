@@ -1,0 +1,67 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_playerpuzzle/debrief
+
+    Post-game question review, rendered client-side into a native dialog by combat.js. Lists
+    every question the student answered in the fight that just ended, with their answer and
+    the correct one.
+
+    Example context (json):
+    {
+        "title": "Review your answers",
+        "summary": "2 of 3 correct",
+        "youranswerlabel": "Your answer:",
+        "correctanswerlabel": "Correct answer:",
+        "correctsr": "correct",
+        "wrongsr": "wrong",
+        "closelabel": "Close",
+        "emptytext": "No questions were answered in this match.",
+        "questions": [
+            {"questiontext": "<p>2 + 2?</p>", "chosenanswer": "4", "correctanswer": "4", "iscorrect": true},
+            {"questiontext": "<p>Capital of France?</p>", "chosenanswer": "Berlin", "correctanswer": "Paris", "iscorrect": false}
+        ]
+    }
+}}
+<dialog id="pp-debrief-dialog" class="pp-debrief">
+    <h2 class="h4 mb-2">{{title}}</h2>
+    <p class="fw-bold">{{summary}}</p>
+
+    {{#questions}}
+    <div class="pp-debrief-item border rounded p-3 mb-2">
+        <div class="pp-debrief-question mb-2">{{{questiontext}}}</div>
+        <p class="mb-1">
+            {{youranswerlabel}}
+            <span class="{{#iscorrect}}text-success{{/iscorrect}}{{^iscorrect}}text-danger{{/iscorrect}} fw-bold">
+                {{chosenanswer}}
+                <span class="visually-hidden">{{#iscorrect}}{{correctsr}}{{/iscorrect}}{{^iscorrect}}{{wrongsr}}{{/iscorrect}}</span>
+            </span>
+        </p>
+        {{^iscorrect}}
+        <p class="mb-0">{{correctanswerlabel}} <span class="text-success fw-bold">{{correctanswer}}</span></p>
+        {{/iscorrect}}
+    </div>
+    {{/questions}}
+
+    {{^questions}}
+    <p>{{emptytext}}</p>
+    {{/questions}}
+
+    <form method="dialog" class="mt-3 text-end">
+        <button type="submit" class="btn btn-primary">{{closelabel}}</button>
+    </form>
+</dialog>

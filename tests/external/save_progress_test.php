@@ -145,6 +145,43 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that save_progress returns the phase's answered questions for the post-game
+     * review — this phase's rows only, oldest first.
+     *
+     * @return void
+     */
+    public function test_returns_the_phase_question_log(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 2, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 5, ['token' => $token]);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        \mod_playerpuzzle\local\attempt_questions::record($attemptid, 1, 2, 5, '<p>A</p>', 'yes', 'yes', true);
+        \mod_playerpuzzle\local\attempt_questions::record($attemptid, 2, 2, 5, '<p>B</p>', 'no', 'maybe', false);
+        \mod_playerpuzzle\local\attempt_questions::record($attemptid, 3, 2, 4, '<p>C</p>', 'x', 'x', true);
+
+        $result = $this->call_save_progress([
+            'cmid'    => $instance->cmid,
+            'token'   => $token,
+            'gold'    => 0,
+            'victory' => 0,
+            'damage'  => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $log = $result['data']['questionlog'];
+        $this->assertCount(2, $log);
+        $this->assertSame('<p>A</p>', $log[0]['questiontext']);
+        $this->assertTrue($log[0]['iscorrect']);
+        $this->assertFalse($log[1]['iscorrect']);
+        $this->assertSame('maybe', $log[1]['correctanswer']);
+    }
+
+    /**
      * Tests that a defeat discards the session's gold — nothing is credited even
      * though a positive amount was reported.
      *

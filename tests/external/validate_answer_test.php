@@ -253,6 +253,54 @@ final class validate_answer_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a player answer is logged for the post-game review — a text snapshot of
+     * the question, the chosen answer and the correct one, with the outcome.
+     *
+     * @return void
+     */
+    public function test_player_answer_is_logged(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
+        $instance = $this->make_instance($cat->id);
+        $question = $this->make_question($cat->id);
+        $wrongid = $this->find_answer_id((int) $question->id, 'Two');
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 3, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 7, ['token' => $token]);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $this->call_validate_answer([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'questionid' => $question->id,
+            'answerid'   => $wrongid,
+        ]);
+
+        $rows = $DB->get_records('playerpuzzle_attempt_questions', ['attemptid' => $attemptid]);
+        $this->assertCount(1, $rows);
+        $row = reset($rows);
+        $this->assertSame(3, (int) $row->attemptlevel);
+        $this->assertSame(7, (int) $row->attemptphase);
+        $this->assertSame(0, (int) $row->iscorrect);
+        $this->assertStringContainsString('Two', $row->chosenanswer);
+        $this->assertStringContainsString('One', $row->correctanswer);
+
+        // The boss path is never logged — only the student's own answers.
+        $this->call_validate_answer([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'questionid' => $question->id,
+            'answerid'   => 0,
+            'forwhom'    => 'boss',
+        ]);
+        $this->assertCount(1, $DB->get_records('playerpuzzle_attempt_questions', ['attemptid' => $attemptid]));
+    }
+
+    /**
      * Tests that on Hard the boss's server-drawn guess always lands on the correct answer
      * (100% precision), for both question types, and that the submitted answerid is ignored.
      *

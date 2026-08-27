@@ -222,5 +222,29 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026082704, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026082801) {
+        // Add playerpuzzle_attempt_questions: one row per question the student answered,
+        // for the post-game review and the teacher report.
+        $table = new xmldb_table('playerpuzzle_attempt_questions');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $table->add_field('attemptid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('questionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('attemptlevel', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '1');
+            $table->add_field('attemptphase', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '1');
+            $table->add_field('questiontext', XMLDB_TYPE_TEXT, null, null, null, null, null);
+            $table->add_field('chosenanswer', XMLDB_TYPE_TEXT, null, null, null, null, null);
+            $table->add_field('correctanswer', XMLDB_TYPE_TEXT, null, null, null, null, null);
+            $table->add_field('iscorrect', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('attemptid', XMLDB_KEY_FOREIGN, ['attemptid'], 'playerpuzzle_attempts', ['id']);
+            $table->add_index('attemptid-phase', XMLDB_INDEX_NOTUNIQUE, ['attemptid', 'attemptlevel', 'attemptphase']);
+            $dbman->create_table($table);
+        }
+
+        upgrade_mod_savepoint(true, 2026082801, 'playerpuzzle');
+    }
+
     return true;
 }

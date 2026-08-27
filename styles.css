@@ -214,3 +214,43 @@ body.path-mod-playerpuzzle .pp-lobby-stats {
 body.path-mod-playerpuzzle .pp-lobby-progress {
     color: var(--gray-700, #495057);
 }
+
+/**
+ * Own .visually-hidden rule, scoped to the plugin's body path class. Bootstrap 4 (Moodle
+ * 4.5) does not define .visually-hidden, and Bootstrap 5's .sr-only bridge is flagged
+ * deprecated by theme_boost — so the plugin ships its own, used by the loading progress
+ * text and the aria-live region.
+ */
+body.path-mod-playerpuzzle .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/**
+ * Post-game question review: native <dialog>, same rationale as the question modal.
+ */
+body.path-mod-playerpuzzle .pp-debrief {
+    max-width: 640px;
+    width: calc(100% - 2rem);
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 1.25rem;
+    border: 2px solid var(--primary, #0d6efd);
+    border-radius: 0.5rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+}
+
+body.path-mod-playerpuzzle .pp-debrief::backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+body.path-mod-playerpuzzle .pp-debrief-question {
+    color: var(--gray-800, #343a40);
+}

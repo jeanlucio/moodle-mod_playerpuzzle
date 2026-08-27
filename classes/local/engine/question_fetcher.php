@@ -120,6 +120,40 @@ class question_fetcher {
     }
 
     /**
+     * Returns the formatted question text, or an empty string if the question is gone.
+     *
+     * @param int $questionid The question ID.
+     * @param \context $context Context for formatting.
+     * @return string
+     */
+    public static function get_question_text(int $questionid, \context $context): string {
+        global $DB;
+
+        $q = $DB->get_record('question', ['id' => $questionid], 'questiontext, questiontextformat');
+        if (!$q) {
+            return '';
+        }
+        return format_text($q->questiontext, $q->questiontextformat, ['context' => $context]);
+    }
+
+    /**
+     * Returns the formatted text of one answer, or an empty string if it is gone.
+     *
+     * @param int $answerid The answer ID.
+     * @param \context $context Context for formatting.
+     * @return string
+     */
+    public static function get_answer_text(int $answerid, \context $context): string {
+        global $DB;
+
+        $ans = $DB->get_record('question_answers', ['id' => $answerid], 'answer, answerformat');
+        if (!$ans) {
+            return '';
+        }
+        return format_text($ans->answer, $ans->answerformat, ['context' => $context]);
+    }
+
+    /**
      * Returns the qtype of a question ('multichoice' or 'truefalse'), or null if unknown.
      *
      * @param int $questionid The question ID.

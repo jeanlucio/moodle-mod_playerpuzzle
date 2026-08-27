@@ -27,8 +27,10 @@ namespace mod_playerpuzzle\external;
 use context_module;
 use core_external\external_api;
 use core_external\external_function_parameters;
+use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_playerpuzzle\local\attempt_questions;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
@@ -140,6 +142,11 @@ class save_progress extends external_api {
             'status'      => 'success',
             'message'     => get_string('progresssaved', 'mod_playerpuzzle', $coinsbanked),
             'coinsbanked' => $coinsbanked,
+            'questionlog' => attempt_questions::get_phase_log(
+                (int) $attempt->id,
+                (int) $attempt->currentlevel,
+                (int) $attempt->currentphase
+            ),
         ];
     }
 
@@ -153,6 +160,15 @@ class save_progress extends external_api {
             'status'      => new external_value(PARAM_ALPHA, 'Success status'),
             'message'     => new external_value(PARAM_TEXT, 'Feedback message for the player'),
             'coinsbanked' => new external_value(PARAM_INT, 'Coins banked into PlayerHUD this session'),
+            'questionlog' => new external_multiple_structure(
+                new external_single_structure([
+                    'questiontext'  => new external_value(PARAM_RAW, 'Question text'),
+                    'chosenanswer'  => new external_value(PARAM_RAW, 'Answer the student chose'),
+                    'correctanswer' => new external_value(PARAM_RAW, 'The correct answer'),
+                    'iscorrect'     => new external_value(PARAM_BOOL, 'Whether the chosen answer was correct'),
+                ]),
+                'The questions answered this phase, for the post-game review'
+            ),
         ]);
     }
 }

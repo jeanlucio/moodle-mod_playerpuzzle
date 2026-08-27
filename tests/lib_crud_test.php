@@ -114,12 +114,18 @@ final class lib_crud_test extends \advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance(['course' => $course->id]);
 
-        $DB->insert_record('playerpuzzle_attempts', (object) [
+        $attemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
             'playerpuzzleid' => $instance->id,
             'userid'         => 2,
             'token'          => str_repeat('a', 64),
             'status'         => 'won',
             'timecreated'    => time(),
+        ]);
+        $DB->insert_record('playerpuzzle_attempt_questions', (object) [
+            'attemptid'   => $attemptid,
+            'questionid'  => 7,
+            'iscorrect'   => 1,
+            'timecreated' => time(),
         ]);
 
         $result = playerpuzzle_delete_instance($instance->id);
@@ -127,6 +133,7 @@ final class lib_crud_test extends \advanced_testcase {
         $this->assertTrue($result);
         $this->assertFalse($DB->record_exists('playerpuzzle', ['id' => $instance->id]));
         $this->assertSame(0, $DB->count_records('playerpuzzle_attempts', ['playerpuzzleid' => $instance->id]));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_attempt_questions', ['attemptid' => $attemptid]));
     }
 
     /**

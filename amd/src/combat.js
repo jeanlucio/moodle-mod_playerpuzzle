@@ -509,8 +509,17 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         gold: netGold,
                         difficulty: $('#pp-phase-difficulty').val() || 'normal',
                     },
-                }])[0].done(() => {
-                    this.submitRestartForm();
+                }])[0].done(res => {
+                    // Announce the transition for screen-reader users, then give it a beat to
+                    // be read before the full page reload wipes the live region.
+                    const total = parseInt(this.gameConfig.maxlevels, 10) * 10 || 10;
+                    $('#pp-aria-live').text(
+                        strings.phaseadvanced
+                            .replace('{$a->level}', res.currentlevel)
+                            .replace('{$a->phase}', res.currentphase)
+                            .replace('{$a->total}', total)
+                    );
+                    me.time.delayedCall(1600, () => this.submitRestartForm());
                 }).fail(() => {
                     $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
                         .text(strings.phaseadvanceerror);
@@ -783,6 +792,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 maxmultiplier: strings.maxmultiplier,
                 playermultiplier: this.playerMultiplier.toFixed(1),
                 savingprogress: strings.savingprogress,
+                btnreview: strings.debriefreview,
                 btnplayagain: strings.btnplayagain,
                 btnexitgame: strings.btnexitgame,
             };
@@ -804,6 +814,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 $('#pp-save-status').removeClass('text-muted').addClass('text-success')
                     .text(successMsg);
                 $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
+                if (res.questionlog && res.questionlog.length > 0) {
+                    $('#btn-pp-review').prop('hidden', false)
+                        .off('click').on('click', () => this.showDebrief(res.questionlog));
+                }
             }).fail(() => {
                 $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
                     .text(strings.saveerror);
@@ -816,6 +830,49 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;
             });
+        }
+
+        /**
+         * Renders the post-game question review into a native dialog and opens it. The
+         * dialog's own "Close" button (method="dialog") and the Escape key dismiss it;
+         * focus returns to the "Review questions" button afterwards.
+         *
+         * @param {Array<{questiontext: string, chosenanswer: string, correctanswer: string,
+         *  iscorrect: boolean}>} questionlog The phase's answered questions from save_progress.
+         */
+        async showDebrief(questionlog) {
+            const strings = this.strings;
+            const correct = questionlog.filter(q => q.iscorrect).length;
+
+            const context = {
+                title: strings.debrieftitle,
+                summary: strings.debriefsummary
+                    .replace('{$a->correct}', correct)
+                    .replace('{$a->total}', questionlog.length),
+                youranswerlabel: strings.debriefyouranswer,
+                correctanswerlabel: strings.debriefcorrectanswer,
+                correctsr: strings.debriefcorrectsr,
+                wrongsr: strings.debriefwrongsr,
+                closelabel: strings.btncontinue,
+                emptytext: strings.debriefempty,
+                questions: questionlog,
+            };
+
+            const html = await Templates.render('mod_playerpuzzle/debrief', context);
+            const existing = document.getElementById('pp-debrief-dialog');
+            if (existing) {
+                existing.remove();
+            }
+            $('#playerpuzzle-canvas-container').append(html);
+
+            const dialogEl = document.getElementById('pp-debrief-dialog');
+            const trigger = document.getElementById('btn-pp-review');
+            dialogEl.addEventListener('close', () => {
+                if (trigger && typeof trigger.focus === 'function') {
+                    trigger.focus();
+                }
+            }, {once: true});
+            dialogEl.showModal();
         }
     }
 

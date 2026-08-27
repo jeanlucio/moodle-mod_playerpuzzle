@@ -79,6 +79,19 @@ class provider implements
             'timefinished'      => 'privacy:metadata:timefinished',
         ], 'privacy:metadata:playerpuzzle_attempts');
 
+        // The playerpuzzle_attempt_questions table carries id (structural), attemptid
+        // (structural FK, scoped by the parent attempt on every call) and questionid (a bank
+        // id, not personal) — none exported. The rest is the student's own answer record.
+        $collection->add_database_table('playerpuzzle_attempt_questions', [
+            'attemptlevel'  => 'privacy:metadata:aq:attemptlevel',
+            'attemptphase'  => 'privacy:metadata:aq:attemptphase',
+            'questiontext'  => 'privacy:metadata:aq:questiontext',
+            'chosenanswer'  => 'privacy:metadata:aq:chosenanswer',
+            'correctanswer' => 'privacy:metadata:aq:correctanswer',
+            'iscorrect'     => 'privacy:metadata:aq:iscorrect',
+            'timecreated'   => 'privacy:metadata:timecreated',
+        ], 'privacy:metadata:playerpuzzle_attempt_questions');
+
         return $collection;
     }
 
@@ -193,6 +206,40 @@ class provider implements
                 (object) ['attempts' => $attempts]
             );
         }
+
+        $logsql = "SELECT aq.id, aq.attemptlevel, aq.attemptphase, aq.questiontext, aq.chosenanswer,
+                          aq.correctanswer, aq.iscorrect, aq.timecreated, ctx.id AS contextid
+                     FROM {playerpuzzle_attempt_questions} aq
+                     JOIN {playerpuzzle_attempts} pa ON pa.id = aq.attemptid
+                     JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
+                     JOIN {modules} m ON m.name = 'playerpuzzle'
+                     JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                     JOIN {context} ctx ON ctx.instanceid = cm.id
+                    WHERE ctx.id $insql
+                      AND pa.userid = :userid
+                 ORDER BY aq.id ASC";
+        $logrecords = $DB->get_recordset_sql($logsql, array_merge($inparams, ['userid' => $userid]));
+
+        $alllog = [];
+        foreach ($logrecords as $row) {
+            $alllog[$row->contextid][] = (object) [
+                'level'         => $row->attemptlevel,
+                'phase'         => $row->attemptphase,
+                'question'      => $row->questiontext,
+                'chosenanswer'  => $row->chosenanswer,
+                'correctanswer' => $row->correctanswer,
+                'iscorrect'     => transform::yesno($row->iscorrect),
+                'timecreated'   => transform::datetime($row->timecreated),
+            ];
+        }
+        $logrecords->close();
+
+        foreach ($alllog as $contextid => $questions) {
+            writer::with_context($contexts[$contextid])->export_data(
+                [get_string('privacy:metadata:playerpuzzle_attempt_questions', 'mod_playerpuzzle')],
+                (object) ['questions' => $questions]
+            );
+        }
     }
 
     /**
@@ -212,7 +259,26 @@ class provider implements
             return;
         }
 
+        self::delete_logged_questions('playerpuzzleid = :ppid', ['ppid' => (int) $cm->instance]);
         $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $cm->instance]);
+    }
+
+    /**
+     * Deletes playerpuzzle_attempt_questions rows for every attempt matching a WHERE clause
+     * on playerpuzzle_attempts. Call before deleting the parent attempts.
+     *
+     * @param string $attemptswhere WHERE clause against {playerpuzzle_attempts}.
+     * @param array $params Named parameters for the clause.
+     * @return void
+     */
+    private static function delete_logged_questions(string $attemptswhere, array $params): void {
+        global $DB;
+
+        $DB->delete_records_select(
+            'playerpuzzle_attempt_questions',
+            "attemptid IN (SELECT id FROM {playerpuzzle_attempts} WHERE $attemptswhere)",
+            $params
+        );
     }
 
     /**
@@ -241,11 +307,10 @@ class provider implements
         }
 
         [$insql, $inparams] = $DB->get_in_or_equal($instanceids, SQL_PARAMS_NAMED, 'pp');
-        $DB->delete_records_select(
-            'playerpuzzle_attempts',
-            "playerpuzzleid $insql AND userid = :userid",
-            array_merge($inparams, ['userid' => $userid])
-        );
+        $where = "playerpuzzleid $insql AND userid = :userid";
+        $params = array_merge($inparams, ['userid' => $userid]);
+        self::delete_logged_questions($where, $params);
+        $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
     }
 
     /**
@@ -272,10 +337,9 @@ class provider implements
         }
 
         [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'uid');
-        $DB->delete_records_select(
-            'playerpuzzle_attempts',
-            "playerpuzzleid = :playerpuzzleid AND userid $insql",
-            array_merge(['playerpuzzleid' => $cm->instance], $inparams)
-        );
+        $where = "playerpuzzleid = :playerpuzzleid AND userid $insql";
+        $params = array_merge(['playerpuzzleid' => (int) $cm->instance], $inparams);
+        self::delete_logged_questions($where, $params);
+        $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
     }
 }

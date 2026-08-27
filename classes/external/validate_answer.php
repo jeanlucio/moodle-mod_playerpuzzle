@@ -29,6 +29,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_playerpuzzle\local\attempt_questions;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\question_fetcher;
 use moodle_exception;
@@ -123,13 +124,24 @@ class validate_answer extends external_api {
         }
 
         $correct = question_fetcher::is_answer_correct($params['questionid'], $params['answerid']);
+        $correctanswerid = question_fetcher::get_correct_answer_id($params['questionid']);
+
+        // Log the student's answer for the post-game review — a text snapshot, so it still
+        // reads correctly if the source question is later edited or removed.
+        attempt_questions::record(
+            (int) $attempt->id,
+            $params['questionid'],
+            (int) $attempt->currentlevel,
+            (int) $attempt->currentphase,
+            question_fetcher::get_question_text($params['questionid'], $context),
+            question_fetcher::get_answer_text($params['answerid'], $context),
+            $correctanswerid !== null ? question_fetcher::get_answer_text($correctanswerid, $context) : '',
+            $correct
+        );
 
         $result = ['correct' => $correct];
-        if (!$correct) {
-            $correctanswerid = question_fetcher::get_correct_answer_id($params['questionid']);
-            if ($correctanswerid !== null) {
-                $result['correctanswerid'] = $correctanswerid;
-            }
+        if (!$correct && $correctanswerid !== null) {
+            $result['correctanswerid'] = $correctanswerid;
         }
 
         return $result;

@@ -140,4 +140,54 @@ final class combat_test extends \basic_testcase {
         $this->assertSame(0.66, combat::boss_guess_probability('bogus', 'multichoice'));
         $this->assertSame(0.66, combat::boss_guess_probability('normal', 'shortanswer'));
     }
+
+    /**
+     * Tests coin_ceiling() scales with damage relative to the scaled combo damage value,
+     * and that zero damage yields a zero ceiling.
+     *
+     * @return void
+     */
+    public function test_coin_ceiling(): void {
+        // 100 damage, a combo worth 10, coingain 10, Normal factor: (100/10)*10*1 = 100.
+        $this->assertSame(100, combat::coin_ceiling(100, 10, 10, 1.0));
+        // Hard triples the coin factor.
+        $this->assertSame(300, combat::coin_ceiling(100, 10, 10, 3.0));
+        // Easy halves it, floored.
+        $this->assertSame(50, combat::coin_ceiling(100, 10, 10, 0.5));
+        $this->assertSame(0, combat::coin_ceiling(0, 10, 10, 1.0));
+    }
+
+    /**
+     * Tests coin_ceiling() never divides by zero when the scaled boss damage is 0 (a
+     * teacher configuring 0 bossdamage) — the denominator floors to 1.
+     *
+     * @return void
+     */
+    public function test_coin_ceiling_guards_against_zero_bossdamage(): void {
+        $this->assertSame(1000, combat::coin_ceiling(100, 0, 10, 1.0));
+    }
+
+    /**
+     * Tests coin_ceiling() clamps a negative damage value to 0, never a negative
+     * ceiling.
+     *
+     * @return void
+     */
+    public function test_coin_ceiling_clamps_negative_damage(): void {
+        $this->assertSame(0, combat::coin_ceiling(-50, 10, 10, 1.0));
+    }
+
+    /**
+     * Tests the fixed shop prices for every consumable type, and the fallback for an
+     * unknown type.
+     *
+     * @return void
+     */
+    public function test_consumable_price(): void {
+        $this->assertSame(8, combat::consumable_price('potion'));
+        $this->assertSame(10, combat::consumable_price('shield'));
+        $this->assertSame(12, combat::consumable_price('magic'));
+        $this->assertSame(10, combat::consumable_price('sword'));
+        $this->assertSame(0, combat::consumable_price('bogus'));
+    }
 }

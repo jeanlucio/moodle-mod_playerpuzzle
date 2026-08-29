@@ -29,6 +29,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
@@ -52,11 +53,12 @@ class advance_phase extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid'       => new external_value(PARAM_INT, 'Course module ID'),
-            'token'      => new external_value(PARAM_ALPHANUM, 'Anti-replay token issued when the attempt started'),
-            'damage'     => new external_value(PARAM_INT, 'Damage dealt to the boss this phase'),
-            'gold'       => new external_value(PARAM_INT, 'Gold coins earned this phase'),
-            'difficulty' => new external_value(
+            'cmid'                 => new external_value(PARAM_INT, 'Course module ID'),
+            'token'                => new external_value(PARAM_ALPHANUM, 'Anti-replay token issued when the attempt started'),
+            'damage'               => new external_value(PARAM_INT, 'Damage dealt to the boss this phase'),
+            'coinsearnedsofar'     => new external_value(PARAM_INT, 'Player coins earned this phase, client-reported'),
+            'bosscoinsearnedsofar' => new external_value(PARAM_INT, 'Boss coins earned this phase, client-reported'),
+            'difficulty'           => new external_value(
                 PARAM_ALPHA,
                 'Difficulty chosen for the next phase (easy/normal/hard); coerced to a known value',
                 VALUE_DEFAULT,
@@ -66,26 +68,36 @@ class advance_phase extends external_api {
     }
 
     /**
-     * Validates the phase was genuinely won, advances the attempt to its next phase (or
-     * level), banks this phase's coins, and returns the scaled HP for the new phase
-     * together with a fresh token.
+     * Validates the phase was genuinely won, banks this phase's coins from the server's own
+     * ledger (never a client-reported total), advances the attempt to its next phase (or
+     * level) with a clean ledger, and returns the scaled HP for the new phase together with
+     * a fresh token.
      *
      * @param int $cmid Course module ID.
      * @param string $token Anti-replay token issued when the attempt started.
      * @param int $damage Damage dealt to the boss this phase.
-     * @param int $gold Gold coins earned this phase.
+     * @param int $coinsearnedsofar Player coins earned this phase, client-reported.
+     * @param int $bosscoinsearnedsofar Boss coins earned this phase, client-reported.
      * @param string $difficulty Difficulty chosen for the next phase.
      * @return array Result with the new token, level, phase, difficulty, scaled boss/student HP, and coins banked.
      */
-    public static function execute(int $cmid, string $token, int $damage, int $gold, string $difficulty = 'normal'): array {
+    public static function execute(
+        int $cmid,
+        string $token,
+        int $damage,
+        int $coinsearnedsofar,
+        int $bosscoinsearnedsofar,
+        string $difficulty = 'normal'
+    ): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
-            'cmid'       => $cmid,
-            'token'      => $token,
-            'damage'     => $damage,
-            'gold'       => $gold,
-            'difficulty' => $difficulty,
+            'cmid'                 => $cmid,
+            'token'                => $token,
+            'damage'               => $damage,
+            'coinsearnedsofar'     => $coinsearnedsofar,
+            'bosscoinsearnedsofar' => $bosscoinsearnedsofar,
+            'difficulty'           => $difficulty,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -148,6 +160,41 @@ class advance_phase extends external_api {
         // one, which the reloaded play.php will scale the next fight with.
         $newdifficulty = security::clean_difficulty($params['difficulty']);
 
+        // Coin ledger: sync this just-finished phase's report against the plausibility
+        // ceiling, bank whatever is available, then reset the ledger to 0 — the next phase
+        // starts its own clean window, since coins_earned/boss_coins_earned/coins_spent track
+        // only the phase currently being played, not the whole Campaign attempt.
+        $scaledbossdamage = combat::apply_difficulty(
+            combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $currentlevel, $currentphase),
+            (string) $attempt->difficulty
+        );
+        // Never let an overshoot past the phase's own boss HP inflate the ceiling below —
+        // the win check above only guarantees damage >= currentbosshp, not a sane upper bound.
+        $safedamage = min($params['damage'], $currentbosshp);
+        $ceiling = combat::coin_ceiling(
+            $safedamage,
+            $scaledbossdamage,
+            (int) $playerpuzzle->coingain,
+            combat::difficulty_coin_factor((string) $attempt->difficulty)
+        );
+        coin_ledger::sync($attempt, $params['coinsearnedsofar'], $params['bosscoinsearnedsofar'], $ceiling);
+
+        $coinsbanked = 0;
+        $payable = coin_ledger::available($attempt);
+        if ($payable > 0) {
+            $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
+            if ($blockinstanceid !== null) {
+                $banked = hud_service::credit_coins(
+                    $blockinstanceid,
+                    (int) $USER->id,
+                    (int) $playerpuzzle->hud_coin_item,
+                    $payable
+                );
+                $coinsbanked = $banked ? $payable : 0;
+            }
+        }
+        coin_ledger::reset($attempt);
+
         $newtoken = bin2hex(random_bytes(32));
         $attempt->token = $newtoken;
         $attempt->currentlevel = $newlevel;
@@ -155,25 +202,6 @@ class advance_phase extends external_api {
         $attempt->difficulty = $newdifficulty;
         $attempt->timemodified = time();
         $DB->update_record('playerpuzzle_attempts', $attempt);
-
-        // Coins are banked per phase won, not only at the end of the whole campaign — a
-        // student clearing several phases before eventually losing still keeps what they
-        // earned along the way, mirroring save_progress's own victory banking below. The
-        // client already applied the difficulty coin factor to the gold it reports.
-        $coinsbanked = 0;
-        $safegold = max(0, $params['gold']);
-        if ($safegold > 0) {
-            $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
-            if ($blockinstanceid !== null) {
-                $banked = hud_service::credit_coins(
-                    $blockinstanceid,
-                    (int) $USER->id,
-                    (int) $playerpuzzle->hud_coin_item,
-                    $safegold
-                );
-                $coinsbanked = $banked ? $safegold : 0;
-            }
-        }
 
         return [
             'token'        => $newtoken,

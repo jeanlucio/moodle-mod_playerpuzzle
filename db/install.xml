@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260828" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260829" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -33,6 +33,7 @@
         <FIELD NAME="grademethod" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Single-match mode only; mirrors PLAYERWORDS_GRADE_*"/>
         <FIELD NAME="minquestions" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="3" SEQUENCE="false" COMMENT="0-10; applies to both modes; opt-out, not opt-in"/>
         <FIELD NAME="considererrors" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boolean; only enableable when minquestions &gt;= 1"/>
+        <FIELD NAME="maxconsumables" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Max uses of each consumable type per attempt/match, regardless of source"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>
@@ -56,6 +57,9 @@
         <FIELD NAME="bosshp_remaining" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boss HP left when game ended"/>
         <FIELD NAME="questions_correct" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total questions answered correctly"/>
         <FIELD NAME="questions_total" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total questions prompted"/>
+        <FIELD NAME="coins_earned" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Server-ratcheted coin ledger for the current phase/match, capped by a damage-based ceiling"/>
+        <FIELD NAME="boss_coins_earned" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Same ledger, boss side; nets against coins_earned at payout"/>
+        <FIELD NAME="coins_spent" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Coins spent on source=local consumable purchases this phase/match"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" DECIMALS="5" SEQUENCE="false" COMMENT="Final calculated grade"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="inprogress" SEQUENCE="false" COMMENT="Status: inprogress, won, lost, timeout, abandoned"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -91,6 +95,22 @@
       </KEYS>
       <INDEXES>
         <INDEX NAME="attemptid-phase" UNIQUE="false" FIELDS="attemptid, attemptlevel, attemptphase"/>
+      </INDEXES>
+    </TABLE>
+
+    <TABLE NAME="playerpuzzle_attempt_consumables" COMMENT="Counts consumable uses per attempt, for the maxconsumables limit; one row per type actually used">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="attemptid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to playerpuzzle_attempts"/>
+        <FIELD NAME="consumabletype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="potion | shield | magic | sword"/>
+        <FIELD NAME="timesused" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Uses so far, regardless of source (local coin or PlayerHUD stock)"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="attemptid" TYPE="foreign" FIELDS="attemptid" REFTABLE="playerpuzzle_attempts" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="attemptid-type" UNIQUE="true" FIELDS="attemptid, consumabletype"/>
       </INDEXES>
     </TABLE>
   </TABLES>

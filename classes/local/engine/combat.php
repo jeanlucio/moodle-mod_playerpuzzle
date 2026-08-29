@@ -79,6 +79,12 @@ class combat {
     ];
 
     /**
+     * Fixed shop prices in local coins, per consumable type. Not teacher-configurable — only
+     * the per-attempt use limit (maxconsumables) is.
+     */
+    private const CONSUMABLE_PRICES = ['potion' => 8, 'shield' => 10, 'magic' => 12, 'sword' => 10];
+
+    /**
      * Calculates the boss HP for a given level/phase, scaled from the teacher-configured
      * base HP.
      *
@@ -157,5 +163,37 @@ class combat {
     public static function boss_guess_probability(string $difficulty, string $qtype): float {
         $row = self::BOSS_GUESS_PROBABILITIES[$difficulty] ?? self::BOSS_GUESS_PROBABILITIES['normal'];
         return $row[$qtype] ?? $row['multichoice'];
+    }
+
+    /**
+     * Plausibility ceiling for how many coins could genuinely have been earned given the
+     * damage actually dealt to the boss so far: a rough 1-to-1 bound between combo-worth of
+     * damage and combo-worth of coin gain, since both come from the same board activity
+     * (Sword and Coin matches). Not a precise economic model — it exists to catch a client
+     * reporting wildly inflated coin values while doing comparatively little real combat, not
+     * to police the exact mix of piece types a student chooses to match.
+     *
+     * @param int $damage Damage dealt to the boss so far this phase/match.
+     * @param int $scaledbossdamage The phase's own scaled combat damage value (a single
+     *  3-piece Sword combo's worth), always at least 1 to avoid dividing by zero.
+     * @param int $coingain Base coins per 3-piece Coin combo, unscaled by level/phase.
+     * @param float $coinfactor Difficulty coin multiplier.
+     * @return int The ceiling, never negative.
+     */
+    public static function coin_ceiling(int $damage, int $scaledbossdamage, int $coingain, float $coinfactor): int {
+        $safedamage = max(0, $damage);
+        $safebossdamage = max(1, $scaledbossdamage);
+
+        return (int) floor(($safedamage / $safebossdamage) * $coingain * $coinfactor);
+    }
+
+    /**
+     * Returns the fixed shop price for a consumable type, in local coins.
+     *
+     * @param string $type One of attempt_consumables::TYPES.
+     * @return int The price, or 0 for an unknown type.
+     */
+    public static function consumable_price(string $type): int {
+        return self::CONSUMABLE_PRICES[$type] ?? 0;
     }
 }

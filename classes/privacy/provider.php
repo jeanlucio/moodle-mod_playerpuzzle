@@ -73,6 +73,9 @@ class provider implements
             'bosshp_remaining'  => 'privacy:metadata:bosshp_remaining',
             'questions_correct' => 'privacy:metadata:questions_correct',
             'questions_total'   => 'privacy:metadata:questions_total',
+            'coins_earned'      => 'privacy:metadata:coins_earned',
+            'boss_coins_earned' => 'privacy:metadata:boss_coins_earned',
+            'coins_spent'       => 'privacy:metadata:coins_spent',
             'score'             => 'privacy:metadata:score',
             'status'            => 'privacy:metadata:status',
             'timecreated'       => 'privacy:metadata:timecreated',
@@ -91,6 +94,12 @@ class provider implements
             'iscorrect'     => 'privacy:metadata:aq:iscorrect',
             'timecreated'   => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:playerpuzzle_attempt_questions');
+
+        // Only id and attemptid (structural FK, scoped by the parent attempt) are excluded.
+        $collection->add_database_table('playerpuzzle_attempt_consumables', [
+            'consumabletype' => 'privacy:metadata:ac:consumabletype',
+            'timesused'      => 'privacy:metadata:ac:timesused',
+        ], 'privacy:metadata:playerpuzzle_attempt_consumables');
 
         return $collection;
     }
@@ -172,7 +181,8 @@ class provider implements
         [$insql, $inparams] = $DB->get_in_or_equal(array_keys($contexts), SQL_PARAMS_NAMED, 'ctx');
 
         $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.difficulty, pa.bosshp_remaining,
-                       pa.questions_correct, pa.questions_total, pa.score, pa.status,
+                       pa.questions_correct, pa.questions_total, pa.coins_earned,
+                       pa.boss_coins_earned, pa.coins_spent, pa.score, pa.status,
                        pa.timecreated, pa.timefinished, ctx.id AS contextid
                   FROM {playerpuzzle_attempts} pa
                   JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
@@ -192,6 +202,9 @@ class provider implements
                 'bosshpremaining'  => $record->bosshp_remaining,
                 'questionscorrect' => $record->questions_correct,
                 'questionstotal'   => $record->questions_total,
+                'coinsearned'      => $record->coins_earned,
+                'bosscoinsearned'  => $record->boss_coins_earned,
+                'coinsspent'       => $record->coins_spent,
                 'score'            => $record->score,
                 'status'           => $record->status,
                 'timecreated'      => transform::datetime($record->timecreated),
@@ -240,6 +253,34 @@ class provider implements
                 (object) ['questions' => $questions]
             );
         }
+
+        $consumablesql = "SELECT ac.id, ac.consumabletype, ac.timesused, ctx.id AS contextid
+                             FROM {playerpuzzle_attempt_consumables} ac
+                             JOIN {playerpuzzle_attempts} pa ON pa.id = ac.attemptid
+                             JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
+                             JOIN {modules} m ON m.name = 'playerpuzzle'
+                             JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                             JOIN {context} ctx ON ctx.instanceid = cm.id
+                            WHERE ctx.id $insql
+                              AND pa.userid = :userid
+                         ORDER BY ac.id ASC";
+        $consumablerecords = $DB->get_recordset_sql($consumablesql, array_merge($inparams, ['userid' => $userid]));
+
+        $allconsumables = [];
+        foreach ($consumablerecords as $row) {
+            $allconsumables[$row->contextid][] = (object) [
+                'consumabletype' => $row->consumabletype,
+                'timesused'      => $row->timesused,
+            ];
+        }
+        $consumablerecords->close();
+
+        foreach ($allconsumables as $contextid => $consumables) {
+            writer::with_context($contexts[$contextid])->export_data(
+                [get_string('privacy:metadata:playerpuzzle_attempt_consumables', 'mod_playerpuzzle')],
+                (object) ['consumables' => $consumables]
+            );
+        }
     }
 
     /**
@@ -260,6 +301,7 @@ class provider implements
         }
 
         self::delete_logged_questions('playerpuzzleid = :ppid', ['ppid' => (int) $cm->instance]);
+        self::delete_consumable_uses('playerpuzzleid = :ppid', ['ppid' => (int) $cm->instance]);
         $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $cm->instance]);
     }
 
@@ -276,6 +318,24 @@ class provider implements
 
         $DB->delete_records_select(
             'playerpuzzle_attempt_questions',
+            "attemptid IN (SELECT id FROM {playerpuzzle_attempts} WHERE $attemptswhere)",
+            $params
+        );
+    }
+
+    /**
+     * Deletes playerpuzzle_attempt_consumables rows for every attempt matching a WHERE clause
+     * on playerpuzzle_attempts. Call before deleting the parent attempts.
+     *
+     * @param string $attemptswhere WHERE clause against {playerpuzzle_attempts}.
+     * @param array $params Named parameters for the clause.
+     * @return void
+     */
+    private static function delete_consumable_uses(string $attemptswhere, array $params): void {
+        global $DB;
+
+        $DB->delete_records_select(
+            'playerpuzzle_attempt_consumables',
             "attemptid IN (SELECT id FROM {playerpuzzle_attempts} WHERE $attemptswhere)",
             $params
         );
@@ -310,6 +370,7 @@ class provider implements
         $where = "playerpuzzleid $insql AND userid = :userid";
         $params = array_merge($inparams, ['userid' => $userid]);
         self::delete_logged_questions($where, $params);
+        self::delete_consumable_uses($where, $params);
         $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
     }
 
@@ -340,6 +401,7 @@ class provider implements
         $where = "playerpuzzleid = :playerpuzzleid AND userid $insql";
         $params = array_merge(['playerpuzzleid' => (int) $cm->instance], $inparams);
         self::delete_logged_questions($where, $params);
+        self::delete_consumable_uses($where, $params);
         $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
     }
 }

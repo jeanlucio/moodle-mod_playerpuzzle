@@ -229,6 +229,11 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setDefault('maxattempts', 0);
         $mform->hideIf('maxattempts', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
 
+        $mform->addElement('text', 'maxconsumables', get_string('maxconsumables', 'mod_playerpuzzle'));
+        $mform->setType('maxconsumables', PARAM_INT);
+        $mform->setDefault('maxconsumables', 1);
+        $mform->addHelpButton('maxconsumables', 'maxconsumables', 'mod_playerpuzzle');
+
         $this->add_hud_elements($mform, (int) $COURSE->id);
 
         $this->standard_coursemodule_elements();

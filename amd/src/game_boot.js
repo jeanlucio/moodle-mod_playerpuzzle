@@ -404,7 +404,7 @@ define([
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
                     'questionerror', 'questionscounter', 'questionsprogress',
                     'requirejserror', 'saveerror', 'savingprogress',
-                    'shuffling', 'victory'
+                    'shoperror', 'shuffling', 'victory'
                 ];
 
                 const values = await Str.get_strings(

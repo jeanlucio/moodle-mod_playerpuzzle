@@ -320,4 +320,22 @@ final class game_page_service_test extends \advanced_testcase {
 
         $this->assertSame(4, $config['questionstotal']);
     }
+
+    /**
+     * Tests that hudconfigured reflects which PlayerHUD items are actually set, and that
+     * Magia Rápida is always false — it has no PlayerHUD item at all.
+     *
+     * @return void
+     */
+    public function test_build_game_config_reports_hudconfigured(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['hud_potion_item' => 5, 'hud_shield_item' => 0]);
+        $context = \context_module::instance($cm->id);
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+
+        $this->assertTrue($config['hudconfigured']['potion']);
+        $this->assertFalse($config['hudconfigured']['shield']);
+        $this->assertFalse($config['hudconfigured']['magic']);
+        $this->assertFalse($config['hudconfigured']['sword']);
+    }
 }

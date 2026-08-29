@@ -84,15 +84,14 @@ define(['jquery'], function($) {
 
                 // Consumables row: Poção + Espada — the two purchasable consumíveis with no
                 // meter of their own (Escudo/Magia Rápida fill a ring, so their buy badges sit
-                // on that ring). Layout placement only — buy_consumable doesn't exist yet; the
-                // badge doubles as price label and, once it does, click target. Espada's own
-                // effect is an extra attack worth a 3-piece combo (1x boss damage).
+                // on that ring). Espada's own effect is an extra attack worth a 3-piece combo
+                // (1x boss damage).
                 me.add.image(L.potionX, L.potionY, 'item5')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
-                this.createPurchaseBadge(L.potionX, L.potionY, '8');
+                this.createPurchaseBadge(L.potionX, L.potionY, '8', 'potion');
                 me.add.image(L.swordX, L.swordY, 'item3')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
-                this.createPurchaseBadge(L.swordX, L.swordY, '10');
+                this.createPurchaseBadge(L.swordX, L.swordY, '10', 'sword');
 
                 // Coin/Star: passive quantity readouts, not buttons — sit beside the history
                 // block (smaller icon than the consumable row), out of the action area.
@@ -115,8 +114,8 @@ define(['jquery'], function($) {
                 // Purchase badges for the two consumíveis unified with their own board piece
                 // (Escudo, Magia Rápida/Grimório). Not shown for the boss (no shop) or the mana
                 // Orb ring (not a purchasable consumível).
-                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12');
-                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10');
+                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12', 'magic');
+                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10', 'shield');
 
                 this.playerLogLines = this.createHistoryLog(L.playerUiX);
                 this.bossLogLines = this.createHistoryLog(L.bossUiX);
@@ -146,7 +145,7 @@ define(['jquery'], function($) {
                 this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0');
                 me.add.image(L.potionX, L.potionY, 'item5')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
-                this.createPurchaseBadge(L.potionX, L.potionY, '8', L.badgeScale);
+                this.createPurchaseBadge(L.potionX, L.potionY, '8', 'potion', L.badgeScale);
                 this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
                 this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
 
@@ -154,9 +153,12 @@ define(['jquery'], function($) {
                 // createPurchaseBadge()'s own docblock) — mobile's rings are themselves half
                 // desktop's radius, and the WCAG 24x24 real-px floor is met here without the
                 // desktop's full 46x34 size, since mobile's canvas has no 0.75 CSS shrink to
-                // compensate for. Not shown for the boss (no shop) or the mana Orb ring.
-                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12', L.badgeScale);
-                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10', L.badgeScale);
+                // compensate for. Not shown for the boss (no shop) or the mana Orb ring. Espada
+                // has no mobile badge yet — the mobile layout has no Sword icon in its resource
+                // row (see game_boot.js's mobile L object), a pre-existing gap this lote does
+                // not close.
+                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12', 'magic', L.badgeScale);
+                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10', 'shield', L.badgeScale);
 
                 this.setupHistoryButtonMobile();
             }
@@ -247,11 +249,12 @@ define(['jquery'], function($) {
         }
 
         /**
-         * Visual mockup only — the purchase badge for Escudo and Magia Rápida (both unified
-         * with their own board piece), also reused for the Poção and Espada icons so every
-         * purchasable consumível shares one price convention. Overlaps the target icon's own
-         * bottom-right corner; not wired to buy_consumable() (doesn't exist yet) — meant to
-         * double as the click target once it does.
+         * The clickable purchase badge for a consumable type — Escudo and Magia Rápida (both
+         * unified with their own board piece), plus Poção and Espada, so every purchasable
+         * consumível shares one price convention and one click target. Overlaps the target
+         * icon's own bottom-right corner. A transparent Phaser zone is the actual interactive
+         * hit area (drawing directly on the graphics/image objects instead would mean giving
+         * each one its own hit area and keeping them all in sync).
          *
          * Sized at 46x34 logical units at scale 1 (desktop's default, every call site below
          * except the mobile branch of setupStaticUI) — with the game embed capped at 960px
@@ -262,16 +265,17 @@ define(['jquery'], function($) {
          * 1:1 CSS scale — see styles.css), so the floor there is the raw 24 logical units;
          * more importantly, mobile's rings are themselves half desktop's radius (16 vs 32,
          * see game_boot.js's two L objects), and the default 46x34 badge is bigger than the
-         * ring itself, swallowing its colored arc entirely. Mobile's three purchase-badge
-         * calls pass a smaller scale for this reason — verified live (27/08/2026) that the
-         * ring's own arc/icon stays visible next to the badge at that size.
+         * ring itself, swallowing its colored arc entirely. Mobile's purchase-badge calls
+         * pass a smaller scale for this reason — verified live (27/08/2026) that the ring's
+         * own arc/icon stays visible next to the badge at that size.
          *
          * @param {number} iconX Target icon's center X (ring or resource chip).
          * @param {number} iconY Target icon's center Y.
          * @param {string} price Price text, e.g. "10".
+         * @param {string} type Consumable type: 'potion', 'shield', 'magic' or 'sword'.
          * @param {number} scale Size multiplier off the 46x34/20px-offset desktop baseline.
          */
-        createPurchaseBadge(iconX, iconY, price, scale = 1) {
+        createPurchaseBadge(iconX, iconY, price, type, scale = 1) {
             const me = this.scene;
             const w = 46 * scale;
             const h = 34 * scale;
@@ -279,18 +283,83 @@ define(['jquery'], function($) {
             const cx = iconX + offset;
             const cy = iconY + offset;
 
-            me.add.graphics()
+            const bg = me.add.graphics()
                 .fillStyle(0x1c1712, 1)
                 .fillRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6 * scale)
                 .lineStyle(2, 0x9c6b2e, 1)
                 .strokeRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6 * scale)
                 .setDepth(5);
-            me.add.image(cx - (10 * scale), cy, 'item6').setDisplaySize(16 * scale, 16 * scale).setDepth(6);
-            me.add.text(cx + (4 * scale), cy, price, {
+            const icon = me.add.image(cx - (10 * scale), cy, 'item6')
+                .setDisplaySize(16 * scale, 16 * scale).setDepth(6);
+            const label = me.add.text(cx + (4 * scale), cy, price, {
                 fontSize: `${Math.round(15 * scale)}px`,
                 fill: '#ffffaa',
                 fontStyle: 'bold'
             }).setOrigin(0.5).setDepth(6);
+
+            const hitzone = me.add.zone(cx, cy, w, h).setOrigin(0.5).setDepth(7)
+                .setInteractive({useHandCursor: true});
+            hitzone.on('pointerup', () => {
+                if (me.combat) {
+                    me.combat.buyConsumable(type);
+                }
+            });
+
+            if (!this.purchaseBadges) {
+                this.purchaseBadges = {};
+            }
+            this.purchaseBadges[type] = {parts: [bg, icon, label], disabled: false};
+        }
+
+        /**
+         * Refreshes every shop badge's enabled/disabled look: opacity drops and the click
+         * stops doing anything once the per-attempt use limit is reached, or the student can
+         * afford it through neither local coins nor (where configured) PlayerHUD stock. A
+         * full text/aria-label reason for screen-reader users depends on the Fase 7 HTML
+         * parallel layer, which does not exist yet for in-combat controls — this only covers
+         * the visual/functional half of the decision for now.
+         */
+        updateConsumableBadges() {
+            const combat = this.scene.combat;
+            if (!combat || !this.purchaseBadges) {
+                return;
+            }
+
+            const available = combat.availableCoinBalance();
+            const hudconfigured = this.gameConfig.hudconfigured || {};
+
+            Object.keys(this.purchaseBadges).forEach(type => {
+                const badge = this.purchaseBadges[type];
+                const limitReached = (combat.consumableUses[type] || 0) >= combat.maxConsumables;
+                const affordableLocally = available >= combat.consumablePrice(type);
+                const disabled = limitReached || (!affordableLocally && !hudconfigured[type]);
+
+                badge.disabled = disabled;
+                badge.parts.forEach(part => part.setAlpha(disabled ? 0.4 : 1));
+            });
+        }
+
+        /**
+         * Floats a "-N" coin-cost readout up and away from the Coin indicator, then destroys
+         * itself — the only feedback a successful local-coin purchase gives (decision v7.35).
+         *
+         * @param {number} amount Coins spent.
+         */
+        showCoinFloat(amount) {
+            const L = this.L;
+            const text = this.scene.add.text(L.goldX, L.goldY, `-${amount}`, {
+                fontSize: '16px',
+                fill: '#ffcc00',
+                fontStyle: 'bold'
+            }).setOrigin(0.5).setDepth(15);
+
+            this.scene.tweens.add({
+                targets: text,
+                y: L.goldY - 30,
+                alpha: 0,
+                duration: 900,
+                onComplete: () => text.destroy()
+            });
         }
 
         /**

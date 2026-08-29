@@ -156,10 +156,11 @@ final class advance_phase_test extends \advanced_testcase {
 
         // Boss HP at Level 2, Phase 3 with base 100: 100*(1+0.5*1+0.1*2) = 170.
         $result = $this->call_advance_phase([
-            'cmid'   => $instance->cmid,
-            'token'  => $token,
-            'damage' => 170,
-            'gold'   => 0,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 170,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -179,10 +180,11 @@ final class advance_phase_test extends \advanced_testcase {
 
         // Boss HP at Level 3, Phase 10 with base 100: 100*(1+0.5*2+0.1*9) = 290.
         $result = $this->call_advance_phase([
-            'cmid'   => $instance->cmid,
-            'token'  => $token,
-            'damage' => 290,
-            'gold'   => 0,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 290,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -202,10 +204,11 @@ final class advance_phase_test extends \advanced_testcase {
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
         $result = $this->call_advance_phase([
-            'cmid'   => $instance->cmid,
-            'token'  => $token,
-            'damage' => 100,
-            'gold'   => 0,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         // Level 1, Phase 2 with base 100: boss 110, student 105 — one phase step past
@@ -226,7 +229,13 @@ final class advance_phase_test extends \advanced_testcase {
         $this->setUser($this->student);
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
-        $args = ['cmid' => $instance->cmid, 'token' => $token, 'damage' => 100, 'gold' => 0];
+        $args = [
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ];
         $first = $this->call_advance_phase($args);
         $second = $this->call_advance_phase($args);
 
@@ -248,10 +257,11 @@ final class advance_phase_test extends \advanced_testcase {
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
         $result = $this->call_advance_phase([
-            'cmid'   => $instance->cmid,
-            'token'  => $token,
-            'damage' => 500,
-            'gold'   => 0,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertTrue($result['error']);
@@ -276,13 +286,15 @@ final class advance_phase_test extends \advanced_testcase {
 
         // Normal boss HP here is 100; Hard doubles it to 200.
         $tooweak = $this->call_advance_phase([
-            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 150, 'gold' => 0,
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 150,
+            'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
         ]);
         $this->assertTrue($tooweak['error']);
         $this->assertSame('phasenotwon', $tooweak['exception']->errorcode);
 
         $enough = $this->call_advance_phase([
-            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 200, 'gold' => 0,
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 200,
+            'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
         ]);
         $this->assertFalse($enough['error']);
         $this->assertSame(2, $enough['data']['currentphase']);
@@ -304,11 +316,12 @@ final class advance_phase_test extends \advanced_testcase {
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
         $result = $this->call_advance_phase([
-            'cmid'       => $instance->cmid,
-            'token'      => $token,
-            'damage'     => 100,
-            'gold'       => 0,
-            'difficulty' => 'hard',
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+            'difficulty'           => 'hard',
         ]);
 
         $this->assertFalse($result['error']);
@@ -334,7 +347,8 @@ final class advance_phase_test extends \advanced_testcase {
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
         $result = $this->call_advance_phase([
-            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100, 'gold' => 0,
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100,
+            'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
         ]);
 
         $newtoken = $result['data']['token'];
@@ -358,10 +372,11 @@ final class advance_phase_test extends \advanced_testcase {
         // the rejection below is specifically the "no next phase" guard, not the damage
         // sanity check.
         $result = $this->call_advance_phase([
-            'cmid'   => $instance->cmid,
-            'token'  => $token,
-            'damage' => 290,
-            'gold'   => 0,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 290,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertTrue($result['error']);
@@ -369,8 +384,9 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that advancing a phase credits the configured coin item with the exact gold
-     * amount, the same banking the final save_progress victory itself performs.
+     * Tests that advancing a phase credits the configured coin item, from the coin
+     * ledger's own available balance — the same banking the final save_progress victory
+     * itself performs.
      *
      * @return void
      */
@@ -381,15 +397,46 @@ final class advance_phase_test extends \advanced_testcase {
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
         $result = $this->call_advance_phase([
-            'cmid'   => $instance->cmid,
-            'token'  => $token,
-            'damage' => 100,
-            'gold'   => 42,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 42,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
         $this->assertSame(42, $result['data']['coinsbanked']);
         $this->assertSame(42, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+    }
+
+    /**
+     * Tests that the coin ledger resets to 0 once a phase's payout is banked, so the
+     * next phase starts with a clean window rather than carrying the previous phase's
+     * earnings forward.
+     *
+     * @return void
+     */
+    public function test_advance_phase_resets_the_ledger_after_banking(): void {
+        global $DB;
+
+        [, $itemid] = $this->make_hud_item();
+        $instance = $this->make_instance(['basebosshp' => 100, 'hud_coin_item' => $itemid]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 42,
+            'bosscoinsearnedsofar' => 10,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $result['data']['token']], '*', MUST_EXIST);
+        $this->assertSame(0, (int) $attempt->coins_earned);
+        $this->assertSame(0, (int) $attempt->boss_coins_earned);
+        $this->assertSame(0, (int) $attempt->coins_spent);
     }
 
     /**
@@ -402,10 +449,11 @@ final class advance_phase_test extends \advanced_testcase {
         $this->setUser($this->student);
 
         $result = $this->call_advance_phase([
-            'cmid'   => $instance->cmid,
-            'token'  => str_repeat('a', 64),
-            'damage' => 1000,
-            'gold'   => 0,
+            'cmid'                 => $instance->cmid,
+            'token'                => str_repeat('a', 64),
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertTrue($result['error']);
@@ -433,7 +481,7 @@ final class advance_phase_test extends \advanced_testcase {
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
 
         $this->expectException(\core\exception\require_login_exception::class);
-        advance_phase::execute($instance->cmid, $token, 100, 0);
+        advance_phase::execute($instance->cmid, $token, 100, 0, 0);
     }
 
     /**
@@ -454,7 +502,8 @@ final class advance_phase_test extends \advanced_testcase {
         $DB->set_field('playerpuzzle_attempts', 'questions_total', 1, ['token' => $token]);
 
         $result = $this->call_advance_phase([
-            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100, 'gold' => 0,
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100,
+            'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertTrue($result['error']);
@@ -479,9 +528,35 @@ final class advance_phase_test extends \advanced_testcase {
         $DB->set_field('playerpuzzle_attempts', 'questions_total', 3, ['token' => $token]);
 
         $result = $this->call_advance_phase([
-            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100, 'gold' => 0,
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100,
+            'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
+    }
+
+    /**
+     * Tests that the amount banked is capped by the damage-based plausibility ceiling.
+     *
+     * @return void
+     */
+    public function test_coin_ceiling_caps_an_inflated_report(): void {
+        [, $itemid] = $this->make_hud_item();
+        // Bossdamage/coingain default to 10; at Level 1 Phase 1 Normal the scaled combo
+        // damage is 10 too, so the ceiling for 100 damage is floor((100/10)*10*1) = 100.
+        $instance = $this->make_instance(['basebosshp' => 100, 'hud_coin_item' => $itemid]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 99999,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(100, $result['data']['coinsbanked']);
     }
 }

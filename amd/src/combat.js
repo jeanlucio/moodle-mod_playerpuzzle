@@ -21,8 +21,13 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
+define(['jquery', 'core/ajax', 'core/notification', 'core/templates'], function($, Ajax, Notification, Templates) {
     'use strict';
+
+    // Mirrors combat::CONSUMABLE_PRICES server-side — the server is still the source of
+    // truth (buy_consumable re-validates), this copy only drives the shop badges/afford
+    // check without a round trip on every coin change.
+    const CONSUMABLE_PRICES = {potion: 8, shield: 10, magic: 12, sword: 10};
 
     class CombatHandler {
         constructor(scene, gameConfig, strings) {
@@ -36,8 +41,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             // campaign progresses.
             this.coinGain = parseInt(gameConfig.coingain) || 10;
             // Difficulty coin multiplier (Easy 0.5, Normal 1, Hard 3), applied to every coin
-            // gained so the HUD, the history log and the end screen all match what the server
-            // banks — the server takes the reported gold as-is (a full recompute is Phase 5).
+            // gained so the HUD, the history log and the end screen all match what the client
+            // reports — the server independently re-derives the bankable amount from its own
+            // ledger (coins_earned/boss_coins_earned/coins_spent), capped by a damage-based
+            // ceiling, never trusting this value outright.
             this.coinFactor = parseFloat(gameConfig.coinfactor) || 1;
             // Minimum-questions rule: the server is the only source of truth for how many
             // questions this attempt has answered (questionsTotal starts at whatever a resumed
@@ -45,9 +52,20 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             // validate_answer.php's own count) — the client never counts on its own.
             this.minQuestions = parseInt(gameConfig.minquestions, 10) || 0;
             this.questionsTotal = parseInt(gameConfig.questionstotal, 10) || 0;
+            // Consumable shop: uses/spend carried forward from the current phase/match's own
+            // ledger window (see coin_ledger.php), same pattern as questionsTotal above.
+            this.maxConsumables = parseInt(gameConfig.maxconsumables, 10) || 1;
+            this.consumableUses = Object.assign(
+                {potion: 0, shield: 0, magic: 0, sword: 0},
+                gameConfig.consumableuses || {}
+            );
+            this.coinsSpent = parseInt(gameConfig.coinsspent, 10) || 0;
             this.currentTurn = 'player';
 
-            this.playerGold = 0;
+            // Carried forward from the ledger, not reset to 0 — a mid-phase page reload (or a
+            // Campaign attempt resuming a phase already partway through) must not forget coins
+            // already earned this window.
+            this.playerGold = parseInt(gameConfig.coinsearnedsofar, 10) || 0;
             this.playerShieldMeter = 0;
             this.playerShieldReady = false;
             this.playerMultiplier = 1;
@@ -61,7 +79,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             this.maxPlayerHp = parseInt(gameConfig.studenthp) || 100;
             this.currentPlayerHp = this.maxPlayerHp;
 
-            this.bossGold = 0;
+            this.bossGold = parseInt(gameConfig.bosscoinsearnedsofar, 10) || 0;
             this.bossPoisonMeter = 0;
             this.bossPoisonRounds = 0;
             this.bossShieldMeter = 0;
@@ -284,6 +302,29 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 this.bossMana, this.bossGold, this.bossMultiplier
             );
             this.scene.ui.updateQuestionsCounter(this.questionsTotal, this.minQuestions);
+            this.scene.ui.updateConsumableBadges();
+        }
+
+        /**
+         * Coins actually available to spend right now: player's own gross earnings, minus
+         * the boss's own share, minus whatever has already been spent this phase/match —
+         * the same formula coin_ledger.php uses server-side.
+         *
+         * @returns {number}
+         */
+        availableCoinBalance() {
+            const net = Math.max(0, Math.round(this.playerGold) - Math.round(this.bossGold));
+            return Math.max(0, net - this.coinsSpent);
+        }
+
+        /**
+         * Fixed shop price for a consumable type, mirroring combat::consumable_price().
+         *
+         * @param {string} type Consumable type.
+         * @returns {number}
+         */
+        consumablePrice(type) {
+            return CONSUMABLE_PRICES[type] || 0;
         }
 
         applyDamageToBoss(amount) {
@@ -436,6 +477,107 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
         }
 
         /**
+         * Buys a consumable, clicked from its shop badge (ui.js::createPurchaseBadge()).
+         * Tries PlayerHUD stock first when one is configured for this type, falling back to
+         * local coins if the student turns out to have none. Shield alone gets a client-side
+         * "already armed" guard — there is nothing to gain from buying a second charge before
+         * the first is spent, so it is worth skipping the round trip entirely for it; Magia
+         * Rápida has no such guard, matching its board-piece twin (the Grimoire never blocks
+         * overfilling either).
+         *
+         * @param {string} type One of 'potion', 'shield', 'magic', 'sword'.
+         */
+        buyConsumable(type) {
+            const badge = this.scene.ui.purchaseBadges && this.scene.ui.purchaseBadges[type];
+            if (badge && badge.disabled) {
+                return;
+            }
+            if (type === 'shield' && (this.playerShieldReady || this.playerShieldMeter >= 100)) {
+                return;
+            }
+
+            const hudFirst = !!(this.gameConfig.hudconfigured && this.gameConfig.hudconfigured[type]);
+            this.requestPurchase(type, hudFirst ? 'hud' : 'local');
+        }
+
+        /**
+         * Calls mod_playerpuzzle_buy_consumable with the given source. A source=hud attempt
+         * that reports insufficient stock retries once with source=local automatically —
+         * from the student's perspective this is still a single click, not two failures.
+         *
+         * @param {string} type Consumable type.
+         * @param {string} source 'local' or 'hud'.
+         */
+        requestPurchase(type, source) {
+            const me = this.scene;
+            const damage = Math.max(0, this.maxBossHp - this.currentHp);
+
+            Ajax.call([{
+                methodname: 'mod_playerpuzzle_buy_consumable',
+                args: {
+                    cmid: this.gameConfig.cmid,
+                    token: this.gameConfig.token,
+                    type,
+                    source,
+                    damage,
+                    coinsearnedsofar: Math.round(this.playerGold),
+                    bosscoinsearnedsofar: Math.round(this.bossGold),
+                },
+            }])[0].done(res => {
+                if (!res.success) {
+                    return;
+                }
+                if (source === 'local') {
+                    const price = this.consumablePrice(type);
+                    this.coinsSpent += price;
+                    me.ui.showCoinFloat(price);
+                }
+                this.consumableUses[type] = (this.consumableUses[type] || 0) + 1;
+                this.applyConsumableEffect(type);
+                this.updateUI();
+            }).fail(error => {
+                if (source === 'hud' && error && error.errorcode === 'insufficienthudstock') {
+                    this.requestPurchase(type, 'local');
+                    return;
+                }
+                Notification.alert(this.strings.shoperror, (error && error.message) || this.strings.shoperror);
+            });
+        }
+
+        /**
+         * Applies a purchased consumable's in-combat effect. Only ever called after the
+         * server has authorized the purchase (buy_consumable's {success: true}) — the
+         * effect itself is entirely client-side, same as every other board-piece effect.
+         *
+         * @param {string} type Consumable type.
+         */
+        applyConsumableEffect(type) {
+            const me = this.scene;
+
+            if (type === 'potion') {
+                const heal = this.baseDamage * 1.25;
+                this.currentPlayerHp = Math.min(this.maxPlayerHp, this.currentPlayerHp + heal);
+                me.ui.pushHistoryLog('player', this.strings.historylogheal.replace('{$a}', Math.round(heal)));
+            } else if (type === 'shield') {
+                // Reuses resolveShieldMeters()'s own overflow-preserving logic instead of
+                // setting shieldReady directly, so a purchase behaves identically to filling
+                // the ring by matching Shield pieces.
+                this.playerShieldMeter += 100;
+                this.resolveShieldMeters();
+                me.ui.pushHistoryLog('player', this.strings.historylogshieldcharge.replace('{$a}', 100));
+            } else if (type === 'magic') {
+                this.playerPoisonMeter += 100;
+                this.resolvePoisonMeters();
+                me.ui.pushHistoryLog('player', this.strings.historylogpoisoncharge.replace('{$a}', 100));
+            } else if (type === 'sword') {
+                this.applyDamageToBoss(this.baseDamage);
+                me.ui.pushHistoryLog('player', this.strings.historylogattack.replace('{$a}', Math.round(this.baseDamage)));
+            }
+
+            this.checkGameOver();
+        }
+
+        /**
          * Whether this victory is a mid-Campaign phase win (more phases/levels remain)
          * rather than the end of the whole attempt — mirrors the boundary check
          * advance_phase.php itself enforces server-side.
@@ -542,7 +684,8 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                         cmid: this.gameConfig.cmid,
                         token: this.gameConfig.token,
                         damage: this.maxBossHp - this.currentHp,
-                        gold: netGold,
+                        coinsearnedsofar: Math.round(this.playerGold),
+                        bosscoinsearnedsofar: Math.round(this.bossGold),
                         difficulty: $('#pp-phase-difficulty').val() || 'normal',
                     },
                 }])[0].done(res => {
@@ -852,9 +995,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 args: {
                     cmid: this.gameConfig.cmid,
                     token: this.gameConfig.token,
-                    gold: netGold,
                     victory: victory ? 1 : 0,
                     damage: this.maxBossHp - this.currentHp,
+                    coinsearnedsofar: Math.round(this.playerGold),
+                    bosscoinsearnedsofar: Math.round(this.bossGold),
                 },
             }])[0].done(res => {
                 const successMsg = strings.progresssaved.replace('{$a}', res.coinsbanked);

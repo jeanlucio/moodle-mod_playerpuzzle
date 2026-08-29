@@ -31,6 +31,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\attempt_questions;
+use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
@@ -47,33 +48,45 @@ class save_progress extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid'    => new external_value(PARAM_INT, 'Course module ID'),
-            'token'   => new external_value(PARAM_ALPHANUM, 'Anti-replay token issued when the attempt started'),
-            'gold'    => new external_value(PARAM_INT, 'Gold coins earned in this session'),
-            'victory' => new external_value(PARAM_INT, 'Whether it was a victory (1) or defeat (0)'),
-            'damage'  => new external_value(PARAM_INT, 'Damage dealt to the boss'),
+            'cmid'                 => new external_value(PARAM_INT, 'Course module ID'),
+            'token'                => new external_value(PARAM_ALPHANUM, 'Anti-replay token issued when the attempt started'),
+            'victory'              => new external_value(PARAM_INT, 'Whether it was a victory (1) or defeat (0)'),
+            'damage'               => new external_value(PARAM_INT, 'Damage dealt to the boss'),
+            'coinsearnedsofar'     => new external_value(PARAM_INT, 'Player coins earned so far this phase/match, client-reported'),
+            'bosscoinsearnedsofar' => new external_value(PARAM_INT, 'Boss coins earned so far this phase/match, client-reported'),
         ]);
     }
 
     /**
-     * Consumes the attempt token, persists the attempt outcome, and credits coins on victory.
+     * Consumes the attempt token, persists the attempt outcome, and credits coins on victory —
+     * the amount banked comes from the server's own coin ledger (coin_ledger::available()),
+     * never from a client-reported total.
      *
      * @param int $cmid Course module ID.
      * @param string $token Anti-replay token issued when the attempt started.
-     * @param int $gold Gold coins earned.
      * @param int $victory Whether it was a victory.
      * @param int $damage Damage dealt to the boss.
+     * @param int $coinsearnedsofar Player coins earned so far this phase/match, client-reported.
+     * @param int $bosscoinsearnedsofar Boss coins earned so far this phase/match, client-reported.
      * @return array Result with status, message, and coins banked.
      */
-    public static function execute(int $cmid, string $token, int $gold, int $victory, int $damage): array {
+    public static function execute(
+        int $cmid,
+        string $token,
+        int $victory,
+        int $damage,
+        int $coinsearnedsofar,
+        int $bosscoinsearnedsofar
+    ): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
-            'cmid'    => $cmid,
-            'token'   => $token,
-            'gold'    => $gold,
-            'victory' => $victory,
-            'damage'  => $damage,
+            'cmid'                 => $cmid,
+            'token'                => $token,
+            'victory'              => $victory,
+            'damage'               => $damage,
+            'coinsearnedsofar'     => $coinsearnedsofar,
+            'bosscoinsearnedsofar' => $bosscoinsearnedsofar,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -133,25 +146,41 @@ class save_progress extends external_api {
         $safedamage = max(0, min($params['damage'], $bosshp));
         $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);
         $attempt->score = round(($safedamage / max(1, $bosshp)) * 100, 5);
+
+        // Coin ledger: the amount actually banked below comes from coins_earned/boss_coins_earned/
+        // coins_spent, never from a raw client-reported gold total — the client's own report is
+        // only trusted up to the damage-based plausibility ceiling.
+        $scaledbossdamage = combat::apply_difficulty(
+            combat::calculate_boss_hp(
+                (int) $playerpuzzle->bossdamage,
+                (int) $attempt->currentlevel,
+                (int) $attempt->currentphase
+            ),
+            (string) $attempt->difficulty
+        );
+        $ceiling = combat::coin_ceiling(
+            $safedamage,
+            $scaledbossdamage,
+            (int) $playerpuzzle->coingain,
+            combat::difficulty_coin_factor((string) $attempt->difficulty)
+        );
+        coin_ledger::sync($attempt, $params['coinsearnedsofar'], $params['bosscoinsearnedsofar'], $ceiling);
         $DB->update_record('playerpuzzle_attempts', $attempt);
 
         $coinsbanked = 0;
         if ($isvictory) {
             // Defeat/timeout discards the session's coins; only a win banks them, and only into
             // the item the teacher configured — PlayerPuzzle keeps no local currency of its own.
-            // The client already applied the difficulty coin factor to the gold it reports (so
-            // the HUD and end screen stay consistent with what is banked); a full server-side
-            // recompute of gold is Phase 5's "complete sanity check".
-            $safegold = max(0, $params['gold']);
+            $payable = coin_ledger::available($attempt);
             $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
             if ($blockinstanceid !== null) {
                 $banked = hud_service::credit_coins(
                     $blockinstanceid,
                     (int) $USER->id,
                     (int) $playerpuzzle->hud_coin_item,
-                    $safegold
+                    $payable
                 );
-                $coinsbanked = $banked ? $safegold : 0;
+                $coinsbanked = $banked ? $payable : 0;
             }
         }
 

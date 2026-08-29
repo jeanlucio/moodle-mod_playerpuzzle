@@ -246,5 +246,51 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026082801, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026082902) {
+        $table = new xmldb_table('playerpuzzle');
+
+        // Add maxconsumables.
+        $field = new xmldb_field('maxconsumables', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '1');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $attemptstable = new xmldb_table('playerpuzzle_attempts');
+
+        // Add coins_earned.
+        $field = new xmldb_field('coins_earned', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($attemptstable, $field)) {
+            $dbman->add_field($attemptstable, $field);
+        }
+
+        // Add boss_coins_earned.
+        $field = new xmldb_field('boss_coins_earned', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($attemptstable, $field)) {
+            $dbman->add_field($attemptstable, $field);
+        }
+
+        // Add coins_spent.
+        $field = new xmldb_field('coins_spent', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($attemptstable, $field)) {
+            $dbman->add_field($attemptstable, $field);
+        }
+
+        // Add playerpuzzle_attempt_consumables: counts consumable uses per attempt, for the
+        // maxconsumables limit.
+        $consumablestable = new xmldb_table('playerpuzzle_attempt_consumables');
+        if (!$dbman->table_exists($consumablestable)) {
+            $consumablestable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $consumablestable->add_field('attemptid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $consumablestable->add_field('consumabletype', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL);
+            $consumablestable->add_field('timesused', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0');
+            $consumablestable->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $consumablestable->add_key('attemptid', XMLDB_KEY_FOREIGN, ['attemptid'], 'playerpuzzle_attempts', ['id']);
+            $consumablestable->add_index('attemptid-type', XMLDB_INDEX_UNIQUE, ['attemptid', 'consumabletype']);
+            $dbman->create_table($consumablestable);
+        }
+
+        upgrade_mod_savepoint(true, 2026082902, 'playerpuzzle');
+    }
+
     return true;
 }

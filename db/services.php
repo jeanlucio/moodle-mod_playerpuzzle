@@ -49,4 +49,12 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_buy_consumable' => [
+        'classname'    => 'mod_playerpuzzle\external\buy_consumable',
+        'methodname'   => 'execute',
+        'description'  => 'Authorizes the purchase of a combat consumable.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
 ];

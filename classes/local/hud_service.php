@@ -152,4 +152,23 @@ class hud_service {
         \block_playerhud\local\external_items::grant($blockinstanceid, $itemid, $userid, $qty, 'playerpuzzle', false);
         return true;
     }
+
+    /**
+     * Consumes $qty units of a configured PlayerHUD item — the `source=hud` path of a
+     * consumable purchase, spending stock instead of local session coins. Delegates to
+     * external_items::consume(), which holds the same atomic per-item/user lock grant() uses.
+     *
+     * @param int $blockinstanceid Block instance ID the item must belong to.
+     * @param int $userid User ID.
+     * @param int $itemid PlayerHUD item ID configured for this consumable.
+     * @param int $qty Number of units to consume.
+     * @return bool Whether the units were actually consumed (false: unconfigured, PlayerHUD
+     *  unavailable, item does not belong to this block, or insufficient stock).
+     */
+    public static function consume_item(int $blockinstanceid, int $userid, int $itemid, int $qty): bool {
+        if (!self::is_installed() || $itemid <= 0 || $qty <= 0) {
+            return false;
+        }
+        return (bool) \block_playerhud\local\external_items::consume($blockinstanceid, $itemid, $userid, $qty, 'playerpuzzle');
+    }
 }

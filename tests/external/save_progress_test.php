@@ -127,7 +127,8 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a victory credits the configured coin item with the exact gold amount.
+     * Tests that a victory credits the configured coin item, from the coin ledger's own
+     * available balance rather than a raw client-reported gold total.
      *
      * @return void
      */
@@ -139,11 +140,12 @@ final class save_progress_test extends \advanced_testcase {
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 42,
-            'victory' => 1,
-            'damage'  => 500,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 42,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -172,11 +174,12 @@ final class save_progress_test extends \advanced_testcase {
         \mod_playerpuzzle\local\attempt_questions::record($attemptid, 3, 2, 4, '<p>C</p>', 'x', 'x', true);
 
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 0,
-            'victory' => 0,
-            'damage'  => 0,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 0,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -202,11 +205,12 @@ final class save_progress_test extends \advanced_testcase {
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 42,
-            'victory' => 0,
-            'damage'  => 200,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 200,
+            'coinsearnedsofar'     => 42,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -228,11 +232,12 @@ final class save_progress_test extends \advanced_testcase {
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 0,
-            'victory' => 1,
-            'damage'  => 999999,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 999999,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -261,11 +266,12 @@ final class save_progress_test extends \advanced_testcase {
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 1, ['token' => $token]);
 
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 0,
-            'victory' => 1,
-            'damage'  => 250,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 250,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -294,11 +300,12 @@ final class save_progress_test extends \advanced_testcase {
         // Hard boss HP at Level 1, Phase 1 with basebosshp=100 is 200. 150 damage is a
         // 75% dent — the score, not a clamped-to-100 100%.
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 0,
-            'victory' => 0,
-            'damage'  => 150,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 150,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -319,11 +326,12 @@ final class save_progress_test extends \advanced_testcase {
         $this->setUser($this->student);
 
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => str_repeat('a', 64),
-            'gold'    => 10,
-            'victory' => 1,
-            'damage'  => 10,
+            'cmid'                 => $instance->cmid,
+            'token'                => str_repeat('a', 64),
+            'victory'              => 1,
+            'damage'               => 10,
+            'coinsearnedsofar'     => 10,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertTrue($result['error']);
@@ -344,11 +352,12 @@ final class save_progress_test extends \advanced_testcase {
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
         $args = [
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 42,
-            'victory' => 1,
-            'damage'  => 500,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 42,
+            'bosscoinsearnedsofar' => 0,
         ];
         $first = $this->call_save_progress($args);
         $second = $this->call_save_progress($args);
@@ -381,7 +390,7 @@ final class save_progress_test extends \advanced_testcase {
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
         $this->expectException(\core\exception\require_login_exception::class);
-        save_progress::execute($instance->cmid, $token, 10, 1, 10);
+        save_progress::execute($instance->cmid, $token, 1, 10, 10, 0);
     }
 
     /**
@@ -402,11 +411,12 @@ final class save_progress_test extends \advanced_testcase {
         $DB->set_field('playerpuzzle_attempts', 'questions_total', 2, ['token' => $token]);
 
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 0,
-            'victory' => 1,
-            'damage'  => 1000,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertTrue($result['error']);
@@ -431,11 +441,12 @@ final class save_progress_test extends \advanced_testcase {
         $DB->set_field('playerpuzzle_attempts', 'questions_total', 1, ['token' => $token]);
 
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 0,
-            'victory' => 0,
-            'damage'  => 100,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
@@ -457,13 +468,71 @@ final class save_progress_test extends \advanced_testcase {
         $DB->set_field('playerpuzzle_attempts', 'questions_total', 3, ['token' => $token]);
 
         $result = $this->call_save_progress([
-            'cmid'    => $instance->cmid,
-            'token'   => $token,
-            'gold'    => 0,
-            'victory' => 1,
-            'damage'  => 1000,
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
+    }
+
+    /**
+     * Tests that the amount banked is capped by the damage-based plausibility ceiling —
+     * a client reporting far more coins than the combat output could plausibly have
+     * earned only gets credit up to the ceiling, never the inflated raw report.
+     *
+     * @return void
+     */
+    public function test_coin_ceiling_caps_an_inflated_report(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        // Bossdamage/coingain default to 10 (generator); at Level 1 Phase 1 with Normal
+        // difficulty the scaled combo damage is 10 too, so the ceiling for 500 damage is
+        // floor((500/10) * 10 * 1.0) = 500 — comfortably below the 99999 reported here.
+        $instance = $this->make_instance(['hud_coin_item' => $itemid]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 99999,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(500, $result['data']['coinsbanked']);
+    }
+
+    /**
+     * Tests that the boss's own reported coin gain nets against the player's before
+     * payout — the boss's combos never bank anything for itself, they only reduce what
+     * the student takes home.
+     *
+     * @return void
+     */
+    public function test_boss_coins_net_against_payout(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        $instance = $this->make_instance(['hud_coin_item' => $itemid]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 30,
+            'bosscoinsearnedsofar' => 10,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(20, $result['data']['coinsbanked']);
     }
 }

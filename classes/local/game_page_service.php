@@ -149,33 +149,38 @@ class game_page_service {
         $bgurl = $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false);
 
         return [
-            'cmid'         => $cm->id,
-            'token'        => $attemptinfo->token,
-            'gamemode'     => $instance->gamemode,
-            'difficulty'   => $difficulty,
+            'cmid'           => $cm->id,
+            'token'          => $attemptinfo->token,
+            'gamemode'       => $instance->gamemode,
+            'difficulty'     => $difficulty,
+            // The client never counts its own answered questions for the "Perguntas: X/N" HUD
+            // counter or the boss-revive rule — it only ever mirrors this server-reported total,
+            // updated on every validate_answer call.
+            'minquestions'   => (int) $instance->minquestions,
+            'questionstotal' => $attemptinfo->questionstotal,
             // Coin multiplier the client applies to its own gold display so the end screen
             // matches what the server will actually bank (Easy 0.5x, Hard 3x). The client
             // still sends the raw, unmultiplied gold; the server re-applies this factor.
-            'coinfactor'   => combat::difficulty_coin_factor($difficulty),
-            'currentlevel' => $attemptinfo->currentlevel,
-            'currentphase' => $attemptinfo->currentphase,
-            'maxlevels'    => (int) $instance->maxlevels,
-            'bosshp'       => $bosshp,
-            'studenthp'    => $studenthp,
-            'bossdamage'   => $bossdamage,
+            'coinfactor'     => combat::difficulty_coin_factor($difficulty),
+            'currentlevel'   => $attemptinfo->currentlevel,
+            'currentphase'   => $attemptinfo->currentphase,
+            'maxlevels'      => (int) $instance->maxlevels,
+            'bosshp'         => $bosshp,
+            'studenthp'      => $studenthp,
+            'bossdamage'     => $bossdamage,
             // Deliberately not scaled by level/phase, unlike bossdamage above: a teacher's
             // fixed-price consumable shop would otherwise get proportionally cheaper as a
             // campaign progresses.
-            'coingain'     => (int) $instance->coingain,
-            'bossavatar'   => $instance->bossavatar,
-            'bossurl'      => $bossurl,
-            'playerurl'    => $playerurl,
-            'stagebgurl'   => $stagebgurl,
-            'bgurl'        => $bgurl,
-            'spriteurls'   => $spriteurls,
-            'questions'    => $questions,
-            'mobile'       => $ismobile,
-            'viewurl'      => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
+            'coingain'       => (int) $instance->coingain,
+            'bossavatar'     => $instance->bossavatar,
+            'bossurl'        => $bossurl,
+            'playerurl'      => $playerurl,
+            'stagebgurl'     => $stagebgurl,
+            'bgurl'          => $bgurl,
+            'spriteurls'     => $spriteurls,
+            'questions'      => $questions,
+            'mobile'         => $ismobile,
+            'viewurl'        => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
         ];
     }
 }

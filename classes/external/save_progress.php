@@ -86,6 +86,23 @@ class save_progress extends external_api {
         $isvictory = $params['victory'] === 1;
         $finalstatus = $isvictory ? 'won' : 'lost';
 
+        // Backstop against a claimed victory that bypasses the client-side boss-revive rule
+        // entirely (a forged request, or a genuine client bug) — checked before the token is
+        // consumed below, so a rejected claim leaves the attempt resumable instead of wasting
+        // it. The client should never actually reach this: the revive keeps the boss alive
+        // until enough questions are answered.
+        if ($isvictory) {
+            $pending = $DB->get_record('playerpuzzle_attempts', [
+                'token'          => $params['token'],
+                'playerpuzzleid' => (int) $playerpuzzle->id,
+                'userid'         => (int) $USER->id,
+                'status'         => 'inprogress',
+            ]);
+            if ($pending && (int) $pending->questions_total < (int) $playerpuzzle->minquestions) {
+                throw new moodle_exception('minquestionsnotmet', 'mod_playerpuzzle', '', (int) $playerpuzzle->minquestions);
+            }
+        }
+
         $attempt = security::validate_and_consume_token(
             $params['token'],
             (int) $playerpuzzle->id,

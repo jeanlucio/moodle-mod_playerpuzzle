@@ -279,4 +279,45 @@ final class game_page_service_test extends \advanced_testcase {
         $this->assertSame('hard', $config['difficulty']);
         $this->assertSame(400, $config['bosshp']);
     }
+
+    /**
+     * Tests that build_game_config() passes the instance's minquestions through, and that a
+     * fresh attempt starts questionstotal at 0 — the client's only sources of truth for the
+     * boss-revive rule and the "Perguntas: X/N" HUD counter.
+     *
+     * @return void
+     */
+    public function test_build_game_config_passes_minquestions_and_questionstotal(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 5]);
+        $context = \context_module::instance($cm->id);
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+
+        $this->assertSame(5, $config['minquestions']);
+        $this->assertSame(0, $config['questionstotal']);
+    }
+
+    /**
+     * Tests that resuming an in-progress attempt carries its questions_total forward into
+     * the game config — the count is cumulative for the whole Campaign attempt, not reset
+     * by reloading play.php.
+     *
+     * @return void
+     */
+    public function test_build_game_config_carries_questionstotal_on_resume(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 5]);
+        $context = \context_module::instance($cm->id);
+
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id
+        );
+        $DB->set_field('playerpuzzle_attempts', 'questions_total', 4, ['token' => $token]);
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+
+        $this->assertSame(4, $config['questionstotal']);
+    }
 }

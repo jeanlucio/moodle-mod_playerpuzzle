@@ -121,6 +121,15 @@ class advance_phase extends external_api {
             throw new moodle_exception('phasenotwon', 'mod_playerpuzzle');
         }
 
+        // Backstop against a claimed phase win that bypasses the client-side boss-revive rule
+        // entirely (a forged request, or a genuine client bug) — the attempt is never mutated
+        // above this point, so a rejection leaves it untouched and still resumable. The client
+        // should never actually reach this: the revive keeps the boss alive until enough
+        // questions are answered.
+        if ((int) $attempt->questions_total < (int) $playerpuzzle->minquestions) {
+            throw new moodle_exception('minquestionsnotmet', 'mod_playerpuzzle', '', (int) $playerpuzzle->minquestions);
+        }
+
         if ($currentphase < 10) {
             $newlevel = $currentlevel;
             $newphase = $currentphase + 1;

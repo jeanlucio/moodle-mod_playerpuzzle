@@ -126,6 +126,15 @@ class validate_answer extends external_api {
         $correct = question_fetcher::is_answer_correct($params['questionid'], $params['answerid']);
         $correctanswerid = question_fetcher::get_correct_answer_id($params['questionid']);
 
+        // Server-side source of truth for how many questions this attempt has answered so
+        // far (right or wrong): the boss-revive rule and the "Perguntas: X/N" HUD counter
+        // both trust only this number, never a count the client keeps on its own.
+        $attempt->questions_total = (int) $attempt->questions_total + 1;
+        if ($correct) {
+            $attempt->questions_correct = (int) $attempt->questions_correct + 1;
+        }
+        $DB->update_record('playerpuzzle_attempts', $attempt);
+
         // Log the student's answer for the post-game review — a text snapshot, so it still
         // reads correctly if the source question is later edited or removed.
         attempt_questions::record(
@@ -139,7 +148,7 @@ class validate_answer extends external_api {
             $correct
         );
 
-        $result = ['correct' => $correct];
+        $result = ['correct' => $correct, 'questionstotal' => (int) $attempt->questions_total];
         if (!$correct && $correctanswerid !== null) {
             $result['correctanswerid'] = $correctanswerid;
         }
@@ -197,6 +206,11 @@ class validate_answer extends external_api {
             'pickedanswerid'  => new external_value(
                 PARAM_INT,
                 'The answer the boss picked (boss path only)',
+                VALUE_OPTIONAL
+            ),
+            'questionstotal'  => new external_value(
+                PARAM_INT,
+                'Questions answered so far this attempt, server-counted (player path only)',
                 VALUE_OPTIONAL
             ),
         ]);

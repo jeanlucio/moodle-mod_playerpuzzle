@@ -185,7 +185,42 @@ define(['jquery'], function($) {
             this.createStatusPreview(L.playerUiX + L.hpBarW, L.playerHpY + L.hpBarH);
 
             this.setupProgressIndicator();
+            this.setupQuestionsCounter();
             this.setupButtons();
+        }
+
+        /**
+         * Creates the "Perguntas: X/N" counter shown just below the player's own HP bar —
+         * only when the instance configures a minimum question count, since it would just
+         * repeat information no rule attaches to otherwise. Centered under the bar, in the gap
+         * before the consumables row / ring row that follows on both layouts.
+         */
+        setupQuestionsCounter() {
+            if (!(parseInt(this.gameConfig.minquestions, 10) > 0)) {
+                return;
+            }
+
+            const L = this.L;
+            this.questionsCounterText = this.scene.add.text(
+                L.playerUiX + (L.hpBarW / 2), L.playerHpY + L.hpBarH + 14, '',
+                {fontSize: '13px', fill: '#e9e6dd'}
+            ).setOrigin(0.5, 0);
+        }
+
+        /**
+         * Updates the questions counter text — a no-op when minquestions is 0 (the counter was
+         * never created in setupQuestionsCounter()).
+         *
+         * @param {number} total Questions answered so far this attempt (server-reported).
+         * @param {number} min Minimum required, configured by the teacher.
+         */
+        updateQuestionsCounter(total, min) {
+            if (!this.questionsCounterText) {
+                return;
+            }
+            this.questionsCounterText.setText(
+                this.strings.questionscounter.replace('{$a->current}', total).replace('{$a->total}', min)
+            );
         }
 
         /**

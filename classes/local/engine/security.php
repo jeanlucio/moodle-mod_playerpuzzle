@@ -100,7 +100,8 @@ class security {
      * @param string $difficulty Student-chosen difficulty for a fresh attempt. Not applied when
      *  resuming: the attempt keeps the difficulty its current phase was entered at, which
      *  advance_phase() is what changes between phases in Campaign mode.
-     * @return \stdClass Object with ->token, ->currentlevel, ->currentphase, ->difficulty.
+     * @return \stdClass Object with ->token, ->currentlevel, ->currentphase, ->difficulty,
+     *  ->questionstotal.
      */
     public static function resume_or_create_attempt_token(
         int $playerpuzzleid,
@@ -130,6 +131,7 @@ class security {
                 'currentlevel' => (int) $attempt->currentlevel,
                 'currentphase' => (int) $attempt->currentphase,
                 'difficulty' => self::clean_difficulty((string) $attempt->difficulty),
+                'questionstotal' => (int) $attempt->questions_total,
             ];
         }
 
@@ -138,6 +140,7 @@ class security {
             'currentlevel' => 1,
             'currentphase' => 1,
             'difficulty' => self::clean_difficulty($difficulty),
+            'questionstotal' => 0,
         ];
     }
 

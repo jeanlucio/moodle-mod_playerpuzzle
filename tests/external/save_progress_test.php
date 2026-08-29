@@ -101,7 +101,14 @@ final class save_progress_test extends \advanced_testcase {
      */
     private function make_instance(array $overrides = []): \stdClass {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
-        $record = array_merge(['course' => $this->course->id, 'basebosshp' => 1000], $overrides);
+        // Minquestions defaults to 0 here (the generator's own default is 3) so every
+        // existing test in this file, none of which exercises the minimum-questions
+        // backstop, keeps banking a reported victory without first answering any
+        // questions; test_minquestions_* below override it explicitly.
+        $record = array_merge(
+            ['course' => $this->course->id, 'basebosshp' => 1000, 'minquestions' => 0],
+            $overrides
+        );
         $instance = $generator->create_instance($record);
 
         return $instance;
@@ -375,5 +382,88 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->expectException(\core\exception\require_login_exception::class);
         save_progress::execute($instance->cmid, $token, 10, 1, 10);
+    }
+
+    /**
+     * Tests that a claimed victory is rejected when the attempt hasn't answered enough
+     * questions yet — the server-side backstop against a client that bypasses the
+     * boss-revive rule entirely, leaving the attempt untouched (still 'inprogress',
+     * token unconsumed) so a legitimate follow-up call can still finish it properly.
+     *
+     * @return void
+     */
+    public function test_minquestions_backstop_rejects_premature_victory(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['minquestions' => 3]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'questions_total', 2, ['token' => $token]);
+
+        $result = $this->call_save_progress([
+            'cmid'    => $instance->cmid,
+            'token'   => $token,
+            'gold'    => 0,
+            'victory' => 1,
+            'damage'  => 1000,
+        ]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('minquestionsnotmet', $result['exception']->errorcode);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame('inprogress', $attempt->status);
+    }
+
+    /**
+     * Tests that the minquestions backstop never blocks a defeat/timeout — the
+     * requirement only gates ending in victory.
+     *
+     * @return void
+     */
+    public function test_minquestions_backstop_does_not_block_defeat(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['minquestions' => 3]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'questions_total', 1, ['token' => $token]);
+
+        $result = $this->call_save_progress([
+            'cmid'    => $instance->cmid,
+            'token'   => $token,
+            'gold'    => 0,
+            'victory' => 0,
+            'damage'  => 100,
+        ]);
+
+        $this->assertFalse($result['error']);
+    }
+
+    /**
+     * Tests that a victory is accepted once the attempt has answered at least the
+     * configured minimum.
+     *
+     * @return void
+     */
+    public function test_minquestions_backstop_allows_victory_once_met(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['minquestions' => 3]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'questions_total', 3, ['token' => $token]);
+
+        $result = $this->call_save_progress([
+            'cmid'    => $instance->cmid,
+            'token'   => $token,
+            'gold'    => 0,
+            'victory' => 1,
+            'damage'  => 1000,
+        ]);
+
+        $this->assertFalse($result['error']);
     }
 }

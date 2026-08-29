@@ -62,10 +62,15 @@ final class advance_phase_test extends \advanced_testcase {
      */
     private function make_instance(array $overrides = []): \stdClass {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        // Minquestions defaults to 0 here (the generator's own default is 3) so every
+        // existing test in this file, none of which exercises the minimum-questions
+        // backstop, keeps advancing a genuinely-won phase without first answering any
+        // questions; test_minquestions_* below override it explicitly.
         $record = array_merge([
-            'course'    => $this->course->id,
-            'gamemode'  => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
-            'maxlevels' => 10,
+            'course'       => $this->course->id,
+            'gamemode'     => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'maxlevels'    => 10,
+            'minquestions' => 0,
         ], $overrides);
         return $generator->create_instance($record);
     }
@@ -429,5 +434,54 @@ final class advance_phase_test extends \advanced_testcase {
 
         $this->expectException(\core\exception\require_login_exception::class);
         advance_phase::execute($instance->cmid, $token, 100, 0);
+    }
+
+    /**
+     * Tests that a genuinely-won phase is still rejected when the attempt hasn't
+     * answered enough questions yet — the server-side backstop against a client that
+     * bypasses the boss-revive rule entirely, leaving the attempt untouched (still on
+     * the same phase, token unrotated) so a legitimate follow-up call can still advance
+     * it once the requirement is met.
+     *
+     * @return void
+     */
+    public function test_minquestions_backstop_rejects_premature_advance(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100, 'minquestions' => 3]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $DB->set_field('playerpuzzle_attempts', 'questions_total', 1, ['token' => $token]);
+
+        $result = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100, 'gold' => 0,
+        ]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('minquestionsnotmet', $result['exception']->errorcode);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame('inprogress', $attempt->status);
+        $this->assertSame(1, (int) $attempt->currentphase);
+    }
+
+    /**
+     * Tests that advancing succeeds once the attempt has answered at least the
+     * configured minimum.
+     *
+     * @return void
+     */
+    public function test_minquestions_backstop_allows_advance_once_met(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100, 'minquestions' => 3]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $DB->set_field('playerpuzzle_attempts', 'questions_total', 3, ['token' => $token]);
+
+        $result = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100, 'gold' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
     }
 }

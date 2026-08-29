@@ -325,4 +325,33 @@ final class security_test extends \advanced_testcase {
         $resumed = security::resume_or_create_attempt_token(1, 2, 'easy');
         $this->assertSame('hard', $resumed->difficulty);
     }
+
+    /**
+     * Tests a brand new attempt starts questionstotal at 0.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_starts_questionstotal_at_zero(): void {
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame(0, $result->questionstotal);
+    }
+
+    /**
+     * Tests resuming an in-progress attempt carries forward the questions already answered
+     * in earlier phases — the minimum-questions counter is cumulative for the whole
+     * attempt and never resets on a page reload.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_carries_forward_questionstotal(): void {
+        global $DB;
+
+        $firsttoken = security::generate_attempt_token(1, 2);
+        $DB->set_field('playerpuzzle_attempts', 'questions_total', 5, ['token' => $firsttoken]);
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame(5, $result->questionstotal);
+    }
 }

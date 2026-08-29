@@ -385,8 +385,8 @@ define([
                 const strKeys = [
                     'advancingphase',
                     'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
-                    'bosslostmultiplier', 'bosstrigger', 'bosswrongfeedback', 'btnattack',
-                    'btncontinue', 'btnexitgame', 'btnplayagain',
+                    'bosslostmultiplier', 'bossrevived', 'bosstrigger', 'bosswrongfeedback',
+                    'btnattack', 'btncontinue', 'btnexitgame', 'btnplayagain',
                     'coinscollected',
                     'debriefcorrectanswer', 'debriefcorrectsr', 'debriefempty', 'debriefreview',
                     'debriefsummary', 'debrieftitle', 'debriefwrongsr', 'debriefyouranswer',
@@ -395,14 +395,15 @@ define([
                     'historylogattack', 'historylogcoins', 'historylogcritical', 'historylogempty',
                     'historylogheal', 'historylogmana', 'historylogmultiplier',
                     'historylogmultiplierlost', 'historylogpoisoncharge', 'historylogpoisontick',
-                    'historylogshieldblock', 'historylogshieldcharge', 'historylogtitle',
-                    'historylogwronganswer',
+                    'historylogrevive', 'historylogshieldblock', 'historylogshieldcharge',
+                    'historylogtitle', 'historylogwronganswer',
                     'hpboss', 'hpyou', 'iconeffects', 'loading', 'maxmultiplier',
                     'musicoff', 'musicon', 'nextlevel', 'nextphase', 'noanswers',
                     'phaseadvanced', 'phaseadvanceerror', 'phasecompletetitle', 'phasedifficulty',
                     'playercorrect',
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
-                    'questionerror', 'requirejserror', 'saveerror', 'savingprogress',
+                    'questionerror', 'questionscounter', 'questionsprogress',
+                    'requirejserror', 'saveerror', 'savingprogress',
                     'shuffling', 'victory'
                 ];
 

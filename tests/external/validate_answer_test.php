@@ -367,4 +367,76 @@ final class validate_answer_test extends \advanced_testcase {
         $this->assertGreaterThan(0.20, $rate);
         $this->assertLessThan(0.47, $rate);
     }
+
+    /**
+     * Tests that a player answer increments the attempt's questions_total (right or
+     * wrong) and questions_correct (only when right), and that the response carries the
+     * server-counted total back — the source of truth the client mirrors for the
+     * boss-revive rule and the "Perguntas: X/N" HUD counter.
+     *
+     * @return void
+     */
+    public function test_player_answer_increments_question_counters(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
+        $instance = $this->make_instance($cat->id);
+        $question = $this->make_question($cat->id);
+        $correctid = $this->find_answer_id((int) $question->id, 'One');
+        $wrongid = $this->find_answer_id((int) $question->id, 'Two');
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $result = $this->call_validate_answer([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'questionid' => $question->id,
+            'answerid'   => $wrongid,
+        ]);
+        $this->assertSame(1, $result['data']['questionstotal']);
+        $this->assertSame(1, (int) $DB->get_field('playerpuzzle_attempts', 'questions_total', ['id' => $attemptid]));
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle_attempts', 'questions_correct', ['id' => $attemptid]));
+
+        $result = $this->call_validate_answer([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'questionid' => $question->id,
+            'answerid'   => $correctid,
+        ]);
+        $this->assertSame(2, $result['data']['questionstotal']);
+        $this->assertSame(2, (int) $DB->get_field('playerpuzzle_attempts', 'questions_total', ['id' => $attemptid]));
+        $this->assertSame(1, (int) $DB->get_field('playerpuzzle_attempts', 'questions_correct', ['id' => $attemptid]));
+    }
+
+    /**
+     * Tests that the boss's own guess never touches the attempt's question counters —
+     * only the student's own answers count toward the minimum-questions requirement.
+     *
+     * @return void
+     */
+    public function test_boss_guess_does_not_increment_question_counters(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
+        $instance = $this->make_instance($cat->id);
+        $question = $this->make_question($cat->id);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $this->call_validate_answer([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'questionid' => $question->id,
+            'answerid'   => 0,
+            'forwhom'    => 'boss',
+        ]);
+
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle_attempts', 'questions_total', ['id' => $attemptid]));
+    }
 }

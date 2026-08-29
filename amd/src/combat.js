@@ -39,6 +39,12 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
             // gained so the HUD, the history log and the end screen all match what the server
             // banks — the server takes the reported gold as-is (a full recompute is Phase 5).
             this.coinFactor = parseFloat(gameConfig.coinfactor) || 1;
+            // Minimum-questions rule: the server is the only source of truth for how many
+            // questions this attempt has answered (questionsTotal starts at whatever a resumed
+            // attempt already carries from earlier phases and only ever moves forward, mirroring
+            // validate_answer.php's own count) — the client never counts on its own.
+            this.minQuestions = parseInt(gameConfig.minquestions, 10) || 0;
+            this.questionsTotal = parseInt(gameConfig.questionstotal, 10) || 0;
             this.currentTurn = 'player';
 
             this.playerGold = 0;
@@ -277,6 +283,7 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 this.bossShieldMeter, this.bossShieldReady,
                 this.bossMana, this.bossGold, this.bossMultiplier
             );
+            this.scene.ui.updateQuestionsCounter(this.questionsTotal, this.minQuestions);
         }
 
         applyDamageToBoss(amount) {
@@ -385,6 +392,10 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
 
         checkGameOver() {
             if (this.currentHp <= 0) {
+                if (this.needsRevive()) {
+                    this.reviveBoss();
+                    return false;
+                }
                 if (this.hasNextPhase()) {
                     this.showPhaseCompleteScreen();
                 } else {
@@ -397,6 +408,31 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                 return true;
             }
             return false;
+        }
+
+        /**
+         * Whether the boss reaching 0 HP right now should revive it instead of ending the
+         * match — true when a minimum question count is configured and the attempt hasn't
+         * answered enough yet. questionsTotal never resets on revive, so once the minimum is
+         * met (in this phase or an earlier one, for a Campaign attempt spanning several), the
+         * boss simply dies for good like before this rule existed.
+         *
+         * @returns {boolean} True when the boss should revive instead of the match ending.
+         */
+        needsRevive() {
+            return this.minQuestions > 0 && this.questionsTotal < this.minQuestions;
+        }
+
+        /**
+         * Brings the boss back at 50% of this match's own max HP and announces it, leaving
+         * combat running exactly as if the boss had never reached 0 — may fire more than once
+         * per match, since questionsTotal keeps advancing with every answer regardless.
+         */
+        reviveBoss() {
+            this.currentHp = Math.ceil(this.maxBossHp * 0.5);
+            this.updateUI();
+            this.scene.ui.pushHistoryLog('boss', this.strings.historylogrevive);
+            $('#pp-aria-live').text(this.strings.bossrevived);
         }
 
         /**
@@ -670,6 +706,17 @@ define(['jquery', 'core/ajax', 'core/templates'], function($, Ajax, Templates) {
                                         forwhom: 'player',
                                     },
                                 }])[0].done(res => {
+                                    if (typeof res.questionstotal === 'number' && ctx.minQuestions > 0) {
+                                        ctx.questionsTotal = res.questionstotal;
+                                        ctx.updateUI();
+                                        if (ctx.questionsTotal < ctx.minQuestions) {
+                                            $('#pp-aria-live').text(
+                                                ctx.strings.questionsprogress
+                                                    .replace('{$a->current}', ctx.questionsTotal)
+                                                    .replace('{$a->total}', ctx.minQuestions)
+                                            );
+                                        }
+                                    }
                                     applyResult(!!res.correct, res.correctanswerid || null);
                                 }).fail(() => {
                                     applyResult(false, null);

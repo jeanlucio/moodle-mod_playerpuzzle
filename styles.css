@@ -88,11 +88,11 @@ body.path-mod-playerpuzzle #pp-progress-bar {
 }
 
 /**
- * Game over / phase complete overlays: replaces inline style injected by
- * showEndScreen()/showPhaseCompleteScreen().
+ * Game over overlay: replaces inline style injected by showEndScreen(). The phase-complete
+ * overlay is a native <dialog> instead (see .pp-phase-modal below) — it is not part of this
+ * selector.
  */
-body.path-mod-playerpuzzle #playerpuzzle-gameover,
-body.path-mod-playerpuzzle #playerpuzzle-phasecomplete {
+body.path-mod-playerpuzzle #playerpuzzle-gameover {
     position: absolute;
     inset-block-start: 0;
     inset-inline-start: 0;
@@ -201,6 +201,31 @@ body.path-mod-playerpuzzle .pp-question-modal-footer {
     body.path-mod-playerpuzzle #playerpuzzle-btn-skip {
         font-size: 0.875rem;
     }
+}
+
+/**
+ * Phase-complete dialog: native <dialog>, same rationale as .pp-question-modal above
+ * (native focus/ESC/top-layer handling). Was a plain overlay <div> with no focus
+ * containment at all — a student changing the next phase's difficulty could have focus
+ * drift onto page furniture outside the canvas (e.g. the course index drawer toggle) with
+ * no way back to the select except a mouse click landing exactly on it again (reported
+ * live, 30/08/2026). showModal() traps focus inside automatically. The canvas's own
+ * dimming rect (fillRect at depth 99 in showPhaseCompleteScreen()) already darkens the
+ * board, so the dialog's own ::backdrop stays transparent instead of double-dimming.
+ */
+body.path-mod-playerpuzzle .pp-phase-modal {
+    max-width: 420px;
+    width: calc(100% - 2rem);
+    padding: 2rem 1.5rem;
+    border: 2px solid var(--warning, #ffc107);
+    border-radius: 0.5rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+    background-color: var(--dark, #1a1a1a);
+    text-align: center;
+}
+
+body.path-mod-playerpuzzle .pp-phase-modal::backdrop {
+    background-color: transparent;
 }
 
 /**

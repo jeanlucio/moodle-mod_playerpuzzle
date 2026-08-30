@@ -670,6 +670,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates'], function(
 
             const html = await Templates.render('mod_playerpuzzle/phase_complete_overlay', context);
             $('#playerpuzzle-canvas-container').append(html);
+            // Calling showModal() (not just setting the `open` attribute) traps focus inside
+            // the dialog and promotes it to the browser's top layer — without it, this was a
+            // plain absolutely-positioned <div> with no focus containment at all, letting
+            // focus drift onto page furniture outside the canvas (e.g. the course index
+            // drawer toggle) while choosing the next phase's difficulty (reported live,
+            // 30/08/2026).
+            document.getElementById('playerpuzzle-phasecomplete').showModal();
 
             const advanceAndContinue = () => {
                 $('#pp-phase-status').removeClass('text-success text-danger').addClass('text-muted')

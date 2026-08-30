@@ -79,4 +79,24 @@ final class attempt_consumables_test extends \advanced_testcase {
         $this->assertSame(1, attempt_consumables::get_uses(5, 'shield'));
         $this->assertSame(2, attempt_consumables::get_uses(9, 'shield'));
     }
+
+    /**
+     * Tests that reset_attempt() clears every recorded type for that attempt, without
+     * touching a different attempt's own uses.
+     *
+     * @return void
+     */
+    public function test_reset_attempt_clears_all_types_for_that_attempt_only(): void {
+        $this->resetAfterTest();
+
+        attempt_consumables::record_use(5, 'potion');
+        attempt_consumables::record_use(5, 'sword');
+        attempt_consumables::record_use(9, 'shield');
+
+        attempt_consumables::reset_attempt(5);
+
+        $this->assertSame(0, attempt_consumables::get_uses(5, 'potion'));
+        $this->assertSame(0, attempt_consumables::get_uses(5, 'sword'));
+        $this->assertSame(1, attempt_consumables::get_uses(9, 'shield'));
+    }
 }

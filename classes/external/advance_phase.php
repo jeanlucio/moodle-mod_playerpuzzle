@@ -29,6 +29,7 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_playerpuzzle\local\attempt_consumables;
 use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
@@ -165,7 +166,8 @@ class advance_phase extends external_api {
         // combat::coin_ceiling()'s own docblock), bank whatever is available, then reset the
         // ledger to 0 — the next phase starts its own clean window, since coins_earned/
         // boss_coins_earned/coins_spent track only the phase currently being played, not the
-        // whole Campaign attempt.
+        // whole Campaign attempt. attempt_consumables::reset_attempt() below clears the same
+        // window's maxconsumables count, for the same reason.
         $scaledbossdamage = combat::apply_difficulty(
             combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $currentlevel, $currentphase),
             (string) $attempt->difficulty
@@ -193,6 +195,7 @@ class advance_phase extends external_api {
             }
         }
         coin_ledger::reset($attempt);
+        attempt_consumables::reset_attempt((int) $attempt->id);
 
         $newtoken = bin2hex(random_bytes(32));
         $attempt->token = $newtoken;

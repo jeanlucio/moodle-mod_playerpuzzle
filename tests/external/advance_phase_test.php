@@ -28,6 +28,7 @@ namespace mod_playerpuzzle\external;
 use context_course;
 use context_module;
 use core_external\external_api;
+use mod_playerpuzzle\local\attempt_consumables;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
 
@@ -437,6 +438,39 @@ final class advance_phase_test extends \advanced_testcase {
         $this->assertSame(0, (int) $attempt->coins_earned);
         $this->assertSame(0, (int) $attempt->boss_coins_earned);
         $this->assertSame(0, (int) $attempt->coins_spent);
+    }
+
+    /**
+     * Tests that advancing a phase also clears the maxconsumables use count, the same
+     * per-phase window the coin ledger itself resets — a student who bought their one
+     * allowed Poção in phase 1 must be able to buy one again in phase 2, not stay locked
+     * out of that type for the rest of the Campaign attempt.
+     *
+     * @return void
+     */
+    public function test_advance_phase_resets_consumable_uses_after_banking(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+
+        attempt_consumables::record_use((int) $attempt->id, 'potion');
+        attempt_consumables::record_use((int) $attempt->id, 'sword');
+        $this->assertSame(1, attempt_consumables::get_uses((int) $attempt->id, 'potion'));
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(0, attempt_consumables::get_uses((int) $attempt->id, 'potion'));
+        $this->assertSame(0, attempt_consumables::get_uses((int) $attempt->id, 'sword'));
     }
 
     /**

@@ -36,26 +36,28 @@
         ]
     }
 }}
-<div id="playerpuzzle-phasecomplete" class="d-flex flex-column justify-content-center align-items-center">
-    <h1 class="display-4 pp-bold text-warning mb-3">{{msg}}</h1>
-    <p class="lead text-white mb-4">
-        {{coinscollected}} <strong class="text-warning">{{playergold}}</strong>
-    </p>
-    <div class="mb-3 text-center">
-        <label class="text-white d-block mb-1" for="pp-phase-difficulty">{{difficultylabel}}</label>
-        <select class="form-control d-inline-block w-auto" id="pp-phase-difficulty">
-            {{#difficultychoices}}
-            <option value="{{value}}" {{#checked}}selected{{/checked}}>{{label}}</option>
-            {{/difficultychoices}}
-        </select>
+<dialog id="playerpuzzle-phasecomplete" class="pp-phase-modal">
+    <div class="d-flex flex-column justify-content-center align-items-center">
+        <h1 class="display-4 pp-bold text-warning mb-3">{{msg}}</h1>
+        <p class="lead text-white mb-4">
+            {{coinscollected}} <strong class="text-warning">{{playergold}}</strong>
+        </p>
+        <div class="mb-3 text-center">
+            <label class="text-white d-block mb-1" for="pp-phase-difficulty">{{difficultylabel}}</label>
+            <select class="form-control d-inline-block w-auto" id="pp-phase-difficulty">
+                {{#difficultychoices}}
+                <option value="{{value}}" {{#checked}}selected{{/checked}}>{{label}}</option>
+                {{/difficultychoices}}
+            </select>
+        </div>
+        <p id="pp-phase-status" class="text-light small">&nbsp;</p>
+        <div class="pp-gameover-buttons">
+            <button id="btn-pp-continue-phase" class="btn btn-primary btn-lg shadow">
+                {{btncontinue}}
+            </button>
+            <button id="btn-pp-exit-phase" class="btn btn-secondary btn-lg shadow">
+                {{btnexitgame}}
+            </button>
+        </div>
     </div>
-    <p id="pp-phase-status" class="text-light small">&nbsp;</p>
-    <div class="pp-gameover-buttons">
-        <button id="btn-pp-continue-phase" class="btn btn-primary btn-lg shadow">
-            {{btncontinue}}
-        </button>
-        <button id="btn-pp-exit-phase" class="btn btn-secondary btn-lg shadow">
-            {{btnexitgame}}
-        </button>
-    </div>
-</div>
+</dialog>

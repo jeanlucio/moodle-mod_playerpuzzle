@@ -35,7 +35,7 @@ define(['jquery'], function($) {
     const FA_FONT_FAMILY = '"Font Awesome 6 Free"';
     const FA_VOLUME_HIGH = '\uf028';
     const FA_VOLUME_XMARK = '\uf6a9';
-    const FA_GEAR = '\uf013';
+    const FA_DRUM = '\uf569';
 
     class UIHandler {
         constructor(scene, layout, gameConfig, strings) {
@@ -844,8 +844,11 @@ define(['jquery'], function($) {
         }
 
         /**
-         * Creates the Efeitos button's icon as a Font Awesome gear glyph. The on/off state is
-         * conveyed by dimming the whole icon's alpha (unchanged), not by swapping glyphs.
+         * Creates the Efeitos button's icon as a Font Awesome drum glyph — a gear was used
+         * originally, but reads as a generic app-settings control rather than specifically
+         * "sound effects", so it was swapped for a drum (reported live, 30/08/2026). The
+         * on/off state is conveyed by dimming the whole icon's alpha (unchanged), not by
+         * swapping glyphs.
          *
          * @param {number} cx Center X.
          * @param {number} cy Center Y.
@@ -853,7 +856,7 @@ define(['jquery'], function($) {
          * @return {Phaser.GameObjects.Text} The icon text object.
          */
         createEffectsIcon(cx, cy, r) {
-            return this.scene.add.text(cx, cy, FA_GEAR, {
+            return this.scene.add.text(cx, cy, FA_DRUM, {
                 fontFamily: FA_FONT_FAMILY,
                 fontStyle: '900',
                 fontSize: `${Math.round(r * 1.15)}px`,

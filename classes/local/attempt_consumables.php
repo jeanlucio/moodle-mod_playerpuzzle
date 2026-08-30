@@ -83,4 +83,19 @@ class attempt_consumables {
             'timesused'      => 1,
         ]);
     }
+
+    /**
+     * Clears every recorded use for an attempt, once its phase's shop window has closed.
+     * Called by advance_phase alongside coin_ledger::reset() — maxconsumables limits
+     * purchases per phase, not for the whole Campaign attempt, so the count must start
+     * clean at the same point the coin ledger itself does.
+     *
+     * @param int $attemptid The attempt id.
+     * @return void
+     */
+    public static function reset_attempt(int $attemptid): void {
+        global $DB;
+
+        $DB->delete_records('playerpuzzle_attempt_consumables', ['attemptid' => $attemptid]);
+    }
 }

@@ -142,13 +142,15 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
-     * Tests coin_ceiling() scales with damage relative to the scaled combo damage value,
-     * and that zero damage yields a zero ceiling.
+     * Tests coin_ceiling() scales with this phase's own boss HP relative to the scaled
+     * combo damage value — a stable per-phase value, not tied to damage actually dealt
+     * (see the method's own docblock for why a damage-dealt ceiling would wrongly floor to
+     * 0 before a student lands their first Sword hit).
      *
      * @return void
      */
     public function test_coin_ceiling(): void {
-        // 100 damage, a combo worth 10, coingain 10, Normal factor: (100/10)*10*1 = 100.
+        // Boss HP 100, a combo worth 10, coingain 10, Normal factor: (100/10)*10*1 = 100.
         $this->assertSame(100, combat::coin_ceiling(100, 10, 10, 1.0));
         // Hard triples the coin factor.
         $this->assertSame(300, combat::coin_ceiling(100, 10, 10, 3.0));
@@ -168,12 +170,12 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
-     * Tests coin_ceiling() clamps a negative damage value to 0, never a negative
-     * ceiling.
+     * Tests coin_ceiling() clamps a negative boss HP value to 0, never a negative
+     * ceiling — defensive only, this should never happen in practice.
      *
      * @return void
      */
-    public function test_coin_ceiling_clamps_negative_damage(): void {
+    public function test_coin_ceiling_clamps_negative_bosshp(): void {
         $this->assertSame(0, combat::coin_ceiling(-50, 10, 10, 1.0));
     }
 

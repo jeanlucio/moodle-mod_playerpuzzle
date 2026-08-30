@@ -160,19 +160,18 @@ class advance_phase extends external_api {
         // one, which the reloaded play.php will scale the next fight with.
         $newdifficulty = security::clean_difficulty($params['difficulty']);
 
-        // Coin ledger: sync this just-finished phase's report against the plausibility
-        // ceiling, bank whatever is available, then reset the ledger to 0 — the next phase
-        // starts its own clean window, since coins_earned/boss_coins_earned/coins_spent track
-        // only the phase currently being played, not the whole Campaign attempt.
+        // Coin ledger: sync this just-finished phase's report against a plausibility ceiling
+        // sized to this phase's own boss HP (a stable value, not tied to damage dealt — see
+        // combat::coin_ceiling()'s own docblock), bank whatever is available, then reset the
+        // ledger to 0 — the next phase starts its own clean window, since coins_earned/
+        // boss_coins_earned/coins_spent track only the phase currently being played, not the
+        // whole Campaign attempt.
         $scaledbossdamage = combat::apply_difficulty(
             combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $currentlevel, $currentphase),
             (string) $attempt->difficulty
         );
-        // Never let an overshoot past the phase's own boss HP inflate the ceiling below —
-        // the win check above only guarantees damage >= currentbosshp, not a sane upper bound.
-        $safedamage = min($params['damage'], $currentbosshp);
         $ceiling = combat::coin_ceiling(
-            $safedamage,
+            $currentbosshp,
             $scaledbossdamage,
             (int) $playerpuzzle->coingain,
             combat::difficulty_coin_factor((string) $attempt->difficulty)

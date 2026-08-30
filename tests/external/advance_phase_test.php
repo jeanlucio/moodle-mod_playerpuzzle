@@ -536,14 +536,15 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the amount banked is capped by the damage-based plausibility ceiling.
+     * Tests that the amount banked is capped by the plausibility ceiling — sized to this
+     * phase's own boss HP, not to damage actually dealt.
      *
      * @return void
      */
     public function test_coin_ceiling_caps_an_inflated_report(): void {
         [, $itemid] = $this->make_hud_item();
         // Bossdamage/coingain default to 10; at Level 1 Phase 1 Normal the scaled combo
-        // damage is 10 too, so the ceiling for 100 damage is floor((100/10)*10*1) = 100.
+        // damage is 10 too, so with basebosshp 100 the ceiling is floor((100/10)*10*1) = 100.
         $instance = $this->make_instance(['basebosshp' => 100, 'hud_coin_item' => $itemid]);
         $this->setUser($this->student);
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);

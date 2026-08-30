@@ -35,6 +35,34 @@ define(['jquery'], function($) {
             this.rings = {};
             this.playerLog = [];
             this.bossLog = [];
+            this._lastTapAt = {};
+        }
+
+        /**
+         * Guards a UI control's tap handler against firing twice for the same physical tap.
+         * board.js's own touchstart listener calls preventDefault() to stop the browser's
+         * default touch handling, but only for a touch starting on an actual board piece
+         * (touch.capture is deliberately off — see game_boot.js — so page scroll keeps
+         * working everywhere else). Every interactive element outside the board (this
+         * badge, the top-row Música/Efeitos/Expandir buttons) never calls preventDefault(),
+         * so on a real touchscreen the browser also synthesizes a compatibility mouse
+         * down/up/click sequence for the same tap shortly after — which Phaser's own input
+         * manager turns into a second 'pointerup'/'pointerdown' on top of the touch's own.
+         * The visible symptom is a control (like Música) toggling on then immediately back
+         * off from a single tap, reading as "the button doesn't work". This debounce is a
+         * simpler general fix than duplicating board.js's per-region preventDefault() logic
+         * for every small hit area outside the board.
+         *
+         * @param {string} key Unique identifier for this control.
+         * @param {Function} callback The real handler to run, at most once per tap.
+         */
+        guardAgainstDoubleTap(key, callback) {
+            const now = Date.now();
+            if (this._lastTapAt[key] && (now - this._lastTapAt[key]) < 400) {
+                return;
+            }
+            this._lastTapAt[key] = now;
+            callback();
         }
 
         setupLoader() {
@@ -300,9 +328,11 @@ define(['jquery'], function($) {
             const hitzone = me.add.zone(cx, cy, w, h).setOrigin(0.5).setDepth(7)
                 .setInteractive({useHandCursor: true});
             hitzone.on('pointerup', () => {
-                if (me.combat) {
-                    me.combat.buyConsumable(type);
-                }
+                this.guardAgainstDoubleTap(`buy-${type}`, () => {
+                    if (me.combat) {
+                        me.combat.buyConsumable(type);
+                    }
+                });
             });
 
             if (!this.purchaseBadges) {
@@ -802,49 +832,55 @@ define(['jquery'], function($) {
             const iconMusic = me.add.text(xMusic, y, strings.musicon, iconStyle)
                 .setOrigin(0.5).setDepth(11);
             badgeMusic.on('pointerup', () => {
-                if (me.board && me.board.swipePiece !== null) {
-                    return;
-                }
-                me.musicOn = !me.musicOn;
-                iconMusic.setText(me.musicOn ? strings.musicon : strings.musicoff);
-                if (me.musicOn) {
-                    me.bgMusic.resume();
-                } else {
-                    me.bgMusic.pause();
-                }
+                this.guardAgainstDoubleTap('music', () => {
+                    if (me.board && me.board.swipePiece !== null) {
+                        return;
+                    }
+                    me.musicOn = !me.musicOn;
+                    iconMusic.setText(me.musicOn ? strings.musicon : strings.musicoff);
+                    if (me.musicOn) {
+                        me.bgMusic.resume();
+                    } else {
+                        me.bgMusic.pause();
+                    }
+                });
             });
 
             const badgeEffects = this.createButtonBadge(xEffects, y, r);
             const iconEffects = me.add.text(xEffects, y, strings.iconeffects, iconStyle)
                 .setOrigin(0.5).setDepth(11);
             badgeEffects.on('pointerup', () => {
-                if (me.board && me.board.swipePiece !== null) {
-                    return;
-                }
-                me.sfxOn = !me.sfxOn;
-                // No natural "muted gear" glyph, unlike Música's own 🔊/🔇 pair — dims the icon
-                // instead, mirroring the fill-color dim the old text buttons used for the same
-                // purpose.
-                iconEffects.setAlpha(me.sfxOn ? 1 : 0.4);
-                const vol = me.sfxOn ? 1 : 0;
-                me.sfxSwap.setVolume(0.6 * vol);
-                me.sfxMatch.setVolume(0.5 * vol);
-                me.sfxHit.setVolume(0.8 * vol);
+                this.guardAgainstDoubleTap('effects', () => {
+                    if (me.board && me.board.swipePiece !== null) {
+                        return;
+                    }
+                    me.sfxOn = !me.sfxOn;
+                    // No natural "muted gear" glyph, unlike Música's own 🔊/🔇 pair — dims the
+                    // icon instead, mirroring the fill-color dim the old text buttons used for
+                    // the same purpose.
+                    iconEffects.setAlpha(me.sfxOn ? 1 : 0.4);
+                    const vol = me.sfxOn ? 1 : 0;
+                    me.sfxSwap.setVolume(0.6 * vol);
+                    me.sfxMatch.setVolume(0.5 * vol);
+                    me.sfxHit.setVolume(0.8 * vol);
+                });
             });
 
             const badgeExpand = this.createButtonBadge(xExpand, y, r);
             const iconExpand = me.add.graphics().setDepth(11);
             this.drawFullscreenIcon(iconExpand, xExpand, y, r, false);
             badgeExpand.on('pointerdown', () => {
-                me.cameras.main.fadeOut(200, 0, 0, 0);
-                me.time.delayedCall(200, () => {
-                    if (me.scale.isFullscreen) {
-                        me.scale.stopFullscreen();
-                    } else {
-                        me.scale.startFullscreen();
-                    }
-                    this.drawFullscreenIcon(iconExpand, xExpand, y, r, me.scale.isFullscreen);
-                    me.cameras.main.fadeIn(200, 0, 0, 0);
+                this.guardAgainstDoubleTap('expand', () => {
+                    me.cameras.main.fadeOut(200, 0, 0, 0);
+                    me.time.delayedCall(200, () => {
+                        if (me.scale.isFullscreen) {
+                            me.scale.stopFullscreen();
+                        } else {
+                            me.scale.startFullscreen();
+                        }
+                        this.drawFullscreenIcon(iconExpand, xExpand, y, r, me.scale.isFullscreen);
+                        me.cameras.main.fadeIn(200, 0, 0, 0);
+                    });
                 });
             });
         }

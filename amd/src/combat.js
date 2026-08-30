@@ -510,7 +510,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates'], function(
          */
         requestPurchase(type, source) {
             const me = this.scene;
-            const damage = Math.max(0, this.maxBossHp - this.currentHp);
 
             Ajax.call([{
                 methodname: 'mod_playerpuzzle_buy_consumable',
@@ -519,7 +518,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates'], function(
                     token: this.gameConfig.token,
                     type,
                     source,
-                    damage,
                     coinsearnedsofar: Math.round(this.playerGold),
                     bosscoinsearnedsofar: Math.round(this.bossGold),
                 },

@@ -54,8 +54,9 @@ final class buy_consumable_test extends \advanced_testcase {
     }
 
     /**
-     * Creates a playerpuzzle instance, with a comfortably high basebosshp/bossdamage so
-     * a single call's damage never accidentally clamps below what a test needs.
+     * Creates a playerpuzzle instance, with a comfortably high basebosshp so the coin
+     * ceiling (sized to this phase's own boss HP) never accidentally clamps below what a
+     * test needs.
      *
      * @param array $overrides Instance field overrides.
      * @return \stdClass Instance record with the ->cmid field added.
@@ -154,7 +155,6 @@ final class buy_consumable_test extends \advanced_testcase {
             'token'                => $token,
             'type'                 => 'potion',
             'source'               => 'local',
-            'damage'               => 100,
             'coinsearnedsofar'     => 100,
             'bosscoinsearnedsofar' => 0,
         ], $overrides);
@@ -179,8 +179,9 @@ final class buy_consumable_test extends \advanced_testcase {
         $this->assertFalse($result['error']);
         $this->assertTrue($result['data']['success']);
         $this->assertSame('potion', $result['data']['apply']);
-        // Ceiling for 100 damage / 10 scaled bossdamage * 10 coingain * 1.0 = 100; potion
-        // costs 8, so newbalance = 100 - 8 = 92.
+        // Ceiling sized to this phase's boss HP (1000) / 10 scaled bossdamage * 10 coingain
+        // * 1.0 = 1000, comfortably above the 100 reported; potion costs 8, so
+        // newbalance = 100 - 8 = 92.
         $this->assertSame(92, $result['data']['newbalance']);
         $this->assertSame(8, (int) $DB->get_field('playerpuzzle_attempts', 'coins_spent', ['id' => $attemptid]));
         $this->assertSame(1, attempt_consumables::get_uses($attemptid, 'potion'));
@@ -202,7 +203,6 @@ final class buy_consumable_test extends \advanced_testcase {
 
         $result = $this->call_buy_consumable($this->local_args($instance, $token, [
             'type'             => 'magic',
-            'damage'           => 0,
             'coinsearnedsofar' => 0,
         ]));
 
@@ -213,25 +213,56 @@ final class buy_consumable_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the reported coin total is capped by the damage-based ceiling before
-     * affordability is checked — a client claiming a huge balance with almost no combat
-     * output still cannot afford anything real.
+     * Tests that a purchase succeeds on genuinely-earned coins even when the boss has not
+     * taken any damage yet this phase — the regression case for the bug a real playtest
+     * found (28/08/2026): the coin ceiling used to be sized to damage dealt so far, which
+     * floored to 0 before a student's first Sword hit, blocking every purchase even with
+     * real coins on hand. The ceiling is now sized to this phase's own boss HP instead
+     * (combat::coin_ceiling()), a stable value independent of live combat progress.
      *
      * @return void
      */
-    public function test_local_purchase_respects_the_coin_ceiling(): void {
+    public function test_local_purchase_works_before_any_damage_dealt(): void {
         $instance = $this->make_instance();
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
-        // Damage 0 -> ceiling 0, regardless of the inflated reported balance.
+        // Mirrors a real playtest report: 20 coins earned, boss earned 10, buying a
+        // 10-coin Shield — with the boss still at full HP (no damage dealt this phase).
         $result = $this->call_buy_consumable($this->local_args($instance, $token, [
-            'damage'           => 0,
+            'type'                 => 'shield',
+            'coinsearnedsofar'     => 20,
+            'bosscoinsearnedsofar' => 10,
+        ]));
+
+        $this->assertFalse($result['error']);
+        $this->assertTrue($result['data']['success']);
+        $this->assertSame(0, $result['data']['newbalance']);
+    }
+
+    /**
+     * Tests that the reported coin total is still capped by the plausibility ceiling
+     * (sized to this phase's own boss HP) even though it is no longer damage-based — a
+     * client claiming a wildly inflated balance is still bounded to a value proportional
+     * to the phase's own size, not left unbounded.
+     *
+     * @return void
+     */
+    public function test_local_purchase_respects_the_coin_ceiling(): void {
+        // A small basebosshp keeps the ceiling itself small and easy to check: boss HP 50
+        // / scaled bossdamage 10 * coingain 10 * Normal factor 1.0 = 50.
+        $instance = $this->make_instance(['basebosshp' => 50]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_buy_consumable($this->local_args($instance, $token, [
+            'type'             => 'sword',
             'coinsearnedsofar' => 99999,
         ]));
 
-        $this->assertTrue($result['error']);
-        $this->assertSame('insufficientcoins', $result['exception']->errorcode);
+        $this->assertFalse($result['error']);
+        // Reported 99999 clamped to the ceiling (50); sword costs 10, so newbalance = 40.
+        $this->assertSame(40, $result['data']['newbalance']);
     }
 
     /**
@@ -410,6 +441,6 @@ final class buy_consumable_test extends \advanced_testcase {
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
         $this->expectException(\core\exception\require_login_exception::class);
-        buy_consumable::execute($instance->cmid, $token, 'potion', 'local', 100, 100, 0);
+        buy_consumable::execute($instance->cmid, $token, 'potion', 'local', 100, 0);
     }
 }

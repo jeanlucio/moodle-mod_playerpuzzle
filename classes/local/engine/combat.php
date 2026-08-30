@@ -166,25 +166,28 @@ class combat {
     }
 
     /**
-     * Plausibility ceiling for how many coins could genuinely have been earned given the
-     * damage actually dealt to the boss so far: a rough 1-to-1 bound between combo-worth of
-     * damage and combo-worth of coin gain, since both come from the same board activity
-     * (Sword and Coin matches). Not a precise economic model — it exists to catch a client
-     * reporting wildly inflated coin values while doing comparatively little real combat, not
-     * to police the exact mix of piece types a student chooses to match.
+     * Plausibility ceiling for how many coins could genuinely have been earned in this
+     * phase/match: a rough 1-to-1 bound between the number of Sword combos it would take to
+     * clear this phase's own boss HP and an equal number of Coin combos. A **stable per-phase
+     * value**, not tied to the damage actually dealt so far — Coin/Shield/Magic matches are
+     * independent of Sword matches on the board, so a student who has not yet landed a hit
+     * (boss still at full HP) can still have genuinely earned coins, and a ceiling keyed to
+     * live damage would wrongly floor to 0 for them. Not a precise economic model — it exists
+     * to catch a client reporting a wildly inflated coin value, bounding it to a generous
+     * multiple of this phase's own size, never to police real-time play.
      *
-     * @param int $damage Damage dealt to the boss so far this phase/match.
+     * @param int $bosshp This phase's own scaled boss HP (its full value, not what remains).
      * @param int $scaledbossdamage The phase's own scaled combat damage value (a single
      *  3-piece Sword combo's worth), always at least 1 to avoid dividing by zero.
      * @param int $coingain Base coins per 3-piece Coin combo, unscaled by level/phase.
      * @param float $coinfactor Difficulty coin multiplier.
      * @return int The ceiling, never negative.
      */
-    public static function coin_ceiling(int $damage, int $scaledbossdamage, int $coingain, float $coinfactor): int {
-        $safedamage = max(0, $damage);
+    public static function coin_ceiling(int $bosshp, int $scaledbossdamage, int $coingain, float $coinfactor): int {
+        $safebosshp = max(0, $bosshp);
         $safebossdamage = max(1, $scaledbossdamage);
 
-        return (int) floor(($safedamage / $safebossdamage) * $coingain * $coinfactor);
+        return (int) floor(($safebosshp / $safebossdamage) * $coingain * $coinfactor);
     }
 
     /**

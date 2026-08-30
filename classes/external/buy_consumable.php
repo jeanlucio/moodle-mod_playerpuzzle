@@ -63,7 +63,6 @@ class buy_consumable extends external_api {
             'token'                => new external_value(PARAM_ALPHANUM, 'Anti-replay token of the in-progress attempt'),
             'type'                 => new external_value(PARAM_ALPHA, 'Consumable type: potion, shield, magic or sword'),
             'source'               => new external_value(PARAM_ALPHA, 'Funding source: local (coins) or hud (PlayerHUD stock)'),
-            'damage'               => new external_value(PARAM_INT, 'Damage dealt to the boss so far this phase/match'),
             'coinsearnedsofar'     => new external_value(PARAM_INT, 'Player coins earned so far this phase/match, client-reported'),
             'bosscoinsearnedsofar' => new external_value(PARAM_INT, 'Boss coins earned so far this phase/match, client-reported'),
         ]);
@@ -76,7 +75,6 @@ class buy_consumable extends external_api {
      * @param string $token Anti-replay token of the in-progress attempt.
      * @param string $type Consumable type.
      * @param string $source Funding source.
-     * @param int $damage Damage dealt to the boss so far this phase/match.
      * @param int $coinsearnedsofar Player coins earned so far, client-reported.
      * @param int $bosscoinsearnedsofar Boss coins earned so far, client-reported.
      * @return array Result with success, newbalance and apply.
@@ -86,7 +84,6 @@ class buy_consumable extends external_api {
         string $token,
         string $type,
         string $source,
-        int $damage,
         int $coinsearnedsofar,
         int $bosscoinsearnedsofar
     ): array {
@@ -97,7 +94,6 @@ class buy_consumable extends external_api {
             'token'                => $token,
             'type'                 => $type,
             'source'               => $source,
-            'damage'               => $damage,
             'coinsearnedsofar'     => $coinsearnedsofar,
             'bosscoinsearnedsofar' => $bosscoinsearnedsofar,
         ]);
@@ -134,21 +130,20 @@ class buy_consumable extends external_api {
         $level = (int) $attempt->currentlevel;
         $phase = (int) $attempt->currentphase;
 
-        // Same clamp save_progress/advance_phase already apply to their own damage param —
-        // never trust a reported damage past what the phase's own boss HP allows, since it
-        // directly drives the coin ceiling below.
+        // The ceiling is a stable per-phase value (this phase's own full boss HP), not tied
+        // to damage dealt so far — a student who has not yet landed a Sword hit can still have
+        // genuinely earned coins from Coin/Shield/Magic matches, which happen independently on
+        // the board. See combat::coin_ceiling()'s own docblock for why.
         $currentbosshp = combat::apply_difficulty(
             combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $level, $phase),
             $difficulty
         );
-        $safedamage = max(0, min($params['damage'], $currentbosshp));
-
         $scaledbossdamage = combat::apply_difficulty(
             combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $level, $phase),
             $difficulty
         );
         $ceiling = combat::coin_ceiling(
-            $safedamage,
+            $currentbosshp,
             $scaledbossdamage,
             (int) $playerpuzzle->coingain,
             combat::difficulty_coin_factor($difficulty)

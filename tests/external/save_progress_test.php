@@ -480,18 +480,20 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the amount banked is capped by the damage-based plausibility ceiling —
-     * a client reporting far more coins than the combat output could plausibly have
-     * earned only gets credit up to the ceiling, never the inflated raw report.
+     * Tests that the amount banked is capped by the plausibility ceiling — sized to this
+     * phase's own boss HP, not to damage actually dealt — a client reporting far more
+     * coins than the phase could plausibly be worth only gets credit up to the ceiling,
+     * never the inflated raw report.
      *
      * @return void
      */
     public function test_coin_ceiling_caps_an_inflated_report(): void {
         [$biid, $itemid] = $this->make_hud_item();
         // Bossdamage/coingain default to 10 (generator); at Level 1 Phase 1 with Normal
-        // difficulty the scaled combo damage is 10 too, so the ceiling for 500 damage is
-        // floor((500/10) * 10 * 1.0) = 500 — comfortably below the 99999 reported here.
-        $instance = $this->make_instance(['hud_coin_item' => $itemid]);
+        // difficulty the scaled combo damage is 10 too, so with basebosshp overridden to
+        // 500, the ceiling is floor((500/10) * 10 * 1.0) = 500 — comfortably below the
+        // 99999 reported here.
+        $instance = $this->make_instance(['hud_coin_item' => $itemid, 'basebosshp' => 500]);
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);

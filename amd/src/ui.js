@@ -809,10 +809,78 @@ define(['jquery'], function($) {
             });
         }
 
+        /**
+         * Draws the Música button's own icon: a speaker shape with two curved sound-wave
+         * arcs when on, or a diagonal mute slash when off. Vector-drawn, like Expandir's own
+         * icon, rather than the 🔊/🔇 emoji glyphs these replaced — color-emoji font metrics
+         * vary enough across platforms that those rendered visibly clipped against the top
+         * of the badge circle on at least one real device (reported live, 29/08/2026).
+         *
+         * @param {Phaser.GameObjects.Graphics} g Graphics object to draw into (cleared first).
+         * @param {number} cx Center X.
+         * @param {number} cy Center Y.
+         * @param {number} r Badge radius — the icon is sized relative to it.
+         * @param {boolean} on True for the unmuted variant (with sound-wave arcs).
+         */
+        drawMusicIcon(g, cx, cy, r, on) {
+            g.clear();
+            g.fillStyle(0xe8dcc8, 1);
+
+            const bx = cx - (r * 0.32);
+            const bodyW = r * 0.32;
+            const bodyH = r * 0.5;
+            g.fillRect(bx - (bodyW / 2), cy - (bodyH / 2), bodyW, bodyH);
+            g.fillTriangle(
+                bx + (bodyW / 2), cy - bodyH,
+                bx + (bodyW / 2), cy + bodyH,
+                bx + (r * 0.5), cy
+            );
+
+            g.lineStyle(2, 0xe8dcc8, 1);
+            if (on) {
+                [0.35, 0.58].forEach(waveR => {
+                    g.beginPath();
+                    g.arc(bx + (r * 0.1), cy, r * waveR, Phaser.Math.DegToRad(-35), Phaser.Math.DegToRad(35), false);
+                    g.strokePath();
+                });
+            } else {
+                g.beginPath();
+                g.moveTo(cx - (r * 0.5), cy - (r * 0.5));
+                g.lineTo(cx + (r * 0.5), cy + (r * 0.5));
+                g.strokePath();
+            }
+        }
+
+        /**
+         * Draws the Efeitos button's own icon: three equalizer-style sliders, a simpler
+         * vector shape than a full gear that avoids fiddly tooth geometry while still
+         * reading as "audio/effects settings". Drawn once — the on/off state is already
+         * conveyed by dimming the whole icon's alpha, same as before.
+         *
+         * @param {Phaser.GameObjects.Graphics} g Graphics object to draw into (cleared first).
+         * @param {number} cx Center X.
+         * @param {number} cy Center Y.
+         * @param {number} r Badge radius — the icon is sized relative to it.
+         */
+        drawEffectsIcon(g, cx, cy, r) {
+            g.clear();
+            g.lineStyle(2, 0xe8dcc8, 1);
+            const halfH = r * 0.42;
+            const knobs = [-0.15, 0.05, -0.05];
+            [-1, 0, 1].forEach((col, i) => {
+                const x = cx + (col * r * 0.32);
+                g.beginPath();
+                g.moveTo(x, cy - halfH);
+                g.lineTo(x, cy + halfH);
+                g.strokePath();
+                g.fillStyle(0xe8dcc8, 1);
+                g.fillCircle(x, cy + (knobs[i] * r), r * 0.11);
+            });
+        }
+
         setupButtons() {
             const me = this.scene;
             const L = this.L;
-            const strings = this.strings;
 
             me.musicOn = true;
             me.sfxOn = true;
@@ -826,18 +894,17 @@ define(['jquery'], function($) {
             const xExpand = L.w - 30;
             const xEffects = xExpand - gap;
             const xMusic = xEffects - gap;
-            const iconStyle = {fontSize: `${Math.round(r * 1.15)}px`};
 
             const badgeMusic = this.createButtonBadge(xMusic, y, r);
-            const iconMusic = me.add.text(xMusic, y, strings.musicon, iconStyle)
-                .setOrigin(0.5).setDepth(11);
+            const iconMusic = me.add.graphics().setDepth(11);
+            this.drawMusicIcon(iconMusic, xMusic, y, r, true);
             badgeMusic.on('pointerup', () => {
                 this.guardAgainstDoubleTap('music', () => {
                     if (me.board && me.board.swipePiece !== null) {
                         return;
                     }
                     me.musicOn = !me.musicOn;
-                    iconMusic.setText(me.musicOn ? strings.musicon : strings.musicoff);
+                    this.drawMusicIcon(iconMusic, xMusic, y, r, me.musicOn);
                     if (me.musicOn) {
                         me.bgMusic.resume();
                     } else {
@@ -847,17 +914,16 @@ define(['jquery'], function($) {
             });
 
             const badgeEffects = this.createButtonBadge(xEffects, y, r);
-            const iconEffects = me.add.text(xEffects, y, strings.iconeffects, iconStyle)
-                .setOrigin(0.5).setDepth(11);
+            const iconEffects = me.add.graphics().setDepth(11);
+            this.drawEffectsIcon(iconEffects, xEffects, y, r);
             badgeEffects.on('pointerup', () => {
                 this.guardAgainstDoubleTap('effects', () => {
                     if (me.board && me.board.swipePiece !== null) {
                         return;
                     }
                     me.sfxOn = !me.sfxOn;
-                    // No natural "muted gear" glyph, unlike Música's own 🔊/🔇 pair — dims the
-                    // icon instead, mirroring the fill-color dim the old text buttons used for
-                    // the same purpose.
+                    // Dims the whole icon instead of redrawing a "muted" variant — mirrors the
+                    // fill-color dim the old text buttons used for the same purpose.
                     iconEffects.setAlpha(me.sfxOn ? 1 : 0.4);
                     const vol = me.sfxOn ? 1 : 0;
                     me.sfxSwap.setVolume(0.6 * vol);

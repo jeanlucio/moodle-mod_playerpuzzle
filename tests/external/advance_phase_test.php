@@ -411,6 +411,48 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the win-grant item is credited on every successful phase advance, separate
+     * from the coin balance.
+     *
+     * @return void
+     */
+    public function test_advance_phase_grants_the_win_grant_item(): void {
+        global $DB;
+
+        [$biid, $coinitemid] = $this->make_hud_item();
+        $grantitemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $biid,
+            'name'            => 'Phase Trophy',
+            'xp'              => 0,
+            'image'           => '',
+            'description'     => '',
+            'enabled'         => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+        $instance = $this->make_instance([
+            'basebosshp'          => 100,
+            'hud_coin_item'       => $coinitemid,
+            'hud_win_grant_item'  => $grantitemid,
+            'hud_win_grant_qty'   => 2,
+        ]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(2, hud_service::get_upgrade_level($biid, $this->student->id, $grantitemid));
+    }
+
+    /**
      * Tests that the coin ledger resets to 0 once a phase's payout is banked, so the
      * next phase starts with a clean window rather than carrying the previous phase's
      * earnings forward.

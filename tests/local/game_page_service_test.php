@@ -86,6 +86,61 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Inserts a block_playerhud block instance and one item in the course, returning
+     * both IDs.
+     *
+     * @return array{0: int, 1: int} [$blockinstanceid, $itemid]
+     */
+    private function make_hud_item(): array {
+        global $DB;
+
+        if (!$DB->get_manager()->table_exists('block_playerhud_items')) {
+            $this->markTestSkipped('block_playerhud not installed.');
+        }
+
+        $ctx = \context_course::instance($this->course->id);
+        $biid = $DB->insert_record('block_instances', (object) [
+            'blockname'         => 'playerhud',
+            'parentcontextid'   => $ctx->id,
+            'showinsubcontexts' => 0,
+            'pagetypepattern'   => 'course-view-*',
+            'subpagepattern'    => null,
+            'defaultregion'     => 'side-pre',
+            'defaultweight'     => 0,
+            'configdata'        => base64_encode(serialize(new \stdClass())),
+            'timecreated'       => time(),
+            'timemodified'      => time(),
+        ]);
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $biid,
+            'name'            => 'Retry Token',
+            'xp'              => 0,
+            'image'           => '',
+            'description'     => '',
+            'enabled'         => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+
+        return [$biid, $itemid];
+    }
+
+    /**
+     * Grants $qty units of a PlayerHUD item to a user, via the same stack table
+     * external_items::grant() writes to.
+     *
+     * @param int $blockinstanceid Block instance ID.
+     * @param int $itemid Item ID.
+     * @param int $userid User ID.
+     * @param int $qty Quantity to grant.
+     * @return void
+     */
+    private function grant_hud_item(int $blockinstanceid, int $itemid, int $userid, int $qty): void {
+        \block_playerhud\local\external_items::grant($blockinstanceid, $itemid, $userid, $qty, 'test', false);
+    }
+
+    /**
      * Tests that a limit of 0 (unlimited) never blocks, for either game mode.
      *
      * @return void
@@ -167,6 +222,106 @@ final class game_page_service_test extends \advanced_testcase {
         ]);
 
         game_page_service::check_attempt_limit($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that the very first attempt is always free, even with a retry-cost item
+     * configured and no balance to pay it.
+     *
+     * @return void
+     */
+    public function test_check_retry_cost_first_attempt_is_free(): void {
+        [, $itemid] = $this->make_hud_item();
+        [, $instance] = $this->make_cm_and_instance(['hud_retry_cost_item' => $itemid]);
+
+        game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that the configured quantity is charged from the 2nd attempt onwards, when the
+     * student holds enough of the item.
+     *
+     * @return void
+     */
+    public function test_check_retry_cost_charges_from_second_attempt(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        [, $instance] = $this->make_cm_and_instance(['hud_retry_cost_item' => $itemid, 'hud_retry_cost_qty' => 3]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        $this->grant_hud_item($biid, $itemid, (int) $this->student->id, 5);
+
+        game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+
+        $this->assertSame(2, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+    }
+
+    /**
+     * Tests that a student without enough of the configured item is blocked.
+     *
+     * @return void
+     */
+    public function test_check_retry_cost_blocks_when_insufficient(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        [, $instance] = $this->make_cm_and_instance(['hud_retry_cost_item' => $itemid, 'hud_retry_cost_qty' => 3]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        $this->grant_hud_item($biid, $itemid, (int) $this->student->id, 1);
+
+        $this->expectException(\moodle_exception::class);
+        game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+    }
+
+    /**
+     * Tests that retries stay free when no retry-cost item is configured, no matter how
+     * many attempts have already been finished.
+     *
+     * @return void
+     */
+    public function test_check_retry_cost_free_when_item_unconfigured(): void {
+        [, $instance] = $this->make_cm_and_instance(['hud_retry_cost_item' => 0]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+
+        game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that retries stay free when a retry-cost item is configured but there is no
+     * block_playerhud instance in the course to charge it from — the gate degrades to free
+     * rather than locking students out over a teacher/admin infrastructure gap.
+     *
+     * @return void
+     */
+    public function test_check_retry_cost_free_when_no_playerhud_block(): void {
+        [, $instance] = $this->make_cm_and_instance(['hud_retry_cost_item' => 999]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+
+        game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that a play.php POST which will only resume an already in-progress attempt is
+     * never charged — resuming is not "a new try".
+     *
+     * @return void
+     */
+    public function test_check_retry_cost_skips_when_resuming_inprogress(): void {
+        global $DB;
+
+        [, $itemid] = $this->make_hud_item();
+        [, $instance] = $this->make_cm_and_instance(['hud_retry_cost_item' => $itemid]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id,
+            'userid'         => $this->student->id,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'inprogress',
+            'timecreated'    => time(),
+        ]);
+
+        // No balance granted at all — would throw if this were treated as a new attempt.
+        game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
         $this->expectNotToPerformAssertions();
     }
 

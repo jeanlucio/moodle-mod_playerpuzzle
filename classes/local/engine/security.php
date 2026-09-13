@@ -84,6 +84,26 @@ class security {
     public const FINAL_STATUSES = ['won', 'lost', 'timeout', 'abandoned'];
 
     /**
+     * Whether the user already has an in-progress attempt on this instance — a play.php POST
+     * that finds one will resume it rather than create a new one (see
+     * resume_or_create_attempt_token()), which is not "a new try" for the retry-cost gate
+     * (game_page_service::check_retry_cost()) to charge for.
+     *
+     * @param int $playerpuzzleid The instance ID.
+     * @param int $userid The user ID.
+     * @return bool
+     */
+    public static function has_inprogress_attempt(int $playerpuzzleid, int $userid): bool {
+        global $DB;
+
+        return $DB->record_exists('playerpuzzle_attempts', [
+            'playerpuzzleid' => $playerpuzzleid,
+            'userid'         => $userid,
+            'status'         => 'inprogress',
+        ]);
+    }
+
+    /**
      * Resumes the most recent in-progress attempt for this user/instance, if one exists,
      * or creates a brand new one otherwise. Resuming rotates the token (the old one, tied
      * to whatever session left the attempt in progress, becomes invalid immediately) but

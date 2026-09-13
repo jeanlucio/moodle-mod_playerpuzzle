@@ -389,4 +389,33 @@ final class security_test extends \advanced_testcase {
         $this->assertSame([1, 2, 3], $result->combatstate['boardgrid']);
         $this->assertSame('boss', $result->combatstate['currentturn']);
     }
+
+    /**
+     * Tests that has_inprogress_attempt() reflects a genuine in-progress row, is false
+     * before one exists, and ignores other users/instances/final statuses.
+     *
+     * @return void
+     */
+    public function test_has_inprogress_attempt(): void {
+        $this->assertFalse(security::has_inprogress_attempt(1, 2));
+
+        security::generate_attempt_token(1, 2);
+        $this->assertTrue(security::has_inprogress_attempt(1, 2));
+
+        $this->assertFalse(security::has_inprogress_attempt(1, 3), 'Different user.');
+        $this->assertFalse(security::has_inprogress_attempt(9, 2), 'Different instance.');
+    }
+
+    /**
+     * Tests that has_inprogress_attempt() is false once the attempt has reached a final
+     * status — a finished attempt is not something to resume.
+     *
+     * @return void
+     */
+    public function test_has_inprogress_attempt_ignores_final_statuses(): void {
+        $token = security::generate_attempt_token(1, 2);
+        security::validate_and_consume_token($token, 1, 2, 'won');
+
+        $this->assertFalse(security::has_inprogress_attempt(1, 2));
+    }
 }

@@ -154,6 +154,89 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a victory grants the win-grant item, separate from the coin balance.
+     *
+     * @return void
+     */
+    public function test_victory_grants_the_win_grant_item(): void {
+        global $DB;
+
+        [$biid, $coinitemid] = $this->make_hud_item();
+        $grantitemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $biid,
+            'name'            => 'Campaign Trophy',
+            'xp'              => 0,
+            'image'           => '',
+            'description'     => '',
+            'enabled'         => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+        $instance = $this->make_instance([
+            'hud_coin_item'      => $coinitemid,
+            'hud_win_grant_item' => $grantitemid,
+            'hud_win_grant_qty'  => 3,
+        ]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(3, hud_service::get_upgrade_level($biid, $this->student->id, $grantitemid));
+    }
+
+    /**
+     * Tests that a defeat never grants the win-grant item.
+     *
+     * @return void
+     */
+    public function test_defeat_does_not_grant_the_win_grant_item(): void {
+        global $DB;
+
+        [$biid, $coinitemid] = $this->make_hud_item();
+        $grantitemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $biid,
+            'name'            => 'Campaign Trophy',
+            'xp'              => 0,
+            'image'           => '',
+            'description'     => '',
+            'enabled'         => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+        $instance = $this->make_instance([
+            'hud_coin_item'      => $coinitemid,
+            'hud_win_grant_item' => $grantitemid,
+        ]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(0, hud_service::get_upgrade_level($biid, $this->student->id, $grantitemid));
+    }
+
+    /**
      * Tests that save_progress returns the phase's answered questions for the post-game
      * review — this phase's rows only, oldest first.
      *

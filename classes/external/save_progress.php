@@ -184,6 +184,24 @@ class save_progress extends external_api {
                     $payable
                 );
                 $coinsbanked = $banked ? $payable : 0;
+
+                // Win-grant item, separate from the coin balance. XP is withheld when the
+                // attempt limit relevant to this instance's own game mode is Unlimited (0) —
+                // the same anti-farming rule mod_playerwords already applies to its own
+                // infinite-round win grant.
+                $grantitem = (int) $playerpuzzle->hud_win_grant_item;
+                if ($grantitem > 0) {
+                    $relevantlimit = $playerpuzzle->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE
+                        ? (int) $playerpuzzle->max_single_matches
+                        : (int) $playerpuzzle->maxattempts;
+                    hud_service::grant_item(
+                        $blockinstanceid,
+                        (int) $USER->id,
+                        $grantitem,
+                        max(1, (int) $playerpuzzle->hud_win_grant_qty),
+                        $relevantlimit === 0
+                    );
+                }
             }
         }
 

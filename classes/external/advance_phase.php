@@ -180,20 +180,35 @@ class advance_phase extends external_api {
         );
         coin_ledger::sync($attempt, $params['coinsearnedsofar'], $params['bosscoinsearnedsofar'], $ceiling);
 
+        $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
+
         $coinsbanked = 0;
         $payable = coin_ledger::available($attempt);
-        if ($payable > 0) {
-            $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
-            if ($blockinstanceid !== null) {
-                $banked = hud_service::credit_coins(
-                    $blockinstanceid,
-                    (int) $USER->id,
-                    (int) $playerpuzzle->hud_coin_item,
-                    $payable
-                );
-                $coinsbanked = $banked ? $payable : 0;
-            }
+        if ($payable > 0 && $blockinstanceid !== null) {
+            $banked = hud_service::credit_coins(
+                $blockinstanceid,
+                (int) $USER->id,
+                (int) $playerpuzzle->hud_coin_item,
+                $payable
+            );
+            $coinsbanked = $banked ? $payable : 0;
         }
+
+        // Win-grant item, separate from the coin balance — granted on every phase win, not
+        // only the campaign's final one, mirroring hud_win_grant_item's own help text. XP is
+        // withheld when maxattempts is Unlimited (0), the same anti-farming rule
+        // mod_playerwords already applies to its own infinite-round win grant.
+        $grantitem = (int) $playerpuzzle->hud_win_grant_item;
+        if ($grantitem > 0 && $blockinstanceid !== null) {
+            hud_service::grant_item(
+                $blockinstanceid,
+                (int) $USER->id,
+                $grantitem,
+                max(1, (int) $playerpuzzle->hud_win_grant_qty),
+                (int) $playerpuzzle->maxattempts === 0
+            );
+        }
+
         coin_ledger::reset($attempt);
         attempt_consumables::reset_attempt((int) $attempt->id);
         // The saved board/HP/meters snapshot (Fase 5 Lote D) belongs to the phase just

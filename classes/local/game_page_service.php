@@ -77,6 +77,55 @@ class game_page_service {
     }
 
     /**
+     * Charges the configured retry-cost item, from the 2nd attempt onwards, before a new
+     * attempt is created — never for the very first attempt, and never for a play.php POST
+     * that will only resume an already in-progress one (a plain reload, or the client's own
+     * "Continue"/"Play again" form submit hitting the same phase again is not "a new try").
+     *
+     * Retries stay free whenever there is nothing configured to charge against: no item set,
+     * or no block_playerhud instance in the course at all — this gate is meant as an optional
+     * toll a teacher opts into, not a hard requirement of the activity. Only an actually-
+     * configured item with insufficient balance blocks the retry.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @param moodle_url $returnurl URL to send the student back to on failure.
+     * @return void
+     * @throws moodle_exception When the item is configured and available, but the student
+     *  does not hold enough of it.
+     */
+    public static function check_retry_cost(stdClass $instance, int $userid, moodle_url $returnurl): void {
+        global $DB;
+
+        $itemid = (int) $instance->hud_retry_cost_item;
+        if ($itemid <= 0) {
+            return;
+        }
+        if (security::has_inprogress_attempt((int) $instance->id, $userid)) {
+            return;
+        }
+
+        $finishedattempts = $DB->count_records_select(
+            'playerpuzzle_attempts',
+            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress',
+            ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress']
+        );
+        if ($finishedattempts === 0) {
+            return;
+        }
+
+        $blockinstanceid = hud_service::get_block_instance_id((int) $instance->course);
+        if ($blockinstanceid === null) {
+            return;
+        }
+
+        $qty = max(1, (int) $instance->hud_retry_cost_qty);
+        if (!hud_service::consume_item($blockinstanceid, $userid, $itemid, $qty)) {
+            throw new moodle_exception('insufficientretrycost', 'mod_playerpuzzle', $returnurl);
+        }
+    }
+
+    /**
      * Resumes or creates the attempt, and assembles the full JS game config: the scaled
      * boss/student HP and combat damage for the attempt's current level/phase (Single Match
      * always resolves to the base values unchanged, since its attempts stay at Level 1,

@@ -118,6 +118,7 @@ $string['hud_win_grant_item_help'] = 'Granted every time a match is won (every p
 $string['hud_win_grant_qty'] = 'Quantity awarded on victory';
 $string['insufficientcoins'] = 'Not enough coins for this purchase.';
 $string['insufficienthudstock'] = 'Not enough PlayerHUD stock for this purchase.';
+$string['insufficientretrycost'] = 'Not enough of the configured item to try again.';
 $string['invalidattempttoken'] = 'This attempt is invalid or has already been submitted.';
 $string['invalidcombatstate'] = 'The reported combat state is invalid.';
 $string['levelsandphases'] = 'Levels and phases';

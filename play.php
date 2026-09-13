@@ -43,6 +43,7 @@ require_sesskey();
 
 $returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
 \mod_playerpuzzle\local\game_page_service::check_attempt_limit($playerpuzzle, (int) $USER->id, $returnurl);
+\mod_playerpuzzle\local\game_page_service::check_retry_cost($playerpuzzle, (int) $USER->id, $returnurl);
 
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));

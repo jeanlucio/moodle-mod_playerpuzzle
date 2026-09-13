@@ -171,4 +171,29 @@ class hud_service {
         }
         return (bool) \block_playerhud\local\external_items::consume($blockinstanceid, $itemid, $userid, $qty, 'playerpuzzle');
     }
+
+    /**
+     * Grants $qty units of the configured victory-reward item to $userid, separate from the
+     * coin balance. A no-op when the item is unconfigured or PlayerHUD is unavailable.
+     *
+     * $suppressxp withholds the item's own XP value even though it is granted — mirroring
+     * block_playerhud's own "infinite drop gives no XP" anti-farming rule, replicated here
+     * (same pattern as mod_playerwords's own win grant) because this call never goes through
+     * a real PlayerHUD drop, so the block has no way to know on its own whether the caller
+     * represents an unbounded source; the caller (an Unlimited maxattempts/max_single_matches)
+     * decides that and passes it in.
+     *
+     * @param int $blockinstanceid Block instance ID the item must belong to.
+     * @param int $userid User ID.
+     * @param int $itemid PlayerHUD item ID configured as the win-grant item.
+     * @param int $qty Number of items to grant.
+     * @param bool $suppressxp Whether to withhold the item's XP even though it was granted.
+     * @return void
+     */
+    public static function grant_item(int $blockinstanceid, int $userid, int $itemid, int $qty, bool $suppressxp): void {
+        if (!self::is_installed() || $itemid <= 0 || $qty <= 0) {
+            return;
+        }
+        \block_playerhud\local\external_items::grant($blockinstanceid, $itemid, $userid, $qty, 'playerpuzzle', $suppressxp);
+    }
 }

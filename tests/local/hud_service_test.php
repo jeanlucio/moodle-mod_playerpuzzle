@@ -291,4 +291,53 @@ final class hud_service_test extends \advanced_testcase {
 
         $this->assertFalse(hud_service::credit_coins($biid, $user->id, $itemid, 0));
     }
+
+    /**
+     * Tests that grant_item() grants the item quantity regardless of the suppressxp flag —
+     * only the item's own XP is affected by that flag, inside block_playerhud itself.
+     *
+     * @return void
+     */
+    public function test_grant_item_grants_the_quantity(): void {
+        $this->skip_if_no_playerhud();
+        $user = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        $biid = $this->make_block_instance($course);
+        $itemid = $this->make_item($biid);
+
+        hud_service::grant_item($biid, $user->id, $itemid, 3, false);
+        $this->assertSame(3, hud_service::get_upgrade_level($biid, $user->id, $itemid));
+
+        hud_service::grant_item($biid, $user->id, $itemid, 2, true);
+        $this->assertSame(5, hud_service::get_upgrade_level($biid, $user->id, $itemid));
+    }
+
+    /**
+     * Tests that grant_item() is a no-op when the item is unconfigured (id 0).
+     *
+     * @return void
+     */
+    public function test_grant_item_no_op_when_item_unconfigured(): void {
+        $this->skip_if_no_playerhud();
+        $user = $this->getDataGenerator()->create_user();
+
+        hud_service::grant_item(1, $user->id, 0, 5, false);
+        $this->assertSame(0, hud_service::get_upgrade_level(1, $user->id, 0));
+    }
+
+    /**
+     * Tests that grant_item() is a no-op when the quantity is not positive.
+     *
+     * @return void
+     */
+    public function test_grant_item_no_op_when_qty_not_positive(): void {
+        $this->skip_if_no_playerhud();
+        $user = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        $biid = $this->make_block_instance($course);
+        $itemid = $this->make_item($biid);
+
+        hud_service::grant_item($biid, $user->id, $itemid, 0, false);
+        $this->assertSame(0, hud_service::get_upgrade_level($biid, $user->id, $itemid));
+    }
 }

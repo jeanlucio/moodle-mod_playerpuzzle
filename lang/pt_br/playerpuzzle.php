@@ -118,6 +118,7 @@ $string['hud_win_grant_item_help'] = 'Concedido toda vez que uma partida é venc
 $string['hud_win_grant_qty'] = 'Quantidade concedida por vitória';
 $string['insufficientcoins'] = 'Moedas insuficientes para essa compra.';
 $string['insufficienthudstock'] = 'Estoque insuficiente no PlayerHUD para essa compra.';
+$string['insufficientretrycost'] = 'Quantidade insuficiente do item configurado para tentar de novo.';
 $string['invalidattempttoken'] = 'Esta tentativa é inválida ou já foi enviada.';
 $string['invalidcombatstate'] = 'O estado de combate informado é inválido.';
 $string['levelsandphases'] = 'Níveis e fases';

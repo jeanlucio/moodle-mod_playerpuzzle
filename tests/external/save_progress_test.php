@@ -196,6 +196,53 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the win-grant's suppressxp check reads max_single_matches (not maxattempts)
+     * in Single Match mode — a victory still grants the item even with max_single_matches
+     * set to Unlimited (0); only the item's own XP is what would be withheld, which is
+     * block_playerhud's own concern, not something this test can observe here.
+     *
+     * @return void
+     */
+    public function test_victory_grants_the_win_grant_item_in_single_match_mode(): void {
+        global $DB;
+
+        [$biid, $coinitemid] = $this->make_hud_item();
+        $grantitemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $biid,
+            'name'            => 'Match Trophy',
+            'xp'              => 0,
+            'image'           => '',
+            'description'     => '',
+            'enabled'         => 1,
+            'secret'          => 0,
+            'timecreated'     => time(),
+            'timemodified'    => time(),
+        ]);
+        $instance = $this->make_instance([
+            'gamemode'           => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'max_single_matches' => 0,
+            'hud_coin_item'      => $coinitemid,
+            'hud_win_grant_item' => $grantitemid,
+            'hud_win_grant_qty'  => 1,
+        ]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(1, hud_service::get_upgrade_level($biid, $this->student->id, $grantitemid));
+    }
+
+    /**
      * Tests that a defeat never grants the win-grant item.
      *
      * @return void

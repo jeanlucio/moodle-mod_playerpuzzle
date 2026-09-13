@@ -248,6 +248,21 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
+     * Tests that export_user_data is a silent no-op when the approved list holds no
+     * module-level context at all (e.g. only a course/system context) — there is nothing
+     * resolvable to a playerpuzzle instance to export from.
+     *
+     * @return void
+     */
+    public function test_export_user_data_noop_for_non_module_context(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $contextlist = new approved_contextlist($user, 'mod_playerpuzzle', [\context_system::instance()->id]);
+
+        provider::export_user_data($contextlist);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
      * Tests that delete_data_for_user removes only that user's attempts from the
      * approved contexts.
      *
@@ -269,6 +284,26 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $this->assertSame(0, $DB->count_records('playerpuzzle_attempts', ['userid' => $usera->id]));
         $this->assertSame(1, $DB->count_records('playerpuzzle_attempts', ['userid' => $userb->id]));
+    }
+
+    /**
+     * Tests that delete_data_for_user is a silent no-op when every approved context is
+     * non-module (skipped inside the loop, leaving no resolvable instance id at all).
+     *
+     * @return void
+     */
+    public function test_delete_data_for_user_ignores_non_module_contexts(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $user = $this->getDataGenerator()->create_user();
+        $this->make_attempt($user->id, (int) $cm->id);
+
+        $contextlist = new approved_contextlist($user, 'mod_playerpuzzle', [\context_system::instance()->id]);
+        provider::delete_data_for_user($contextlist);
+
+        $this->assertSame(1, $DB->count_records('playerpuzzle_attempts', ['userid' => $user->id]));
     }
 
     /**
@@ -375,6 +410,55 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
+     * Tests that delete_data_for_users is a silent no-op for an empty approved user list.
+     *
+     * @return void
+     */
+    public function test_delete_data_for_users_noop_when_userlist_empty(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $user = $this->getDataGenerator()->create_user();
+        $this->make_attempt($user->id, (int) $cm->id);
+
+        $approvedlist = new approved_userlist(\context_module::instance($cm->cmid), 'mod_playerpuzzle', []);
+        provider::delete_data_for_users($approvedlist);
+
+        $this->assertSame(1, $DB->count_records('playerpuzzle_attempts', ['userid' => $user->id]));
+    }
+
+    /**
+     * Tests that delete_data_for_users is a silent no-op for a non-module context.
+     *
+     * @return void
+     */
+    public function test_delete_data_for_users_noop_for_non_module_context(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $approvedlist = new approved_userlist(\context_system::instance(), 'mod_playerpuzzle', [$user->id]);
+
+        provider::delete_data_for_users($approvedlist);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that delete_data_for_users is a silent no-op when the module context does not
+     * resolve to a real playerpuzzle course module — the same collision guard already
+     * proven for get_users_in_context above.
+     *
+     * @return void
+     */
+    public function test_delete_data_for_users_noop_when_cm_missing(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+        $user = $this->getDataGenerator()->create_user();
+
+        $approvedlist = new approved_userlist(\context_module::instance($page->cmid), 'mod_playerpuzzle', [$user->id]);
+        provider::delete_data_for_users($approvedlist);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
      * Tests that delete_data_for_all_users_in_context clears every attempt in that
      * context only, leaving another activity's attempts untouched.
      *
@@ -413,6 +497,21 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         provider::delete_data_for_all_users_in_context(\context_system::instance());
 
         $this->assertSame(1, $DB->count_records('playerpuzzle_attempts', ['playerpuzzleid' => (int) $cm->id]));
+    }
+
+    /**
+     * Tests that delete_data_for_all_users_in_context is a silent no-op when the module
+     * context does not resolve to a real playerpuzzle course module — the same collision
+     * guard already proven for get_users_in_context above.
+     *
+     * @return void
+     */
+    public function test_delete_data_for_all_users_in_context_ignores_missing_cm(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $page = $this->getDataGenerator()->create_module('page', ['course' => $course->id]);
+
+        provider::delete_data_for_all_users_in_context(\context_module::instance($page->cmid));
+        $this->expectNotToPerformAssertions();
     }
 
     /**

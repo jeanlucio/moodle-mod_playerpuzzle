@@ -308,4 +308,56 @@ final class lobby_page_service_test extends \advanced_testcase {
         );
         $this->assertSame($expected, $data['difficultycurrent']);
     }
+
+    /**
+     * Tests that an attempt somehow carrying an unrecognised difficulty value (never
+     * written by the app itself, but not impossible on legacy/corrupted data) falls back
+     * to Normal instead of indexing the options array with a missing key.
+     *
+     * @return void
+     */
+    public function test_build_page_data_falls_back_to_normal_for_invalid_stored_difficulty(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id
+        );
+        $DB->set_field('playerpuzzle_attempts', 'difficulty', 'garbage', ['token' => $token]);
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+
+        $expected = get_string(
+            'lobby_difficulty_current',
+            'mod_playerpuzzle',
+            get_string('difficulty_normal', 'mod_playerpuzzle')
+        );
+        $this->assertSame($expected, $data['difficultycurrent']);
+    }
+
+    /**
+     * Tests that an iOS/webkit-Android user agent adds mobile=1 to the Play URL's query
+     * string, restored to the CLI-runner default afterwards so it never leaks into other
+     * tests.
+     *
+     * @return void
+     */
+    public function test_build_page_data_adds_mobile_flag_for_ios_useragent(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+
+        \core_useragent::instance(
+            true,
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 10_10 like Mac OS X) AppleWebKit/600.1.4 '
+                . '(KHTML, like Gecko) Version/8.0 Mobile/12B411 Safari/600.1.4'
+        );
+        try {
+            $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        } finally {
+            \core_useragent::instance(true);
+        }
+
+        $this->assertStringContainsString('mobile=1', $data['playurl']);
+    }
 }

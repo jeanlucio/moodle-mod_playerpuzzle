@@ -107,6 +107,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setDefault('grademethod', PLAYERPUZZLE_GRADE_HIGHEST);
         $mform->addHelpButton('grademethod', 'grademethod', 'mod_playerpuzzle');
         $mform->hideIf('grademethod', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+        $mform->hideIf('grademethod', 'grade[modgrade_type]', 'eq', 'none');
 
         $mform->addElement('header', 'bosssettings', get_string('bosssettings', 'mod_playerpuzzle'));
 
@@ -236,6 +237,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $this->add_hud_elements($mform, (int) $COURSE->id);
 
+        $this->standard_grading_coursemodule_elements();
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
     }

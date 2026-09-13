@@ -63,6 +63,8 @@ class mod_playerpuzzle_generator extends testing_module_generator {
             'minquestions'        => 3,
             'considererrors'      => 0,
             'maxconsumables'      => 1,
+            'grade'               => 100,
+            'gradepass'           => 0,
         ];
 
         foreach ($defaults as $field => $value) {

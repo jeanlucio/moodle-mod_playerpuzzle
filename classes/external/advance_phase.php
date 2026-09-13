@@ -223,6 +223,12 @@ class advance_phase extends external_api {
         $attempt->timemodified = time();
         $DB->update_record('playerpuzzle_attempts', $attempt);
 
+        // Winning a phase is new progress for the Campaign grade formula (the furthest
+        // phase a continuous streak has ever reached) even though the attempt itself stays
+        // inprogress — the gradebook should not wait for the whole campaign to finish to
+        // reflect it.
+        playerpuzzle_update_grades($playerpuzzle, (int) $USER->id);
+
         return [
             'token'        => $newtoken,
             'currentlevel' => $newlevel,

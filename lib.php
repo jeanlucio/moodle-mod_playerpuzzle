@@ -120,15 +120,150 @@ function playerpuzzle_supports(string $feature): bool|null {
             return true;
         case FEATURE_GROUPINGS:
             return true;
-        // Not yet implemented: no backup/moodle2/ steplib, no custom_completion class, no
-        // grade column/grade_item_update. Flip these on only alongside their real implementation.
-        case FEATURE_BACKUP_MOODLE2:
         case FEATURE_GRADE_HAS_GRADE:
+            return true;
+        // Not yet implemented: no backup/moodle2/ steplib, no custom_completion class.
+        // Flip these on only alongside their real implementation.
+        case FEATURE_BACKUP_MOODLE2:
         case FEATURE_COMPLETION_HAS_RULES:
             return false;
         default:
             return null;
     }
+}
+
+/**
+ * Creates or updates the grade item for a playerpuzzle instance.
+ *
+ * @param stdClass $playerpuzzle Activity instance (must have id, course, name, grade,
+ *  gradepass).
+ * @param mixed $grades Grade object(s), null to update the item only, or the literal
+ *  string 'reset' to reset grades.
+ * @return int GRADE_UPDATE_OK or one of grade_update()'s own error constants.
+ */
+function playerpuzzle_grade_item_update(stdClass $playerpuzzle, mixed $grades = null): int {
+    global $CFG;
+    require_once($CFG->libdir . '/gradelib.php');
+
+    $params = [
+        'itemname' => $playerpuzzle->name,
+        'idnumber' => $playerpuzzle->cmidnumber ?? '',
+    ];
+
+    if ((int) $playerpuzzle->grade > 0) {
+        $params['gradetype'] = GRADE_TYPE_VALUE;
+        $params['grademax']  = (float) $playerpuzzle->grade;
+        $params['grademin']  = 0.0;
+    } else if ((int) $playerpuzzle->grade < 0) {
+        $params['gradetype'] = GRADE_TYPE_SCALE;
+        $params['scaleid']   = -(int) $playerpuzzle->grade;
+    } else {
+        $params['gradetype'] = GRADE_TYPE_NONE;
+    }
+
+    $isreset = $grades === 'reset';
+    if ($isreset) {
+        $params['reset'] = true;
+        $grades = null;
+    }
+
+    $result = grade_update(
+        'mod/playerpuzzle',
+        $playerpuzzle->course,
+        'mod',
+        'playerpuzzle',
+        $playerpuzzle->id,
+        0,
+        $grades,
+        $params
+    );
+
+    // Grade_update() silently ignores a 'gradepass' key inside $itemdetails — its own
+    // internal allow-list (lib/gradelib.php) never includes it. Applied directly on the
+    // grade_item instead, mirroring mod_workshop and every other Player plugin's own
+    // grade_item_update().
+    if ($result === GRADE_UPDATE_OK && !$isreset && !empty($playerpuzzle->gradepass)) {
+        $gradeitem = grade_item::fetch([
+            'itemtype'     => 'mod',
+            'itemmodule'   => 'playerpuzzle',
+            'iteminstance' => $playerpuzzle->id,
+            'itemnumber'   => 0,
+            'courseid'     => $playerpuzzle->course,
+        ]);
+        if ($gradeitem && (float) $gradeitem->gradepass !== (float) $playerpuzzle->gradepass) {
+            $gradeitem->gradepass = (float) $playerpuzzle->gradepass;
+            $gradeitem->update();
+        }
+    }
+
+    return $result;
+}
+
+/**
+ * Updates gradebook grades for one or all users of a playerpuzzle instance, from their own
+ * attempts — see grade_calculator::calculate_user_grade() for the actual formulas.
+ *
+ * @param stdClass $playerpuzzle Activity instance.
+ * @param int $userid User id, 0 to update every user with at least one attempt.
+ * @return void
+ */
+function playerpuzzle_update_grades(stdClass $playerpuzzle, int $userid = 0): void {
+    global $DB;
+
+    $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.status,
+                   a.questions_correct, a.questions_total, a.timefinished
+              FROM {playerpuzzle_attempts} a
+             WHERE a.playerpuzzleid = :instanceid";
+    $params = ['instanceid' => $playerpuzzle->id];
+
+    if ($userid > 0) {
+        $sql .= ' AND a.userid = :userid';
+        $params['userid'] = $userid;
+    }
+
+    $attempts = $DB->get_records_sql($sql, $params);
+
+    if (empty($attempts)) {
+        // A specific $userid with no attempts left (their last one was just deleted) must
+        // have their stale grade actually cleared — passing no $grades here would only
+        // touch the grade_item's own settings, leaving the old value stuck in the
+        // gradebook. A global recompute ($userid == 0, e.g. after a grading-setting
+        // change) has no single user to clear, so it keeps the item-only update.
+        if ($userid > 0) {
+            $grade = new stdClass();
+            $grade->userid = $userid;
+            $grade->rawgrade = null;
+            playerpuzzle_grade_item_update($playerpuzzle, [$userid => $grade]);
+        } else {
+            playerpuzzle_grade_item_update($playerpuzzle);
+        }
+        return;
+    }
+
+    $userattempts = [];
+    foreach ($attempts as $attempt) {
+        $userattempts[$attempt->userid][] = $attempt;
+    }
+
+    $grades = [];
+    foreach ($userattempts as $uid => $userattemptlist) {
+        $rawgrade = \mod_playerpuzzle\local\grade_calculator::calculate_user_grade($playerpuzzle, $userattemptlist);
+        if ($rawgrade === null) {
+            // Single Match mode with no finished match yet for this user — nothing to grade.
+            continue;
+        }
+        $grade = new stdClass();
+        $grade->userid = $uid;
+        $grade->rawgrade = $rawgrade;
+        $grades[$uid] = $grade;
+    }
+
+    if (empty($grades)) {
+        playerpuzzle_grade_item_update($playerpuzzle);
+        return;
+    }
+
+    playerpuzzle_grade_item_update($playerpuzzle, $grades);
 }
 
 /**
@@ -144,7 +279,10 @@ function playerpuzzle_add_instance(stdClass $playerpuzzle, ?moodleform $mform = 
     $playerpuzzle->timecreated = time();
     $playerpuzzle->timemodified = $playerpuzzle->timecreated;
 
-    return $DB->insert_record('playerpuzzle', $playerpuzzle);
+    $playerpuzzle->id = $DB->insert_record('playerpuzzle', $playerpuzzle);
+    playerpuzzle_grade_item_update($playerpuzzle);
+
+    return $playerpuzzle->id;
 }
 
 /**
@@ -160,7 +298,10 @@ function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform
     $playerpuzzle->timemodified = time();
     $playerpuzzle->id = $playerpuzzle->instance;
 
-    return $DB->update_record('playerpuzzle', $playerpuzzle);
+    $result = $DB->update_record('playerpuzzle', $playerpuzzle);
+    playerpuzzle_grade_item_update($playerpuzzle);
+
+    return $result;
 }
 
 /**
@@ -170,12 +311,15 @@ function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform
  * @return bool True if successful.
  */
 function playerpuzzle_delete_instance(int $id): bool {
-    global $DB;
+    global $CFG, $DB;
+    require_once($CFG->libdir . '/gradelib.php');
 
     $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $id]);
     if (!$playerpuzzle) {
         return false;
     }
+
+    grade_update('mod/playerpuzzle', $playerpuzzle->course, 'mod', 'playerpuzzle', $id, 0, null, ['deleted' => 1]);
 
     $DB->delete_records_select(
         'playerpuzzle_attempt_questions',

@@ -305,5 +305,24 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091201, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091401) {
+        $table = new xmldb_table('playerpuzzle');
+
+        // Add grade: the Nota Máxima configured via standard_grading_coursemodule_elements()
+        // (Sem Nota / Ponto / Escala), scaling both grade formulas of Fase 6.
+        $field = new xmldb_field('grade', XMLDB_TYPE_NUMBER, '10, 5', null, XMLDB_NOTNULL, null, '100.00000');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add gradepass.
+        $field = new xmldb_field('gradepass', XMLDB_TYPE_NUMBER, '10, 5', null, XMLDB_NOTNULL, null, '0.00000');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026091401, 'playerpuzzle');
+    }
+
     return true;
 }

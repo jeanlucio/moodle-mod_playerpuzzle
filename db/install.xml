@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260912" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260914" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -34,6 +34,8 @@
         <FIELD NAME="minquestions" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="3" SEQUENCE="false" COMMENT="0-10; applies to both modes; opt-out, not opt-in"/>
         <FIELD NAME="considererrors" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boolean; only enableable when minquestions &gt;= 1"/>
         <FIELD NAME="maxconsumables" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Max uses of each consumable type per attempt/match, regardless of source"/>
+        <FIELD NAME="grade" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="100.00000" SEQUENCE="false" DECIMALS="5" COMMENT="Maximum grade value"/>
+        <FIELD NAME="gradepass" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" SEQUENCE="false" DECIMALS="5" COMMENT="Minimum passing grade"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>

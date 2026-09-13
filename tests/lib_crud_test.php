@@ -67,6 +67,8 @@ final class lib_crud_test extends \advanced_testcase {
             'hud_coin_item'    => 0,
             'hud_sword_item'   => 0,
             'hud_shield_item'  => 0,
+            'grade'            => 100,
+            'gradepass'        => 0,
         ];
 
         $id = playerpuzzle_add_instance($data);

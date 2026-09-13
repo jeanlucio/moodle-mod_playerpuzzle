@@ -205,6 +205,12 @@ class save_progress extends external_api {
             }
         }
 
+        // The attempt just reached a final status either way (won or lost/timeout) — both
+        // outcomes are new information the gradebook needs: a win may be this student's
+        // best score yet, and even a loss finalizes a Single Match round grade_calculator
+        // must now count among their finished matches.
+        playerpuzzle_update_grades($playerpuzzle, (int) $USER->id);
+
         return [
             'status'      => 'success',
             'message'     => get_string('progresssaved', 'mod_playerpuzzle', $coinsbanked),

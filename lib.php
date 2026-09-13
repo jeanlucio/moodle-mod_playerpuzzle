@@ -377,6 +377,10 @@ function playerpuzzle_add_instance(stdClass $playerpuzzle, ?moodleform $mform = 
 
     $playerpuzzle->timecreated = time();
     $playerpuzzle->timemodified = $playerpuzzle->timecreated;
+    // The gradepass element added by standard_grading_coursemodule_elements() submits null
+    // (not an empty string) when left blank in the form, which the 'gradepass' column
+    // (NOTNULL) rejects outright.
+    $playerpuzzle->gradepass = isset($playerpuzzle->gradepass) ? (float) $playerpuzzle->gradepass : 0.0;
 
     $playerpuzzle->id = $DB->insert_record('playerpuzzle', $playerpuzzle);
     playerpuzzle_grade_item_update($playerpuzzle);
@@ -397,6 +401,8 @@ function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform
 
     $playerpuzzle->timemodified = time();
     $playerpuzzle->id = $playerpuzzle->instance;
+    // Same null-to-zero normalization as playerpuzzle_add_instance() — see its own comment.
+    $playerpuzzle->gradepass = isset($playerpuzzle->gradepass) ? (float) $playerpuzzle->gradepass : 0.0;
 
     $result = $DB->update_record('playerpuzzle', $playerpuzzle);
     playerpuzzle_grade_item_update($playerpuzzle);

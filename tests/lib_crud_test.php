@@ -81,6 +81,45 @@ final class lib_crud_test extends \advanced_testcase {
     }
 
     /**
+     * Regression test: the gradepass element added by standard_grading_coursemodule_elements()
+     * submits null (not an empty string) when the teacher leaves "Passing grade" blank — the
+     * exact shape produced by a real add_moduleinfo()/mod_form.php submission, reproduced here
+     * via a hand-built object since the generator's own defaults always set a value explicitly.
+     * Before the fix, this failed with "Column 'gradepass' cannot be null" (caught by CI Behat,
+     * never by the PHPUnit suite, since every other test goes through the generator).
+     *
+     * @return void
+     */
+    public function test_add_instance_normalizes_a_null_gradepass_to_zero(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $data = (object) [
+            'course'           => $course->id,
+            'name'             => 'Dragon Fight',
+            'intro'            => '',
+            'introformat'      => FORMAT_HTML,
+            'maxlevels'        => 3,
+            'basestudenthp'    => 150,
+            'bossavatar'       => 'dragon.png',
+            'basebosshp'       => 2000,
+            'bossdamage'       => 15,
+            'questioncategory' => 0,
+            'timelimit'        => 0,
+            'maxattempts'      => 0,
+            'hud_coin_item'    => 0,
+            'hud_sword_item'   => 0,
+            'hud_shield_item'  => 0,
+            'grade'            => 100,
+            'gradepass'        => null,
+        ];
+
+        $id = playerpuzzle_add_instance($data);
+
+        $this->assertSame(0.0, (float) $DB->get_field('playerpuzzle', 'gradepass', ['id' => $id], MUST_EXIST));
+    }
+
+    /**
      * Tests that updating an instance persists the new field values.
      *
      * @return void
@@ -100,6 +139,29 @@ final class lib_crud_test extends \advanced_testcase {
 
         $this->assertTrue($result);
         $this->assertSame(5000, (int) $DB->get_field('playerpuzzle', 'basebosshp', ['id' => $instance->id]));
+    }
+
+    /**
+     * Regression test: same null-to-zero normalization as
+     * test_add_instance_normalizes_a_null_gradepass_to_zero(), but on the update path.
+     *
+     * @return void
+     */
+    public function test_update_instance_normalizes_a_null_gradepass_to_zero(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id, 'gradepass' => 40]);
+
+        $update = (object) $DB->get_record('playerpuzzle', ['id' => $instance->id], '*', MUST_EXIST);
+        $update->instance = $instance->id;
+        $update->gradepass = null;
+
+        $result = playerpuzzle_update_instance($update);
+
+        $this->assertTrue($result);
+        $this->assertSame(0.0, (float) $DB->get_field('playerpuzzle', 'gradepass', ['id' => $instance->id]));
     }
 
     /**

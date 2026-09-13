@@ -24,6 +24,8 @@
 
 namespace mod_playerpuzzle\local\engine;
 
+use mod_playerpuzzle\local\combat_state;
+
 /**
  * Security class to handle tokens and anti-cheat validations.
  */
@@ -101,7 +103,8 @@ class security {
      *  resuming: the attempt keeps the difficulty its current phase was entered at, which
      *  advance_phase() is what changes between phases in Campaign mode.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
-     *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned, ->coinsspent.
+     *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned, ->coinsspent,
+     *  ->combatstate.
      */
     public static function resume_or_create_attempt_token(
         int $playerpuzzleid,
@@ -136,6 +139,7 @@ class security {
                 'coinsearned' => (int) $attempt->coins_earned,
                 'bosscoinsearned' => (int) $attempt->boss_coins_earned,
                 'coinsspent' => (int) $attempt->coins_spent,
+                'combatstate' => combat_state::decode($attempt->combatstate),
             ];
         }
 
@@ -151,6 +155,7 @@ class security {
             'coinsearned' => 0,
             'bosscoinsearned' => 0,
             'coinsspent' => 0,
+            'combatstate' => null,
         ];
     }
 

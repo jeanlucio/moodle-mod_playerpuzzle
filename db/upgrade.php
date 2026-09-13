@@ -292,5 +292,18 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026082902, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091201) {
+        $attemptstable = new xmldb_table('playerpuzzle_attempts');
+
+        // Add combatstate: JSON snapshot of the in-progress board/combat, so a reload can
+        // resume the fight in place instead of always starting the phase fresh.
+        $field = new xmldb_field('combatstate', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        if (!$dbman->field_exists($attemptstable, $field)) {
+            $dbman->add_field($attemptstable, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026091201, 'playerpuzzle');
+    }
+
     return true;
 }

@@ -537,4 +537,32 @@ final class save_progress_test extends \advanced_testcase {
         $this->assertFalse($result['error']);
         $this->assertSame(20, $result['data']['coinsbanked']);
     }
+
+    /**
+     * Tests that a saved combat checkpoint (Fase 5 Lote D) is cleared once the attempt
+     * reaches a final status — there is no fight left to resume.
+     *
+     * @return void
+     */
+    public function test_finishing_the_attempt_clears_the_combat_checkpoint(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'combatstate', '{"boardgrid":[]}', ['id' => $attemptid]);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertNull($DB->get_field('playerpuzzle_attempts', 'combatstate', ['id' => $attemptid]));
+    }
 }

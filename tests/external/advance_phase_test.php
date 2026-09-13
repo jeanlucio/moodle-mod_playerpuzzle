@@ -474,6 +474,34 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that advancing a phase clears the saved combat checkpoint (Fase 5 Lote D) — the
+     * next phase always starts with a fresh board and full HP, never resuming the one just
+     * finished.
+     *
+     * @return void
+     */
+    public function test_advance_phase_clears_the_combat_checkpoint(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $DB->set_field('playerpuzzle_attempts', 'combatstate', '{"boardgrid":[]}', ['id' => $attempt->id]);
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertNull($DB->get_field('playerpuzzle_attempts', 'combatstate', ['id' => $attempt->id]));
+    }
+
+    /**
      * Tests that an unknown/forged token is rejected with the dedicated exception.
      *
      * @return void

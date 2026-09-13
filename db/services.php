@@ -57,4 +57,12 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_save_combat_state' => [
+        'classname'    => 'mod_playerpuzzle\external\save_combat_state',
+        'methodname'   => 'execute',
+        'description'  => 'Checkpoints the in-progress board/combat state, for resuming after a reload.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
 ];

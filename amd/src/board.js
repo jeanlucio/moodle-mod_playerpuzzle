@@ -112,23 +112,19 @@ define([], function() {
 
         initGrid() {
             const me = this.scene;
+            // A checkpointed fight (Fase 5 Lote D) reuses its exact saved piece types instead
+            // of rolling a fresh board — the reload is meant to resume the same position, not
+            // hand the player a new one (which could form matches, or remove ones already
+            // set up, the moment the board loads).
+            const combatstate = me.combat && me.combat.gameConfig.combatstate;
+            const savedgrid = combatstate ? combatstate.boardgrid : null;
+
             for (let row = 0; row < this.rows; row++) {
                 this.grid[row] = [];
                 for (let col = 0; col < this.cols; col++) {
-                    let randomType, hasMatch;
-                    do {
-                        randomType = Math.floor(Math.random() * 7);
-                        hasMatch = false;
-
-                        if (row >= 2 && this.grid[row - 1][col].type === randomType &&
-                            this.grid[row - 2][col].type === randomType) {
-                            hasMatch = true;
-                        }
-                        if (col >= 2 && this.grid[row][col - 1].type === randomType &&
-                            this.grid[row][col - 2].type === randomType) {
-                            hasMatch = true;
-                        }
-                    } while (hasMatch);
+                    const randomType = savedgrid
+                        ? savedgrid[(row * this.cols) + col]
+                        : this.pickTypeAvoidingMatch(row, col);
 
                     const x = this.offsetX + (col * this.pieceSize);
                     const y = this.offsetY + (row * this.pieceSize);
@@ -144,6 +140,34 @@ define([], function() {
                     this.grid[row][col] = piece;
                 }
             }
+        }
+
+        /**
+         * Picks a random piece type for a freshly-generated cell (never used when resuming a
+         * checkpointed board), re-rolling until it does not complete a 3-in-a-row with the
+         * two cells already placed above it or to its left.
+         *
+         * @param {number} row Row being filled.
+         * @param {number} col Column being filled.
+         * @return {number} A piece type, 0-6.
+         */
+        pickTypeAvoidingMatch(row, col) {
+            let randomType, hasMatch;
+            do {
+                randomType = Math.floor(Math.random() * 7);
+                hasMatch = false;
+
+                if (row >= 2 && this.grid[row - 1][col].type === randomType &&
+                    this.grid[row - 2][col].type === randomType) {
+                    hasMatch = true;
+                }
+                if (col >= 2 && this.grid[row][col - 1].type === randomType &&
+                    this.grid[row][col - 2].type === randomType) {
+                    hasMatch = true;
+                }
+            } while (hasMatch);
+
+            return randomType;
         }
 
         setupInputs() {

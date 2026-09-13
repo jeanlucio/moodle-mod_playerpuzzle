@@ -354,4 +354,39 @@ final class security_test extends \advanced_testcase {
 
         $this->assertSame(5, $result->questionstotal);
     }
+
+    /**
+     * Tests that a fresh attempt starts with no combat checkpoint (Fase 5 Lote D) — there is
+     * no fight yet for board.js/combat.js to resume.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_starts_combatstate_at_null(): void {
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertNull($result->combatstate);
+    }
+
+    /**
+     * Tests that resuming an in-progress attempt decodes a previously saved checkpoint into
+     * the result, for board.js/combat.js to rebuild the exact fight in progress.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_decodes_a_saved_combatstate(): void {
+        global $DB;
+
+        $firsttoken = security::generate_attempt_token(1, 2);
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'combatstate',
+            '{"boardgrid":[1,2,3],"currentturn":"boss"}',
+            ['token' => $firsttoken]
+        );
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame([1, 2, 3], $result->combatstate['boardgrid']);
+        $this->assertSame('boss', $result->combatstate['currentturn']);
+    }
 }

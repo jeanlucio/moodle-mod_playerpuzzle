@@ -196,6 +196,9 @@ class advance_phase extends external_api {
         }
         coin_ledger::reset($attempt);
         attempt_consumables::reset_attempt((int) $attempt->id);
+        // The saved board/HP/meters snapshot (Fase 5 Lote D) belongs to the phase just
+        // finished — the next phase always starts with a fresh board and full HP.
+        $attempt->combatstate = null;
 
         $newtoken = bin2hex(random_bytes(32));
         $attempt->token = $newtoken;

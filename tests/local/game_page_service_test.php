@@ -338,4 +338,47 @@ final class game_page_service_test extends \advanced_testcase {
         $this->assertFalse($config['hudconfigured']['magic']);
         $this->assertFalse($config['hudconfigured']['sword']);
     }
+
+    /**
+     * Tests that a fresh attempt's config carries no combat checkpoint (Fase 5 Lote D).
+     *
+     * @return void
+     */
+    public function test_build_game_config_combatstate_is_null_for_a_fresh_attempt(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+
+        $this->assertNull($config['combatstate']);
+    }
+
+    /**
+     * Tests that resuming an attempt with a saved checkpoint passes it through decoded, for
+     * board.js/combat.js to rebuild the fight in progress.
+     *
+     * @return void
+     */
+    public function test_build_game_config_carries_combatstate_on_resume(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id
+        );
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'combatstate',
+            '{"boardgrid":[4,5,6],"currentturn":"player"}',
+            ['token' => $token]
+        );
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+
+        $this->assertSame([4, 5, 6], $config['combatstate']['boardgrid']);
+        $this->assertSame('player', $config['combatstate']['currentturn']);
+    }
 }

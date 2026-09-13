@@ -21,13 +21,35 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/ajax', 'core/notification', 'core/templates'], function($, Ajax, Notification, Templates) {
+define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/config'],
+        function($, Ajax, Notification, Templates, Config) {
     'use strict';
 
     // Mirrors combat::CONSUMABLE_PRICES server-side — the server is still the source of
     // truth (buy_consumable re-validates), this copy only drives the shop badges/afford
     // check without a round trip on every coin change.
     const CONSUMABLE_PRICES = {potion: 8, shield: 10, magic: 12, sword: 10};
+
+    /**
+     * Sends one combat checkpoint via navigator.sendBeacon(), replicating the envelope
+     * lib/ajax/service.php expects (methodname/args) — sendBeacon has no XHR/Promise
+     * machinery of its own to route through core/ajax. Same pattern Moodle core itself uses
+     * for exactly this kind of "must survive page unload" write (see
+     * lib/editor/tiny/plugins/autosave/amd/src/repository.js::removeAutosaveSession()). Used
+     * only on page unload/backgrounding — an ordinary awaited core/ajax call has no guarantee
+     * of completing before the browser tears the page down.
+     *
+     * @param {object} args Web service arguments for mod_playerpuzzle_save_combat_state.
+     */
+    function sendCheckpointBeacon(args) {
+        const requestUrl = new URL(`${Config.wwwroot}/lib/ajax/service.php`);
+        requestUrl.searchParams.set('sesskey', Config.sesskey);
+        navigator.sendBeacon(requestUrl, JSON.stringify([{
+            index: 0,
+            methodname: 'mod_playerpuzzle_save_combat_state',
+            args,
+        }]));
+    }
 
     class CombatHandler {
         constructor(scene, gameConfig, strings) {
@@ -88,6 +110,131 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates'], function(
             this.bossMultiplier = 1;
             this.maxBossHp = parseInt(gameConfig.bosshp) || 1000;
             this.currentHp = this.maxBossHp;
+
+            // A checkpointed fight (Fase 5 Lote D) overrides every HP/meter/turn default set
+            // above with its last saved values — the board grid itself is restored separately,
+            // by board.js reading this same gameConfig.combatstate.boardgrid. Absent for a
+            // phase that never got one (a fresh start, or one just advanced past), in which
+            // case every side simply starts at full HP as already set up above.
+            this.hydrateFromCheckpoint(gameConfig.combatstate);
+
+            this._checkpointDirty = false;
+            this.startCheckpointing();
+        }
+
+        /**
+         * Restores HP/meters/turn from a checkpointed snapshot, if one exists for the
+         * current phase.
+         *
+         * @param {object|null} state Decoded combatstate from gameConfig, or null/undefined.
+         */
+        hydrateFromCheckpoint(state) {
+            if (!state) {
+                return;
+            }
+
+            this.currentPlayerHp = state.currentplayerhp;
+            this.currentHp = state.currentbosshp;
+            this.playerShieldMeter = state.playershieldmeter;
+            this.playerShieldReady = state.playershieldready;
+            this.playerPoisonMeter = state.playerpoisonmeter;
+            this.playerPoisonRounds = state.playerpoisonrounds;
+            this.playerMana = state.playermana;
+            this.playerMultiplier = state.playermultiplier;
+            this.bossShieldMeter = state.bossshieldmeter;
+            this.bossShieldReady = state.bossshieldready;
+            this.bossPoisonMeter = state.bosspoisonmeter;
+            this.bossPoisonRounds = state.bosspoisonrounds;
+            this.bossMana = state.bossmana;
+            this.bossMultiplier = state.bossmultiplier;
+            this.currentTurn = state.currentturn;
+        }
+
+        /**
+         * Starts the reload-resilience checkpoint (Fase 5 Lote D): every ~10s, if something
+         * changed since the last one and the tab is visible, persists the current board/HP/
+         * meters/turn so a reload resumes this same fight instead of restarting the phase
+         * from scratch. A plain setInterval, not Phaser's own scene time source, so it keeps
+         * ticking even while the question modal has the scene paused — real time still
+         * passes, and the state at that point is still the current one to save.
+         *
+         * A second, final checkpoint fires once on page unload/backgrounding
+         * (visibilitychange to hidden, and pagehide) via navigator.sendBeacon() — an ordinary
+         * awaited AJAX call has no guarantee of completing before the browser tears the page
+         * down, which is exactly the gap sendBeacon exists to close (also covers a mobile OS
+         * backgrounding the tab, since visibilitychange fires before it can suspend it).
+         */
+        startCheckpointing() {
+            setInterval(() => {
+                if (document.hidden || !this._checkpointDirty) {
+                    return;
+                }
+                this.sendCheckpoint(false);
+            }, 10000);
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    this.sendCheckpoint(true);
+                }
+            });
+            window.addEventListener('pagehide', () => this.sendCheckpoint(true));
+        }
+
+        /**
+         * Builds and sends the current board/HP/meters/turn checkpoint. Never called per
+         * board move — only from the periodic timer and the page-unload listeners set up by
+         * startCheckpointing().
+         *
+         * @param {boolean} useBeacon True for the page-unload path (sendBeacon, fire and
+         *  forget); false for the periodic path (core/ajax, a normal awaited call — the tab
+         *  isn't closing, so there is no urgency).
+         */
+        sendCheckpoint(useBeacon) {
+            const board = this.scene.board;
+            if (!board) {
+                return;
+            }
+
+            const boardgrid = [];
+            for (let row = 0; row < board.rows; row++) {
+                for (let col = 0; col < board.cols; col++) {
+                    boardgrid.push(board.grid[row][col].type);
+                }
+            }
+
+            const args = {
+                cmid: this.gameConfig.cmid,
+                token: this.gameConfig.token,
+                boardgrid,
+                currentplayerhp: Math.round(this.currentPlayerHp),
+                currentbosshp: Math.round(this.currentHp),
+                playershieldmeter: Math.round(this.playerShieldMeter),
+                playershieldready: this.playerShieldReady,
+                playerpoisonmeter: Math.round(this.playerPoisonMeter),
+                playerpoisonrounds: this.playerPoisonRounds,
+                playermana: Math.round(this.playerMana),
+                playermultiplier: this.playerMultiplier,
+                bossshieldmeter: Math.round(this.bossShieldMeter),
+                bossshieldready: this.bossShieldReady,
+                bosspoisonmeter: Math.round(this.bossPoisonMeter),
+                bosspoisonrounds: this.bossPoisonRounds,
+                bossmana: Math.round(this.bossMana),
+                bossmultiplier: this.bossMultiplier,
+                currentturn: this.currentTurn,
+            };
+
+            this._checkpointDirty = false;
+
+            if (useBeacon) {
+                sendCheckpointBeacon(args);
+                return;
+            }
+
+            Ajax.call([{methodname: 'mod_playerpuzzle_save_combat_state', args}])[0].fail(() => {
+                // A missed periodic checkpoint is not user-visible and not worth retrying —
+                // the next tick (or the final beacon on exit) tries again with fresher state.
+                this._checkpointDirty = true;
+            });
         }
 
         /**
@@ -289,6 +436,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates'], function(
         }
 
         updateUI() {
+            // Every caller of updateUI() just changed some piece of combat state — marking
+            // the checkpoint dirty here, once, covers all of them instead of touching each
+            // call site individually.
+            this._checkpointDirty = true;
             this.scene.ui.updatePlayerBar(
                 this.currentPlayerHp, this.maxPlayerHp,
                 this.playerPoisonMeter, this.playerPoisonRounds,

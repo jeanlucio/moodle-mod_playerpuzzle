@@ -170,6 +170,19 @@ class save_progress extends external_api {
         $attempt->combatstate = null;
         $DB->update_record('playerpuzzle_attempts', $attempt);
 
+        $event = \mod_playerpuzzle\event\game_completed::create([
+            'objectid' => $attempt->id,
+            'context'  => $context,
+            'other'    => [
+                'gamemode'     => $playerpuzzle->gamemode,
+                'status'       => $finalstatus,
+                'currentlevel' => (int) $attempt->currentlevel,
+                'currentphase' => (int) $attempt->currentphase,
+                'score'        => (float) $attempt->score,
+            ],
+        ]);
+        $event->trigger();
+
         $coinsbanked = 0;
         if ($isvictory) {
             // Defeat/timeout discards the session's coins; only a win banks them, and only into

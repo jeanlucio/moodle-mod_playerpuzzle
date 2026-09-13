@@ -154,6 +154,15 @@ class game_page_service {
         $attemptinfo = security::resume_or_create_attempt_token((int) $instance->id, $userid, $difficulty);
         $difficulty = $attemptinfo->difficulty;
 
+        if ($attemptinfo->isnew) {
+            $event = \mod_playerpuzzle\event\game_started::create([
+                'objectid' => $attemptinfo->attemptid,
+                'context'  => $context,
+                'other'    => ['gamemode' => $instance->gamemode, 'difficulty' => $difficulty],
+            ]);
+            $event->trigger();
+        }
+
         // Boss HP and boss damage carry the level/phase scaling and then the difficulty
         // factor on top (Easy halves, Hard doubles). Student HP is never touched by
         // difficulty. save_progress/advance_phase apply the same factor to their own clamp,

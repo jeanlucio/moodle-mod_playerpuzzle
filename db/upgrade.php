@@ -324,5 +324,18 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091401, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091501) {
+        $table = new xmldb_table('playerpuzzle');
+
+        // Add duedate: an optional deadline shown as a calendar event
+        // (playerpuzzle_refresh_events()), 0 meaning no deadline configured.
+        $field = new xmldb_field('duedate', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026091501, 'playerpuzzle');
+    }
+
     return true;
 }

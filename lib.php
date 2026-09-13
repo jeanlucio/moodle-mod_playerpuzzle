@@ -59,6 +59,11 @@ define('PLAYERPUZZLE_GRADE_LAST', 4);
 define('PLAYERPUZZLE_GRADE_AVERAGE_ALL', 5);
 
 /**
+ * Calendar event type: the activity's optional due date.
+ */
+define('PLAYERPUZZLE_EVENT_TYPE_DUE', 'due');
+
+/**
  * Difficulty: halves the boss HP/damage and the coin reward.
  */
 define('PLAYERPUZZLE_DIFFICULTY_EASY', 'easy');
@@ -267,6 +272,100 @@ function playerpuzzle_update_grades(stdClass $playerpuzzle, int $userid = 0): vo
 }
 
 /**
+ * Creates, updates, or deletes the due-date calendar event for a playerpuzzle instance —
+ * purely informational, never a play-time restriction, so a single event is enough (unlike
+ * an open/close window, there is no "opens" counterpart to track).
+ *
+ * @param stdClass $playerpuzzle Activity instance (id, course, name, duedate; coursemodule
+ *  looked up when not already present, mirroring mod_choice's own choice_set_events()).
+ * @return void
+ */
+function playerpuzzle_set_events(stdClass $playerpuzzle): void {
+    global $DB, $CFG;
+    require_once($CFG->dirroot . '/calendar/lib.php');
+
+    $eventid = $DB->get_field('event', 'id', [
+        'modulename' => 'playerpuzzle',
+        'instance'   => $playerpuzzle->id,
+        'eventtype'  => PLAYERPUZZLE_EVENT_TYPE_DUE,
+    ]);
+
+    if (empty($playerpuzzle->duedate)) {
+        if ($eventid) {
+            calendar_event::load($eventid)->delete();
+        }
+        return;
+    }
+
+    // Only looked up once there is actually an event to create/update — the coursemodule
+    // row may not exist yet by this point for a caller that never sets it (a raw unit test
+    // constructing its own stdClass, unlike the real add_moduleinfo() flow, which always
+    // sets it before calling *_add_instance()).
+    if (!isset($playerpuzzle->coursemodule)) {
+        $cm = get_coursemodule_from_instance('playerpuzzle', $playerpuzzle->id, $playerpuzzle->course);
+        $playerpuzzle->coursemodule = $cm->id;
+    }
+
+    $event = new stdClass();
+    $event->name         = get_string('calendardue', 'mod_playerpuzzle', $playerpuzzle->name);
+    $event->description  = format_module_intro('playerpuzzle', $playerpuzzle, $playerpuzzle->coursemodule, false);
+    $event->format       = FORMAT_HTML;
+    $event->type         = CALENDAR_EVENT_TYPE_ACTION;
+    $event->eventtype    = PLAYERPUZZLE_EVENT_TYPE_DUE;
+    $event->timestart    = $playerpuzzle->duedate;
+    $event->timesort     = $playerpuzzle->duedate;
+    $event->timeduration = 0;
+    $event->visible      = instance_is_visible('playerpuzzle', $playerpuzzle);
+
+    if ($eventid) {
+        calendar_event::load($eventid)->update($event, false);
+        return;
+    }
+
+    $event->courseid   = $playerpuzzle->course;
+    $event->groupid    = 0;
+    $event->userid     = 0;
+    $event->modulename = 'playerpuzzle';
+    $event->instance   = $playerpuzzle->id;
+    calendar_event::create($event, false);
+}
+
+/**
+ * Updates the calendar events for one playerpuzzle instance, several (by course), or every
+ * one on the site. This is the hook core discovers by name
+ * (course_module_calendar_event_update_process(), the daily refresh_mod_calendar_events_task)
+ * to bulk-refresh every activity's own calendar events.
+ *
+ * @param int $courseid Course ID to refresh, or 0 for every course.
+ * @param stdClass|int|null $instance Activity instance (or its id) to refresh alone.
+ * @param stdClass|int|null $cm Course module (or its id), to avoid a lookup when already known.
+ * @return bool True.
+ */
+function playerpuzzle_refresh_events($courseid = 0, $instance = null, $cm = null): bool {
+    global $DB;
+
+    if ($instance !== null) {
+        if (!is_object($instance)) {
+            $instance = $DB->get_record('playerpuzzle', ['id' => $instance], '*', MUST_EXIST);
+        }
+        if ($cm !== null) {
+            $instance->coursemodule = is_object($cm) ? $cm->id : $cm;
+        }
+        playerpuzzle_set_events($instance);
+        return true;
+    }
+
+    $instances = $courseid
+        ? $DB->get_records('playerpuzzle', ['course' => $courseid])
+        : $DB->get_records('playerpuzzle');
+    foreach ($instances as $eachinstance) {
+        playerpuzzle_set_events($eachinstance);
+    }
+
+    return true;
+}
+
+/**
  * Saves a new instance of the playerpuzzle into the database.
  *
  * @param stdClass $playerpuzzle Submitted data from the form.
@@ -281,6 +380,7 @@ function playerpuzzle_add_instance(stdClass $playerpuzzle, ?moodleform $mform = 
 
     $playerpuzzle->id = $DB->insert_record('playerpuzzle', $playerpuzzle);
     playerpuzzle_grade_item_update($playerpuzzle);
+    playerpuzzle_set_events($playerpuzzle);
 
     return $playerpuzzle->id;
 }
@@ -300,6 +400,7 @@ function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform
 
     $result = $DB->update_record('playerpuzzle', $playerpuzzle);
     playerpuzzle_grade_item_update($playerpuzzle);
+    playerpuzzle_set_events($playerpuzzle);
 
     return $result;
 }
@@ -333,6 +434,7 @@ function playerpuzzle_delete_instance(int $id): bool {
     );
     $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $playerpuzzle->id]);
     $DB->delete_records('playerpuzzle', ['id' => $playerpuzzle->id]);
+    $DB->delete_records('event', ['modulename' => 'playerpuzzle', 'instance' => $playerpuzzle->id]);
 
     return true;
 }

@@ -124,7 +124,8 @@ class security {
      *  advance_phase() is what changes between phases in Campaign mode.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned, ->coinsspent,
-     *  ->combatstate.
+     *  ->combatstate, ->isnew (true when a brand new attempt row was just created, so the
+     *  caller can trigger a game_started event exactly once per attempt).
      */
     public static function resume_or_create_attempt_token(
         int $playerpuzzleid,
@@ -160,6 +161,7 @@ class security {
                 'bosscoinsearned' => (int) $attempt->boss_coins_earned,
                 'coinsspent' => (int) $attempt->coins_spent,
                 'combatstate' => combat_state::decode($attempt->combatstate),
+                'isnew' => false,
             ];
         }
 
@@ -176,6 +178,7 @@ class security {
             'bosscoinsearned' => 0,
             'coinsspent' => 0,
             'combatstate' => null,
+            'isnew' => true,
         ];
     }
 

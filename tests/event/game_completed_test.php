@@ -43,8 +43,10 @@ final class game_completed_test extends \advanced_testcase {
 
     #[\Override]
     protected function setUp(): void {
+        global $CFG;
         parent::setUp();
         $this->resetAfterTest();
+        require_once($CFG->dirroot . '/mod/playerpuzzle/lib.php');
         $this->course = $this->getDataGenerator()->create_course();
         $this->student = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->enrol_user($this->student->id, $this->course->id, 'student');

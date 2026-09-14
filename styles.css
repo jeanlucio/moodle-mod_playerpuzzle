@@ -230,47 +230,23 @@ body.path-mod-playerpuzzle .pp-phase-modal::backdrop {
 
 /**
  * Lobby "portal" screen: a bounded stage (not the full viewport) built from the game's own
- * art (background landscape, hero sprite, stone panel, scroll banner) instead of a plain
- * Bootstrap form, so entering a match feels like opening a game rather than filling a form.
- * Kept as one fixed dark/night atmosphere regardless of the site theme's light/dark setting,
- * same precedent as #pp-bootstrap-loader below and the game canvas itself, both always dark.
+ * art (hero sprite, stone panel, scroll banner) instead of a plain Bootstrap form, so entering
+ * a match feels like opening a game rather than filling a form. The stone panel image (its
+ * own border-image, 9-slice via "fill") covers the whole card, not just an inner box — there
+ * is no separate dark background showing around it.
  */
 body.path-mod-playerpuzzle .pp-lobby {
     position: relative;
     max-width: 720px;
     margin-inline: auto;
     margin-block-end: 3rem;
-    padding: 2rem 1rem;
-    border-radius: 1rem;
-    overflow: hidden;
-    background-color: var(--dark, #1a1a1a);
+    border-style: solid;
+    border-width: 32px;
+    border-image-slice: 190 fill;
+    border-image-repeat: stretch;
+    padding: 1.5rem 1.25rem;
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.5);
     color: #f1e6c8;
-    isolation: isolate;
-}
-
-body.path-mod-playerpuzzle .pp-lobby-backdrop {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    overflow: hidden;
-}
-
-body.path-mod-playerpuzzle .pp-lobby-backdrop img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 50% 25%;
-    opacity: 0.32;
-    filter: saturate(0.7) brightness(0.55) blur(1px);
-}
-
-body.path-mod-playerpuzzle .pp-lobby-backdrop::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(ellipse 70% 60% at 50% 0%, rgba(224, 168, 62, 0.12), transparent 70%),
-        linear-gradient(180deg, rgba(23, 26, 43, 0.65) 0%, rgba(15, 17, 32, 0.88) 100%);
 }
 
 /**
@@ -362,6 +338,7 @@ body.path-mod-playerpuzzle .pp-lobby-rig {
 body.path-mod-playerpuzzle .pp-lobby-hero {
     position: relative;
     z-index: 2;
+    margin-inline-start: -2.5rem;
     animation: pp-lobby-idle 4.5s ease-in-out infinite;
 }
 
@@ -371,20 +348,13 @@ body.path-mod-playerpuzzle .pp-lobby-hero img {
     filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.5));
 }
 
-body.path-mod-playerpuzzle .pp-lobby-board {
+body.path-mod-playerpuzzle .pp-lobby-panel {
     position: relative;
     z-index: 1;
-    margin-inline-start: -1.5rem;
-    border-style: solid;
-    border-width: 32px;
-    border-image-slice: 190 fill;
-    border-image-repeat: stretch;
-    padding: 1.5rem 1.25rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 640px) {
@@ -394,16 +364,12 @@ body.path-mod-playerpuzzle .pp-lobby-board {
     }
 
     body.path-mod-playerpuzzle .pp-lobby-hero {
-        margin-block-end: -14px;
+        margin-inline-start: 0;
+        margin-block-end: 0.5rem;
     }
 
     body.path-mod-playerpuzzle .pp-lobby-hero img {
         max-width: 130px;
-    }
-
-    body.path-mod-playerpuzzle .pp-lobby-board {
-        margin-inline-start: 0;
-        width: 100%;
     }
 }
 
@@ -421,6 +387,16 @@ body.path-mod-playerpuzzle .pp-lobby-ribbon {
     background-size: 100% 100%;
     padding: 1rem 1.75rem 0.75rem;
     text-align: center;
+}
+
+/* Stacked layout: the hero sits in its own row above, not beside, the ribbon — the
+   negative pull that lets the ribbon break over the stone frame's top edge on desktop
+   would instead drag it up into the hero art here. */
+@media (max-width: 640px) {
+    body.path-mod-playerpuzzle .pp-lobby-ribbon {
+        width: 100%;
+        margin-block-start: 0;
+    }
 }
 
 body.path-mod-playerpuzzle .pp-lobby-ribbon-title {
@@ -493,7 +469,7 @@ body.path-mod-playerpuzzle .pp-lobby-difficulty-legend {
 
 body.path-mod-playerpuzzle .pp-lobby-difficulty-options {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
     width: 100%;
 }
 

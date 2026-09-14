@@ -25,7 +25,6 @@
         "playtext": "Play Game",
         "sesskey": "abc123example",
         "readytext": "Ready for adventure?",
-        "bgimageurl": "https://example.com/moodle/theme/image.php/boost/mod_playerpuzzle/1/bg_landscape",
         "heroimageurl": "https://example.com/moodle/theme/image.php/boost/mod_playerpuzzle/1/player",
         "panelstoneurl": "https://example.com/moodle/mod/playerpuzzle/pix/panel_stone.webp",
         "scrollbannerurl": "https://example.com/moodle/mod/playerpuzzle/pix/scroll_banner.webp",
@@ -50,23 +49,20 @@
         "difficultycurrent": ""
     }
 }}
-<div class="pp-lobby">
-    <div class="pp-lobby-backdrop" aria-hidden="true">
-        <img src="{{bgimageurl}}" alt="">
-        <span class="pp-lobby-ember"></span>
-        <span class="pp-lobby-ember"></span>
-        <span class="pp-lobby-ember"></span>
-        <span class="pp-lobby-ember"></span>
-        <span class="pp-lobby-ember"></span>
-        <span class="pp-lobby-ember"></span>
-    </div>
+<div class="pp-lobby" style="border-image-source: url('{{panelstoneurl}}');">
+    <span class="pp-lobby-ember" aria-hidden="true"></span>
+    <span class="pp-lobby-ember" aria-hidden="true"></span>
+    <span class="pp-lobby-ember" aria-hidden="true"></span>
+    <span class="pp-lobby-ember" aria-hidden="true"></span>
+    <span class="pp-lobby-ember" aria-hidden="true"></span>
+    <span class="pp-lobby-ember" aria-hidden="true"></span>
 
     <div class="pp-lobby-rig">
         <div class="pp-lobby-hero" aria-hidden="true">
             <img src="{{heroimageurl}}" alt="">
         </div>
 
-        <div class="pp-lobby-board" style="border-image-source: url('{{panelstoneurl}}');">
+        <div class="pp-lobby-panel">
             <div class="pp-lobby-ribbon" style="background-image: url('{{scrollbannerurl}}');">
                 <h2 class="pp-lobby-ribbon-title">
                     {{#progresstext}}{{progresstext}}{{/progresstext}}
@@ -114,10 +110,6 @@
             </div>
             {{/hasstats}}
 
-            {{#minquestionstext}}
-            <p class="pp-lobby-note">{{minquestionstext}}</p>
-            {{/minquestionstext}}
-
             <form method="post" action="{{{playurl}}}">
                 <input type="hidden" name="sesskey" value="{{sesskey}}">
 
@@ -144,6 +136,10 @@
 
                 <button type="submit" class="pp-lobby-play">{{playtext}}</button>
             </form>
+
+            {{#minquestionstext}}
+            <p class="pp-lobby-note">{{minquestionstext}}</p>
+            {{/minquestionstext}}
         </div>
     </div>
 </div>

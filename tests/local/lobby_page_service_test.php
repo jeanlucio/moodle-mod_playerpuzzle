@@ -127,7 +127,6 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertFalse($data['hasstats']);
         $this->assertArrayNotHasKey('coinstext', $data);
         $this->assertSame(get_string('lobby_ready', 'mod_playerpuzzle'), $data['readytext']);
-        $this->assertStringContainsString('bg_landscape', $data['bgimageurl']);
         $this->assertStringContainsString('player', $data['heroimageurl']);
         $this->assertStringContainsString('panel_stone.webp', $data['panelstoneurl']);
         $this->assertStringContainsString('scroll_banner.webp', $data['scrollbannerurl']);

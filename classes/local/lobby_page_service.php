@@ -62,12 +62,11 @@ class lobby_page_service {
             'playtext' => get_string('playgame', 'mod_playerpuzzle'),
             'sesskey' => sesskey(),
             'readytext' => get_string('lobby_ready', 'mod_playerpuzzle'),
-            // The .jpg/.png assets are resolved through the theme like any other plugin pix;
-            // the .webp ones are not, since theme_config::image_url() never resolves that
-            // extension (confirmed in its own source, see game_boot.js's loader for the
-            // in-game copy of this same asset), so those two are a direct URL to the plugin's
-            // own pix/ folder instead — the same technique game_boot.js already uses.
-            'bgimageurl' => $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false),
+            // The .png hero sprite is resolved through the theme like any other plugin pix;
+            // the .webp panel/banner are not, since theme_config::image_url() never resolves
+            // that extension (confirmed in its own source, see game_boot.js's loader for the
+            // in-game copy of these same assets), so those two are a direct URL to the
+            // plugin's own pix/ folder instead — the same technique game_boot.js already uses.
             'heroimageurl' => $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false),
             'panelstoneurl' => (new moodle_url('/mod/playerpuzzle/pix/panel_stone.webp'))->out(false),
             'scrollbannerurl' => (new moodle_url('/mod/playerpuzzle/pix/scroll_banner.webp'))->out(false),

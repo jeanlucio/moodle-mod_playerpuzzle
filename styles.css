@@ -49,7 +49,7 @@ body.path-mod-playerpuzzle .pp-canvas-desktop {
 }
 
 body.path-mod-playerpuzzle .pp-loading-text {
-    color: var(--white, #ffffff);
+    color: var(--white, #fff);
 }
 
 /**
@@ -141,7 +141,7 @@ body.path-mod-playerpuzzle .pp-question-modal::backdrop {
 
 body.path-mod-playerpuzzle .pp-question-modal-header {
     background-color: var(--primary, #0d6efd);
-    color: var(--white, #ffffff);
+    color: var(--white, #fff);
     padding: 1rem 1.25rem;
     border-radius: 0.25rem 0.25rem 0 0;
 }

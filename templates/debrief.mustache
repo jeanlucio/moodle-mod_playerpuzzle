@@ -47,12 +47,12 @@
         <p class="mb-1">
             {{youranswerlabel}}
             <span class="{{#iscorrect}}text-success{{/iscorrect}}{{^iscorrect}}text-danger{{/iscorrect}} fw-bold">
-                {{chosenanswer}}
+                {{{chosenanswer}}}
                 <span class="visually-hidden">{{#iscorrect}}{{correctsr}}{{/iscorrect}}{{^iscorrect}}{{wrongsr}}{{/iscorrect}}</span>
             </span>
         </p>
         {{^iscorrect}}
-        <p class="mb-0">{{correctanswerlabel}} <span class="text-success fw-bold">{{correctanswer}}</span></p>
+        <p class="mb-0">{{correctanswerlabel}} <span class="text-success fw-bold">{{{correctanswer}}}</span></p>
         {{/iscorrect}}
     </div>
     {{/questions}}

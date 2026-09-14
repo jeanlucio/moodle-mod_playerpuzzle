@@ -223,15 +223,31 @@ define([], function() {
         }
 
         /**
-         * Moves the roving tabindex focus between grid cells on arrow-key presses. Native
-         * browser table navigation is unavailable once role="grid" opts the element out of
-         * browse-mode reading (ARIA grid pattern), so this JS is what the APG spec expects
-         * a grid widget to provide itself.
+         * Moves the roving tabindex focus between grid cells on arrow-key presses, and doubles
+         * as the entry point for two other keyboard affordances scoped to the same accessible
+         * grid: digits 1-9 execute the corresponding move from the list last read out by
+         * announceTurnStart(), and Space re-reads that list without acting. Native browser
+         * table navigation is unavailable once role="grid" opts the element out of browse-mode
+         * reading (ARIA grid pattern), so this JS is what the APG spec expects a grid widget to
+         * provide itself for the arrow-key part.
          *
          * @param {KeyboardEvent} event The keydown event, targeted at the currently focused cell.
          * @return {void}
          */
         handleGridKeydown(event) {
+            if (event.key === ' ') {
+                event.preventDefault();
+                this.announceTurnStart();
+                return;
+            }
+
+            const digit = parseInt(event.key, 10);
+            if (!isNaN(digit) && digit >= 1 && digit <= 9 && String(digit) === event.key) {
+                event.preventDefault();
+                this.executeAnnouncedMove(digit - 1);
+                return;
+            }
+
             const cell = event.currentTarget;
             const row = parseInt(cell.dataset.row, 10);
             const col = parseInt(cell.dataset.col, 10);
@@ -709,7 +725,7 @@ define([], function() {
          * every move up to a cap, not just one.
          *
          * @param {number} limit Maximum number of moves to collect.
-         * @returns {Array} The piece type each found move would match, one entry per move.
+         * @returns {Array} Each found move's coordinates and matched piece type.
          */
         findAllMoves(limit = 9) {
             const moves = [];
@@ -718,13 +734,13 @@ define([], function() {
                     if (c < this.cols - 1) {
                         const type = this.evaluateSwap(r, c, r, c + 1);
                         if (type !== null) {
-                            moves.push({type});
+                            moves.push({r1: r, c1: c, r2: r, c2: c + 1, type});
                         }
                     }
                     if (moves.length < limit && r < this.rows - 1) {
                         const type = this.evaluateSwap(r, c, r + 1, c);
                         if (type !== null) {
-                            moves.push({type});
+                            moves.push({r1: r, c1: c, r2: r + 1, c2: c, type});
                         }
                     }
                 }
@@ -735,8 +751,8 @@ define([], function() {
         /**
          * Posts the accessible "your turn" announcement, enumerating up to 9 available moves by
          * piece type. Only called while it is actually the player's turn. The move list is
-         * stored on this.announcedMoves for the future keyboard-input lote, which will let the
-         * player execute one of these moves directly instead of dragging/tapping.
+         * stored on this.announcedMoves so executeAnnouncedMove() (bound to keys 1-9 on the
+         * accessible grid) can execute one of these moves directly instead of dragging/tapping.
          */
         announceTurnStart() {
             const moves = this.findAllMoves(9);
@@ -750,6 +766,32 @@ define([], function() {
             const liveRegion = document.getElementById('pp-aria-live');
             if (liveRegion) {
                 liveRegion.textContent = [intro, ...lines].join(' ');
+            }
+        }
+
+        /**
+         * Executes the Nth move from the list last posted by announceTurnStart(), so a keyboard
+         * user can act on what was just read out loud without needing precise pointer control
+         * over the (visually-hidden, for this purpose) canvas board. A no-op outside the
+         * player's own turn, once input is disabled mid-swap, or when the index is out of range
+         * (e.g. the player pressed a digit higher than the announced move count).
+         *
+         * @param {number} index Zero-based index into this.announcedMoves.
+         * @return {void}
+         */
+        executeAnnouncedMove(index) {
+            if (this.scene.combat.currentTurn !== 'player' || !this.scene.input.enabled) {
+                return;
+            }
+            if (!this.announcedMoves || !this.announcedMoves[index]) {
+                return;
+            }
+
+            const move = this.announcedMoves[index];
+            const p1 = this.grid[move.r1][move.c1];
+            const p2 = this.grid[move.r2][move.c2];
+            if (p1 && p2) {
+                this.swapPieces(p1, p2);
             }
         }
 

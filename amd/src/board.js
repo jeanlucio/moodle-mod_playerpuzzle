@@ -62,6 +62,14 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
             this.syncAccessibleGrid();
             this.setupInputs();
 
+            // Moves real keyboard focus straight to the accessible board the moment it loads,
+            // rather than leaving a keyboard/screen-reader user to tab past the rest of the
+            // page chrome to find it. preventScroll avoids jumping the (invisible) page to this
+            // element's position, which would otherwise disorient a sighted keyboard user.
+            if (this.a11yCells) {
+                this.a11yCells[0][0].focus({preventScroll: true});
+            }
+
             if (this.scene.combat.currentTurn === 'player') {
                 this.announceTurnStart();
             }

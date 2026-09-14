@@ -24,6 +24,7 @@
 
 namespace mod_playerpuzzle\external;
 
+use completion_info;
 use context_module;
 use core_external\external_api;
 use core_external\external_function_parameters;
@@ -223,6 +224,17 @@ class save_progress extends external_api {
         // best score yet, and even a loss finalizes a Single Match round grade_calculator
         // must now count among their finished matches.
         playerpuzzle_update_grades($playerpuzzle, (int) $USER->id);
+
+        // Automatic completion (the "require attempts"/"require wins" custom rules) is only
+        // recomputed and persisted when something explicitly asks for it — Moodle has no
+        // cron sweep for this, unlike grading. Trigger it here so the activity page's
+        // completion badge reflects a finished attempt immediately, the same way
+        // mod_choice/mod_playerwords call update_state() right after recording a response.
+        $course = get_course((int) $playerpuzzle->course);
+        $completioninfo = new completion_info($course);
+        if ($completioninfo->is_enabled($cm)) {
+            $completioninfo->update_state($cm, COMPLETION_COMPLETE, (int) $USER->id);
+        }
 
         return [
             'status'      => 'success',

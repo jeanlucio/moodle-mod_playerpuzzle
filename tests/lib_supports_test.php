@@ -40,10 +40,11 @@ final class lib_supports_test extends \basic_testcase {
 
     /**
      * Known features return their declared support value, and an unrecognised feature
-     * returns null. Asserts the honest current state of the plugin — backup and
-     * completion rules are declared unsupported until their real implementation lands,
-     * not the aspirational end state. Gradebook support (Fase 6 Lote A) is real:
-     * playerpuzzle_grade_item_update()/update_grades() and grade_calculator both exist.
+     * returns null. Asserts the honest current state of the plugin — backup is declared
+     * unsupported until its real implementation lands, not the aspirational end state.
+     * Gradebook support (Fase 6 Lote A) and completion rules (Fase 6 Lote C) are both real:
+     * playerpuzzle_grade_item_update()/update_grades()/grade_calculator, and
+     * playerpuzzle_get_coursemodule_info()/classes/completion/custom_completion.php, all exist.
      *
      * @return void
      */
@@ -53,8 +54,8 @@ final class lib_supports_test extends \basic_testcase {
         $this->assertTrue(playerpuzzle_supports(FEATURE_GROUPS));
         $this->assertTrue(playerpuzzle_supports(FEATURE_GROUPINGS));
         $this->assertTrue(playerpuzzle_supports(FEATURE_GRADE_HAS_GRADE));
+        $this->assertTrue(playerpuzzle_supports(FEATURE_COMPLETION_HAS_RULES));
         $this->assertFalse(playerpuzzle_supports(FEATURE_BACKUP_MOODLE2));
-        $this->assertFalse(playerpuzzle_supports(FEATURE_COMPLETION_HAS_RULES));
         $this->assertNull(playerpuzzle_supports('unknown_feature'));
     }
 }

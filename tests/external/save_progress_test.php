@@ -695,4 +695,85 @@ final class save_progress_test extends \advanced_testcase {
         $this->assertFalse($result['error']);
         $this->assertNull($DB->get_field('playerpuzzle_attempts', 'combatstate', ['id' => $attemptid]));
     }
+
+    /**
+     * Tests that a victory recomputes and persists the completionwins custom rule
+     * immediately, not just at the next cron run (Moodle has none for completion) — mirrors
+     * mod_playerwords' own update_state() call right after a round finishes.
+     *
+     * @return void
+     */
+    public function test_victory_updates_completion_state_when_wins_required(): void {
+        global $CFG;
+        $CFG->enablecompletion = true;
+
+        // A course with completion enabled is required here — the shared $this->course from
+        // setUp() does not have it, and add_moduleinfo() silently leaves the course_module's
+        // own completion tracking at NONE whenever the course itself has completion off,
+        // regardless of what is passed in the instance record.
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $this->getDataGenerator()->enrol_user($this->student->id, $course->id, 'student');
+        $instance = $this->make_instance([
+            'course'                => $course->id,
+            'completion'            => COMPLETION_TRACKING_AUTOMATIC,
+            'completionwinsenabled' => true,
+            'completionwins'        => 1,
+        ]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $cm = get_coursemodule_from_id('playerpuzzle', $instance->cmid, 0, false, MUST_EXIST);
+        $completioninfo = new \completion_info($course);
+        $data = $completioninfo->get_data($cm, false, (int) $this->student->id);
+        $this->assertEquals(COMPLETION_COMPLETE, $data->completionstate);
+    }
+
+    /**
+     * Tests that a defeat does NOT satisfy completionwins, even though the attempt is now
+     * finished — only completionattempts counts a loss towards its own threshold.
+     *
+     * @return void
+     */
+    public function test_defeat_does_not_satisfy_completion_wins(): void {
+        global $CFG;
+        $CFG->enablecompletion = true;
+
+        // Same reasoning as test_victory_updates_completion_state_when_wins_required(): a
+        // dedicated course with completion enabled, not the shared $this->course.
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $this->getDataGenerator()->enrol_user($this->student->id, $course->id, 'student');
+        $instance = $this->make_instance([
+            'course'                => $course->id,
+            'completion'            => COMPLETION_TRACKING_AUTOMATIC,
+            'completionwinsenabled' => true,
+            'completionwins'        => 1,
+        ]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 0,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $cm = get_coursemodule_from_id('playerpuzzle', $instance->cmid, 0, false, MUST_EXIST);
+        $completioninfo = new \completion_info($course);
+        $data = $completioninfo->get_data($cm, false, (int) $this->student->id);
+        $this->assertEquals(COMPLETION_INCOMPLETE, $data->completionstate);
+    }
 }

@@ -359,7 +359,84 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             $errors['hud_win_grant_qty'] = get_string('error_hud_cost_qty', 'mod_playerpuzzle');
         }
 
+        if (!empty($data['completionattemptsenabled']) && (int) $data['completionattempts'] < 1) {
+            $errors['completionattemptsgroup'] = get_string('error_completionattempts', 'mod_playerpuzzle');
+        }
+
+        if (!empty($data['completionwinsenabled']) && (int) $data['completionwins'] < 1) {
+            $errors['completionwinsgroup'] = get_string('error_completionwins', 'mod_playerpuzzle');
+        }
+
         return $errors;
+    }
+
+    /**
+     * Adds custom completion rules to Moodle completion section.
+     *
+     * @return array
+     */
+    public function add_completion_rules(): array {
+        $mform = $this->_form;
+
+        $attemptsgroup = [];
+        $attemptsgroup[] = $mform->createElement('checkbox', 'completionattemptsenabled', '', '');
+        $attemptsgroup[] = $mform->createElement('text', 'completionattempts', '', ['size' => 3]);
+        $mform->addGroup(
+            $attemptsgroup,
+            'completionattemptsgroup',
+            get_string('completionattemptsgroup', 'mod_playerpuzzle'),
+            [' '],
+            false
+        );
+        $mform->setType('completionattempts', PARAM_INT);
+        $mform->setDefault('completionattempts', 1);
+        $mform->disabledIf('completionattempts', 'completionattemptsenabled', 'notchecked');
+
+        $winsgroup = [];
+        $winsgroup[] = $mform->createElement('checkbox', 'completionwinsenabled', '', '');
+        $winsgroup[] = $mform->createElement('text', 'completionwins', '', ['size' => 3]);
+        $mform->addGroup(
+            $winsgroup,
+            'completionwinsgroup',
+            get_string('completionwinsgroup', 'mod_playerpuzzle'),
+            [' '],
+            false
+        );
+        $mform->setType('completionwins', PARAM_INT);
+        $mform->setDefault('completionwins', 1);
+        $mform->disabledIf('completionwins', 'completionwinsenabled', 'notchecked');
+
+        return ['completionattemptsgroup', 'completionwinsgroup'];
+    }
+
+    /**
+     * Returns whether at least one completion rule is enabled.
+     *
+     * @param array $data Form data.
+     * @return bool
+     */
+    public function completion_rule_enabled($data): bool {
+        return (!empty($data['completionattemptsenabled']) && (int) $data['completionattempts'] > 0)
+            || (!empty($data['completionwinsenabled']) && (int) $data['completionwins'] > 0);
+    }
+
+    /**
+     * Pre-checks the completion rule checkboxes when the stored instance already has a
+     * value configured for them, mirroring how Moodle core does this for its own
+     * completionusegrade/completionpassgrade checkboxes.
+     *
+     * @param array $defaultvalues Default form values.
+     * @return void
+     */
+    public function data_preprocessing(&$defaultvalues): void {
+        parent::data_preprocessing($defaultvalues);
+
+        if (!empty($defaultvalues['completionattempts'])) {
+            $defaultvalues['completionattemptsenabled'] = 1;
+        }
+        if (!empty($defaultvalues['completionwins'])) {
+            $defaultvalues['completionwinsenabled'] = 1;
+        }
     }
 
     /**

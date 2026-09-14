@@ -127,14 +127,66 @@ function playerpuzzle_supports(string $feature): bool|null {
             return true;
         case FEATURE_GRADE_HAS_GRADE:
             return true;
-        // Not yet implemented: no backup/moodle2/ steplib, no custom_completion class.
-        // Flip these on only alongside their real implementation.
-        case FEATURE_BACKUP_MOODLE2:
         case FEATURE_COMPLETION_HAS_RULES:
+            return true;
+        // Not yet implemented: no backup/moodle2/ steplib.
+        // Flip this on only alongside its real implementation.
+        case FEATURE_BACKUP_MOODLE2:
             return false;
         default:
             return null;
     }
+}
+
+/**
+ * Populates the course module info object with custom completion rule data.
+ *
+ * Called by Moodle when building cm_info. Stores the required attempt/win counts in
+ * customdata so activity_custom_completion::get_available_custom_rules() can determine
+ * whether each rule is enabled for this instance, and so
+ * \mod_playerpuzzle\completion\custom_completion::get_state() can evaluate them.
+ *
+ * @param stdClass $coursemodule The raw course_modules row (id, instance, …).
+ * @return cached_cm_info|false A populated info object, or false on failure.
+ */
+function playerpuzzle_get_coursemodule_info(stdClass $coursemodule): cached_cm_info|false {
+    global $DB;
+
+    $fields = 'id, name, completionattempts, completionwins';
+    $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $coursemodule->instance], $fields);
+    if (!$playerpuzzle) {
+        return false;
+    }
+
+    $info = new cached_cm_info();
+    $info->name = $playerpuzzle->name;
+
+    if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
+        $info->customdata['customcompletionrules']['completionattempts'] = (int) $playerpuzzle->completionattempts;
+        $info->customdata['customcompletionrules']['completionwins'] = (int) $playerpuzzle->completionwins;
+    }
+
+    return $info;
+}
+
+/**
+ * Describes the active custom completion rules.
+ *
+ * @param stdClass|cm_info $cm The course module info.
+ * @return array An array of active completion rule descriptions.
+ */
+function playerpuzzle_get_completion_active_rule_descriptions(stdClass|cm_info $cm): array {
+    $descriptions = [];
+
+    $rules = $cm->customdata['customcompletionrules'] ?? [];
+    if (!empty($rules['completionattempts'])) {
+        $descriptions[] = get_string('completionattempts_desc', 'mod_playerpuzzle', $rules['completionattempts']);
+    }
+    if (!empty($rules['completionwins'])) {
+        $descriptions[] = get_string('completionwins_desc', 'mod_playerpuzzle', $rules['completionwins']);
+    }
+
+    return $descriptions;
 }
 
 /**

@@ -337,5 +337,23 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091501, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091601) {
+        $table = new xmldb_table('playerpuzzle');
+
+        // Add completionattempts: custom completion rule, minimum finished attempts.
+        $field = new xmldb_field('completionattempts', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add completionwins: custom completion rule, minimum won attempts/matches.
+        $field = new xmldb_field('completionwins', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026091601, 'playerpuzzle');
+    }
+
     return true;
 }

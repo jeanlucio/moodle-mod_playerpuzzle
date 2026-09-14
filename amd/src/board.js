@@ -231,6 +231,32 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
         }
 
         /**
+         * Identifies which arrow direction, if any, a keydown event represents. Checks
+         * event.key first (both the modern 'ArrowX' names and the pre-standardization 'X'
+         * ones some WebDriver implementations and older assistive tech still produce), falling
+         * back to event.code (the physical key, tied to the USB HID usage table and far more
+         * consistent across browsers/drivers) when event.key is something unrecognized.
+         *
+         * @param {KeyboardEvent} event The keydown event.
+         * @return {string|null} One of 'up'/'down'/'left'/'right', or null when not an arrow key.
+         */
+        identifyArrowKey(event) {
+            if (event.key === 'ArrowUp' || event.key === 'Up' || event.code === 'ArrowUp') {
+                return 'up';
+            }
+            if (event.key === 'ArrowDown' || event.key === 'Down' || event.code === 'ArrowDown') {
+                return 'down';
+            }
+            if (event.key === 'ArrowLeft' || event.key === 'Left' || event.code === 'ArrowLeft') {
+                return 'left';
+            }
+            if (event.key === 'ArrowRight' || event.key === 'Right' || event.code === 'ArrowRight') {
+                return 'right';
+            }
+            return null;
+        }
+
+        /**
          * Moves the roving tabindex focus between grid cells on arrow-key presses, and doubles
          * as the entry point for two other keyboard affordances scoped to the same accessible
          * grid: digits 1-9 execute the corresponding move from the list last read out by
@@ -262,17 +288,26 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
             let newRow = row;
             let newCol = col;
 
-            switch (event.key) {
-                case 'ArrowUp':
+            // Identifies the arrow pressed from whichever of event.key/event.code is
+            // meaningful: event.key covers the modern DOM4 names plus the pre-standardization
+            // ones ('Up'/'Down'/'Left'/'Right', without the 'Arrow' prefix) some WebDriver
+            // implementations and older assistive tech still produce; event.code (the
+            // physical key, tied to the USB HID usage table) is far more consistent across
+            // browsers/drivers for navigation keys and serves as a fallback when event.key
+            // comes through as something unexpected.
+            const direction = this.identifyArrowKey(event);
+
+            switch (direction) {
+                case 'up':
                     newRow = Math.max(0, row - 1);
                     break;
-                case 'ArrowDown':
+                case 'down':
                     newRow = Math.min(this.rows - 1, row + 1);
                     break;
-                case 'ArrowLeft':
+                case 'left':
                     newCol = Math.max(0, col - 1);
                     break;
-                case 'ArrowRight':
+                case 'right':
                     newCol = Math.min(this.cols - 1, col + 1);
                     break;
                 default:

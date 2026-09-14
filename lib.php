@@ -506,3 +506,19 @@ function playerpuzzle_delete_instance(int $id): bool {
 
     return true;
 }
+
+/**
+ * Adds a link to the teacher report in the activity administration navigation.
+ *
+ * @param settings_navigation $settings The settings navigation object.
+ * @param navigation_node $puzzlenode The node to add the link to.
+ * @return void
+ */
+function playerpuzzle_extend_settings_navigation(settings_navigation $settings, navigation_node $puzzlenode): void {
+    if (has_capability('mod/playerpuzzle:viewreport', $settings->get_page()->cm->context)) {
+        $puzzlenode->add(
+            get_string('report_title', 'mod_playerpuzzle'),
+            new moodle_url('/mod/playerpuzzle/report.php', ['id' => $settings->get_page()->cm->id])
+        );
+    }
+}

@@ -87,13 +87,42 @@ define([
     const startPhaser = (gameConfig, strings) => {
         let bootTimeoutId = null;
 
+        // (Re)arms the boot-stall timeout, replacing any previous one. Called once before
+        // the game is even created, and again on every asset the loader finishes — so a
+        // slow-but-progressing connection (each file resetting the clock) never trips it,
+        // only a genuine stall (nothing at all completes for a full 20s) does. See the
+        // showBootError() comment above for why a silent failure here matters.
+        const armBootTimeout = () => {
+            window.clearTimeout(bootTimeoutId);
+            bootTimeoutId = window.setTimeout(() => {
+                window.console.error('PlayerPuzzle boot stalled: no loading progress for 20s.');
+                showBootError(strings);
+            }, 20000);
+        };
+
         // Must be regular function: Phaser binds `this` to the scene instance.
         const preloadScene = function() {
             this.ui = new UIHandler(this, null, gameConfig, strings);
             this.ui.setupLoader();
+            this.load.on('progress', armBootTimeout);
 
-            this.load.image('bg', gameConfig.bgurl);
-            this.load.image('stagebg', gameConfig.stagebgurl);
+            // 'bg' is only ever placed on the scene by ui.js's mobile (!hasCharacterStage)
+            // branch; 'stagebg'/'panelstone'/'scrollbanner' only by its desktop
+            // (hasCharacterStage) branch — loading all four unconditionally on every boot
+            // wasted several MB downloading a background image nobody on that layout would
+            // ever see. isDesk here mirrors the same window-dimension check createScene()
+            // does later; a mid-load orientation change could in theory skip the now-needed
+            // one, same narrow edge case the "apply desktop layout immediately" comment in
+            // init() already accepts for the container's own CSS class.
+            const isDesk = window.innerWidth > window.innerHeight;
+            if (isDesk) {
+                this.load.image('stagebg', gameConfig.stagebgurl);
+                this.load.image('panelstone', `${M.cfg.wwwroot}/mod/playerpuzzle/pix/panel_stone.webp`);
+                this.load.image('scrollbanner', `${M.cfg.wwwroot}/mod/playerpuzzle/pix/scroll_banner.webp`);
+            } else {
+                this.load.image('bg', gameConfig.bgurl);
+            }
+
             this.load.image('player', gameConfig.playerurl);
             this.load.image('boss', gameConfig.bossurl);
             for (let i = 0; i < 7; i++) {
@@ -101,8 +130,6 @@ define([
             }
 
             const urlPix = `${M.cfg.wwwroot}/mod/playerpuzzle/pix/`;
-            this.load.image('panelstone', `${urlPix}panel_stone.png`);
-            this.load.image('scrollbanner', `${urlPix}scroll_banner.png`);
             this.load.audio('bg_music', `${urlPix}music.mp3`);
             this.load.audio('sfx_swap', `${urlPix}swap.mp3`);
             this.load.audio('sfx_match', `${urlPix}match.mp3`);
@@ -402,16 +429,10 @@ define([
             scene: {preload: preload, create: create}
         };
 
-        // Guards against a boot that never throws but also never finishes either — e.g. a
-        // Phaser internal event this code is implicitly waiting on that, for whatever reason,
-        // never fires, leaving the loading screen stuck with no feedback at all. 20s is
-        // generous for even a slow connection loading every sprite/audio asset, while still
-        // bounding how long a broken load goes unreported. Cleared by create() above on
-        // success or on a caught error — this only fires when neither happens in time.
-        bootTimeoutId = window.setTimeout(() => {
-            window.console.error('PlayerPuzzle boot timed out.');
-            showBootError(strings);
-        }, 20000);
+        // Arms the initial stall timeout, covering the case where not even the first asset
+        // request ever responds (so the 'progress' listener in preloadScene() never fires to
+        // re-arm it itself). Cleared by create() above on success or on a caught error.
+        armBootTimeout();
 
         const game = new Phaser.Game(config);
 

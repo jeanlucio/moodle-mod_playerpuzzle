@@ -126,6 +126,11 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertStringContainsString('play.php', $data['playurl']);
         $this->assertFalse($data['hasstats']);
         $this->assertArrayNotHasKey('coinstext', $data);
+        $this->assertSame(get_string('lobby_ready', 'mod_playerpuzzle'), $data['readytext']);
+        $this->assertStringContainsString('bg_landscape', $data['bgimageurl']);
+        $this->assertStringContainsString('player', $data['heroimageurl']);
+        $this->assertStringContainsString('panel_stone.webp', $data['panelstoneurl']);
+        $this->assertStringContainsString('scroll_banner.webp', $data['scrollbannerurl']);
     }
 
     /**
@@ -146,6 +151,7 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $this->assertTrue($data['hasstats']);
         $this->assertSame(get_string('lobby_coinbalance', 'mod_playerpuzzle', 42), $data['coinstext']);
+        $this->assertSame(42, $data['coinvalue']);
         $this->assertArrayNotHasKey('swordtext', $data);
         $this->assertArrayNotHasKey('shieldtext', $data);
         $this->assertArrayNotHasKey('potiontext', $data);
@@ -169,6 +175,7 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $this->assertTrue($data['hasstats']);
         $this->assertSame(get_string('lobby_swordstock', 'mod_playerpuzzle', 3), $data['swordtext']);
+        $this->assertSame(3, $data['swordvalue']);
     }
 
     /**

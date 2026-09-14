@@ -229,25 +229,341 @@ body.path-mod-playerpuzzle .pp-phase-modal::backdrop {
 }
 
 /**
- * Lobby stats row (coin balance, Sword/Shield level): plain CSS gap instead of the
- * Bootstrap 5-only .gap-* utility, so spacing is consistent on Moodle 4.5 (Bootstrap 4) too.
+ * Lobby "portal" screen: a bounded stage (not the full viewport) built from the game's own
+ * art (background landscape, hero sprite, stone panel, scroll banner) instead of a plain
+ * Bootstrap form, so entering a match feels like opening a game rather than filling a form.
+ * Kept as one fixed dark/night atmosphere regardless of the site theme's light/dark setting,
+ * same precedent as #pp-bootstrap-loader below and the game canvas itself, both always dark.
  */
-body.path-mod-playerpuzzle .pp-lobby-stats {
-    gap: 0.5rem;
+body.path-mod-playerpuzzle .pp-lobby {
+    position: relative;
+    max-width: 720px;
+    margin-inline: auto;
+    margin-block-end: 3rem;
+    padding: 2rem 1rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    background-color: var(--dark, #1a1a1a);
+    color: #f1e6c8;
+    isolation: isolate;
 }
 
-body.path-mod-playerpuzzle .pp-lobby-progress {
-    color: var(--gray-700, #495057);
+body.path-mod-playerpuzzle .pp-lobby-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-backdrop img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 25%;
+    opacity: 0.32;
+    filter: saturate(0.7) brightness(0.55) blur(1px);
+}
+
+body.path-mod-playerpuzzle .pp-lobby-backdrop::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 70% 60% at 50% 0%, rgba(224, 168, 62, 0.12), transparent 70%),
+        linear-gradient(180deg, rgba(23, 26, 43, 0.65) 0%, rgba(15, 17, 32, 0.88) 100%);
 }
 
 /**
- * Difficulty picker: without a max-width, .form-select's own width:100% stretches the
- * dropdown to fill its d-inline-block/mx-auto container's shrink-to-fit size, which browsers
- * resolve unpredictably wide in that combination — constrained here instead of inline, since
- * this is a fixed design choice, not a per-render dynamic value.
+ * Ember particles: pure CSS (no AMD module) — a fixed set of 6 positions/delays via
+ * nth-child, one <span> per position already in the template, rather than a script
+ * generating them at runtime just for this decorative flourish.
  */
+body.path-mod-playerpuzzle .pp-lobby-ember {
+    position: absolute;
+    bottom: -10px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ffd873;
+    box-shadow: 0 0 6px 2px rgba(255, 216, 115, 0.6);
+    opacity: 0;
+    animation: pp-lobby-rise 9s linear infinite;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ember:nth-child(1) {
+    inset-inline-start: 8%;
+    animation-delay: 0s;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ember:nth-child(2) {
+    inset-inline-start: 22%;
+    animation-delay: 1.3s;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ember:nth-child(3) {
+    inset-inline-start: 38%;
+    animation-delay: 2.6s;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ember:nth-child(4) {
+    inset-inline-start: 54%;
+    animation-delay: 4.1s;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ember:nth-child(5) {
+    inset-inline-start: 68%;
+    animation-delay: 5.4s;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ember:nth-child(6) {
+    inset-inline-start: 82%;
+    animation-delay: 6.8s;
+}
+
+@keyframes pp-lobby-rise {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    12% {
+        opacity: 0.85;
+    }
+
+    88% {
+        opacity: 0.4;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-260px);
+    }
+}
+
+@keyframes pp-lobby-idle {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+body.path-mod-playerpuzzle .pp-lobby-rig {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(96px, 160px) 1fr;
+    align-items: end;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-hero {
+    position: relative;
+    z-index: 2;
+    animation: pp-lobby-idle 4.5s ease-in-out infinite;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-hero img {
+    width: 100%;
+    max-width: 170px;
+    filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.5));
+}
+
+body.path-mod-playerpuzzle .pp-lobby-board {
+    position: relative;
+    z-index: 1;
+    margin-inline-start: -1.5rem;
+    border-style: solid;
+    border-width: 32px;
+    border-image-slice: 190 fill;
+    border-image-repeat: stretch;
+    padding: 1.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 640px) {
+    body.path-mod-playerpuzzle .pp-lobby-rig {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+
+    body.path-mod-playerpuzzle .pp-lobby-hero {
+        margin-block-end: -14px;
+    }
+
+    body.path-mod-playerpuzzle .pp-lobby-hero img {
+        max-width: 130px;
+    }
+
+    body.path-mod-playerpuzzle .pp-lobby-board {
+        margin-inline-start: 0;
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.path-mod-playerpuzzle .pp-lobby-hero,
+    body.path-mod-playerpuzzle .pp-lobby-ember {
+        animation: none;
+    }
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ribbon {
+    width: 112%;
+    margin-block-start: -2.75rem;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    padding: 1rem 1.75rem 0.75rem;
+    text-align: center;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ribbon-title {
+    margin: 0;
+    font-family: Georgia, Cambria, 'Times New Roman', serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+    color: #2a1c10;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(0, 0, 0, 0.32);
+    border: 1px solid rgba(205, 179, 122, 0.4);
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem 0.35rem 0.4rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-chip svg {
+    width: 1.35rem;
+    height: 1.35rem;
+    flex: none;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-note {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    background: rgba(0, 0, 0, 0.28);
+    border-inline-start: 3px solid #5a7a52;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    text-align: start;
+    width: 100%;
+    margin: 0;
+}
+
 body.path-mod-playerpuzzle .pp-lobby-difficulty {
-    max-width: 300px;
+    width: 100%;
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-difficulty-legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0;
+    margin-block-end: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.82rem;
+    color: #cdb37a;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-difficulty-options {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-difficulty-option {
+    flex: 1;
+    display: block;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-difficulty-option input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-difficulty-option label {
+    display: block;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #cfc6b0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.25));
+    border: 1px solid rgba(205, 179, 122, 0.4);
+    border-radius: 0.6rem;
+    padding: 0.6rem 0.25rem;
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-difficulty-option label:hover {
+    transform: translateY(-2px);
+    border-color: #e0a83e;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-difficulty-option input:focus-visible + label {
+    outline: 2px solid #ffd873;
+    outline-offset: 2px;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-difficulty-option input:checked + label {
+    background: linear-gradient(180deg, #ffd873, #e0a83e);
+    color: #2a1c10;
+    border-color: #ffd873;
+    box-shadow: 0 4px 10px rgba(224, 168, 62, 0.4);
+}
+
+body.path-mod-playerpuzzle .pp-lobby-play {
+    width: 100%;
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: #3a2504;
+    background: linear-gradient(180deg, #ffd873 0%, #e0a83e 55%, #b9822a 100%);
+    border: 1px solid #8a611c;
+    border-radius: 0.85rem;
+    padding: 0.85rem 1.25rem;
+    cursor: pointer;
+    box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.5),
+        inset 0 -4px 6px rgba(0, 0, 0, 0.25),
+        0 0.6rem 1.4rem rgba(0, 0, 0, 0.4);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-play:hover {
+    transform: translateY(-2px);
+}
+
+body.path-mod-playerpuzzle .pp-lobby-play:focus-visible {
+    outline: 3px solid #ffd873;
+    outline-offset: 3px;
 }
 
 /**

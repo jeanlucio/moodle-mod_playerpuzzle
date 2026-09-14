@@ -24,10 +24,19 @@
         "playurl": "/mod/playerpuzzle/play.php?id=1",
         "playtext": "Play Game",
         "sesskey": "abc123example",
+        "readytext": "Ready for adventure?",
+        "bgimageurl": "https://example.com/moodle/theme/image.php/boost/mod_playerpuzzle/1/bg_landscape",
+        "heroimageurl": "https://example.com/moodle/theme/image.php/boost/mod_playerpuzzle/1/player",
+        "panelstoneurl": "https://example.com/moodle/mod/playerpuzzle/pix/panel_stone.webp",
+        "scrollbannerurl": "https://example.com/moodle/mod/playerpuzzle/pix/scroll_banner.webp",
         "hasstats": true,
+        "coinvalue": 42,
         "coinstext": "Coins: 42",
+        "swordvalue": 3,
         "swordtext": "Sword: 3",
+        "shieldvalue": 1,
         "shieldtext": "Shield: 1",
+        "potionvalue": 2,
         "potiontext": "Potion: 2",
         "progresstext": "Current progress: Level 2, Phase 5",
         "minquestionstext": "This match requires answering at least 3 question(s).",
@@ -41,45 +50,100 @@
         "difficultycurrent": ""
     }
 }}
-<div class="pp-lobby text-center mb-5">
-    {{#hasstats}}
-    <div class="pp-lobby-stats d-flex flex-wrap justify-content-center mb-3">
-        {{#coinstext}}<span class="badge bg-warning text-dark">{{coinstext}}</span>{{/coinstext}}
-        {{#swordtext}}<span class="badge bg-primary">{{swordtext}}</span>{{/swordtext}}
-        {{#shieldtext}}<span class="badge bg-info text-dark">{{shieldtext}}</span>{{/shieldtext}}
-        {{#potiontext}}<span class="badge bg-success">{{potiontext}}</span>{{/potiontext}}
+<div class="pp-lobby">
+    <div class="pp-lobby-backdrop" aria-hidden="true">
+        <img src="{{bgimageurl}}" alt="">
+        <span class="pp-lobby-ember"></span>
+        <span class="pp-lobby-ember"></span>
+        <span class="pp-lobby-ember"></span>
+        <span class="pp-lobby-ember"></span>
+        <span class="pp-lobby-ember"></span>
+        <span class="pp-lobby-ember"></span>
     </div>
-    {{/hasstats}}
 
-    {{#progresstext}}
-    <p class="pp-lobby-progress">{{progresstext}}</p>
-    {{/progresstext}}
-
-    {{#minquestionstext}}
-    <p class="alert alert-info py-2 mb-3 pp-lobby-minquestions">{{minquestionstext}}</p>
-    {{/minquestionstext}}
-
-    <form method="post" action="{{{playurl}}}" class="mt-3">
-        <input type="hidden" name="sesskey" value="{{sesskey}}">
-
-        {{#difficultycurrent}}
-        <p class="pp-lobby-difficulty-current text-muted mb-3">{{difficultycurrent}}</p>
-        {{/difficultycurrent}}
-
-        {{#difficultylabel}}
-        <div class="pp-lobby-difficulty mb-3 mx-auto text-start">
-            <label class="fw-bold" for="pp-difficulty">{{difficultylabel}}</label>
-            {{{difficultyhelpicon}}}
-            <select class="form-select" name="difficulty" id="pp-difficulty">
-                {{#difficultychoices}}
-                <option value="{{value}}" {{#checked}}selected{{/checked}}>{{label}}</option>
-                {{/difficultychoices}}
-            </select>
+    <div class="pp-lobby-rig">
+        <div class="pp-lobby-hero" aria-hidden="true">
+            <img src="{{heroimageurl}}" alt="">
         </div>
-        {{/difficultylabel}}
 
-        <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fs-4 fw-bold shadow-sm">
-            {{playtext}}
-        </button>
-    </form>
+        <div class="pp-lobby-board" style="border-image-source: url('{{panelstoneurl}}');">
+            <div class="pp-lobby-ribbon" style="background-image: url('{{scrollbannerurl}}');">
+                <h2 class="pp-lobby-ribbon-title">
+                    {{#progresstext}}{{progresstext}}{{/progresstext}}
+                    {{^progresstext}}{{readytext}}{{/progresstext}}
+                </h2>
+            </div>
+
+            {{#hasstats}}
+            <div class="pp-lobby-stats">
+                {{#coinstext}}
+                <span class="pp-lobby-chip" aria-label="{{coinstext}}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
+                        <circle cx="12" cy="12" r="5.4" fill="none" stroke="#8a611c" stroke-width="1.2"/>
+                    </svg>
+                    <span aria-hidden="true">{{coinvalue}}</span>
+                </span>
+                {{/coinstext}}
+                {{#swordtext}}
+                <span class="pp-lobby-chip" aria-label="{{swordtext}}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M5 19l8-8M14.5 4.5l5 5-2.2 2.2-5-5 2.2-2.2z" fill="none" stroke="#b9c2cc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M5 19l-1.2 2.2L6 20 5 19z" fill="#e0a83e"/>
+                    </svg>
+                    <span aria-hidden="true">{{swordvalue}}</span>
+                </span>
+                {{/swordtext}}
+                {{#shieldtext}}
+                <span class="pp-lobby-chip" aria-label="{{shieldtext}}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" fill="#4b6ea8" stroke="#dfe6ee" stroke-width="1.2"/>
+                    </svg>
+                    <span aria-hidden="true">{{shieldvalue}}</span>
+                </span>
+                {{/shieldtext}}
+                {{#potiontext}}
+                <span class="pp-lobby-chip" aria-label="{{potiontext}}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="9.2" y="3" width="5.6" height="3" rx="1" fill="#8a611c"/>
+                        <path d="M8.5 7h7l1 3.2c1.4 1.7 1.4 6-1.4 8.4-2 1.7-4.2 1.7-6.2 0-2.8-2.4-2.8-6.7-1.4-8.4L8.5 7z" fill="#7fbf6a" stroke="#3f5e33" stroke-width="1.1"/>
+                    </svg>
+                    <span aria-hidden="true">{{potionvalue}}</span>
+                </span>
+                {{/potiontext}}
+            </div>
+            {{/hasstats}}
+
+            {{#minquestionstext}}
+            <p class="pp-lobby-note">{{minquestionstext}}</p>
+            {{/minquestionstext}}
+
+            <form method="post" action="{{{playurl}}}">
+                <input type="hidden" name="sesskey" value="{{sesskey}}">
+
+                {{#difficultycurrent}}
+                <p class="pp-lobby-note">{{difficultycurrent}}</p>
+                {{/difficultycurrent}}
+
+                {{#difficultylabel}}
+                <fieldset class="pp-lobby-difficulty">
+                    <legend class="pp-lobby-difficulty-legend">
+                        <span>{{difficultylabel}}</span>
+                        {{{difficultyhelpicon}}}
+                    </legend>
+                    <div class="pp-lobby-difficulty-options">
+                        {{#difficultychoices}}
+                        <span class="pp-lobby-difficulty-option">
+                            <input type="radio" name="difficulty" id="pp-difficulty-{{value}}" value="{{value}}" {{#checked}}checked{{/checked}}>
+                            <label for="pp-difficulty-{{value}}">{{label}}</label>
+                        </span>
+                        {{/difficultychoices}}
+                    </div>
+                </fieldset>
+                {{/difficultylabel}}
+
+                <button type="submit" class="pp-lobby-play">{{playtext}}</button>
+            </form>
+        </div>
+    </div>
 </div>

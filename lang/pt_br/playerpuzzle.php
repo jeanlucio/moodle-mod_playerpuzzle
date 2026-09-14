@@ -147,6 +147,7 @@ $string['lobby_difficulty_current'] = 'Dificuldade atual: {$a}. Você pode mudá
 $string['lobby_difficulty_help'] = 'Fácil reduz pela metade o HP e o dano do Chefe e as moedas que você ganha; Difícil dobra o Chefe e triplica as moedas. A nota máxima é a mesma nas três. No modo Campanha você pode reescolher a cada fase.';
 $string['lobby_minquestions_notice'] = 'Esta partida exige responder pelo menos {$a} pergunta(s).';
 $string['lobby_potionstock'] = 'Poção: {$a}';
+$string['lobby_ready'] = 'Pronto para a aventura?';
 $string['lobby_shieldstock'] = 'Escudo: {$a}';
 $string['lobby_swordstock'] = 'Espada: {$a}';
 $string['manafull'] = 'Medidor de mana cheio. Um desafio de pergunta foi aberto.';

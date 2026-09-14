@@ -47,7 +47,7 @@ class lobby_page_service {
         stdClass $instance,
         int $userid
     ): array {
-        global $DB;
+        global $DB, $OUTPUT;
         // Carried through to play.php's own game config purely as a CSS sizing hint for the
         // question modal's answer buttons (see game_page_service::build_game_config()) — it no
         // longer picks a different page layout or opens a new window (27/08/2026).
@@ -61,6 +61,16 @@ class lobby_page_service {
             'playurl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
             'playtext' => get_string('playgame', 'mod_playerpuzzle'),
             'sesskey' => sesskey(),
+            'readytext' => get_string('lobby_ready', 'mod_playerpuzzle'),
+            // The .jpg/.png assets are resolved through the theme like any other plugin pix;
+            // the .webp ones are not, since theme_config::image_url() never resolves that
+            // extension (confirmed in its own source, see game_boot.js's loader for the
+            // in-game copy of this same asset), so those two are a direct URL to the plugin's
+            // own pix/ folder instead — the same technique game_boot.js already uses.
+            'bgimageurl' => $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false),
+            'heroimageurl' => $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false),
+            'panelstoneurl' => (new moodle_url('/mod/playerpuzzle/pix/panel_stone.webp'))->out(false),
+            'scrollbannerurl' => (new moodle_url('/mod/playerpuzzle/pix/scroll_banner.webp'))->out(false),
         ];
 
         // The most recently started in-progress attempt, if any — shared by the progress and
@@ -88,7 +98,9 @@ class lobby_page_service {
      * Builds the PlayerHUD balances context: the coin balance, and the stock the student is
      * carrying of each consumable that has a PlayerHUD item configured (Espada, Escudo,
      * Poção). Only the items the teacher actually configured are shown — an unconfigured
-     * item (id 0) has nothing meaningful to display.
+     * item (id 0) has nothing meaningful to display. Each stat carries both a raw numeric
+     * value (the visible HUD chip, paired with an icon) and the full sentence (used as the
+     * chip's aria-label, so a screen reader still hears "Coins: 42" instead of a bare "42").
      *
      * @param int $courseid Course ID.
      * @param stdClass $instance Activity instance.
@@ -103,19 +115,21 @@ class lobby_page_service {
 
             if ((int) $instance->hud_coin_item > 0) {
                 $balance = hud_service::get_upgrade_level($blockinstanceid, $userid, (int) $instance->hud_coin_item);
+                $data['coinvalue'] = $balance;
                 $data['coinstext'] = get_string('lobby_coinbalance', 'mod_playerpuzzle', $balance);
             }
 
             $stockitems = [
-                'swordtext' => ['field' => 'hud_sword_item', 'string' => 'lobby_swordstock'],
-                'shieldtext' => ['field' => 'hud_shield_item', 'string' => 'lobby_shieldstock'],
-                'potiontext' => ['field' => 'hud_potion_item', 'string' => 'lobby_potionstock'],
+                'sword' => ['field' => 'hud_sword_item', 'string' => 'lobby_swordstock'],
+                'shield' => ['field' => 'hud_shield_item', 'string' => 'lobby_shieldstock'],
+                'potion' => ['field' => 'hud_potion_item', 'string' => 'lobby_potionstock'],
             ];
             foreach ($stockitems as $key => $meta) {
                 $itemid = (int) $instance->{$meta['field']};
                 if ($itemid > 0) {
                     $stock = hud_service::get_upgrade_level($blockinstanceid, $userid, $itemid);
-                    $data[$key] = get_string($meta['string'], 'mod_playerpuzzle', $stock);
+                    $data[$key . 'value'] = $stock;
+                    $data[$key . 'text'] = get_string($meta['string'], 'mod_playerpuzzle', $stock);
                 }
             }
         }

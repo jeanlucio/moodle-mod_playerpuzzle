@@ -147,6 +147,7 @@ $string['lobby_difficulty_current'] = 'Current difficulty: {$a}. You can change 
 $string['lobby_difficulty_help'] = 'Easy halves the boss\'s HP and damage and the coins you earn; Hard doubles the boss and triples the coins. The maximum grade is the same on all three. In Campaign mode you can re-choose after each phase.';
 $string['lobby_minquestions_notice'] = 'This match requires answering at least {$a} question(s).';
 $string['lobby_potionstock'] = 'Potion: {$a}';
+$string['lobby_ready'] = 'Ready for adventure?';
 $string['lobby_shieldstock'] = 'Shield: {$a}';
 $string['lobby_swordstock'] = 'Sword: {$a}';
 $string['manafull'] = 'Mana meter full. A question challenge has opened.';

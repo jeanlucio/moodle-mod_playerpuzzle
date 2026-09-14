@@ -388,6 +388,7 @@ define([
                     'bosslostmultiplier', 'bossrevived', 'bosstrigger', 'bosswrongfeedback',
                     'btnattack', 'btncontinue', 'btnexitgame', 'btnplayagain',
                     'coinscollected',
+                    'damagedealt', 'damagetaken',
                     'debriefcorrectanswer', 'debriefcorrectsr', 'debriefempty', 'debriefreview',
                     'debriefsummary', 'debrieftitle', 'debriefwrongsr', 'debriefyouranswer',
                     'defeat',
@@ -397,16 +398,20 @@ define([
                     'historylogmultiplierlost', 'historylogpoisoncharge', 'historylogpoisontick',
                     'historylogrevive', 'historylogshieldblock', 'historylogshieldcharge',
                     'historylogtitle', 'historylogwronganswer',
-                    'hpboss', 'hpyou', 'loading', 'maxmultiplier',
+                    'hpboss', 'hpyou', 'loading', 'manafull', 'maxmultiplier',
                     'nextlevel', 'nextphase', 'noanswers',
                     'phaseadvanced', 'phaseadvanceerror', 'phasecompletetitle', 'phasedifficulty',
-                    'piece_coin', 'piece_grimoire', 'piece_orb', 'piece_potion', 'piece_shield',
-                    'piece_star', 'piece_sword',
+                    'piece_coin', 'piece_coin_plural', 'piece_grimoire', 'piece_grimoire_plural',
+                    'piece_orb', 'piece_orb_plural', 'piece_potion', 'piece_potion_plural',
+                    'piece_shield', 'piece_shield_plural', 'piece_star', 'piece_star_plural',
+                    'piece_sword', 'piece_sword_plural',
                     'playercorrect',
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
                     'questionerror', 'questionscounter', 'questionsprogress',
                     'requirejserror', 'saveerror', 'savingprogress',
-                    'shoperror', 'shuffling', 'victory'
+                    'shoperror', 'shuffling',
+                    'turnstart_intro', 'turnstart_move',
+                    'victory'
                 ];
 
                 const values = await Str.get_strings(

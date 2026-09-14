@@ -62,6 +62,10 @@ define([], function() {
             this.syncAccessibleGrid();
             this.setupInputs();
 
+            if (this.scene.combat.currentTurn === 'player') {
+                this.announceTurnStart();
+            }
+
             // Show a move hint after 5 s of player inactivity.
             this.scene.time.addEvent({
                 delay: 1000,
@@ -624,6 +628,131 @@ define([], function() {
             return this.findMove() !== null;
         }
 
+        /**
+         * Computes the length of the match line (horizontal or vertical) passing through the
+         * given cell, for whichever piece type currently sits there. Same counting approach as
+         * isMatchAt(), but returns the actual run length instead of a boolean, so evaluateSwap()
+         * can report which piece type a candidate swap would match.
+         *
+         * @param {number} rowP Row index.
+         * @param {number} colP Column index.
+         * @returns {number} Length of the run at this cell, or 0 when no match exists.
+         */
+        matchRunLengthAt(rowP, colP) {
+            const p = this.grid[rowP][colP];
+            if (!p) {
+                return 0;
+            }
+
+            const {type} = p;
+            let countH = 1;
+            let tc = colP - 1;
+            while (tc >= 0 && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
+                countH++; tc--;
+            }
+            tc = colP + 1;
+            while (tc < this.cols && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
+                countH++; tc++;
+            }
+            if (countH >= 3) {
+                return countH;
+            }
+
+            let countV = 1;
+            let tr = rowP - 1;
+            while (tr >= 0 && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
+                countV++; tr--;
+            }
+            tr = rowP + 1;
+            while (tr < this.rows && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
+                countV++; tr++;
+            }
+            return countV >= 3 ? countV : 0;
+        }
+
+        /**
+         * Swaps two cells in-place, checks whether either resulting cell matches, then reverts
+         * — the same temporary-mutate-and-revert pattern as findMove(), kept as separate code
+         * to avoid touching that already-tested core logic. Used only for the accessible
+         * turn-start announcement (announceTurnStart()), which needs the matched piece type,
+         * not just whether a match exists.
+         *
+         * @param {number} r1 Row of the first cell.
+         * @param {number} c1 Column of the first cell.
+         * @param {number} r2 Row of the second cell.
+         * @param {number} c2 Column of the second cell.
+         * @returns {number|null} The piece type that would match, or null when this swap has no effect.
+         */
+        evaluateSwap(r1, c1, r2, c2) {
+            const temp = this.grid[r1][c1].type;
+            this.grid[r1][c1].type = this.grid[r2][c2].type;
+            this.grid[r2][c2].type = temp;
+
+            let matchedType = null;
+            if (this.matchRunLengthAt(r1, c1) >= 3) {
+                matchedType = this.grid[r1][c1].type;
+            } else if (this.matchRunLengthAt(r2, c2) >= 3) {
+                matchedType = this.grid[r2][c2].type;
+            }
+
+            const revert = this.grid[r1][c1].type;
+            this.grid[r1][c1].type = this.grid[r2][c2].type;
+            this.grid[r2][c2].type = revert;
+
+            return matchedType;
+        }
+
+        /**
+         * Enumerates the currently valid swaps, up to limit, for the accessible turn-start
+         * announcement. Kept separate from findMove()/hasAvailableMove() (which only need the
+         * first match, for the idle hint and the post-shuffle validity check) since this needs
+         * every move up to a cap, not just one.
+         *
+         * @param {number} limit Maximum number of moves to collect.
+         * @returns {Array} The piece type each found move would match, one entry per move.
+         */
+        findAllMoves(limit = 9) {
+            const moves = [];
+            for (let r = 0; r < this.rows && moves.length < limit; r++) {
+                for (let c = 0; c < this.cols && moves.length < limit; c++) {
+                    if (c < this.cols - 1) {
+                        const type = this.evaluateSwap(r, c, r, c + 1);
+                        if (type !== null) {
+                            moves.push({type});
+                        }
+                    }
+                    if (moves.length < limit && r < this.rows - 1) {
+                        const type = this.evaluateSwap(r, c, r + 1, c);
+                        if (type !== null) {
+                            moves.push({type});
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
+        /**
+         * Posts the accessible "your turn" announcement, enumerating up to 9 available moves by
+         * piece type. Only called while it is actually the player's turn. The move list is
+         * stored on this.announcedMoves for the future keyboard-input lote, which will let the
+         * player execute one of these moves directly instead of dragging/tapping.
+         */
+        announceTurnStart() {
+            const moves = this.findAllMoves(9);
+            this.announcedMoves = moves;
+
+            const intro = this.strings.turnstart_intro.replace('{$a}', moves.length);
+            const lines = moves.map((move, index) => this.strings.turnstart_move
+                .replace('{$a->index}', String(index + 1))
+                .replace('{$a->piece}', this.strings[`${PIECE_NAME_KEYS[move.type]}_plural`]));
+
+            const liveRegion = document.getElementById('pp-aria-live');
+            if (liveRegion) {
+                liveRegion.textContent = [intro, ...lines].join(' ');
+            }
+        }
+
         resetHint() {
             this.lastActionTime = this.scene.time.now;
             if (this.hintPiece) {
@@ -703,6 +832,7 @@ define([], function() {
                 if (me.combat.currentTurn === 'player') {
                     me.input.enabled = true;
                     this.resetHint();
+                    this.announceTurnStart();
                 } else {
                     me.combat.executeBossTurn();
                 }
@@ -796,6 +926,7 @@ define([], function() {
                     } else {
                         me.input.enabled = true;
                         this.resetHint();
+                        this.announceTurnStart();
                     }
                 }
                 return;

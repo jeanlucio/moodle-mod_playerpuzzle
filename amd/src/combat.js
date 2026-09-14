@@ -488,6 +488,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             this.currentHp = Math.max(0, this.currentHp - amount);
             this.updateUI();
+            $('#pp-aria-live').text(
+                this.strings.damagedealt
+                    .replace('{$a->damage}', Math.round(amount))
+                    .replace('{$a->hp}', Math.round(this.currentHp))
+            );
             me.ui.bossSprite.setTint(0xff0000);
             me.time.delayedCall(200, () => {
                 me.ui.bossSprite.clearTint();
@@ -504,6 +509,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             this.currentPlayerHp = Math.max(0, this.currentPlayerHp - amount);
             this.updateUI();
+            $('#pp-aria-live').text(
+                this.strings.damagetaken
+                    .replace('{$a->damage}', Math.round(amount))
+                    .replace('{$a->hp}', Math.round(this.currentPlayerHp))
+            );
             // Mirrors applyDamageToBoss()'s own tint flash (28/08/2026) — replaces a screen
             // shake the player found disruptive, now that a player sprite actually exists on
             // every layout (mobile included) to carry the same feedback the boss already had.
@@ -873,6 +883,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const ctx = this;
             me.input.enabled = false;
 
+            if (trigger === 'player') {
+                $('#pp-aria-live').text(this.strings.manafull);
+            }
+
             setTimeout(() => {
                 me.scene.pause();
                 const dialogEl = document.getElementById('playerpuzzle-modal');
@@ -1145,6 +1159,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             const html = await Templates.render('mod_playerpuzzle/gameover_overlay', context);
             $('#playerpuzzle-canvas-container').append(html);
+            $('#pp-aria-live').text(
+                `${victory ? strings.victory : strings.defeat} ${strings.coinscollected} ${displayGold}.`
+            );
 
             Ajax.call([{
                 methodname: 'mod_playerpuzzle_save_progress',

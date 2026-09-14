@@ -391,6 +391,107 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a brand new attempt resumes on the level/phase of the student's most
+     * recently finished attempt when that attempt was lost — the original "an attempt is a
+     * continuous winning streak" design (only a loss should send the student back to
+     * re-fight the phase they lost, never the whole campaign from Level 1).
+     *
+     * @return void
+     */
+    public function test_resume_or_create_resumes_level_and_phase_after_a_loss(): void {
+        $lost = security::generate_attempt_token(1, 2);
+        global $DB;
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 3, ['token' => $lost]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 7, ['token' => $lost]);
+        security::validate_and_consume_token($lost, 1, 2, 'lost');
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertTrue($result->isnew);
+        $this->assertSame(3, $result->currentlevel);
+        $this->assertSame(7, $result->currentphase);
+    }
+
+    /**
+     * Tests that winning the whole campaign still starts the next attempt fresh at Level 1,
+     * Phase 1 — finishing the campaign is completing it, not a loss to re-fight.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_starts_fresh_after_winning_the_campaign(): void {
+        $won = security::generate_attempt_token(1, 2);
+        global $DB;
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 10, ['token' => $won]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 10, ['token' => $won]);
+        security::validate_and_consume_token($won, 1, 2, 'won');
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame(1, $result->currentlevel);
+        $this->assertSame(1, $result->currentphase);
+    }
+
+    /**
+     * Tests that only the most recently *finished* attempt matters, not the most recent
+     * loss: a student who lost, retried, and this time won the whole campaign must get a
+     * fresh Level 1/Phase 1 attempt next, never jump back to the earlier loss.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_ignores_an_older_loss_after_a_later_win(): void {
+        global $DB;
+
+        $lost = security::generate_attempt_token(1, 2);
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 3, ['token' => $lost]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 7, ['token' => $lost]);
+        security::validate_and_consume_token($lost, 1, 2, 'lost');
+
+        $won = security::generate_attempt_token(1, 2);
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 10, ['token' => $won]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 10, ['token' => $won]);
+        security::validate_and_consume_token($won, 1, 2, 'won');
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertSame(1, $result->currentlevel);
+        $this->assertSame(1, $result->currentphase);
+    }
+
+    /**
+     * Tests that an inherited level beyond the instance's current level count (the teacher
+     * reduced it after the student had reached further) is clamped down to that ceiling's
+     * own Phase 1, rather than resuming on a level/phase pair that no longer exists.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_clamps_inherited_level_to_reduced_maxlevels(): void {
+        $lost = security::generate_attempt_token(1, 2);
+        global $DB;
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 8, ['token' => $lost]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 4, ['token' => $lost]);
+        security::validate_and_consume_token($lost, 1, 2, 'lost');
+
+        $result = security::resume_or_create_attempt_token(1, 2, 'normal', 5);
+
+        $this->assertSame(5, $result->currentlevel);
+        $this->assertSame(1, $result->currentphase);
+    }
+
+    /**
+     * Tests determine_start_level() directly for the no-prior-attempt case, since
+     * resume_or_create_attempt_token() alone cannot distinguish "no prior attempt" from
+     * "prior attempt already at 1/1" in its return value.
+     *
+     * @return void
+     */
+    public function test_determine_start_level_with_no_prior_attempt(): void {
+        [$level, $phase] = security::determine_start_level(1, 2, 10);
+
+        $this->assertSame(1, $level);
+        $this->assertSame(1, $phase);
+    }
+
+    /**
      * Tests that has_inprogress_attempt() reflects a genuine in-progress row, is false
      * before one exists, and ignores other users/instances/final statuses.
      *

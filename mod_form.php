@@ -232,6 +232,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addElement('text', 'maxattempts', get_string('maxattempts', 'mod_playerpuzzle'));
         $mform->setType('maxattempts', PARAM_INT);
         $mform->setDefault('maxattempts', 0);
+        $mform->addHelpButton('maxattempts', 'maxattempts', 'mod_playerpuzzle');
         $mform->hideIf('maxattempts', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
 
         $mform->addElement('text', 'maxconsumables', get_string('maxconsumables', 'mod_playerpuzzle'));

@@ -52,12 +52,17 @@ class security {
      * @param int $playerpuzzleid The instance ID.
      * @param int $userid The user ID.
      * @param string $difficulty Student-chosen difficulty; coerced to a known value.
+     * @param int $currentlevel Level this attempt starts on (see resume_or_create_attempt_token()
+     *  for why this is not always 1).
+     * @param int $currentphase Phase this attempt starts on.
      * @return string The generated secure token.
      */
     public static function generate_attempt_token(
         int $playerpuzzleid,
         int $userid,
-        string $difficulty = 'normal'
+        string $difficulty = 'normal',
+        int $currentlevel = 1,
+        int $currentphase = 1
     ): string {
         global $DB;
 
@@ -70,6 +75,8 @@ class security {
         $attempt->token = $token;
         $attempt->difficulty = self::clean_difficulty($difficulty);
         $attempt->status = 'inprogress';
+        $attempt->currentlevel = $currentlevel;
+        $attempt->currentphase = $currentphase;
         $attempt->timecreated = time();
         $attempt->timemodified = $attempt->timecreated;
 
@@ -111,6 +118,16 @@ class security {
      * continues where they stopped instead of restarting at Level 1, Phase 1 — an
      * attempt is a continuous winning streak, not reset by simply reloading the page.
      *
+     * With no in-progress attempt, a brand new one is still not always Level 1/Phase 1: an
+     * attempt is a continuous winning streak that only ends by losing or by winning the whole
+     * campaign (the original design intent, never fully wired until now — losing a fight used
+     * to always restart the entire campaign regardless of how far the student had gotten,
+     * discarding real progress instead of just re-fighting the phase that was lost). When the
+     * most recently finished attempt for this user/instance ended in 'lost', the new attempt
+     * starts back on that same level/phase instead of defaulting to 1/1. A 'won' attempt (the
+     * student cleared the whole campaign) starts a genuinely fresh run at 1/1, same as today —
+     * finishing the campaign is not "a loss to retry", it is completing it.
+     *
      * Uses get_records() rather than get_record(): a site upgraded from before this method
      * existed may already have more than one stale in-progress row for the same user/
      * instance (every play.php load used to insert a fresh one). Picking the most recently
@@ -122,6 +139,10 @@ class security {
      * @param string $difficulty Student-chosen difficulty for a fresh attempt. Not applied when
      *  resuming: the attempt keeps the difficulty its current phase was entered at, which
      *  advance_phase() is what changes between phases in Campaign mode.
+     * @param int $maxlevels The instance's configured level count, used to clamp an inherited
+     *  level/phase down if the teacher has since reduced it below where the student had
+     *  reached (Single Match always passes/keeps the default, since its attempts never
+     *  advance past Level 1, Phase 1 in the first place).
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned, ->coinsspent,
      *  ->combatstate, ->isnew (true when a brand new attempt row was just created, so the
@@ -130,7 +151,8 @@ class security {
     public static function resume_or_create_attempt_token(
         int $playerpuzzleid,
         int $userid,
-        string $difficulty = 'normal'
+        string $difficulty = 'normal',
+        int $maxlevels = 10
     ): \stdClass {
         global $DB;
 
@@ -165,13 +187,19 @@ class security {
             ];
         }
 
-        $token = self::generate_attempt_token($playerpuzzleid, $userid, $difficulty);
+        [$startlevel, $startphase] = self::determine_start_level(
+            $playerpuzzleid,
+            $userid,
+            max(1, $maxlevels)
+        );
+
+        $token = self::generate_attempt_token($playerpuzzleid, $userid, $difficulty, $startlevel, $startphase);
 
         return (object) [
             'attemptid' => (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token], MUST_EXIST),
             'token' => $token,
-            'currentlevel' => 1,
-            'currentphase' => 1,
+            'currentlevel' => $startlevel,
+            'currentphase' => $startphase,
             'difficulty' => self::clean_difficulty($difficulty),
             'questionstotal' => 0,
             'coinsearned' => 0,
@@ -180,6 +208,50 @@ class security {
             'combatstate' => null,
             'isnew' => true,
         ];
+    }
+
+    /**
+     * Determines the level/phase a brand new attempt should start on. Looks at the most
+     * recently *finished* attempt for this user/instance, regardless of its status: if it
+     * was 'lost' (or any other non-'won' final status, e.g. a future 'timeout'/'abandoned'),
+     * the new attempt resumes on that same level/phase; if it was 'won' (the student cleared
+     * the whole campaign) or there is no prior finished attempt at all, it starts fresh at
+     * 1/1. Deliberately looks at the single most recent finished attempt, not the most recent
+     * 'lost' one — a student who lost once, retried, and this time won the whole campaign must
+     * start the next attempt fresh, not jump back to that earlier loss.
+     *
+     * @param int $playerpuzzleid The instance ID.
+     * @param int $userid The user ID.
+     * @param int $maxlevels The instance's current level count, already clamped to at least 1.
+     * @return array{0: int, 1: int} [$level, $phase].
+     */
+    public static function determine_start_level(int $playerpuzzleid, int $userid, int $maxlevels): array {
+        global $DB;
+
+        $recent = $DB->get_records_select(
+            'playerpuzzle_attempts',
+            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress',
+            ['ppid' => $playerpuzzleid, 'uid' => $userid, 'inprogress' => 'inprogress'],
+            'timecreated DESC',
+            'status, currentlevel, currentphase',
+            0,
+            1
+        );
+        $last = reset($recent);
+        if (!$last || $last->status === 'won') {
+            return [1, 1];
+        }
+
+        $level = (int) $last->currentlevel;
+        $phase = (int) $last->currentphase;
+        if ($level > $maxlevels) {
+            // The teacher has since reduced the level count below where the student had
+            // reached — clamp to the new ceiling and restart that level's own Phase 1, since
+            // the original phase reached no longer has a well-defined position to resume at.
+            return [$maxlevels, 1];
+        }
+
+        return [$level, $phase];
     }
 
     /**

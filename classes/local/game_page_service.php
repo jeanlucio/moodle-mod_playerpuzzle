@@ -151,7 +151,12 @@ class game_page_service {
     ): array {
         global $OUTPUT;
 
-        $attemptinfo = security::resume_or_create_attempt_token((int) $instance->id, $userid, $difficulty);
+        $attemptinfo = security::resume_or_create_attempt_token(
+            (int) $instance->id,
+            $userid,
+            $difficulty,
+            (int) $instance->maxlevels
+        );
         $difficulty = $attemptinfo->difficulty;
 
         if ($attemptinfo->isnew) {

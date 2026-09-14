@@ -208,6 +208,71 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that, after a defeat, the Lobby shows where the next attempt will actually
+     * resume (see security::determine_start_level()) rather than implying a fresh Level 1
+     * start when it is not one — the whole point of the fix being tested here.
+     *
+     * @return void
+     */
+    public function test_build_page_data_shows_resume_position_after_a_loss(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'maxlevels' => 10,
+        ]);
+
+        $lost = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id
+        );
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 3, ['token' => $lost]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 7, ['token' => $lost]);
+        \mod_playerpuzzle\local\engine\security::validate_and_consume_token(
+            $lost,
+            (int) $instance->id,
+            (int) $this->student->id,
+            'lost'
+        );
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+
+        $this->assertSame(
+            get_string('lobby_resumeafterloss', 'mod_playerpuzzle', (object) ['level' => 3, 'phase' => 7]),
+            $data['progresstext']
+        );
+    }
+
+    /**
+     * Tests that winning the whole campaign shows no resume line — a 'won' attempt starts
+     * the next one fresh at Level 1, Phase 1, same as never having played before.
+     *
+     * @return void
+     */
+    public function test_build_page_data_no_resume_position_after_winning(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+
+        $won = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id
+        );
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 10, ['token' => $won]);
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 10, ['token' => $won]);
+        \mod_playerpuzzle\local\engine\security::validate_and_consume_token(
+            $won,
+            (int) $instance->id,
+            (int) $this->student->id,
+            'won'
+        );
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+
+        $this->assertArrayNotHasKey('progresstext', $data);
+    }
+
+    /**
      * Tests that Campaign mode shows the most recently started in-progress attempt's
      * level/phase, ignoring an older in-progress row left behind by an abandoned
      * session.

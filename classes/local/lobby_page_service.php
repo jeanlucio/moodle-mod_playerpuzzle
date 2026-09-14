@@ -25,6 +25,7 @@
 namespace mod_playerpuzzle\local;
 
 use core_useragent;
+use mod_playerpuzzle\local\engine\security;
 use moodle_url;
 use stdClass;
 
@@ -86,7 +87,7 @@ class lobby_page_service {
         $attempt = reset($inprogress) ?: null;
 
         $data += self::build_hud_stats_context((int) $course->id, $instance, $userid);
-        $data += self::build_progress_context($instance, $attempt);
+        $data += self::build_progress_context($instance, $attempt, $userid);
         $data += self::build_minquestions_context($instance);
         $data += self::build_difficulty_context($attempt);
 
@@ -140,22 +141,44 @@ class lobby_page_service {
     }
 
     /**
-     * Builds the current Campaign progress context from the in-progress attempt, if any.
-     * Single Match mode has no levels/phases to show, so this is skipped entirely for it.
+     * Builds the current Campaign progress context. With an in-progress attempt, shows its
+     * live level/phase. With none, a new attempt about to be created might still not start
+     * at Level 1/Phase 1 — see security::determine_start_level() — so this shows where that
+     * next attempt will actually resume, rather than implying a fresh start when it is not
+     * one. Single Match mode has no levels/phases to show, so this is skipped entirely for it.
      *
      * @param stdClass $instance Activity instance.
      * @param stdClass|null $attempt The most recent in-progress attempt, or null.
+     * @param int $userid Current user ID.
      * @return array
      */
-    private static function build_progress_context(stdClass $instance, ?stdClass $attempt): array {
-        if ($instance->gamemode !== PLAYERPUZZLE_GAMEMODE_CAMPAIGN || $attempt === null) {
+    private static function build_progress_context(stdClass $instance, ?stdClass $attempt, int $userid): array {
+        if ($instance->gamemode !== PLAYERPUZZLE_GAMEMODE_CAMPAIGN) {
+            return [];
+        }
+
+        if ($attempt !== null) {
+            return [
+                'progresstext' => get_string('lobby_currentprogress', 'mod_playerpuzzle', (object) [
+                    'level' => $attempt->currentlevel,
+                    'phase' => $attempt->currentphase,
+                ]),
+            ];
+        }
+
+        [$level, $phase] = security::determine_start_level(
+            (int) $instance->id,
+            $userid,
+            max(1, (int) $instance->maxlevels)
+        );
+        if ($level === 1 && $phase === 1) {
             return [];
         }
 
         return [
-            'progresstext' => get_string('lobby_currentprogress', 'mod_playerpuzzle', (object) [
-                'level' => $attempt->currentlevel,
-                'phase' => $attempt->currentphase,
+            'progresstext' => get_string('lobby_resumeafterloss', 'mod_playerpuzzle', (object) [
+                'level' => $level,
+                'phase' => $phase,
             ]),
         ];
     }

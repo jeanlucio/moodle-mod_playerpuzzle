@@ -358,6 +358,45 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
+     * A student who wins several phases in a row never spends more than the one attempt
+     * row they started with — advancing always updates that same row, never inserts a
+     * new one. This is the acceptance criterion for "an attempt is a continuous winning
+     * streak" (a student who clears 100 phases without ever losing spends only 1 of the
+     * `maxattempts` configured, not 100): each advance_phase call here reuses the token
+     * the previous call returned, exactly like a real client chaining wins.
+     *
+     * @return void
+     */
+    public function test_advance_phase_never_creates_a_second_attempt_row_across_many_wins(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 10]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $originalid = $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        for ($i = 0; $i < 5; $i++) {
+            $result = $this->call_advance_phase([
+                'cmid'                 => $instance->cmid,
+                'token'                => $token,
+                'damage'               => 999999,
+                'coinsearnedsofar'     => 0,
+                'bosscoinsearnedsofar' => 0,
+            ]);
+            $this->assertFalse($result['error']);
+            $token = $result['data']['token'];
+        }
+
+        $this->assertSame(
+            1,
+            $DB->count_records('playerpuzzle_attempts', ['playerpuzzleid' => $instance->id, 'userid' => $this->student->id])
+        );
+        $survivingid = $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+        $this->assertSame((int) $originalid, (int) $survivingid);
+        $this->assertSame(6, (int) $DB->get_field('playerpuzzle_attempts', 'currentphase', ['id' => $originalid]));
+    }
+
+    /**
      * Tests that advancing from the last phase of the last level is rejected — there is
      * nothing left to advance to; the client must call save_progress to finish the
      * whole campaign instead.

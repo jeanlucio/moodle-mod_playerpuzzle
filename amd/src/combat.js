@@ -458,15 +458,21 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Coins actually available to spend right now: player's own gross earnings, minus
-         * the boss's own share, minus whatever has already been spent this phase/match —
-         * the same formula coin_ledger.php uses server-side.
+         * Coins actually spendable right now: the player's own gross earnings, minus
+         * whatever has already been spent this phase/match — mirrors
+         * coin_ledger::spendable() server-side (the actual authority; this only drives the
+         * shop badges' enabled/disabled look, buy_consumable.php re-validates for real).
+         * Deliberately does not net the boss's own coin gains against this, unlike
+         * showEndScreen()'s final netGold — the boss racking up its own coins by matching
+         * Coin pieces on its own turns was silently blocking the player from spending coins
+         * they had genuinely and separately earned, found via a real playtest report
+         * (14/09/2026). Netting against the boss's share is a final-reward concept, not a
+         * mid-match spending-power one — see coin_ledger::spendable()'s own docblock.
          *
          * @returns {number}
          */
         availableCoinBalance() {
-            const net = Math.max(0, Math.round(this.playerGold) - Math.round(this.bossGold));
-            return Math.max(0, net - this.coinsSpent);
+            return Math.max(0, Math.round(this.playerGold) - this.coinsSpent);
         }
 
         /**

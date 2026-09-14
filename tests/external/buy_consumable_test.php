@@ -229,6 +229,13 @@ final class buy_consumable_test extends \advanced_testcase {
 
         // Mirrors a real playtest report: 20 coins earned, boss earned 10, buying a
         // 10-coin Shield — with the boss still at full HP (no damage dealt this phase).
+        // bosscoinsearnedsofar is deliberately non-zero here too, doubling as a regression
+        // check for a second real bug found later (14/09/2026): the purchase gate used to
+        // call coin_ledger::available() (nets the boss's own coin share against the
+        // student's — correct for the final phase/match payout, wrong for a mid-match
+        // spending check) instead of coin_ledger::spendable() (no boss netting) — newbalance
+        // = 20 - 10 (shield price) = 10, not 0 as it would be if the boss's 10 were still
+        // subtracted.
         $result = $this->call_buy_consumable($this->local_args($instance, $token, [
             'type'                 => 'shield',
             'coinsearnedsofar'     => 20,
@@ -237,7 +244,7 @@ final class buy_consumable_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertTrue($result['data']['success']);
-        $this->assertSame(0, $result['data']['newbalance']);
+        $this->assertSame(10, $result['data']['newbalance']);
     }
 
     /**

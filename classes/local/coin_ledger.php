@@ -62,8 +62,11 @@ class coin_ledger {
     }
 
     /**
-     * The amount actually payable right now: gross earned, minus the boss's own share,
-     * minus whatever has already been spent on consumables this window. Never negative.
+     * The final reward this window pays out: gross earned, minus the boss's own share,
+     * minus whatever has already been spent on consumables. Never negative. Used only for
+     * the actual payout at the end of a phase/match (save_progress.php/advance_phase.php,
+     * crediting hud_coin_item) — never to gate a purchase mid-match, which is what
+     * spendable() below is for.
      *
      * @param stdClass $attempt The attempt row.
      * @return int
@@ -72,6 +75,28 @@ class coin_ledger {
         $net = max(0, (int) $attempt->coins_earned - (int) $attempt->boss_coins_earned);
 
         return max(0, $net - (int) $attempt->coins_spent);
+    }
+
+    /**
+     * The amount actually spendable on a consumable right now, mid-match: the student's own
+     * gross earnings, minus whatever has already been spent this window. Never negative.
+     *
+     * Deliberately does not subtract boss_coins_earned the way available() does. The boss's
+     * own coin gains (from it combining Coin pieces on its own turns, per the symmetric
+     * effect system) were always meant to net against the student's total only in the final
+     * reward at the end of a phase/match, never against mid-match spending power — but
+     * buy_consumable.php used to call available() for its purchase gate too, which meant a
+     * boss that had simply been matching Coin pieces on its own turns could silently block
+     * the student from spending coins the student had genuinely and separately earned,
+     * mid-fight. Found via a real playtest report (14/09/2026): coins shown on screen, both
+     * consumables greyed out, no damage dealt yet — the boss's own coin total was being
+     * subtracted from spending power it was never meant to affect.
+     *
+     * @param stdClass $attempt The attempt row.
+     * @return int
+     */
+    public static function spendable(stdClass $attempt): int {
+        return max(0, (int) $attempt->coins_earned - (int) $attempt->coins_spent);
     }
 
     /**

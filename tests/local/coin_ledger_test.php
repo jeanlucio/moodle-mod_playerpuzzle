@@ -104,6 +104,27 @@ final class coin_ledger_test extends \basic_testcase {
     }
 
     /**
+     * Tests spendable() subtracts only what has already been spent, never the boss's own
+     * share — the fix for a real playtest bug (14/09/2026) where a boss that had simply
+     * matched some Coin pieces on its own turns silently blocked the student from spending
+     * coins the student had genuinely and separately earned. available() (netting the
+     * boss's share) is correct for the final phase/match payout; spendable() is the one
+     * meant for a mid-match purchase gate.
+     *
+     * @return void
+     */
+    public function test_spendable_ignores_the_boss_share(): void {
+        $attempt = (object) ['coins_earned' => 20, 'boss_coins_earned' => 10, 'coins_spent' => 0];
+        $this->assertSame(20, coin_ledger::spendable($attempt));
+
+        $attempt = (object) ['coins_earned' => 20, 'boss_coins_earned' => 999, 'coins_spent' => 10];
+        $this->assertSame(10, coin_ledger::spendable($attempt));
+
+        $attempt = (object) ['coins_earned' => 5, 'boss_coins_earned' => 0, 'coins_spent' => 999];
+        $this->assertSame(0, coin_ledger::spendable($attempt));
+    }
+
+    /**
      * Tests reset() clears all three ledger columns to 0.
      *
      * @return void

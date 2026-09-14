@@ -152,7 +152,7 @@ class buy_consumable extends external_api {
 
         if ($params['source'] === 'local') {
             $price = combat::consumable_price($params['type']);
-            if (coin_ledger::available($attempt) < $price) {
+            if (coin_ledger::spendable($attempt) < $price) {
                 throw new moodle_exception('insufficientcoins', 'mod_playerpuzzle');
             }
             $attempt->coins_spent = (int) $attempt->coins_spent + $price;
@@ -177,7 +177,7 @@ class buy_consumable extends external_api {
 
         return [
             'success'    => true,
-            'newbalance' => coin_ledger::available($attempt),
+            'newbalance' => coin_ledger::spendable($attempt),
             'apply'      => $params['type'],
         ];
     }

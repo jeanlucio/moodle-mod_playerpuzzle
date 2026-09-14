@@ -48,9 +48,10 @@ final class backup_restore_test extends \advanced_testcase {
      *
      * @param \stdClass $course Course the module belongs to.
      * @param \stdClass $cm Course module to duplicate.
-     * @return \stdClass|\core_course\cm_info The new course module.
+     * @return mixed The new course module — \core_course\cm_info on Moodle 5.1+,
+     *  the legacy global \cm_info on Moodle 4.5's own duplicate_module().
      */
-    private function duplicate_cm(\stdClass $course, \stdClass $cm): \stdClass|\core_course\cm_info {
+    private function duplicate_cm(\stdClass $course, \stdClass $cm): mixed {
         // Core's duplicate_module() is deprecated since Moodle 5.2 (MDL-86858), replaced by
         // cmactions::duplicate() — but that method doesn't exist before 5.2, so this must
         // stay guarded rather than switched outright while the plugin supports 4.5+5.2.

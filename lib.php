@@ -141,10 +141,8 @@ function playerpuzzle_supports(string $feature): mixed {
             return true;
         case FEATURE_MOD_PURPOSE:
             return MOD_PURPOSE_INTERACTIVECONTENT;
-        // Not yet implemented: no backup/moodle2/ steplib.
-        // Flip this on only alongside its real implementation.
         case FEATURE_BACKUP_MOODLE2:
-            return false;
+            return true;
         default:
             return null;
     }

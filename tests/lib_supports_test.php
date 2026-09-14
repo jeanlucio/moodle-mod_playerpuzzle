@@ -45,11 +45,12 @@ final class lib_supports_test extends \basic_testcase {
      * (e.g. FEATURE_MOD_OTHERPURPOSE, only defined from Moodle 5.1 onwards) were ever used
      * unconditionally instead of behind a defined() guard — see
      * test_supports_secondary_purpose_when_available() for that constant specifically.
-     * Asserts the honest current state of the plugin — backup is declared unsupported until
-     * its real implementation lands, not the aspirational end state. Gradebook support (Fase
-     * 6 Lote A) and completion rules (Fase 6 Lote C) are both real:
-     * playerpuzzle_grade_item_update()/update_grades()/grade_calculator, and
-     * playerpuzzle_get_coursemodule_info()/classes/completion/custom_completion.php, all exist.
+     * Asserts the honest current state of the plugin — every declared feature below has a
+     * real implementation behind it: playerpuzzle_grade_item_update()/update_grades()/
+     * grade_calculator (Fase 6 Lote A), playerpuzzle_get_coursemodule_info()/
+     * classes/completion/custom_completion.php (Fase 6 Lote C), and
+     * backup/moodle2/backup_playerpuzzle_stepslib.php/restore_playerpuzzle_stepslib.php
+     * (Fase 6 Lote E).
      *
      * @return void
      */
@@ -60,8 +61,8 @@ final class lib_supports_test extends \basic_testcase {
         $this->assertTrue(playerpuzzle_supports(FEATURE_GROUPINGS));
         $this->assertTrue(playerpuzzle_supports(FEATURE_GRADE_HAS_GRADE));
         $this->assertTrue(playerpuzzle_supports(FEATURE_COMPLETION_HAS_RULES));
+        $this->assertTrue(playerpuzzle_supports(FEATURE_BACKUP_MOODLE2));
         $this->assertSame(MOD_PURPOSE_INTERACTIVECONTENT, playerpuzzle_supports(FEATURE_MOD_PURPOSE));
-        $this->assertFalse(playerpuzzle_supports(FEATURE_BACKUP_MOODLE2));
         $this->assertNull(playerpuzzle_supports('unknown_feature'));
     }
 

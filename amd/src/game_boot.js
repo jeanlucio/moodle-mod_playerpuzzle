@@ -68,11 +68,27 @@ define([
     // a narrower one at 2x, without the GPU/memory cost of going higher.
     const SUPERSAMPLE = 2;
 
+    // Shows the same "the game failed to start" message the Phaser-script-load failure path
+    // (onLoadError, below) already uses, reused here for two failures that can only happen
+    // once Phaser itself is already running: an exception thrown while preloading assets or
+    // assembling the scene, and a boot that never completes at all. Phaser invokes
+    // preload()/create() through its own internal scene manager, entirely outside this
+    // module's own call stack — a thrown error in either would otherwise become a silently
+    // uncaught exception, visible only in the browser devtools console, leaving a
+    // screen-reader user with a stuck loading screen and no indication anything went wrong.
+    const showBootError = (strings) => {
+        const errContainer = document.getElementById('playerpuzzle-canvas-container');
+        if (errContainer) {
+            errContainer.innerHTML = `<p class="text-danger">${strings.requirejserror}</p>`;
+        }
+    };
+
     // Phaser requires regular functions for preload/create so it can bind `this` to the scene.
     const startPhaser = (gameConfig, strings) => {
+        let bootTimeoutId = null;
 
         // Must be regular function: Phaser binds `this` to the scene instance.
-        const preload = function() {
+        const preloadScene = function() {
             this.ui = new UIHandler(this, null, gameConfig, strings);
             this.ui.setupLoader();
 
@@ -93,8 +109,18 @@ define([
             this.load.audio('sfx_hit', `${urlPix}hit.mp3`);
         };
 
+        const preload = function() {
+            try {
+                preloadScene.call(this);
+            } catch (err) {
+                window.clearTimeout(bootTimeoutId);
+                window.console.error('PlayerPuzzle preload failed:', err);
+                showBootError(strings);
+            }
+        };
+
         // Must be regular function: Phaser binds `this` to the scene instance.
-        const create = function() {
+        const createScene = function() {
             const isDesk = window.innerWidth > window.innerHeight;
 
             // Camera zoom projects the L layout's 1280x720 / 540x960 design coordinates into
@@ -332,6 +358,17 @@ define([
             this.combat.updateUI();
         };
 
+        const create = function() {
+            try {
+                createScene.call(this);
+                window.clearTimeout(bootTimeoutId);
+            } catch (err) {
+                window.clearTimeout(bootTimeoutId);
+                window.console.error('PlayerPuzzle scene creation failed:', err);
+                showBootError(strings);
+            }
+        };
+
         const isDesk = window.innerWidth > window.innerHeight;
         const config = {
             type: Phaser.AUTO,
@@ -364,6 +401,18 @@ define([
             },
             scene: {preload: preload, create: create}
         };
+
+        // Guards against a boot that never throws but also never finishes either — e.g. a
+        // Phaser internal event this code is implicitly waiting on that, for whatever reason,
+        // never fires, leaving the loading screen stuck with no feedback at all. 20s is
+        // generous for even a slow connection loading every sprite/audio asset, while still
+        // bounding how long a broken load goes unreported. Cleared by create() above on
+        // success or on a caught error — this only fires when neither happens in time.
+        bootTimeoutId = window.setTimeout(() => {
+            window.console.error('PlayerPuzzle boot timed out.');
+            showBootError(strings);
+        }, 20000);
+
         const game = new Phaser.Game(config);
 
         // Phaser draws game state directly onto the canvas pixels, with no corresponding DOM

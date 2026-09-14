@@ -21,8 +21,9 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/config'],
-        function($, Ajax, Notification, Templates, Config) {
+define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/config',
+        'mod_playerpuzzle/accessibility'],
+        function($, Ajax, Notification, Templates, Config, Accessibility) {
     'use strict';
 
     // Mirrors combat::CONSUMABLE_PRICES server-side — the server is still the source of
@@ -488,7 +489,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             this.currentHp = Math.max(0, this.currentHp - amount);
             this.updateUI();
-            $('#pp-aria-live').text(
+            Accessibility.announce(
                 this.strings.damagedealt
                     .replace('{$a->damage}', Math.round(amount))
                     .replace('{$a->hp}', Math.round(this.currentHp))
@@ -509,7 +510,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             this.currentPlayerHp = Math.max(0, this.currentPlayerHp - amount);
             this.updateUI();
-            $('#pp-aria-live').text(
+            Accessibility.announce(
                 this.strings.damagetaken
                     .replace('{$a->damage}', Math.round(amount))
                     .replace('{$a->hp}', Math.round(this.currentPlayerHp))
@@ -634,7 +635,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.currentHp = Math.ceil(this.maxBossHp * 0.5);
             this.updateUI();
             this.scene.ui.pushHistoryLog('boss', this.strings.historylogrevive);
-            $('#pp-aria-live').text(this.strings.bossrevived);
+            Accessibility.announce(this.strings.bossrevived);
         }
 
         /**
@@ -858,7 +859,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     // Announce the transition for screen-reader users, then give it a beat to
                     // be read before the full page reload wipes the live region.
                     const total = parseInt(this.gameConfig.maxlevels, 10) * 10 || 10;
-                    $('#pp-aria-live').text(
+                    Accessibility.announce(
                         strings.phaseadvanced
                             .replace('{$a->level}', res.currentlevel)
                             .replace('{$a->phase}', res.currentphase)
@@ -884,7 +885,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             me.input.enabled = false;
 
             if (trigger === 'player') {
-                $('#pp-aria-live').text(this.strings.manafull);
+                Accessibility.announce(this.strings.manafull);
             }
 
             setTimeout(() => {
@@ -1023,7 +1024,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                         ctx.questionsTotal = res.questionstotal;
                                         ctx.updateUI();
                                         if (ctx.questionsTotal < ctx.minQuestions) {
-                                            $('#pp-aria-live').text(
+                                            Accessibility.announce(
                                                 ctx.strings.questionsprogress
                                                     .replace('{$a->current}', ctx.questionsTotal)
                                                     .replace('{$a->total}', ctx.minQuestions)
@@ -1159,7 +1160,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             const html = await Templates.render('mod_playerpuzzle/gameover_overlay', context);
             $('#playerpuzzle-canvas-container').append(html);
-            $('#pp-aria-live').text(
+            Accessibility.announce(
                 `${victory ? strings.victory : strings.defeat} ${strings.coinscollected} ${displayGold}.`
             );
 

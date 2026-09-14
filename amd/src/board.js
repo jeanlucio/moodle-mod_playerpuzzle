@@ -23,7 +23,7 @@
 
 /* global Phaser */
 
-define([], function() {
+define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
     'use strict';
 
     // Maps a piece's numeric type (0-6) to the lang string key holding its accessible
@@ -763,10 +763,7 @@ define([], function() {
                 .replace('{$a->index}', String(index + 1))
                 .replace('{$a->piece}', this.strings[`${PIECE_NAME_KEYS[move.type]}_plural`]));
 
-            const liveRegion = document.getElementById('pp-aria-live');
-            if (liveRegion) {
-                liveRegion.textContent = [intro, ...lines].join(' ');
-            }
+            Accessibility.announce([intro, ...lines].join(' '));
         }
 
         /**

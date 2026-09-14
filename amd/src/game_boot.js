@@ -28,8 +28,9 @@ define([
     'core/str',
     'mod_playerpuzzle/ui',
     'mod_playerpuzzle/combat',
-    'mod_playerpuzzle/board'
-], function(notification, Str, UIHandler, CombatHandler, BoardHandler) {
+    'mod_playerpuzzle/board',
+    'mod_playerpuzzle/accessibility'
+], function(notification, Str, UIHandler, CombatHandler, BoardHandler, Accessibility) {
     'use strict';
 
     let phaserLoadPromise = null;
@@ -363,7 +364,14 @@ define([
             },
             scene: {preload: preload, create: create}
         };
-        new Phaser.Game(config);
+        const game = new Phaser.Game(config);
+
+        // Phaser draws game state directly onto the canvas pixels, with no corresponding DOM
+        // text a screen reader could ever read — hiding it from the accessibility tree avoids
+        // announcing a bare, meaningless "canvas" element on every visit. The real accessible
+        // surface is the parallel HTML the container's own role="application" + aria-label
+        // already point to: the hidden grid table and the aria-live region.
+        game.canvas.setAttribute('aria-hidden', 'true');
     };
 
     return {
@@ -376,6 +384,7 @@ define([
                 }
 
                 const config = JSON.parse(configStr);
+                Accessibility.setSpeechEnabled(!!config.enablespeech);
 
                 // Apply desktop layout immediately so the loading screen renders at the correct size.
                 if (window.innerWidth > window.innerHeight) {

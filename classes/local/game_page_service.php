@@ -269,6 +269,7 @@ class game_page_service {
             'questions'            => $questions,
             'mobile'               => $ismobile,
             'viewurl'              => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
+            'enablespeech'         => (bool) get_config('mod_playerpuzzle', 'enablespeech'),
         ];
     }
 }

@@ -17,10 +17,21 @@
 /**
  * Plugin administration settings.
  *
- * No admin settings required: PlayerHUD integration is automatic via class_exists(),
- * and API keys are managed by local_playergames.
+ * PlayerHUD integration is automatic via class_exists(), and API keys are managed by
+ * local_playergames — the only setting here is the opt-in speech narration toggle.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
+
+if ($ADMIN->fulltree) {
+    $settings->add(new admin_setting_configcheckbox(
+        'mod_playerpuzzle/enablespeech',
+        get_string('enablespeech', 'mod_playerpuzzle'),
+        get_string('enablespeech_desc', 'mod_playerpuzzle'),
+        0
+    ));
+}

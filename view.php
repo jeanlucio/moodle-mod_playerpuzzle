@@ -45,12 +45,10 @@ $PAGE->set_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
+$PAGE->set_pagelayout('incourse');
 
 // Output starts here.
 echo $OUTPUT->header();
-
-// Display the phase title.
-echo $OUTPUT->heading(format_string($playerpuzzle->name));
 
 // Display the introduction if the teacher wrote one.
 if (trim($playerpuzzle->intro) !== '') {

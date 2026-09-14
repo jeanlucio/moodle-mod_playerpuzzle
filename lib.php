@@ -113,9 +113,19 @@ function playerpuzzle_get_difficulty_options(): array {
  * Indicates API features that the playerpuzzle supports.
  *
  * @param string $feature The feature to check.
- * @return bool|null True if supported, null if unknown.
+ * @return mixed True if supported, a purpose string for FEATURE_MOD_PURPOSE/
+ *  FEATURE_MOD_OTHERPURPOSE, null if unknown.
  */
-function playerpuzzle_supports(string $feature): bool|null {
+function playerpuzzle_supports(string $feature): mixed {
+    // FEATURE_MOD_OTHERPURPOSE only exists from Moodle 5.1 onwards (MDL-85598); this plugin
+    // also targets Moodle 4.5, where referencing the undefined constant as a switch case
+    // label would still be a fatal error, guard or not — checked ahead of the switch instead.
+    // Lets the activity chooser list this activity under both its primary purpose (game/
+    // interactive content) and this secondary one (it produces real grades).
+    if (defined('FEATURE_MOD_OTHERPURPOSE') && $feature === FEATURE_MOD_OTHERPURPOSE) {
+        return MOD_PURPOSE_ASSESSMENT;
+    }
+
     switch ($feature) {
         case FEATURE_MOD_INTRO:
             return true;
@@ -129,6 +139,8 @@ function playerpuzzle_supports(string $feature): bool|null {
             return true;
         case FEATURE_COMPLETION_HAS_RULES:
             return true;
+        case FEATURE_MOD_PURPOSE:
+            return MOD_PURPOSE_INTERACTIVECONTENT;
         // Not yet implemented: no backup/moodle2/ steplib.
         // Flip this on only alongside its real implementation.
         case FEATURE_BACKUP_MOODLE2:

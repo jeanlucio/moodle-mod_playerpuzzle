@@ -58,7 +58,6 @@ class lobby_page_service {
         }
 
         $data = [
-            'welcomemsg' => get_string('lobbywelcome', 'mod_playerpuzzle'),
             'playurl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
             'playtext' => get_string('playgame', 'mod_playerpuzzle'),
             'sesskey' => sesskey(),
@@ -158,6 +157,8 @@ class lobby_page_service {
      * @return array
      */
     private static function build_difficulty_context(?stdClass $attempt): array {
+        global $OUTPUT;
+
         $options = playerpuzzle_get_difficulty_options();
 
         if ($attempt !== null) {
@@ -183,9 +184,9 @@ class lobby_page_service {
         }
 
         return [
-            'difficultylabel'   => get_string('lobby_difficulty', 'mod_playerpuzzle'),
-            'difficultyhelp'    => get_string('lobby_difficulty_help', 'mod_playerpuzzle'),
-            'difficultychoices' => $choices,
+            'difficultylabel'    => get_string('lobby_difficulty', 'mod_playerpuzzle'),
+            'difficultyhelpicon' => $OUTPUT->help_icon('lobby_difficulty', 'mod_playerpuzzle'),
+            'difficultychoices'  => $choices,
         ];
     }
 

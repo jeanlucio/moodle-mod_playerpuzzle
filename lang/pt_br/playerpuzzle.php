@@ -149,7 +149,6 @@ $string['lobby_minquestions_notice'] = 'Esta partida exige responder pelo menos 
 $string['lobby_potionstock'] = 'Poção: {$a}';
 $string['lobby_shieldstock'] = 'Escudo: {$a}';
 $string['lobby_swordstock'] = 'Espada: {$a}';
-$string['lobbywelcome'] = 'Bem-vindo ao Lobby! A loja e o botão Jogar estarão aqui em breve.';
 $string['manafull'] = 'Medidor de mana cheio. Um desafio de pergunta foi aberto.';
 $string['max_single_matches'] = 'Número de Partidas Únicas';
 $string['maxattempts'] = 'Número máximo de tentativas';

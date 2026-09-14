@@ -149,7 +149,6 @@ $string['lobby_minquestions_notice'] = 'This match requires answering at least {
 $string['lobby_potionstock'] = 'Potion: {$a}';
 $string['lobby_shieldstock'] = 'Shield: {$a}';
 $string['lobby_swordstock'] = 'Sword: {$a}';
-$string['lobbywelcome'] = 'Welcome to the Lobby! The Shop and the Play button will be here soon.';
 $string['manafull'] = 'Mana meter full. A question challenge has opened.';
 $string['max_single_matches'] = 'Number of single matches';
 $string['maxattempts'] = 'Maximum attempts';

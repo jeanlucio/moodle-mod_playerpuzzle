@@ -241,6 +241,16 @@ body.path-mod-playerpuzzle .pp-lobby-progress {
 }
 
 /**
+ * Difficulty picker: without a max-width, .form-select's own width:100% stretches the
+ * dropdown to fill its d-inline-block/mx-auto container's shrink-to-fit size, which browsers
+ * resolve unpredictably wide in that combination — constrained here instead of inline, since
+ * this is a fixed design choice, not a per-render dynamic value.
+ */
+body.path-mod-playerpuzzle .pp-lobby-difficulty {
+    max-width: 300px;
+}
+
+/**
  * Own .visually-hidden rule, scoped to the plugin's body path class. Bootstrap 4 (Moodle
  * 4.5) does not define .visually-hidden, and Bootstrap 5's .sr-only bridge is flagged
  * deprecated by theme_boost — so the plugin ships its own, used by the loading progress

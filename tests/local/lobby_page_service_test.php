@@ -112,8 +112,8 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the base Lobby fields (welcome message, Play URL/text, sesskey) are
-     * always present, and hasstats is false without any PlayerHUD item configured.
+     * Tests that the base Lobby fields (Play URL/text, sesskey) are always present, and
+     * hasstats is false without any PlayerHUD item configured.
      *
      * @return void
      */
@@ -122,7 +122,6 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
 
-        $this->assertSame(get_string('lobbywelcome', 'mod_playerpuzzle'), $data['welcomemsg']);
         $this->assertSame(get_string('playgame', 'mod_playerpuzzle'), $data['playtext']);
         $this->assertStringContainsString('play.php', $data['playurl']);
         $this->assertFalse($data['hasstats']);
@@ -280,6 +279,15 @@ final class lobby_page_service_test extends \advanced_testcase {
         $checked = array_values(array_filter($data['difficultychoices'], fn($c) => $c['checked']));
         $this->assertCount(1, $checked);
         $this->assertSame(PLAYERPUZZLE_DIFFICULTY_NORMAL, $checked[0]['value']);
+
+        // The help text is a standard Moodle help icon (rendered HTML), not a permanently
+        // visible paragraph — regression check for the icon actually being wired up, and
+        // that its popover carries the real help string, not an empty/missing one.
+        $this->assertStringContainsString('help-icon', $data['difficultyhelpicon']);
+        $this->assertStringContainsString(
+            s(get_string('lobby_difficulty_help', 'mod_playerpuzzle')),
+            $data['difficultyhelpicon']
+        );
     }
 
     /**

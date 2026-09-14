@@ -44,6 +44,7 @@ define(['jquery'], function($) {
             this.gameConfig = gameConfig;
             this.strings = strings;
             this.rings = {};
+            this.statusBadges = {};
             this.playerLog = [];
             this.bossLog = [];
             this._lastTapAt = {};
@@ -220,10 +221,10 @@ define(['jquery'], function($) {
                 fontStyle: 'bold'
             }).setOrigin(0.5);
 
-            // Status badges (visual mockup) now sit on both layouts — mobile included since
-            // 26/08/2026, no longer desktop-only.
-            this.createStatusPreview(L.bossUiX + L.hpBarW, L.bossHpY + L.hpBarH);
-            this.createStatusPreview(L.playerUiX + L.hpBarW, L.playerHpY + L.hpBarH);
+            // Status badges themselves are created lazily on the first updatePlayerBar()/
+            // updateBossBar() call (via combat.js's own initial updateUI()) — see
+            // updateStatusBadges(). Sit on both layouts — mobile included since 26/08/2026,
+            // no longer desktop-only.
 
             this.setupProgressIndicator();
             this.setupQuestionsCounter();
@@ -445,38 +446,66 @@ define(['jquery'], function($) {
         }
 
         /**
-         * Visual mockup only for the persistent "Status" panel (26/08/2026) — not wired to
-         * real poison/shield state, purely to see the layout. Hangs off the HP bar's own
-         * bottom-right corner (moved there from beside the history scroll banner, per user
-         * feedback: it ties the effect to the character whose HP it is), one small badge per
-         * active effect, side by side, never dividing shared space between them. Only the two
-         * statuses that exist today (Veneno/Escudo) are mocked here; a third badge would just
-         * repeat this same pattern one more time, reading further left.
+         * Creates (on first call, per prefix) or updates (on later calls) the persistent
+         * "Status" badges hanging off a HP bar's own bottom-right corner — one small badge per
+         * currently active effect (Veneno = poison rounds pending, Escudo = block armed), side
+         * by side, packed from the corner inward with no gap where an inactive one would have
+         * sat. Mirrors updateRing()'s create-once-then-refresh pattern: game objects are cached
+         * in this.statusBadges[prefix] and repositioned/shown or hidden on every call, never
+         * destroyed and recreated (this runs on every combat.js updateUI(), i.e. every turn).
          *
+         * @param {string} prefix Cache key ('player' or 'boss').
          * @param {number} cornerX HP bar's own right edge (playerUiX/bossUiX + hpBarW).
          * @param {number} cornerY HP bar's own bottom edge (playerHpY/bossHpY + hpBarH).
+         * @param {number} poisonRounds Remaining poison-damage rounds for this side (0 = inactive).
+         * @param {boolean} shieldReady Whether a block is currently armed for this side.
          */
-        createStatusPreview(cornerX, cornerY) {
-            const me = this.scene;
+        updateStatusBadges(prefix, cornerX, cornerY, poisonRounds, shieldReady) {
             const badgeR = 15;
             const gap = 34;
 
-            const previewStatuses = [
-                {icon: 'item1', count: '3'},
-                {icon: 'item4', count: '✓'}
-            ];
+            if (!this.statusBadges[prefix]) {
+                const makeBadge = (icon) => ({
+                    backing: this.scene.add.circle(0, 0, badgeR, 0x1a1410, 0.85)
+                        .setStrokeStyle(1, 0x6a4a2a),
+                    iconImg: this.scene.add.image(0, 0, icon).setDisplaySize(badgeR * 1.3, badgeR * 1.3),
+                    countBg: this.scene.add.circle(0, 0, 8, 0x2a1a10).setStrokeStyle(1, 0xffffff),
+                    countText: this.scene.add.text(0, 0, '', {
+                        fontSize: '9px', fill: '#ffffff', fontStyle: 'bold'
+                    }).setOrigin(0.5)
+                });
+                this.statusBadges[prefix] = {
+                    poison: makeBadge('item1'),
+                    shield: makeBadge('item4')
+                };
+            }
 
-            previewStatuses.forEach((status, i) => {
+            const badges = this.statusBadges[prefix];
+            const active = [];
+            if (poisonRounds > 0) {
+                active.push({badge: badges.poison, count: String(poisonRounds)});
+            }
+            if (shieldReady) {
+                active.push({badge: badges.shield, count: '✓'});
+            }
+
+            [badges.poison, badges.shield].forEach(badge => {
+                if (!active.some(entry => entry.badge === badge)) {
+                    badge.backing.setVisible(false);
+                    badge.iconImg.setVisible(false);
+                    badge.countBg.setVisible(false);
+                    badge.countText.setVisible(false);
+                }
+            });
+
+            active.forEach((entry, i) => {
                 const cx = cornerX - badgeR - (i * gap);
-                me.add.circle(cx, cornerY, badgeR, 0x1a1410, 0.85).setStrokeStyle(1, 0x6a4a2a);
-                me.add.image(cx, cornerY, status.icon).setDisplaySize(badgeR * 1.3, badgeR * 1.3);
-                me.add.circle(cx + badgeR - 4, cornerY + badgeR - 4, 8, 0x2a1a10)
-                    .setStrokeStyle(1, 0xffffff);
-                me.add.text(cx + badgeR - 4, cornerY + badgeR - 4, status.count, {
-                    fontSize: '9px',
-                    fill: '#ffffff',
-                    fontStyle: 'bold'
-                }).setOrigin(0.5);
+                const cCx = cx + badgeR - 4;
+                const cCy = cornerY + badgeR - 4;
+                entry.badge.backing.setPosition(cx, cornerY).setVisible(true);
+                entry.badge.iconImg.setPosition(cx, cornerY).setVisible(true);
+                entry.badge.countBg.setPosition(cCx, cCy).setVisible(true);
+                entry.badge.countText.setPosition(cCx, cCy).setText(entry.count).setVisible(true);
             });
         }
 
@@ -957,6 +986,9 @@ define(['jquery'], function($) {
                 shieldReady ? 1 : (shieldMeter / 100), shieldReady ? 0xffcc00 : 0x3388ff
             );
             this.updateRing('bossOrb', L.bossOrbX, L.bossRingY, 'item2', mana / 100, 0x0088ff);
+            this.updateStatusBadges(
+                'boss', L.bossUiX + L.hpBarW, L.bossHpY + L.hpBarH, poisonRounds, shieldReady
+            );
         }
 
         updatePlayerBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
@@ -979,6 +1011,9 @@ define(['jquery'], function($) {
                 shieldReady ? 1 : (shieldMeter / 100), shieldReady ? 0xffcc00 : 0x3388ff
             );
             this.updateRing('playerOrb', L.playerOrbX, L.playerRingY, 'item2', mana / 100, 0x0088ff);
+            this.updateStatusBadges(
+                'player', L.playerUiX + L.hpBarW, L.playerHpY + L.hpBarH, poisonRounds, shieldReady
+            );
         }
     }
 

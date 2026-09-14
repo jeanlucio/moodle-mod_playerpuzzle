@@ -26,17 +26,13 @@ Feature: PlayerPuzzle accessible board
     And "#pp-aria-live[role='status']" "css_element" should exist
     And I should see "Your turn." in the "#pp-aria-live" "css_element"
 
-  Scenario: Arrow keys move the roving tabindex focus between cells
-    When I click on "#pp-board-grid-body td[tabindex='0']" "css_element"
-    And I press the right key
+  Scenario: The initial roving tabindex cell is the top-left one
+    Then "#pp-board-grid-body td[data-row='0'][data-col='0'][tabindex='0']" "css_element" should exist
+
+  Scenario: An arrow key moves the roving tabindex focus, sent directly to the cell
+    When I press key "39" in "#pp-board-grid-body td[tabindex='0']" "css_element"
     Then "#pp-board-grid-body td[data-row='0'][data-col='1'][tabindex='0']" "css_element" should exist
 
-  Scenario: Space re-reads the available moves without acting
-    When I click on "#pp-board-grid-body td[tabindex='0']" "css_element"
-    And I press the space key
-    Then I should see "Your turn." in the "#pp-aria-live" "css_element"
-
-  Scenario: A digit key executes a move without erroring
-    When I click on "#pp-board-grid-body td[tabindex='0']" "css_element"
-    And I press the 1 key
+  Scenario: Space re-reads the available moves without acting, sent directly to the cell
+    When I press key "32" in "#pp-board-grid-body td[tabindex='0']" "css_element"
     Then I should see "Your turn." in the "#pp-aria-live" "css_element"

@@ -26,6 +26,13 @@
 define([], function() {
     'use strict';
 
+    // Maps a piece's numeric type (0-6) to the lang string key holding its accessible
+    // name, read by the hidden <table role="grid"> the screen reader explores.
+    const PIECE_NAME_KEYS = [
+        'piece_star', 'piece_grimoire', 'piece_orb', 'piece_sword',
+        'piece_shield', 'piece_potion', 'piece_coin'
+    ];
+
     class BoardHandler {
         constructor(scene, layout, strings) {
             this.scene = scene;
@@ -47,8 +54,12 @@ define([], function() {
             this.lastActionTime = 0;
             this.hintPiece = null;
 
+            this.a11yCells = null;
+
             this.drawBackground();
+            this.buildAccessibleGrid();
             this.initGrid();
+            this.syncAccessibleGrid();
             this.setupInputs();
 
             // Show a move hint after 5 s of player inactivity.
@@ -168,6 +179,111 @@ define([], function() {
             } while (hasMatch);
 
             return randomType;
+        }
+
+        /**
+         * Builds the hidden <table role="grid"> that mirrors the board for screen reader
+         * users — a secondary exploration resource (arrow keys move a roving tabindex
+         * cell to cell), not the main gameplay flow. Built once; syncAccessibleGrid()
+         * keeps its cell text in step with the real board afterwards.
+         *
+         * @return {void}
+         */
+        buildAccessibleGrid() {
+            const body = document.getElementById('pp-board-grid-body');
+            if (!body) {
+                return;
+            }
+
+            this.a11yCells = [];
+            for (let row = 0; row < this.rows; row++) {
+                const tr = document.createElement('tr');
+                tr.setAttribute('role', 'row');
+                this.a11yCells[row] = [];
+
+                for (let col = 0; col < this.cols; col++) {
+                    const td = document.createElement('td');
+                    td.setAttribute('role', 'gridcell');
+                    td.setAttribute('aria-rowindex', String(row + 1));
+                    td.setAttribute('aria-colindex', String(col + 1));
+                    td.tabIndex = (row === 0 && col === 0) ? 0 : -1;
+                    td.dataset.row = String(row);
+                    td.dataset.col = String(col);
+                    td.addEventListener('keydown', this.handleGridKeydown.bind(this));
+                    tr.appendChild(td);
+                    this.a11yCells[row][col] = td;
+                }
+
+                body.appendChild(tr);
+            }
+        }
+
+        /**
+         * Moves the roving tabindex focus between grid cells on arrow-key presses. Native
+         * browser table navigation is unavailable once role="grid" opts the element out of
+         * browse-mode reading (ARIA grid pattern), so this JS is what the APG spec expects
+         * a grid widget to provide itself.
+         *
+         * @param {KeyboardEvent} event The keydown event, targeted at the currently focused cell.
+         * @return {void}
+         */
+        handleGridKeydown(event) {
+            const cell = event.currentTarget;
+            const row = parseInt(cell.dataset.row, 10);
+            const col = parseInt(cell.dataset.col, 10);
+            let newRow = row;
+            let newCol = col;
+
+            switch (event.key) {
+                case 'ArrowUp':
+                    newRow = Math.max(0, row - 1);
+                    break;
+                case 'ArrowDown':
+                    newRow = Math.min(this.rows - 1, row + 1);
+                    break;
+                case 'ArrowLeft':
+                    newCol = Math.max(0, col - 1);
+                    break;
+                case 'ArrowRight':
+                    newCol = Math.min(this.cols - 1, col + 1);
+                    break;
+                default:
+                    return;
+            }
+
+            event.preventDefault();
+            if (newRow === row && newCol === col) {
+                return;
+            }
+
+            this.a11yCells[row][col].tabIndex = -1;
+            const target = this.a11yCells[newRow][newCol];
+            target.tabIndex = 0;
+            target.focus();
+        }
+
+        /**
+         * Refreshes every accessible grid cell's text from the current board state. Called
+         * once the board has settled into a new stable arrangement — after the initial
+         * deal, after a swap, and after gravity refills empty cells — never mid-animation,
+         * when this.grid can briefly hold nulls for pieces still fading out.
+         *
+         * @return {void}
+         */
+        syncAccessibleGrid() {
+            if (!this.a11yCells) {
+                return;
+            }
+
+            for (let row = 0; row < this.rows; row++) {
+                for (let col = 0; col < this.cols; col++) {
+                    const piece = this.grid[row][col];
+                    if (!piece) {
+                        continue;
+                    }
+                    this.a11yCells[row][col].textContent = this.strings[PIECE_NAME_KEYS[piece.type]];
+                }
+            }
         }
 
         setupInputs() {
@@ -317,6 +433,7 @@ define([], function() {
                     if (!isRevert) {
                         this.checkMatches();
                     } else {
+                        this.syncAccessibleGrid();
                         me.input.enabled = true;
                         this.resetHint();
                     }
@@ -569,6 +686,8 @@ define([], function() {
                 }
             } while (!this.hasAvailableMove() || hasInitialMatch());
 
+            this.syncAccessibleGrid();
+
             for (let r3 = 0; r3 < this.rows; r3++) {
                 for (let c3 = 0; c3 < this.cols; c3++) {
                     const shufflePiece = this.grid[r3][c3];
@@ -652,6 +771,7 @@ define([], function() {
             const toDestroy = [];
             const matchGroups = [];
 
+            this.syncAccessibleGrid();
             this.checkHorizontal(toDestroy, matchGroups);
             this.checkVertical(toDestroy, matchGroups);
 

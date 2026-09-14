@@ -400,6 +400,8 @@ define([
                     'hpboss', 'hpyou', 'loading', 'maxmultiplier',
                     'nextlevel', 'nextphase', 'noanswers',
                     'phaseadvanced', 'phaseadvanceerror', 'phasecompletetitle', 'phasedifficulty',
+                    'piece_coin', 'piece_grimoire', 'piece_orb', 'piece_potion', 'piece_shield',
+                    'piece_star', 'piece_sword',
                     'playercorrect',
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
                     'questionerror', 'questionscounter', 'questionsprogress',

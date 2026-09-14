@@ -282,8 +282,11 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         // The help text is a standard Moodle help icon (rendered HTML), not a permanently
         // visible paragraph — regression check for the icon actually being wired up, and
-        // that its popover carries the real help string, not an empty/missing one.
-        $this->assertStringContainsString('help-icon', $data['difficultyhelpicon']);
+        // that its popover carries the real help string, not an empty/missing one. The
+        // "popover" marker (not a "help-icon" CSS class, absent from this component's markup
+        // on Moodle 4.5/5.0) is the part of core/help_icon's output stable across every
+        // Moodle version this plugin supports.
+        $this->assertStringContainsString('popover', $data['difficultyhelpicon']);
         $this->assertStringContainsString(
             s(get_string('lobby_difficulty_help', 'mod_playerpuzzle')),
             $data['difficultyhelpicon']

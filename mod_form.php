@@ -209,8 +209,10 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $mform->addElement('select', 'questioncategory', get_string('questioncategory', 'mod_playerpuzzle'), $categories);
         $mform->setType('questioncategory', PARAM_INT);
-        // Required only when this source is actually on — enforced in validation() below,
-        // since a plain addRule('required') would also fire while hidden (source unchecked).
+        // No custom "required" validation here: a course with zero questions banked
+        // anywhere has no real category to offer (the select falls back to the
+        // "nocategories" placeholder, value 0), and that must remain a valid, saveable
+        // configuration rather than a deadlock.
         $mform->hideIf('questioncategory', 'source_questionbank', 'notchecked');
 
         $minquestionsoptions = [];
@@ -381,9 +383,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         if (empty($data['source_questionbank']) && empty($data['source_ownbank'])) {
             $errors['source_questionbank'] = get_string('error_atleastonequestionsource', 'mod_playerpuzzle');
-        }
-        if (!empty($data['source_questionbank']) && empty($data['questioncategory'])) {
-            $errors['questioncategory'] = get_string('error_categoryrequiredforsource', 'mod_playerpuzzle');
         }
 
         return $errors;

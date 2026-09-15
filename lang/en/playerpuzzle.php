@@ -84,7 +84,6 @@ $string['enablespeech'] = 'Speak game announcements aloud';
 $string['enablespeech_desc'] = 'When enabled, every accessible announcement (turn start, damage, victory...) is also read aloud through the browser\'s built-in speech synthesis, in addition to being written to the screen-reader live region. Off by default; applies to every PlayerPuzzle activity on this site.';
 $string['error_atleastonequestionsource'] = 'Select at least one question source.';
 $string['error_atleasttwooptions'] = 'Enter at least two options.';
-$string['error_categoryrequiredforsource'] = 'Choose a question category, or turn off the question bank category source.';
 $string['error_completionattempts'] = 'Required attempts must be at least 1.';
 $string['error_completionwins'] = 'Required wins must be at least 1.';
 $string['error_correctoptionempty'] = 'The option marked as correct cannot be empty.';

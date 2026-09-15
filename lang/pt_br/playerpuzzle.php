@@ -84,7 +84,6 @@ $string['enablespeech'] = 'Narrar em voz alta os anúncios do jogo';
 $string['enablespeech_desc'] = 'Quando ativado, todo anúncio de acessibilidade (início de turno, dano, vitória...) também é lido em voz alta pela síntese de voz do navegador, além de ser escrito na região de leitura de tela. Desativado por padrão; vale para toda atividade PlayerPuzzle deste site.';
 $string['error_atleastonequestionsource'] = 'Selecione pelo menos uma fonte de questões.';
 $string['error_atleasttwooptions'] = 'Digite pelo menos duas opções.';
-$string['error_categoryrequiredforsource'] = 'Escolha uma categoria de questões, ou desligue a fonte de categoria do banco de questões.';
 $string['error_completionattempts'] = 'As tentativas exigidas devem ser no mínimo 1.';
 $string['error_completionwins'] = 'As vitórias exigidas devem ser no mínimo 1.';
 $string['error_correctoptionempty'] = 'A opção marcada como correta não pode estar vazia.';

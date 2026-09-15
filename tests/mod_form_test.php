@@ -513,13 +513,15 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that saving with the question-bank-category source checked but no category
-     * chosen is rejected — the field is hidden client-side (JS hideIf), so this is the
-     * server-side backstop against a tampered/JS-disabled submission.
+     * Tests that a fresh course with no question bank category holding any question yet
+     * (the select falls back to its "nocategories" placeholder, value 0) can still save
+     * with source_questionbank checked — the field must never become a deadlock: there is
+     * no real category to offer, and blocking the save would make the very first activity
+     * in a brand new course unsaveable with the plugin's own defaults.
      *
      * @return void
      */
-    public function test_validation_rejects_missing_category_when_source_questionbank_checked(): void {
+    public function test_validation_allows_questionbank_source_with_no_categories_available(): void {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance(['course' => $this->course->id]);
         $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
@@ -538,7 +540,7 @@ final class mod_form_test extends \advanced_testcase {
 
         $errors = $formobj->validation($data, []);
 
-        $this->assertArrayHasKey('questioncategory', $errors);
+        $this->assertArrayNotHasKey('questioncategory', $errors);
     }
 
     /**

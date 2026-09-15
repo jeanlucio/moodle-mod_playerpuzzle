@@ -159,7 +159,7 @@ class security {
         $existing = $DB->get_records(
             'playerpuzzle_attempts',
             ['playerpuzzleid' => $playerpuzzleid, 'userid' => $userid, 'status' => 'inprogress'],
-            'timecreated DESC',
+            'timecreated DESC, id DESC',
             '*',
             0,
             1
@@ -228,12 +228,17 @@ class security {
     public static function determine_start_level(int $playerpuzzleid, int $userid, int $maxlevels): array {
         global $DB;
 
+        // Ordered by id, not just timecreated: two attempts finished within the same
+        // second (routine in a fast test run, and not impossible in real play either) sort
+        // in a database-dependent order on timecreated alone — MariaDB and PostgreSQL were
+        // observed to disagree on the tie, picking a different row as "most recent". The
+        // id, being a real auto-increment insertion order, breaks the tie deterministically.
         $recent = $DB->get_records_select(
             'playerpuzzle_attempts',
             'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress',
             ['ppid' => $playerpuzzleid, 'uid' => $userid, 'inprogress' => 'inprogress'],
-            'timecreated DESC',
-            'status, currentlevel, currentphase',
+            'timecreated DESC, id DESC',
+            'id, status, currentlevel, currentphase',
             0,
             1
         );

@@ -196,7 +196,7 @@ class game_page_service {
             $difficulty
         );
 
-        $questions = question_fetcher::get_questions_for_frontend((int) $instance->questioncategory, $context);
+        $questions = question_fetcher::get_questions_for_frontend($instance, $context);
 
         $consumableuses = [];
         foreach (attempt_consumables::TYPES as $type) {

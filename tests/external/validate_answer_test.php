@@ -27,7 +27,9 @@ namespace mod_playerpuzzle\external;
 
 use context_module;
 use core_external\external_api;
+use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\questions_repository;
 
 /**
  * Tests for the mod_playerpuzzle_validate_answer web service.
@@ -60,6 +62,41 @@ final class validate_answer_test extends \advanced_testcase {
     private function make_instance(int $categoryid): \stdClass {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         return $generator->create_instance(['course' => $this->course->id, 'questioncategory' => $categoryid]);
+    }
+
+    /**
+     * Creates a playerpuzzle instance with only PlayerPuzzle's own question bank enabled.
+     *
+     * @return \stdClass Instance record with the ->cmid field added.
+     */
+    private function make_ownbank_instance(): \stdClass {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        return $generator->create_instance([
+            'course' => $this->course->id,
+            'source_questionbank' => 0,
+            'source_ownbank' => 1,
+        ]);
+    }
+
+    /**
+     * Creates one approved multichoice question in PlayerPuzzle's own bank, with "A" as
+     * the correct answer.
+     *
+     * @param int $playerpuzzleid The instance id.
+     * @return int The new question id.
+     */
+    private function make_ownbank_question(int $playerpuzzleid): int {
+        return questions_repository::add_question(
+            $playerpuzzleid,
+            'multichoice',
+            'Own bank question?',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
     }
 
     /**
@@ -199,6 +236,129 @@ final class validate_answer_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertFalse($result['data']['correct']);
+    }
+
+    /**
+     * Tests that a correct answer to an own-bank question is accepted when bank=ownbank
+     * is passed.
+     *
+     * @return void
+     */
+    public function test_ownbank_correct_answer_returns_true(): void {
+        $instance = $this->make_ownbank_instance();
+        $questionid = $this->make_ownbank_question((int) $instance->id);
+        $question = questions_repository::get_question($questionid);
+        $correctanswerid = array_values(array_filter($question->answers, fn($a) => (int) $a->iscorrect === 1))[0]->id;
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $result = $this->call_validate_answer([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'questionid' => $questionid,
+            'answerid'   => $correctanswerid,
+            'bank'       => question_fetcher::BANK_OWNBANK,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertTrue($result['data']['correct']);
+    }
+
+    /**
+     * Tests that an own-bank question belonging to a different instance is rejected —
+     * the same instance-isolation guard as the question bank category check, applied to
+     * the ownbank path.
+     *
+     * @return void
+     */
+    public function test_ownbank_question_from_other_instance_is_rejected(): void {
+        $instance = $this->make_ownbank_instance();
+        $otherinstance = $this->make_ownbank_instance();
+        $foreignquestionid = $this->make_ownbank_question((int) $otherinstance->id);
+        $question = questions_repository::get_question($foreignquestionid);
+        $correctanswerid = array_values(array_filter($question->answers, fn($a) => (int) $a->iscorrect === 1))[0]->id;
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $result = $this->call_validate_answer([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'questionid' => $foreignquestionid,
+            'answerid'   => $correctanswerid,
+            'bank'       => question_fetcher::BANK_OWNBANK,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertFalse($result['data']['correct']);
+    }
+
+    /**
+     * Tests that an unapproved own-bank question (e.g. AI-generated, pending review) is
+     * rejected even if its id and answer both genuinely belong to this instance — a
+     * student must never be able to answer a question the teacher has not approved yet.
+     *
+     * @return void
+     */
+    public function test_ownbank_unapproved_question_is_rejected(): void {
+        $instance = $this->make_ownbank_instance();
+        $questionid = questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Pending AI question?',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2,
+            'ai',
+            false
+        );
+        $question = questions_repository::get_question($questionid);
+        $correctanswerid = array_values(array_filter($question->answers, fn($a) => (int) $a->iscorrect === 1))[0]->id;
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $result = $this->call_validate_answer([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'questionid' => $questionid,
+            'answerid'   => $correctanswerid,
+            'bank'       => question_fetcher::BANK_OWNBANK,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertFalse($result['data']['correct']);
+    }
+
+    /**
+     * Tests that the boss's server-drawn guess against an own-bank question works the
+     * same way as against a question-bank one — same 100% precision on Hard.
+     *
+     * @return void
+     */
+    public function test_ownbank_boss_guess_on_hard_is_always_correct(): void {
+        $instance = $this->make_ownbank_instance();
+        $questionid = $this->make_ownbank_question((int) $instance->id);
+        $question = questions_repository::get_question($questionid);
+        $correctanswerid = array_values(array_filter($question->answers, fn($a) => (int) $a->iscorrect === 1))[0]->id;
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard');
+
+        for ($i = 0; $i < 10; $i++) {
+            $result = $this->call_validate_answer([
+                'cmid'       => $instance->cmid,
+                'token'      => $token,
+                'questionid' => $questionid,
+                'answerid'   => 999999,
+                'bank'       => question_fetcher::BANK_OWNBANK,
+                'forwhom'    => 'boss',
+            ]);
+            $this->assertFalse($result['error']);
+            $this->assertTrue($result['data']['correct']);
+            $this->assertSame((int) $correctanswerid, (int) $result['data']['pickedanswerid']);
+        }
     }
 
     /**

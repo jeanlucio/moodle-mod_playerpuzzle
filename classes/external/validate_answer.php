@@ -49,6 +49,12 @@ class validate_answer extends external_api {
             'token'      => new external_value(PARAM_ALPHANUM, 'Anti-replay token of the in-progress attempt'),
             'questionid' => new external_value(PARAM_INT, 'Question ID'),
             'answerid'   => new external_value(PARAM_INT, 'Answer ID submitted by the player; ignored for the boss'),
+            'bank'       => new external_value(
+                PARAM_ALPHA,
+                'Which bank the question belongs to: questionbank or ownbank',
+                VALUE_DEFAULT,
+                question_fetcher::BANK_QUESTIONBANK
+            ),
             'forwhom'    => new external_value(
                 PARAM_ALPHA,
                 'Whose answer this is: "player" validates the submitted answer, "boss" draws the boss guess server-side',
@@ -67,6 +73,7 @@ class validate_answer extends external_api {
      * @param string $token Anti-replay token of the in-progress attempt.
      * @param int $questionid Question ID.
      * @param int $answerid Answer ID submitted (player only).
+     * @param string $bank Which bank the question belongs to, questionbank or ownbank.
      * @param string $forwhom "player" or "boss".
      * @return array Result matrix.
      */
@@ -75,6 +82,7 @@ class validate_answer extends external_api {
         string $token,
         int $questionid,
         int $answerid,
+        string $bank = 'questionbank',
         string $forwhom = 'player'
     ): array {
         global $DB, $USER;
@@ -84,6 +92,7 @@ class validate_answer extends external_api {
             'token'      => $token,
             'questionid' => $questionid,
             'answerid'   => $answerid,
+            'bank'       => $bank,
             'forwhom'    => $forwhom,
         ]);
 
@@ -104,27 +113,35 @@ class validate_answer extends external_api {
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
 
-        // Instance isolation: the question must belong to this instance's own category,
-        // never validated by isolated PK.
-        $sql = "SELECT 1
-                  FROM {question_bank_entries} qbe
-                  JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
-                 WHERE qv.questionid = :qid
-                   AND qbe.questioncategoryid = :catid";
-        $valid = $DB->record_exists_sql($sql, [
-            'qid'   => $params['questionid'],
-            'catid' => (int) $playerpuzzle->questioncategory,
-        ]);
+        // Instance isolation: the question must belong to this instance, never validated
+        // by isolated PK — the exact check depends on which bank it claims to come from.
+        if ($params['bank'] === question_fetcher::BANK_OWNBANK) {
+            $valid = $DB->record_exists('playerpuzzle_questions', [
+                'id'             => $params['questionid'],
+                'playerpuzzleid' => (int) $playerpuzzle->id,
+                'approved'       => 1,
+            ]);
+        } else {
+            $sql = "SELECT 1
+                      FROM {question_bank_entries} qbe
+                      JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id
+                     WHERE qv.questionid = :qid
+                       AND qbe.questioncategoryid = :catid";
+            $valid = $DB->record_exists_sql($sql, [
+                'qid'   => $params['questionid'],
+                'catid' => (int) $playerpuzzle->questioncategory,
+            ]);
+        }
         if (!$valid) {
             return ['correct' => false];
         }
 
         if ($params['forwhom'] === 'boss') {
-            return self::draw_boss_guess($params['questionid'], (string) $attempt->difficulty);
+            return self::draw_boss_guess($params['bank'], $params['questionid'], (string) $attempt->difficulty);
         }
 
-        $correct = question_fetcher::is_answer_correct($params['questionid'], $params['answerid']);
-        $correctanswerid = question_fetcher::get_correct_answer_id($params['questionid']);
+        $correct = question_fetcher::is_answer_correct($params['bank'], $params['questionid'], $params['answerid']);
+        $correctanswerid = question_fetcher::get_correct_answer_id($params['bank'], $params['questionid']);
 
         // Server-side source of truth for how many questions this attempt has answered so
         // far (right or wrong): the boss-revive rule and the "Perguntas: X/N" HUD counter
@@ -142,9 +159,9 @@ class validate_answer extends external_api {
             $params['questionid'],
             (int) $attempt->currentlevel,
             (int) $attempt->currentphase,
-            question_fetcher::get_question_text($params['questionid'], $context),
-            question_fetcher::get_answer_text($params['answerid'], $context),
-            $correctanswerid !== null ? question_fetcher::get_answer_text($correctanswerid, $context) : '',
+            question_fetcher::get_question_text($params['bank'], $params['questionid'], $context),
+            question_fetcher::get_answer_text($params['bank'], $params['answerid'], $context),
+            $correctanswerid !== null ? question_fetcher::get_answer_text($params['bank'], $correctanswerid, $context) : '',
             $correct
         );
 
@@ -161,14 +178,15 @@ class validate_answer extends external_api {
      * it lands on the correct answer, otherwise on a random wrong one. Returns which answer
      * it picked so the client can render it, but never which one was right.
      *
+     * @param string $bank Which bank the question belongs to, questionbank or ownbank.
      * @param int $questionid Question ID.
      * @param string $difficulty The attempt's current difficulty.
      * @return array {correct: bool, pickedanswerid: int}
      */
-    private static function draw_boss_guess(int $questionid, string $difficulty): array {
-        $qtype = question_fetcher::get_question_type($questionid) ?? 'multichoice';
-        $correctid = question_fetcher::get_correct_answer_id($questionid);
-        $answerids = question_fetcher::get_answer_ids($questionid);
+    private static function draw_boss_guess(string $bank, int $questionid, string $difficulty): array {
+        $qtype = question_fetcher::get_question_type($bank, $questionid) ?? 'multichoice';
+        $correctid = question_fetcher::get_correct_answer_id($bank, $questionid);
+        $answerids = question_fetcher::get_answer_ids($bank, $questionid);
 
         $probability = combat::boss_guess_probability($difficulty, $qtype);
         $hitscorrect = $correctid !== null && (mt_rand() / mt_getrandmax()) < $probability;

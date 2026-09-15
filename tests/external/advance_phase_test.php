@@ -555,9 +555,8 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that advancing a phase clears the saved combat checkpoint (Fase 5 Lote D) — the
-     * next phase always starts with a fresh board and full HP, never resuming the one just
-     * finished.
+     * Tests that advancing a phase clears the saved combat checkpoint — the next phase
+     * always starts with a fresh board and full HP, never resuming the one just finished.
      *
      * @return void
      */

@@ -47,7 +47,7 @@ class coin_ledger {
      * @param int $reportedearned Client-reported coinsearnedsofar this phase/match.
      * @param int $reportedbossearned Client-reported bosscoinsearnedsofar this phase/match.
      * @param int $ceiling Plausibility ceiling from combat::coin_ceiling(), applied to both
-     *  sides — the boss's own combat output is symmetric to the student's (Fase 3.5 design).
+     *  sides — the boss's own combat output is symmetric to the student's, by design.
      * @return void
      */
     public static function sync(stdClass $attempt, int $reportedearned, int $reportedbossearned, int $ceiling): void {

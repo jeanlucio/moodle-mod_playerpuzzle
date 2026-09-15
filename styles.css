@@ -543,7 +543,7 @@ body.path-mod-playerpuzzle .pp-lobby-play:focus-visible {
 }
 
 /**
- * Teacher-only "Manage questions" link (Fase 8) — a quiet secondary action, never competing
+ * Teacher-only "Manage questions" link — a quiet secondary action, never competing
  * visually with the Jogar button above it.
  */
 body.path-mod-playerpuzzle .pp-lobby-managelink {

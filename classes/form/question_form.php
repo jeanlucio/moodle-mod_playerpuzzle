@@ -64,7 +64,7 @@ class question_form extends \moodleform {
         // True/False: only which side is correct is asked — the answer text itself is
         // always the two fixed core strings (qtype_truefalse's own "True"/"False"), so a
         // truefalse question from this bank reads identically to one from the Moodle
-        // question bank (question_fetcher.php, Fase 8 Lote B).
+        // question bank once question_fetcher.php reads from both sources.
         $mform->addElement('radio', 'tfcorrect', '', get_string('true', 'qtype_truefalse'), 'true');
         $mform->addElement('radio', 'tfcorrect', '', get_string('false', 'qtype_truefalse'), 'false');
         $mform->setDefault('tfcorrect', 'true');

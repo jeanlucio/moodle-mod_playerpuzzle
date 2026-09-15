@@ -495,7 +495,7 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a fresh attempt's config carries no combat checkpoint (Fase 5 Lote D).
+     * Tests that a fresh attempt's config carries no combat checkpoint.
      *
      * @return void
      */

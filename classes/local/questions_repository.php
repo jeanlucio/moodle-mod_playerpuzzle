@@ -29,14 +29,14 @@ use stdClass;
 /**
  * Mirrors mod_playerwords\local\words_repository — a single-table CRUD for one game's own
  * content bank, keeping the source/approved bookkeeping (manual entries land approved; a
- * future AI-generated one lands unapproved until a teacher confirms it, Fase 8 Lote C) in
- * one place rather than duplicated between the manual form and the AI pipeline.
+ * future AI-generated one lands unapproved until a teacher confirms it) in one place rather
+ * than duplicated between the manual form and the AI pipeline.
  */
 class questions_repository {
     /**
      * Valid question types. truefalse questions still store two rows in
      * playerpuzzle_question_answers (one per Verdadeiro/Falso), so question_fetcher.php and
-     * validate_answer.php (Fase 8 Lote B) have a single read/validation path for both types.
+     * validate_answer.php can have a single read/validation path for both types.
      */
     public const QTYPES = ['multichoice', 'truefalse'];
 

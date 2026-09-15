@@ -36,7 +36,7 @@ use moodle_exception;
 /**
  * Persists a snapshot of the current phase's fight (board grid, HP, meters, turn) so a
  * reload can resume it in place instead of always restarting the phase with full HP and a
- * fresh board (Fase 5 Lote D).
+ * fresh board.
  *
  * Called from two client-side triggers, never per board move: a periodic checkpoint (only
  * when something changed and the tab is visible) and once more on page unload/backgrounding

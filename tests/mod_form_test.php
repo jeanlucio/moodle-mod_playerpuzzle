@@ -472,7 +472,7 @@ final class mod_form_test extends \advanced_testcase {
 
     /**
      * Tests that the question category field is hidden when the question-bank-category
-     * source checkbox is unchecked (Fase 8 Lote A).
+     * source checkbox is unchecked.
      *
      * @return void
      */

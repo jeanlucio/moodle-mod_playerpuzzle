@@ -25,7 +25,7 @@
 namespace mod_playerpuzzle\local;
 
 /**
- * Reads and writes the JSON blob stored in playerpuzzle_attempts.combatstate (Fase 5 Lote D).
+ * Reads and writes the JSON blob stored in playerpuzzle_attempts.combatstate.
  *
  * The snapshot is opaque to the server: it is only ever read back whole by the same client
  * code that wrote it, to redraw the board/HUD on a reload instead of always starting the

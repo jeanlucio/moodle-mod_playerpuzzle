@@ -356,7 +356,7 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a fresh attempt starts with no combat checkpoint (Fase 5 Lote D) — there is
+     * Tests that a fresh attempt starts with no combat checkpoint — there is
      * no fight yet for board.js/combat.js to resume.
      *
      * @return void

@@ -112,8 +112,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.maxBossHp = parseInt(gameConfig.bosshp) || 1000;
             this.currentHp = this.maxBossHp;
 
-            // A checkpointed fight (Fase 5 Lote D) overrides every HP/meter/turn default set
-            // above with its last saved values — the board grid itself is restored separately,
+            // A checkpointed fight overrides every HP/meter/turn default set above with its
+            // last saved values — the board grid itself is restored separately,
             // by board.js reading this same gameConfig.combatstate.boardgrid. Absent for a
             // phase that never got one (a fresh start, or one just advanced past), in which
             // case every side simply starts at full HP as already set up above.
@@ -152,7 +152,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Starts the reload-resilience checkpoint (Fase 5 Lote D): every ~10s, if something
+         * Starts the reload-resilience checkpoint: every ~10s, if something
          * changed since the last one and the tab is visible, persists the current board/HP/
          * meters/turn so a reload resumes this same fight instead of restarting the phase
          * from scratch. A plain setInterval, not Phaser's own scene time source, so it keeps

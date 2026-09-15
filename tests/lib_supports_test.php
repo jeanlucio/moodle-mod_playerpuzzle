@@ -47,10 +47,9 @@ final class lib_supports_test extends \basic_testcase {
      * test_supports_secondary_purpose_when_available() for that constant specifically.
      * Asserts the honest current state of the plugin — every declared feature below has a
      * real implementation behind it: playerpuzzle_grade_item_update()/update_grades()/
-     * grade_calculator (Fase 6 Lote A), playerpuzzle_get_coursemodule_info()/
-     * classes/completion/custom_completion.php (Fase 6 Lote C), and
-     * backup/moodle2/backup_playerpuzzle_stepslib.php/restore_playerpuzzle_stepslib.php
-     * (Fase 6 Lote E).
+     * grade_calculator, playerpuzzle_get_coursemodule_info()/
+     * classes/completion/custom_completion.php, and
+     * backup/moodle2/backup_playerpuzzle_stepslib.php/restore_playerpuzzle_stepslib.php.
      *
      * @return void
      */

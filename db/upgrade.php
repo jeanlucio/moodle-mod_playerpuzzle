@@ -308,8 +308,8 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
     if ($oldversion < 2026091401) {
         $table = new xmldb_table('playerpuzzle');
 
-        // Add grade: the Nota Máxima configured via standard_grading_coursemodule_elements()
-        // (Sem Nota / Ponto / Escala), scaling both grade formulas of Fase 6.
+        // Add grade: the maximum grade configured via standard_grading_coursemodule_elements()
+        // (None / Point / Scale), scaling both grade formulas.
         $field = new xmldb_field('grade', XMLDB_TYPE_NUMBER, '10, 5', null, XMLDB_NOTNULL, null, '100.00000');
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);

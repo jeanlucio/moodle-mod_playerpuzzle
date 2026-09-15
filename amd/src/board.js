@@ -135,10 +135,10 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
 
         initGrid() {
             const me = this.scene;
-            // A checkpointed fight (Fase 5 Lote D) reuses its exact saved piece types instead
-            // of rolling a fresh board — the reload is meant to resume the same position, not
-            // hand the player a new one (which could form matches, or remove ones already
-            // set up, the moment the board loads).
+            // A checkpointed fight reuses its exact saved piece types instead of rolling a
+            // fresh board — the reload is meant to resume the same position, not hand the
+            // player a new one (which could form matches, or remove ones already set up,
+            // the moment the board loads).
             const combatstate = me.combat && me.combat.gameConfig.combatstate;
             const savedgrid = combatstate ? combatstate.boardgrid : null;
 

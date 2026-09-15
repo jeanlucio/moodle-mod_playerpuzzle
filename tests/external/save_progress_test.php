@@ -669,7 +669,7 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a saved combat checkpoint (Fase 5 Lote D) is cleared once the attempt
+     * Tests that a saved combat checkpoint is cleared once the attempt
      * reaches a final status — there is no fight left to resume.
      *
      * @return void

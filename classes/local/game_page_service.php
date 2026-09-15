@@ -246,7 +246,7 @@ class game_page_service {
             // Snapshot of the board/HP/meters/turn left by a checkpoint (null for a phase
             // that never got one, or that was just started/advanced) — lets board.js/
             // combat.js resume the fight in place instead of always starting the phase
-            // fresh (Fase 5 Lote D).
+            // fresh.
             'combatstate'          => $attemptinfo->combatstate,
             'maxconsumables'       => (int) $instance->maxconsumables,
             'consumableuses'       => $consumableuses,

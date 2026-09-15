@@ -357,7 +357,7 @@ define(['jquery'], function($) {
          * Refreshes every shop badge's enabled/disabled look: opacity drops and the click
          * stops doing anything once the per-attempt use limit is reached, or the student can
          * afford it through neither local coins nor (where configured) PlayerHUD stock. A
-         * full text/aria-label reason for screen-reader users depends on the Fase 7 HTML
+         * full text/aria-label reason for screen-reader users depends on an accessible HTML
          * parallel layer, which does not exist yet for in-combat controls — this only covers
          * the visual/functional half of the decision for now.
          */
@@ -723,9 +723,8 @@ define(['jquery'], function($) {
         /**
          * Creates (on first call) or updates (on later calls) a radial-ring meter: an arc
          * filling clockwise around a static piece-sprite icon, from 0% to 100% of `pct`. Used
-         * for the Grimoire/Shield/Question-Orb meters, each of which already fills 0–100
-         * (Fase 3.5 visual redesign) — replaces the earlier flat progress bar / text indicator
-         * these three used before.
+         * for the Grimoire/Shield/Question-Orb meters, each of which already fills 0-100 —
+         * replaces the earlier flat progress bar / text indicator these three used before.
          *
          * @param {string} key Unique identifier for this ring instance (e.g. 'playerGrimoire').
          * @param {number} x Center X.

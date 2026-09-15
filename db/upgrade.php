@@ -355,5 +355,54 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091601, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091606) {
+        $table = new xmldb_table('playerpuzzle');
+
+        // Add sources: question-source bitmask (1=Moodle question bank category,
+        // 2=PlayerPuzzle's own bank). Defaults to 1 so every existing instance keeps reading
+        // from its already-configured questioncategory exactly as before.
+        $field = new xmldb_field('sources', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '1');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add playerpuzzle_questions: PlayerPuzzle's own question bank (manual and/or
+        // AI-generated), per instance.
+        $questionstable = new xmldb_table('playerpuzzle_questions');
+        if (!$dbman->table_exists($questionstable)) {
+            $questionstable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $questionstable->add_field('playerpuzzleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $questionstable->add_field('qtype', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL);
+            $questionstable->add_field('questiontext', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL);
+            $questionstable->add_field('generalfeedback', XMLDB_TYPE_TEXT, null, null, null);
+            $questionstable->add_field('hint', XMLDB_TYPE_TEXT, null, null, null);
+            $questionstable->add_field('source', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'manual');
+            $questionstable->add_field('approved', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+            $questionstable->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $questionstable->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $questionstable->add_field('addedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $questionstable->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $questionstable->add_key('playerpuzzleid', XMLDB_KEY_FOREIGN, ['playerpuzzleid'], 'playerpuzzle', ['id']);
+            $questionstable->add_key('addedby', XMLDB_KEY_FOREIGN, ['addedby'], 'user', ['id']);
+            $questionstable->add_index('approved', XMLDB_INDEX_NOTUNIQUE, ['approved']);
+            $dbman->create_table($questionstable);
+        }
+
+        // Add playerpuzzle_question_answers: answer options for a playerpuzzle_questions row.
+        $answerstable = new xmldb_table('playerpuzzle_question_answers');
+        if (!$dbman->table_exists($answerstable)) {
+            $answerstable->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $answerstable->add_field('questionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $answerstable->add_field('answertext', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL);
+            $answerstable->add_field('iscorrect', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+            $answerstable->add_field('sortorder', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0');
+            $answerstable->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $answerstable->add_key('questionid', XMLDB_KEY_FOREIGN, ['questionid'], 'playerpuzzle_questions', ['id']);
+            $dbman->create_table($answerstable);
+        }
+
+        upgrade_mod_savepoint(true, 2026091606, 'playerpuzzle');
+    }
+
     return true;
 }

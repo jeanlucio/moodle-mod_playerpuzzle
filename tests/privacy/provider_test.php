@@ -141,6 +141,76 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
+     * Tests that every real column of playerpuzzle_questions (minus id) is either
+     * declared in get_metadata() or listed here as a documented, justified exclusion.
+     * Only addedby identifies a person; questiontext/generalfeedback/hint/qtype/source/
+     * approved/timecreated/timemodified are professor-authored course content, not
+     * personal data, and playerpuzzleid is a structural foreign key. Asserted against
+     * the real schema via $DB->get_columns() rather than a fixed key list, so a future
+     * column silently added to install.xml without a privacy decision fails this test
+     * instead of just going undeclared by omission.
+     *
+     * @return void
+     */
+    public function test_get_metadata_declares_only_addedby_for_playerpuzzle_questions(): void {
+        global $DB;
+
+        $documentedexclusions = [
+            'playerpuzzleid',
+            'qtype',
+            'questiontext',
+            'generalfeedback',
+            'hint',
+            'source',
+            'approved',
+            'timecreated',
+            'timemodified',
+        ];
+
+        $collection = provider::get_metadata(new collection('mod_playerpuzzle'));
+
+        $tableitem = null;
+        foreach ($collection->get_collection() as $item) {
+            if ($item->get_name() === 'playerpuzzle_questions') {
+                $tableitem = $item;
+                break;
+            }
+        }
+        $this->assertNotNull($tableitem);
+        $declaredfields = array_keys($tableitem->get_privacy_fields());
+        $this->assertSame(['addedby'], $declaredfields);
+
+        $realcolumns = array_values(array_diff(array_keys($DB->get_columns('playerpuzzle_questions')), ['id']));
+
+        $accountedfor = array_merge($declaredfields, $documentedexclusions);
+        foreach ($realcolumns as $column) {
+            $this->assertContains(
+                $column,
+                $accountedfor,
+                "Column '$column' is neither declared in get_metadata() nor listed as a documented exclusion."
+            );
+        }
+
+        foreach ($documentedexclusions as $excluded) {
+            $this->assertContains($excluded, $realcolumns);
+            $this->assertNotContains($excluded, $declaredfields);
+        }
+    }
+
+    /**
+     * Tests that playerpuzzle_question_answers carries no personal data at all and is
+     * therefore not declared in get_metadata() — answer option text is professor-authored
+     * course content with no reference to any user.
+     *
+     * @return void
+     */
+    public function test_get_metadata_does_not_declare_question_answers_table(): void {
+        $collection = provider::get_metadata(new collection('mod_playerpuzzle'));
+        $keys = array_map(fn ($item) => $item->get_name(), $collection->get_collection());
+        $this->assertNotContains('playerpuzzle_question_answers', $keys);
+    }
+
+    /**
      * Tests that get_contexts_for_userid finds the context via an attempt.
      *
      * @return void

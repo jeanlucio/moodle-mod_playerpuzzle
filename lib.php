@@ -79,6 +79,38 @@ define('PLAYERPUZZLE_DIFFICULTY_NORMAL', 'normal');
 define('PLAYERPUZZLE_DIFFICULTY_HARD', 'hard');
 
 /**
+ * Question source bit: the Moodle question bank category configured on the instance.
+ */
+define('PLAYERPUZZLE_SOURCE_QUESTIONBANK', 1);
+
+/**
+ * Question source bit: PlayerPuzzle's own question bank (manual and/or AI-generated).
+ */
+define('PLAYERPUZZLE_SOURCE_OWNBANK', 2);
+
+/**
+ * Builds the question-source bitmask from mod_form.php's two checkboxes. Mirrors
+ * mod_playerwords\lib.php::playerwords_build_sources() — the form submits plain
+ * source_questionbank/source_ownbank ints, and the instance record stores only the
+ * combined bitmask.
+ *
+ * @param stdClass $data Form data.
+ * @return int
+ */
+function playerpuzzle_build_sources(stdClass $data): int {
+    $sources = 0;
+
+    if (!empty($data->source_questionbank)) {
+        $sources |= PLAYERPUZZLE_SOURCE_QUESTIONBANK;
+    }
+    if (!empty($data->source_ownbank)) {
+        $sources |= PLAYERPUZZLE_SOURCE_OWNBANK;
+    }
+
+    return $sources;
+}
+
+/**
  * Returns the available grading method options for Single-match mode, keyed by their
  * PLAYERPUZZLE_GRADE_* constant. Mirrors mod_playerwords/mod_playercross so the same
  * mental model applies across the Player ecosystem.
@@ -443,6 +475,7 @@ function playerpuzzle_add_instance(stdClass $playerpuzzle, ?moodleform $mform = 
     // (not an empty string) when left blank in the form, which the 'gradepass' column
     // (NOTNULL) rejects outright.
     $playerpuzzle->gradepass = isset($playerpuzzle->gradepass) ? (float) $playerpuzzle->gradepass : 0.0;
+    $playerpuzzle->sources = playerpuzzle_build_sources($playerpuzzle);
 
     $playerpuzzle->id = $DB->insert_record('playerpuzzle', $playerpuzzle);
     playerpuzzle_grade_item_update($playerpuzzle);
@@ -465,6 +498,7 @@ function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform
     $playerpuzzle->id = $playerpuzzle->instance;
     // Same null-to-zero normalization as playerpuzzle_add_instance() — see its own comment.
     $playerpuzzle->gradepass = isset($playerpuzzle->gradepass) ? (float) $playerpuzzle->gradepass : 0.0;
+    $playerpuzzle->sources = playerpuzzle_build_sources($playerpuzzle);
 
     $result = $DB->update_record('playerpuzzle', $playerpuzzle);
     playerpuzzle_grade_item_update($playerpuzzle);

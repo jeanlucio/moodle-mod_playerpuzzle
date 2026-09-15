@@ -59,7 +59,8 @@ $templatedata = \mod_playerpuzzle\local\lobby_page_service::build_page_data(
     $cm,
     $course,
     $playerpuzzle,
-    (int) $USER->id
+    (int) $USER->id,
+    $context
 );
 
 echo $OUTPUT->render_from_template('mod_playerpuzzle/view_lobby', $templatedata);

@@ -140,6 +140,15 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $mform->addElement('header', 'questionsettings', get_string('questionsettings', 'mod_playerpuzzle'));
 
+        $mform->addElement('advcheckbox', 'source_questionbank', get_string('source_questionbank', 'mod_playerpuzzle'));
+        $mform->setType('source_questionbank', PARAM_INT);
+        $mform->setDefault('source_questionbank', 1);
+
+        $mform->addElement('advcheckbox', 'source_ownbank', get_string('source_ownbank', 'mod_playerpuzzle'));
+        $mform->setType('source_ownbank', PARAM_INT);
+        $mform->setDefault('source_ownbank', 0);
+        $mform->addHelpButton('source_ownbank', 'source_ownbank', 'mod_playerpuzzle');
+
         $categories = [];
         $coursecontext = \context_course::instance($COURSE->id);
         $contextstocheck = [];
@@ -200,7 +209,9 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $mform->addElement('select', 'questioncategory', get_string('questioncategory', 'mod_playerpuzzle'), $categories);
         $mform->setType('questioncategory', PARAM_INT);
-        $mform->addRule('questioncategory', null, 'required', null, 'client');
+        // Required only when this source is actually on — enforced in validation() below,
+        // since a plain addRule('required') would also fire while hidden (source unchecked).
+        $mform->hideIf('questioncategory', 'source_questionbank', 'notchecked');
 
         $minquestionsoptions = [];
         for ($i = 0; $i <= 10; $i++) {
@@ -368,6 +379,13 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             $errors['completionwinsgroup'] = get_string('error_completionwins', 'mod_playerpuzzle');
         }
 
+        if (empty($data['source_questionbank']) && empty($data['source_ownbank'])) {
+            $errors['source_questionbank'] = get_string('error_atleastonequestionsource', 'mod_playerpuzzle');
+        }
+        if (!empty($data['source_questionbank']) && empty($data['questioncategory'])) {
+            $errors['questioncategory'] = get_string('error_categoryrequiredforsource', 'mod_playerpuzzle');
+        }
+
         return $errors;
     }
 
@@ -437,6 +455,13 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         }
         if (!empty($defaultvalues['completionwins'])) {
             $defaultvalues['completionwinsenabled'] = 1;
+        }
+
+        if (isset($defaultvalues['sources'])) {
+            $defaultvalues['source_questionbank'] =
+                (int) (((int) $defaultvalues['sources'] & PLAYERPUZZLE_SOURCE_QUESTIONBANK) !== 0);
+            $defaultvalues['source_ownbank'] =
+                (int) (((int) $defaultvalues['sources'] & PLAYERPUZZLE_SOURCE_OWNBANK) !== 0);
         }
     }
 

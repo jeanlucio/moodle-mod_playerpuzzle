@@ -46,7 +46,10 @@
             {"value": "normal", "label": "Normal", "checked": true},
             {"value": "hard", "label": "Hard", "checked": false}
         ],
-        "difficultycurrent": ""
+        "difficultycurrent": "",
+        "canmanagequestions": true,
+        "managequestionsurl": "/mod/playerpuzzle/managequestions.php?id=1",
+        "managequestionslabel": "Manage questions"
     }
 }}
 <div class="pp-lobby" style="border-image-source: url('{{panelstoneurl}}');">
@@ -140,6 +143,10 @@
             {{#minquestionstext}}
             <p class="pp-lobby-note">{{minquestionstext}}</p>
             {{/minquestionstext}}
+
+            {{#canmanagequestions}}
+            <a href="{{managequestionsurl}}" class="pp-lobby-managelink">{{managequestionslabel}}</a>
+            {{/canmanagequestions}}
         </div>
     </div>
 </div>

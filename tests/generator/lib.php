@@ -47,6 +47,12 @@ class mod_playerpuzzle_generator extends testing_module_generator {
             // Not a real foreign key in install.xml — tests that exercise the question
             // engine itself must override this with a genuine question_categories id.
             'questioncategory'    => 0,
+            // Matches mod_form.php's own defaults — source_questionbank/source_ownbank are
+            // what playerpuzzle_build_sources() actually reads (lib.php), not a raw
+            // 'sources' bitmask; without these, every generated instance would silently end
+            // up with sources = 0 (neither source enabled) instead of the real-world default.
+            'source_questionbank' => 1,
+            'source_ownbank'      => 0,
             'timelimit'           => 0,
             'maxattempts'         => 0,
             'hud_coin_item'       => 0,

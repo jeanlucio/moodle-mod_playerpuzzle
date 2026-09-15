@@ -543,6 +543,21 @@ body.path-mod-playerpuzzle .pp-lobby-play:focus-visible {
 }
 
 /**
+ * Teacher-only "Manage questions" link (Fase 8) — a quiet secondary action, never competing
+ * visually with the Jogar button above it.
+ */
+body.path-mod-playerpuzzle .pp-lobby-managelink {
+    color: #cdb37a;
+    font-size: 0.85rem;
+    text-decoration: underline;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-managelink:hover,
+body.path-mod-playerpuzzle .pp-lobby-managelink:focus-visible {
+    color: #ffd873;
+}
+
+/**
  * Own .visually-hidden rule, scoped to the plugin's body path class. Bootstrap 4 (Moodle
  * 4.5) does not define .visually-hidden, and Bootstrap 5's .sr-only bridge is flagged
  * deprecated by theme_boost — so the plugin ships its own, used by the loading progress

@@ -469,4 +469,104 @@ final class mod_form_test extends \advanced_testcase {
 
         $this->assertArrayHasKey('hud_win_grant_qty', $errors);
     }
+
+    /**
+     * Tests that the question category field is hidden when the question-bank-category
+     * source checkbox is unchecked (Fase 8 Lote A).
+     *
+     * @return void
+     */
+    public function test_questioncategory_hides_when_source_questionbank_unchecked(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $mform = $this->build_form($instance, $cm);
+
+        $this->assert_hideif_registered($mform, 'questioncategory', 'source_questionbank', 'notchecked', '1');
+    }
+
+    /**
+     * Tests that saving with neither question source checked is rejected.
+     *
+     * @return void
+     */
+    public function test_validation_rejects_no_question_source_selected(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $formobj = $this->build_form_object($instance, $cm);
+
+        $data = (array) $instance;
+        $data['name'] = $instance->name;
+        $data['modulename'] = 'playerpuzzle';
+        $data['instance'] = $instance->id;
+        $data['coursemodule'] = $cm->id;
+        $data['availabilityconditionsjson'] = '';
+        $data['cmidnumber'] = '';
+        $data['source_questionbank'] = 0;
+        $data['source_ownbank'] = 0;
+
+        $errors = $formobj->validation($data, []);
+
+        $this->assertArrayHasKey('source_questionbank', $errors);
+    }
+
+    /**
+     * Tests that saving with the question-bank-category source checked but no category
+     * chosen is rejected — the field is hidden client-side (JS hideIf), so this is the
+     * server-side backstop against a tampered/JS-disabled submission.
+     *
+     * @return void
+     */
+    public function test_validation_rejects_missing_category_when_source_questionbank_checked(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $formobj = $this->build_form_object($instance, $cm);
+
+        $data = (array) $instance;
+        $data['name'] = $instance->name;
+        $data['modulename'] = 'playerpuzzle';
+        $data['instance'] = $instance->id;
+        $data['coursemodule'] = $cm->id;
+        $data['availabilityconditionsjson'] = '';
+        $data['cmidnumber'] = '';
+        $data['source_questionbank'] = 1;
+        $data['source_ownbank'] = 0;
+        $data['questioncategory'] = 0;
+
+        $errors = $formobj->validation($data, []);
+
+        $this->assertArrayHasKey('questioncategory', $errors);
+    }
+
+    /**
+     * Tests that relying only on PlayerPuzzle's own question bank, with the Moodle
+     * category source turned off, is valid even with no category chosen.
+     *
+     * @return void
+     */
+    public function test_validation_allows_ownbank_only_without_category(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $formobj = $this->build_form_object($instance, $cm);
+
+        $data = (array) $instance;
+        $data['name'] = $instance->name;
+        $data['modulename'] = 'playerpuzzle';
+        $data['instance'] = $instance->id;
+        $data['coursemodule'] = $cm->id;
+        $data['availabilityconditionsjson'] = '';
+        $data['cmidnumber'] = '';
+        $data['source_questionbank'] = 0;
+        $data['source_ownbank'] = 1;
+        $data['questioncategory'] = 0;
+
+        $errors = $formobj->validation($data, []);
+
+        $this->assertArrayNotHasKey('source_questionbank', $errors);
+        $this->assertArrayNotHasKey('questioncategory', $errors);
+    }
 }

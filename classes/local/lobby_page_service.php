@@ -24,6 +24,7 @@
 
 namespace mod_playerpuzzle\local;
 
+use context_module;
 use core_useragent;
 use mod_playerpuzzle\local\engine\security;
 use moodle_url;
@@ -40,13 +41,16 @@ class lobby_page_service {
      * @param stdClass $course Course record.
      * @param stdClass $instance Activity instance.
      * @param int $userid Current user ID.
+     * @param context_module $context Module context, used for the Manage Questions capability
+     *  check.
      * @return array Template context for mod_playerpuzzle/view_lobby.
      */
     public static function build_page_data(
         stdClass $cm,
         stdClass $course,
         stdClass $instance,
-        int $userid
+        int $userid,
+        context_module $context
     ): array {
         global $DB, $OUTPUT;
         // Carried through to play.php's own game config purely as a CSS sizing hint for the
@@ -72,6 +76,15 @@ class lobby_page_service {
             'panelstoneurl' => (new moodle_url('/mod/playerpuzzle/pix/panel_stone.webp'))->out(false),
             'scrollbannerurl' => (new moodle_url('/mod/playerpuzzle/pix/scroll_banner.webp'))->out(false),
         ];
+
+        if (has_capability('mod/playerpuzzle:managequestions', $context, $userid)) {
+            $data['canmanagequestions'] = true;
+            $data['managequestionsurl'] = (new moodle_url(
+                '/mod/playerpuzzle/managequestions.php',
+                ['id' => $cm->id]
+            ))->out(false);
+            $data['managequestionslabel'] = get_string('managequestions', 'mod_playerpuzzle');
+        }
 
         // The most recently started in-progress attempt, if any — shared by the progress and
         // difficulty panels below. Resuming this attempt keeps its own locked difficulty, so

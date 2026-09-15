@@ -120,7 +120,13 @@ final class lobby_page_service_test extends \advanced_testcase {
     public function test_build_page_data_base_fields(): void {
         [$cm, $instance] = $this->make_cm_and_instance();
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertSame(get_string('playgame', 'mod_playerpuzzle'), $data['playtext']);
         $this->assertStringContainsString('play.php', $data['playurl']);
@@ -146,7 +152,13 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         \block_playerhud\local\external_items::grant($biid, $coinitemid, (int) $this->student->id, 42, 'test', false);
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertTrue($data['hasstats']);
         $this->assertSame(get_string('lobby_coinbalance', 'mod_playerpuzzle', 42), $data['coinstext']);
@@ -170,7 +182,13 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         \block_playerhud\local\external_items::grant($biid, $sworditemid, (int) $this->student->id, 3, 'test', false);
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertTrue($data['hasstats']);
         $this->assertSame(get_string('lobby_swordstock', 'mod_playerpuzzle', 3), $data['swordtext']);
@@ -188,7 +206,13 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         \mod_playerpuzzle\local\engine\security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertArrayNotHasKey('progresstext', $data);
     }
@@ -202,7 +226,13 @@ final class lobby_page_service_test extends \advanced_testcase {
     public function test_build_page_data_no_progress_without_inprogress_attempt(): void {
         [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertArrayNotHasKey('progresstext', $data);
     }
@@ -235,7 +265,13 @@ final class lobby_page_service_test extends \advanced_testcase {
             'lost'
         );
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertSame(
             get_string('lobby_resumeafterloss', 'mod_playerpuzzle', (object) ['level' => 3, 'phase' => 7]),
@@ -267,7 +303,13 @@ final class lobby_page_service_test extends \advanced_testcase {
             'won'
         );
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertArrayNotHasKey('progresstext', $data);
     }
@@ -299,7 +341,13 @@ final class lobby_page_service_test extends \advanced_testcase {
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 2, ['token' => $newtoken]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 5, ['token' => $newtoken]);
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $expected = get_string('lobby_currentprogress', 'mod_playerpuzzle', (object) ['level' => 2, 'phase' => 5]);
         $this->assertSame($expected, $data['progresstext']);
@@ -313,7 +361,13 @@ final class lobby_page_service_test extends \advanced_testcase {
     public function test_build_page_data_no_minquestions_notice_when_zero(): void {
         [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 0]);
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertArrayNotHasKey('minquestionstext', $data);
     }
@@ -327,7 +381,13 @@ final class lobby_page_service_test extends \advanced_testcase {
     public function test_build_page_data_shows_minquestions_notice(): void {
         [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 5]);
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $expected = get_string('lobby_minquestions_notice', 'mod_playerpuzzle', 5);
         $this->assertSame($expected, $data['minquestionstext']);
@@ -342,7 +402,13 @@ final class lobby_page_service_test extends \advanced_testcase {
     public function test_build_page_data_offers_difficulty_choices(): void {
         [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertArrayNotHasKey('difficultycurrent', $data);
         $this->assertCount(3, $data['difficultychoices']);
@@ -380,7 +446,13 @@ final class lobby_page_service_test extends \advanced_testcase {
             'hard'
         );
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $this->assertArrayNotHasKey('difficultychoices', $data);
         $expected = get_string(
@@ -409,7 +481,13 @@ final class lobby_page_service_test extends \advanced_testcase {
         );
         $DB->set_field('playerpuzzle_attempts', 'difficulty', 'garbage', ['token' => $token]);
 
-        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
 
         $expected = get_string(
             'lobby_difficulty_current',
@@ -435,7 +513,13 @@ final class lobby_page_service_test extends \advanced_testcase {
                 . '(KHTML, like Gecko) Version/8.0 Mobile/12B411 Safari/600.1.4'
         );
         try {
-            $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id);
+            $data = lobby_page_service::build_page_data(
+                $cm,
+                $this->course,
+                $instance,
+                (int) $this->student->id,
+                \context_module::instance($cm->id)
+            );
         } finally {
             \core_useragent::instance(true);
         }

@@ -1,0 +1,88 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_playerpuzzle/managequestions
+
+    Question bank management listing for a PlayerPuzzle activity.
+
+    Example context (json):
+    {
+        "addurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=add",
+        "addquestionlabel": "Add question",
+        "hasquestions": true,
+        "noquestionslabel": "No questions have been added yet.",
+        "questioncolumnlabel": "Question",
+        "typecolumnlabel": "Type",
+        "sourcecolumnlabel": "Source",
+        "actionscolumnlabel": "Actions",
+        "unapprovedlabel": "Awaiting approval",
+        "questions": [
+            {
+                "questiontext": "What is 2 + 2?",
+                "qtypelabel": "Multiple choice",
+                "answerspreview": "✓ 4 · 3 · 5",
+                "sourcelabel": "Manual",
+                "isunapproved": false,
+                "editurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=edit&qid=5",
+                "deletelink": "<a href=\"#\">Delete</a>"
+            }
+        ],
+        "backurl": "https://example.com/mod/playerpuzzle/view.php?id=2",
+        "backlabel": "Back"
+    }
+}}
+<a href="{{addurl}}" class="btn btn-primary mb-3">{{addquestionlabel}}</a>
+
+{{^hasquestions}}
+<div class="alert alert-info" role="alert">{{noquestionslabel}}</div>
+{{/hasquestions}}
+
+{{#hasquestions}}
+<div class="table-responsive">
+    <table class="generaltable">
+        <thead>
+            <tr>
+                <th scope="col">{{questioncolumnlabel}}</th>
+                <th scope="col">{{typecolumnlabel}}</th>
+                <th scope="col">{{sourcecolumnlabel}}</th>
+                <th scope="col">{{actionscolumnlabel}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#questions}}
+            <tr>
+                <td>
+                    {{questiontext}}
+                    <div class="text-muted small">{{answerspreview}}</div>
+                </td>
+                <td>{{qtypelabel}}</td>
+                <td>
+                    {{sourcelabel}}
+                    {{#isunapproved}}<span class="badge bg-warning text-dark">{{unapprovedlabel}}</span>{{/isunapproved}}
+                </td>
+                <td>
+                    <a href="{{editurl}}">{{#str}} edit, core {{/str}}</a>
+                    {{{deletelink}}}
+                </td>
+            </tr>
+            {{/questions}}
+        </tbody>
+    </table>
+</div>
+{{/hasquestions}}
+
+<a href="{{backurl}}" class="btn btn-secondary mt-3">{{backlabel}}</a>

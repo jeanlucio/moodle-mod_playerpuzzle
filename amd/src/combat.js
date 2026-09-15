@@ -445,7 +445,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 this.currentPlayerHp, this.maxPlayerHp,
                 this.playerPoisonMeter, this.playerPoisonRounds,
                 this.playerShieldMeter, this.playerShieldReady,
-                this.playerMana, this.playerGold, this.playerMultiplier
+                this.playerMana, this.availableCoinBalance(), this.playerMultiplier
             );
             this.scene.ui.updateBossBar(
                 this.currentHp, this.maxBossHp,

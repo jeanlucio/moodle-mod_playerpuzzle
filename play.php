@@ -81,7 +81,6 @@ $jsconfig = \mod_playerpuzzle\local\game_page_service::build_game_config(
 $PAGE->requires->js_call_amd('mod_playerpuzzle/game_boot', 'init', []);
 
 $templatedata = [
-    'gametitle'  => format_string($playerpuzzle->name),
     'loadingtext' => get_string('loadinggame', 'mod_playerpuzzle'),
     'gameconfig' => json_encode($jsconfig),
 ];

@@ -53,21 +53,24 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
-     * Creates a question bank category in a qbank activity instance living in this test's
-     * own course — a sibling module context, one of the contexts
-     * question_bank_sync::get_importable_categories() considers reachable. Question
-     * categories can only live in a CONTEXT_MODULE context (a "Question bank" activity)
-     * since the qbank plugin type was introduced; passing a course/system contextid to
-     * the generator silently redirects to a qbank instance on the site course instead,
-     * which would not be reachable from this test's own course.
+     * Creates a question bank category reachable from this test's own course.
+     *
+     * Passing this test's own course context lets the generator itself handle the
+     * cross-version difference: on Moodle 5.x, question categories can only live in a
+     * CONTEXT_MODULE context (a "Question bank" activity), so the generator silently
+     * creates/reuses a qbank instance in that same course and places the category in its
+     * module context — still reachable, as a sibling activity of the playerpuzzle
+     * instance. On Moodle 4.5, the qbank activity type does not exist yet (its own test
+     * generator is unavailable there — confirmed by CI), so the category is created
+     * directly at the given course context instead, also reachable. Explicitly creating a
+     * qbank module here (this test's original approach) broke the 4.5 CI leg outright.
      *
      * @return \stdClass The category record.
      */
     private function make_category(): \stdClass {
-        $qbank = $this->getDataGenerator()->create_module('qbank', ['course' => $this->course->id]);
         $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
         return $questiongenerator->create_question_category([
-            'contextid' => \context_module::instance($qbank->cmid)->id,
+            'contextid' => \context_course::instance($this->course->id)->id,
         ]);
     }
 

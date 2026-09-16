@@ -61,12 +61,13 @@ class question_list_service {
             );
 
             $answerspreview = array_map(
-                fn(stdClass $answer): string => ((int) $answer->iscorrect === 1 ? '✓ ' : '') . $answer->answertext,
+                fn(stdClass $answer): string => ((int) $answer->iscorrect === 1 ? '✓ ' : '')
+                    . content_to_text($answer->answertext, (int) $answer->answerformat),
                 $question->answers
             );
 
             $rows[] = [
-                'questiontext' => format_text($question->questiontext, FORMAT_PLAIN),
+                'questiontext' => content_to_text($question->questiontext, (int) $question->questiontextformat),
                 'qtypelabel' => get_string('qtype_' . $question->qtype, 'mod_playerpuzzle'),
                 'answerspreview' => implode(' · ', $answerspreview),
                 'sourcelabel' => get_string('source_' . $question->source, 'mod_playerpuzzle'),

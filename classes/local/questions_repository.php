@@ -48,10 +48,14 @@ class questions_repository {
      * @param string $qtype One of self::QTYPES.
      * @param string $questiontext The question prompt.
      * @param string $hint Optional hint text; empty string stored as null.
-     * @param array $answers List of ['text' => string, 'iscorrect' => bool], in display order.
-     * @param int $userid The teacher/manager creating it.
-     * @param string $source 'manual' or 'ai'.
+     * @param array $answers List of ['text' => string, 'iscorrect' => bool, 'format' => int],
+     *  in display order. 'format' defaults to FORMAT_PLAIN when omitted.
+     * @param int $userid The teacher/manager creating it, or who triggered the sync/AI run.
+     * @param string $source 'manual', 'ai' or 'bank'.
      * @param bool $approved Whether the question is immediately usable in games.
+     * @param int $questiontextformat FORMAT_* constant for questiontext.
+     * @param int|null $sourceid When source='bank': the question_bank_entries.id it was
+     *  imported from. Null otherwise.
      * @return int The new question id.
      */
     public static function add_question(
@@ -62,7 +66,9 @@ class questions_repository {
         array $answers,
         int $userid,
         string $source = 'manual',
-        bool $approved = true
+        bool $approved = true,
+        int $questiontextformat = FORMAT_PLAIN,
+        ?int $sourceid = null
     ): int {
         global $DB;
 
@@ -71,10 +77,11 @@ class questions_repository {
             'playerpuzzleid' => $playerpuzzleid,
             'qtype' => $qtype,
             'questiontext' => $questiontext,
-            'questiontextformat' => FORMAT_PLAIN,
+            'questiontextformat' => $questiontextformat,
             'generalfeedback' => null,
             'hint' => $hint !== '' ? $hint : null,
             'source' => $source,
+            'sourceid' => $sourceid,
             'approved' => $approved ? 1 : 0,
             'timecreated' => $now,
             'timemodified' => $now,
@@ -84,6 +91,59 @@ class questions_repository {
         self::save_answers($questionid, $answers);
 
         return $questionid;
+    }
+
+    /**
+     * Replaces a bank-imported question's qtype/text/answers only, leaving hint, approved,
+     * source, sourceid and addedby untouched — used only by the question bank sync to
+     * refresh an already-imported question's content on re-sync. The manual edit form must
+     * keep using {@see update_question()} instead, which also lets the teacher change the
+     * hint.
+     *
+     * @param int $questionid The question id.
+     * @param string $qtype One of self::QTYPES.
+     * @param string $questiontext The question prompt.
+     * @param int $questiontextformat FORMAT_* constant for questiontext.
+     * @param array $answers List of ['text' => string, 'iscorrect' => bool, 'format' => int],
+     *  in display order.
+     * @return void
+     */
+    public static function update_question_content(
+        int $questionid,
+        string $qtype,
+        string $questiontext,
+        int $questiontextformat,
+        array $answers
+    ): void {
+        global $DB;
+
+        $DB->update_record('playerpuzzle_questions', (object) [
+            'id' => $questionid,
+            'qtype' => $qtype,
+            'questiontext' => $questiontext,
+            'questiontextformat' => $questiontextformat,
+            'timemodified' => time(),
+        ]);
+
+        $DB->delete_records('playerpuzzle_question_answers', ['questionid' => $questionid]);
+        self::save_answers($questionid, $answers);
+    }
+
+    /**
+     * Flips a question's approved flag without touching anything else — used by the bank
+     * sync to soft-disable a question whose bank entry has since disappeared (deleted,
+     * moved to a different category, or no longer version 'ready'), and to re-enable one
+     * that reappears on a later sync. Never a hard delete: an attempt's answered-question
+     * log may still point at this id.
+     *
+     * @param int $questionid The question id.
+     * @param bool $approved The new approved state.
+     * @return void
+     */
+    public static function set_approved(int $questionid, bool $approved): void {
+        global $DB;
+
+        $DB->set_field('playerpuzzle_questions', 'approved', $approved ? 1 : 0, ['id' => $questionid]);
     }
 
     /**
@@ -207,7 +267,8 @@ class questions_repository {
      * Inserts the answer rows for a question, in the given order.
      *
      * @param int $questionid The question id.
-     * @param array $answers List of ['text' => string, 'iscorrect' => bool], in display order.
+     * @param array $answers List of ['text' => string, 'iscorrect' => bool, 'format' => int],
+     *  in display order. 'format' defaults to FORMAT_PLAIN when omitted.
      * @return void
      */
     private static function save_answers(int $questionid, array $answers): void {
@@ -218,7 +279,7 @@ class questions_repository {
             $DB->insert_record('playerpuzzle_question_answers', (object) [
                 'questionid' => $questionid,
                 'answertext' => $answer['text'],
-                'answerformat' => FORMAT_PLAIN,
+                'answerformat' => $answer['format'] ?? FORMAT_PLAIN,
                 'iscorrect' => !empty($answer['iscorrect']) ? 1 : 0,
                 'sortorder' => $sortorder++,
             ]);

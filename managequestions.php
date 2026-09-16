@@ -22,7 +22,9 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_playerpuzzle\form\import_form;
 use mod_playerpuzzle\form\question_form;
+use mod_playerpuzzle\local\question_bank_sync;
 use mod_playerpuzzle\local\question_list_service;
 use mod_playerpuzzle\local\questions_repository;
 
@@ -54,6 +56,19 @@ if ($action === 'delete' && $questionid) {
         questions_repository::delete_question($questionid);
     }
     redirect($url, get_string('questiondeleted', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
+}
+
+$importablecategories = question_bank_sync::get_importable_categories($cm);
+$importform = new import_form($url, ['categories' => $importablecategories]);
+
+if (!empty($importablecategories) && ($importdata = $importform->get_data())) {
+    $stats = question_bank_sync::sync_from_category($cm, (int) $instance->id, (int) $importdata->categoryid);
+    redirect(
+        $url,
+        get_string('importresult', 'mod_playerpuzzle', $stats),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
 }
 
 $mform = new question_form($url);
@@ -149,6 +164,13 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
 } else {
     $listcontext = question_list_service::build_list_context($instance, $cmid, $OUTPUT);
     echo $OUTPUT->render_from_template('mod_playerpuzzle/managequestions', $listcontext);
+
+    echo $OUTPUT->heading(get_string('importheader', 'mod_playerpuzzle'), 3);
+    if (empty($importablecategories)) {
+        echo $OUTPUT->notification(get_string('noimportablecategories', 'mod_playerpuzzle'), 'info');
+    } else {
+        $importform->display();
+    }
 }
 
 echo $OUTPUT->footer();

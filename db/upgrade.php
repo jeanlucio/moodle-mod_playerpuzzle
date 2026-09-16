@@ -442,5 +442,18 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091607, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091608) {
+        // Add sourceid: matches a bank-imported question back to its question_bank_entries
+        // row on re-sync, so re-importing a category updates the same rows instead of
+        // duplicating them.
+        $table = new xmldb_table('playerpuzzle_questions');
+        $field = new xmldb_field('sourceid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'source');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026091608, 'playerpuzzle');
+    }
+
     return true;
 }

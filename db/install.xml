@@ -129,8 +129,9 @@
         <FIELD NAME="questiontextformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="2" SEQUENCE="false" COMMENT="FORMAT_* constant for questiontext; 2=FORMAT_PLAIN today, ready for rich text once the manual form gains a file-capable editor"/>
         <FIELD NAME="generalfeedback" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="hint" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Optional hint text; feeds the Question Hint consumable"/>
-        <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="manual" SEQUENCE="false" COMMENT="manual | ai"/>
-        <FIELD NAME="approved" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Manual questions are approved on entry; ai-generated ones start at 0 until the teacher approves"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="manual" SEQUENCE="false" COMMENT="manual | ai | bank"/>
+        <FIELD NAME="sourceid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="When source=bank: the question_bank_entries.id it was imported from, used to match on re-sync. Null otherwise"/>
+        <FIELD NAME="approved" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Manual/bank questions are approved on entry; ai-generated ones start at 0 until the teacher approves"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="addedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to user: who entered it manually, or who triggered the AI generation"/>

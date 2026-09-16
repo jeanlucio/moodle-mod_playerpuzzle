@@ -1,0 +1,278 @@
+<?php
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * Imports approved multichoice/truefalse questions from the real Moodle question bank into
+ * PlayerPuzzle's own question bank.
+ *
+ * @package    mod_playerpuzzle
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+namespace mod_playerpuzzle\local;
+
+use context_course;
+use context_module;
+use core_question\local\bank\question_version_status;
+use moodle_exception;
+use stdClass;
+
+/**
+ * Mirrors mod_playerwords\local\words_repository::sync_glossary_words() — re-executable,
+ * idempotent, matches existing bank-sourced rows by a stable id and never touches a
+ * manually authored or AI-generated row. Unlike the glossary sync, this one keeps text
+ * rich (no content_to_text() flattening) and, unlike it, never hard-deletes an orphan —
+ * an attempt's answered-question log may still point at that id.
+ *
+ * File support (embedded images in questiontext/answertext) is not implemented yet: an
+ * imported question keeps whatever @@PLUGINFILE@@ markers the bank version had, which will
+ * not resolve to a real file until PlayerPuzzle gains its own filearea. Text-only questions
+ * import cleanly today.
+ */
+class question_bank_sync {
+    /**
+     * Returns the question bank categories the current user may import from for this course
+     * module: its course context and parents, plus every sibling activity's module context
+     * in the same course — same reusable-question-context rule
+     * mod_playervideo\local\question_service::get_reusable_question_contexts() already
+     * applies to its own "pull from bank" picker.
+     *
+     * @param stdClass $cm Course module record for the PlayerPuzzle instance.
+     * @return stdClass[] Category records (id, name, contextid), ordered by name.
+     */
+    public static function get_importable_categories(stdClass $cm): array {
+        global $DB;
+
+        $contextids = self::get_reusable_context_ids($cm);
+        if (empty($contextids)) {
+            return [];
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($contextids, SQL_PARAMS_NAMED, 'ctx');
+
+        return array_values($DB->get_records_sql(
+            "SELECT qc.id, qc.name, qc.contextid
+               FROM {question_categories} qc
+              WHERE qc.contextid $insql
+           ORDER BY qc.name ASC",
+            $params
+        ));
+    }
+
+    /**
+     * Imports every approved, single-answer multichoice/truefalse question from the given
+     * category into the instance's own question bank.
+     *
+     * Re-executable: a bank-sourced row already imported from the same question_bank_entries
+     * id is updated in place (text/qtype/answers refreshed, hint/approved/addedby left
+     * alone); a new entry is inserted approved; an entry that disappeared from the category
+     * since the last sync (deleted, moved, or no longer version 'ready') is soft-disabled
+     * (approved = 0), never deleted. A manual or AI-sourced question is never touched.
+     *
+     * @param stdClass $cm Course module record for the PlayerPuzzle instance.
+     * @param int $playerpuzzleid The instance id.
+     * @param int $categoryid The question bank category id to import from.
+     * @return stdClass Stats: {imported: int, updated: int, skipped: int, disabled: int}.
+     * @throws moodle_exception When the category is not reachable from this course module.
+     */
+    public static function sync_from_category(stdClass $cm, int $playerpuzzleid, int $categoryid): stdClass {
+        global $DB;
+
+        if (!self::category_is_importable($categoryid, $cm)) {
+            throw new moodle_exception('error_categorynotreusable', 'mod_playerpuzzle');
+        }
+
+        $rows = $DB->get_records_sql(
+            "SELECT q.id AS questionid, q.qtype, q.questiontext, q.questiontextformat, qbe.id AS entryid
+               FROM {question} q
+               JOIN {question_versions} qv ON qv.questionid = q.id
+               JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
+              WHERE q.parent = 0
+                AND qbe.questioncategoryid = :categoryid
+                AND q.qtype IN ('multichoice', 'truefalse')
+                AND qv.version = (SELECT MAX(v2.version)
+                                     FROM {question_versions} v2
+                                    WHERE v2.questionbankentryid = qbe.id AND v2.status = :ready)",
+            ['categoryid' => $categoryid, 'ready' => question_version_status::QUESTION_STATUS_READY]
+        );
+
+        $existingrows = $DB->get_records_select(
+            'playerpuzzle_questions',
+            'playerpuzzleid = :ppid AND source = :src',
+            ['ppid' => $playerpuzzleid, 'src' => 'bank'],
+            '',
+            'id, sourceid, approved'
+        );
+        $existingmap = [];
+        foreach ($existingrows as $rec) {
+            $existingmap[(int) $rec->sourceid] = $rec;
+        }
+
+        $stats = (object) ['imported' => 0, 'updated' => 0, 'skipped' => 0, 'disabled' => 0];
+        $seenentryids = [];
+
+        foreach ($rows as $row) {
+            $entryid = (int) $row->entryid;
+            $answers = self::load_answers((int) $row->questionid, $row->qtype);
+            if ($answers === null) {
+                $stats->skipped++;
+                continue;
+            }
+
+            $seenentryids[$entryid] = true;
+
+            if (isset($existingmap[$entryid])) {
+                $existing = $existingmap[$entryid];
+                questions_repository::update_question_content(
+                    (int) $existing->id,
+                    $row->qtype,
+                    $row->questiontext,
+                    (int) $row->questiontextformat,
+                    $answers
+                );
+                if ((int) $existing->approved === 0) {
+                    questions_repository::set_approved((int) $existing->id, true);
+                }
+                $stats->updated++;
+            } else {
+                questions_repository::add_question(
+                    $playerpuzzleid,
+                    $row->qtype,
+                    $row->questiontext,
+                    '',
+                    $answers,
+                    0,
+                    'bank',
+                    true,
+                    (int) $row->questiontextformat,
+                    $entryid
+                );
+                $stats->imported++;
+            }
+        }
+
+        foreach ($existingmap as $entryid => $existing) {
+            if (!isset($seenentryids[$entryid]) && (int) $existing->approved === 1) {
+                questions_repository::set_approved((int) $existing->id, false);
+                $stats->disabled++;
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Checks whether the given category sits in a context the current user may import
+     * questions from, for this course module — the same coarse gate
+     * mod_playervideo\local\question_service::question_belongs_to_reusable_category()
+     * applies to a single question id, applied here to a whole category instead.
+     *
+     * @param int $categoryid The question bank category id.
+     * @param stdClass $cm Course module record for the PlayerPuzzle instance.
+     * @return bool
+     */
+    public static function category_is_importable(int $categoryid, stdClass $cm): bool {
+        global $DB;
+
+        $contextids = self::get_reusable_context_ids($cm);
+        if (empty($contextids)) {
+            return false;
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($contextids, SQL_PARAMS_NAMED, 'ctx');
+        $params['categoryid'] = $categoryid;
+
+        return $DB->record_exists_sql(
+            "SELECT 1 FROM {question_categories} qc WHERE qc.id = :categoryid AND qc.contextid $insql",
+            $params
+        );
+    }
+
+    /**
+     * Returns every context id the current user may import a question bank category from:
+     * the course context and its parents, plus every sibling activity's module context in
+     * the same course, restricted to contexts where the user holds moodle/question:useall
+     * or moodle/question:usemine.
+     *
+     * @param stdClass $cm Course module record for the PlayerPuzzle instance.
+     * @return int[] Valid context ids, empty if the user may not import from anywhere here.
+     */
+    private static function get_reusable_context_ids(stdClass $cm): array {
+        $coursecontext = context_course::instance($cm->course);
+        $contextstocheck = [];
+        foreach ($coursecontext->get_parent_contexts(true) as $ctx) {
+            $contextstocheck[$ctx->id] = $ctx;
+        }
+
+        $modinfo = get_fast_modinfo($cm->course);
+        foreach ($modinfo->cms as $othercm) {
+            $othercontext = context_module::instance($othercm->id);
+            $contextstocheck[$othercontext->id] = $othercontext;
+        }
+
+        $contextids = [];
+        foreach ($contextstocheck as $ctx) {
+            if (has_capability('moodle/question:useall', $ctx) || has_capability('moodle/question:usemine', $ctx)) {
+                $contextids[] = $ctx->id;
+            }
+        }
+
+        return $contextids;
+    }
+
+    /**
+     * Loads the answer rows for one bank question, in a shape ready for
+     * questions_repository. Returns null when the question must be skipped: a multichoice
+     * question configured to accept more than one correct answer
+     * (qtype_multichoice_options.single = 0) — the game only knows how to grade a single
+     * correct choice — or a question with no answer rows at all.
+     *
+     * @param int $questionid The bank question id.
+     * @param string $qtype The question's qtype.
+     * @return array|null List of ['text' => string, 'format' => int, 'iscorrect' => bool].
+     */
+    private static function load_answers(int $questionid, string $qtype): ?array {
+        global $DB;
+
+        if ($qtype === 'multichoice') {
+            $options = $DB->get_record('qtype_multichoice_options', ['questionid' => $questionid], 'single');
+            if ($options && (int) $options->single === 0) {
+                return null;
+            }
+        }
+
+        $rows = $DB->get_records('question_answers', ['question' => $questionid], 'id ASC');
+        if (empty($rows)) {
+            return null;
+        }
+
+        $answers = [];
+        foreach ($rows as $row) {
+            $answers[] = [
+                'text'      => $row->answer,
+                'format'    => (int) $row->answerformat,
+                // A tolerance below the exact 1.0 comparison guards against float rounding
+                // on a fraction column that stores values like 0.3333333 for partial-credit
+                // options never fully at 1.0 — same convention question_state's own graded
+                // state resolution uses.
+                'iscorrect' => (float) $row->fraction >= 0.999999,
+            ];
+        }
+
+        return $answers;
+    }
+}

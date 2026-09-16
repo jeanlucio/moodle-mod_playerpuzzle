@@ -144,8 +144,9 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
      * Tests that every real column of playerpuzzle_questions (minus id) is either
      * declared in get_metadata() or listed here as a documented, justified exclusion.
      * Only addedby identifies a person; questiontext/questiontextformat/generalfeedback/
-     * hint/qtype/source/approved/timecreated/timemodified are professor-authored course
-     * content, not personal data, and playerpuzzleid is a structural foreign key. Asserted against
+     * hint/qtype/source/sourceid/approved/timecreated/timemodified are professor-authored
+     * course content or structural bookkeeping, not personal data, and playerpuzzleid is a
+     * structural foreign key. Asserted against
      * the real schema via $DB->get_columns() rather than a fixed key list, so a future
      * column silently added to install.xml without a privacy decision fails this test
      * instead of just going undeclared by omission.
@@ -163,6 +164,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
             'generalfeedback',
             'hint',
             'source',
+            'sourceid',
             'approved',
             'timecreated',
             'timemodified',

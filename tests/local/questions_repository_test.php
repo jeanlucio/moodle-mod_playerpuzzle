@@ -176,6 +176,86 @@ final class questions_repository_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that update_question_content() replaces qtype/text/format/answers while leaving
+     * hint/source/sourceid/approved/addedby untouched — the bank sync's own update path,
+     * distinct from update_question() which the manual edit form uses instead.
+     *
+     * @return void
+     */
+    public function test_update_question_content_replaces_content_without_touching_provenance(): void {
+        $this->resetAfterTest();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Original from bank',
+            'A hint the teacher added after import',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            0,
+            'bank',
+            true,
+            FORMAT_PLAIN,
+            123
+        );
+
+        questions_repository::update_question_content(
+            $questionid,
+            'multichoice',
+            '<p>Refreshed from bank</p>',
+            FORMAT_HTML,
+            [
+                ['text' => 'X', 'iscorrect' => false, 'format' => FORMAT_HTML],
+                ['text' => 'Y', 'iscorrect' => true, 'format' => FORMAT_HTML],
+            ]
+        );
+
+        $question = questions_repository::get_question($questionid, 7);
+
+        $this->assertSame('<p>Refreshed from bank</p>', $question->questiontext);
+        $this->assertSame((int) FORMAT_HTML, (int) $question->questiontextformat);
+        $this->assertCount(2, $question->answers);
+        $this->assertSame('X', $question->answers[0]->answertext);
+        $this->assertSame((int) FORMAT_HTML, (int) $question->answers[0]->answerformat);
+        $this->assertSame(1, (int) $question->answers[1]->iscorrect);
+
+        // Provenance and the teacher's own hint survive a content refresh.
+        $this->assertSame('A hint the teacher added after import', $question->hint);
+        $this->assertSame('bank', $question->source);
+        $this->assertSame(123, (int) $question->sourceid);
+        $this->assertSame(1, (int) $question->approved);
+    }
+
+    /**
+     * Tests that set_approved() flips only the approved flag.
+     *
+     * @return void
+     */
+    public function test_set_approved_flips_only_that_flag(): void {
+        $this->resetAfterTest();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Q',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
+
+        questions_repository::set_approved($questionid, false);
+        $this->assertSame(0, (int) questions_repository::get_question($questionid, 7)->approved);
+
+        questions_repository::set_approved($questionid, true);
+        $this->assertSame(1, (int) questions_repository::get_question($questionid, 7)->approved);
+    }
+
+    /**
      * Tests that delete_question() removes both the question and its answer rows.
      *
      * @return void

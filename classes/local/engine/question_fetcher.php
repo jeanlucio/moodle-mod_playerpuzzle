@@ -91,7 +91,7 @@ class question_fetcher {
         if (!$q) {
             return '';
         }
-        return format_text($q->questiontext, $q->questiontextformat, ['context' => $context]);
+        return self::format_with_files($q->questiontext, $q->questiontextformat, $context, 'questiontext', $questionid);
     }
 
     /**
@@ -108,7 +108,7 @@ class question_fetcher {
         if (!$answer) {
             return '';
         }
-        return format_text($answer->answertext, $answer->answerformat, ['context' => $context]);
+        return self::format_with_files($answer->answertext, $answer->answerformat, $context, 'answertext', $answerid);
     }
 
     /**
@@ -196,18 +196,54 @@ class question_fetcher {
             foreach ($qanswers as $ans) {
                 $options[] = [
                     'id' => (int) $ans->id,
-                    'text' => format_text($ans->answertext, $ans->answerformat, ['context' => $context]),
+                    'text' => self::format_with_files(
+                        $ans->answertext,
+                        $ans->answerformat,
+                        $context,
+                        'answertext',
+                        (int) $ans->id
+                    ),
                 ];
             }
 
             $formatted[(int) $q->id] = [
                 'id' => (int) $q->id,
                 'type' => $q->qtype,
-                'text' => format_text($q->questiontext, $q->questiontextformat, ['context' => $context]),
+                'text' => self::format_with_files(
+                    $q->questiontext,
+                    $q->questiontextformat,
+                    $context,
+                    'questiontext',
+                    (int) $q->id
+                ),
                 'options' => $options,
             ];
         }
 
         return $formatted;
+    }
+
+    /**
+     * Resolves @@PLUGINFILE@@ markers to real URLs before formatting — format_text() itself
+     * has no notion of a component/filearea/itemid; that resolution is
+     * file_rewrite_pluginfile_urls()'s own job, always a separate call before formatting.
+     *
+     * @param string $text Stored text, with @@PLUGINFILE@@ markers if it embeds any files.
+     * @param int $format FORMAT_* constant for $text.
+     * @param \context $context Context for filtering.
+     * @param string $filearea 'questiontext' or 'answertext'.
+     * @param int $itemid The question or answer id the files are attached to.
+     * @return string
+     */
+    private static function format_with_files(
+        string $text,
+        int $format,
+        \context $context,
+        string $filearea,
+        int $itemid
+    ): string {
+        $text = file_rewrite_pluginfile_urls($text, 'pluginfile.php', $context->id, 'mod_playerpuzzle', $filearea, $itemid);
+
+        return format_text($text, $format, ['context' => $context]);
     }
 }

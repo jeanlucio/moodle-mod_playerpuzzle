@@ -25,6 +25,7 @@
 use mod_playerpuzzle\form\import_form;
 use mod_playerpuzzle\form\question_form;
 use mod_playerpuzzle\local\question_bank_sync;
+use mod_playerpuzzle\local\question_editor_files;
 use mod_playerpuzzle\local\question_list_service;
 use mod_playerpuzzle\local\questions_repository;
 
@@ -53,7 +54,7 @@ $PAGE->set_pagelayout('incourse');
 if ($action === 'delete' && $questionid) {
     require_sesskey();
     if (questions_repository::get_question($questionid, (int) $instance->id)) {
-        questions_repository::delete_question($questionid);
+        questions_repository::delete_question($questionid, $context);
     }
     redirect($url, get_string('questiondeleted', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
@@ -71,7 +72,7 @@ if (!empty($importablecategories) && ($importdata = $importform->get_data())) {
     );
 }
 
-$mform = new question_form($url);
+$mform = new question_form($url, ['context' => $context]);
 
 if ($mform->is_cancelled()) {
     redirect($url);
@@ -81,36 +82,64 @@ if ($mform->is_cancelled()) {
             ['text' => get_string('true', 'qtype_truefalse'), 'iscorrect' => $data->tfcorrect === 'true'],
             ['text' => get_string('false', 'qtype_truefalse'), 'iscorrect' => $data->tfcorrect === 'false'],
         ];
+        $optionslots = null;
     } else {
         $answers = [];
-        foreach ($data->optiontext as $index => $text) {
-            $text = trim((string) $text);
-            if ($text === '') {
+        $optionslots = [];
+        foreach ($data->optiontext_editor as $slot => $editorvalue) {
+            if (trim(strip_tags((string) $editorvalue['text'])) === '' && !str_contains($editorvalue['text'], '<img')) {
                 continue;
             }
-            $answers[] = ['text' => $text, 'iscorrect' => (int) $data->mccorrect === (int) $index];
+            $answers[] = [
+                'text' => $editorvalue['text'],
+                'format' => (int) $editorvalue['format'],
+                'iscorrect' => (int) $data->mccorrect === (int) $slot,
+            ];
+            $optionslots[] = $slot;
         }
     }
 
-    if (!empty($data->qid)) {
-        if (questions_repository::get_question((int) $data->qid, (int) $instance->id)) {
-            questions_repository::update_question(
-                (int) $data->qid,
-                $data->qtype,
-                $data->questiontext,
-                $data->hint,
-                $answers
-            );
-        }
+    $isedit = !empty($data->qid) && questions_repository::get_question((int) $data->qid, (int) $instance->id);
+    if ($isedit) {
+        // The real questiontext is written a second time below, once the editor's draft
+        // files have somewhere real to attach to — this first write only carries the
+        // qtype/hint/answer-shape change through, keeping update_question() as the single
+        // place that knows how to safely replace the answer rows (and purge their stale
+        // file areas).
+        questions_repository::update_question(
+            (int) $data->qid,
+            $data->qtype,
+            $data->questiontext_editor['text'],
+            $data->hint,
+            $answers,
+            $context
+        );
+        $questionid = (int) $data->qid;
     } else {
-        questions_repository::add_question(
+        $questionid = questions_repository::add_question(
             (int) $instance->id,
             $data->qtype,
-            $data->questiontext,
+            $data->questiontext_editor['text'],
             $data->hint,
             $answers,
             (int) $USER->id
         );
+    }
+
+    $qcontent = question_editor_files::finalize($data->questiontext_editor, $context, 'questiontext', $questionid);
+    questions_repository::set_question_text($questionid, $qcontent['text'], $qcontent['format']);
+
+    if ($optionslots !== null) {
+        $question = questions_repository::get_question($questionid, (int) $instance->id);
+        foreach ($question->answers as $k => $answer) {
+            $acontent = question_editor_files::finalize(
+                $data->optiontext_editor[$optionslots[$k]],
+                $context,
+                'answertext',
+                (int) $answer->id
+            );
+            questions_repository::set_answer_text((int) $answer->id, $acontent['text'], $acontent['format']);
+        }
     }
 
     redirect($url, get_string('questionsaved', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
@@ -133,8 +162,14 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
         $formdata->qid = $question->id;
         $formdata->cmid = $cm->id;
         $formdata->qtype = $question->qtype;
-        $formdata->questiontext = $question->questiontext;
         $formdata->hint = $question->hint ?? '';
+        $formdata->questiontext_editor = question_editor_files::prepare(
+            $question->questiontext,
+            (int) $question->questiontextformat,
+            $question->id,
+            $context,
+            'questiontext'
+        );
 
         if ($question->qtype === 'truefalse') {
             foreach ($question->answers as $answer) {
@@ -143,21 +178,32 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
                 }
             }
         } else {
-            $optiontext = [];
+            $optiontexteditors = [];
             $i = 1;
             foreach ($question->answers as $answer) {
-                $optiontext[$i] = $answer->answertext;
+                $optiontexteditors[$i] = question_editor_files::prepare(
+                    $answer->answertext,
+                    (int) $answer->answerformat,
+                    (int) $answer->id,
+                    $context,
+                    'answertext'
+                );
                 if ((int) $answer->iscorrect === 1) {
                     $formdata->mccorrect = $i;
                 }
                 $i++;
             }
-            $formdata->optiontext = $optiontext;
+            $formdata->optiontext_editor = $optiontexteditors;
         }
 
         $mform->set_data($formdata);
     } else if (!$mform->is_submitted()) {
-        $mform->set_data(['cmid' => $cm->id]);
+        $formdata = ['cmid' => $cm->id];
+        $formdata['questiontext_editor'] = question_editor_files::prepare('', FORMAT_HTML, null, $context, 'questiontext');
+        for ($i = 1; $i <= 5; $i++) {
+            $formdata['optiontext_editor'][$i] = question_editor_files::prepare('', FORMAT_HTML, null, $context, 'answertext');
+        }
+        $mform->set_data($formdata);
     }
 
     $mform->display();

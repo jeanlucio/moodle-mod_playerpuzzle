@@ -123,6 +123,81 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that an image embedded in the source question's questiontext, and one embedded
+     * in one of its answers, are both copied into PlayerPuzzle's own filearea for the
+     * imported question/answer — and that a re-sync does not duplicate them.
+     *
+     * @return void
+     */
+    public function test_sync_copies_embedded_files(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $mc = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+
+        $fs = get_file_storage();
+        $fs->create_file_from_string([
+            'contextid' => (int) $category->contextid,
+            'component' => 'question',
+            'filearea'  => 'questiontext',
+            'itemid'    => $mc->id,
+            'filepath'  => '/',
+            'filename'  => 'question.png',
+        ], 'question image bytes');
+
+        $answerid = (int) $DB->get_field('question_answers', 'id', ['question' => $mc->id], IGNORE_MULTIPLE);
+        $fs->create_file_from_string([
+            'contextid' => (int) $category->contextid,
+            'component' => 'question',
+            'filearea'  => 'answer',
+            'itemid'    => $answerid,
+            'filepath'  => '/',
+            'filename'  => 'answer.png',
+        ], 'answer image bytes');
+
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $imported = questions_repository::get_questions_for_instance((int) $this->instance->id)[0];
+        $destcontext = \context_module::instance($this->cm->id);
+
+        $qfiles = $fs->get_area_files(
+            $destcontext->id,
+            'mod_playerpuzzle',
+            'questiontext',
+            $imported->id,
+            'sortorder',
+            false
+        );
+        $this->assertCount(1, $qfiles);
+        $this->assertSame('question image bytes', reset($qfiles)->get_content());
+
+        $importedanswerid = (int) $imported->answers[0]->id;
+        $afiles = $fs->get_area_files(
+            $destcontext->id,
+            'mod_playerpuzzle',
+            'answertext',
+            $importedanswerid,
+            'sortorder',
+            false
+        );
+        $this->assertCount(1, $afiles);
+        $this->assertSame('answer image bytes', reset($afiles)->get_content());
+
+        // Re-sync must not duplicate the copied file.
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+        $qfilesafter = $fs->get_area_files(
+            $destcontext->id,
+            'mod_playerpuzzle',
+            'questiontext',
+            $imported->id,
+            'sortorder',
+            false
+        );
+        $this->assertCount(1, $qfilesafter);
+    }
+
+    /**
      * Tests that a multichoice question configured to accept more than one correct answer
      * is skipped and counted, never imported half-broken.
      *

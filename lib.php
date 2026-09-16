@@ -528,3 +528,74 @@ function playerpuzzle_extend_settings_navigation(settings_navigation $settings, 
         );
     }
 }
+
+/**
+ * Serves a file embedded in a question's text or an answer's text — the two fileareas
+ * question_form.php's editors write into (manual entries) and question_bank_sync.php
+ * copies into (bank imports).
+ *
+ * @param stdClass $course Course object.
+ * @param stdClass $cm Course module object.
+ * @param context $context Module context.
+ * @param string $filearea File area.
+ * @param array $args Extra arguments; $args[0] is the item id (question id or answer id).
+ * @param bool $forcedownload Whether to force download.
+ * @param array $options Additional options.
+ * @return bool False if the file was not found or is not servable.
+ */
+function playerpuzzle_pluginfile(
+    stdClass $course,
+    stdClass $cm,
+    context $context,
+    string $filearea,
+    array $args,
+    bool $forcedownload,
+    array $options = []
+): bool {
+    global $DB;
+
+    if ($context->contextlevel !== CONTEXT_MODULE) {
+        return false;
+    }
+
+    require_login($course, true, $cm);
+
+    if (!has_capability('mod/playerpuzzle:view', $context)) {
+        return false;
+    }
+
+    if ($filearea !== 'questiontext' && $filearea !== 'answertext') {
+        return false;
+    }
+
+    $itemid = (int) array_shift($args);
+
+    // The item id must belong to this instance — never trust a raw itemid on its own, the
+    // same instance-isolation rule applied everywhere else a client-supplied id is used.
+    if ($filearea === 'questiontext') {
+        $owns = $DB->record_exists('playerpuzzle_questions', ['id' => $itemid, 'playerpuzzleid' => $cm->instance]);
+    } else {
+        $owns = $DB->record_exists_sql(
+            "SELECT 1
+               FROM {playerpuzzle_question_answers} a
+               JOIN {playerpuzzle_questions} q ON q.id = a.questionid
+              WHERE a.id = :itemid AND q.playerpuzzleid = :ppid",
+            ['itemid' => $itemid, 'ppid' => $cm->instance]
+        );
+    }
+    if (!$owns) {
+        return false;
+    }
+
+    $filename = array_pop($args);
+    $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
+
+    $fs = get_file_storage();
+    $file = $fs->get_file($context->id, 'mod_playerpuzzle', $filearea, $itemid, $filepath, $filename);
+    if (!$file || $file->is_directory()) {
+        return false;
+    }
+
+    send_stored_file($file, null, 0, $forcedownload, $options);
+    return true;
+}

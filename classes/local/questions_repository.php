@@ -24,6 +24,7 @@
 
 namespace mod_playerpuzzle\local;
 
+use context;
 use stdClass;
 
 /**
@@ -100,12 +101,17 @@ class questions_repository {
      * keep using {@see update_question()} instead, which also lets the teacher change the
      * hint.
      *
+     * Same file-area purge rationale as {@see update_question()}: the answer rows are
+     * replaced, so their old file areas (if the sync ever copied files into them) are
+     * purged first when $context is given.
+     *
      * @param int $questionid The question id.
      * @param string $qtype One of self::QTYPES.
      * @param string $questiontext The question prompt.
      * @param int $questiontextformat FORMAT_* constant for questiontext.
      * @param array $answers List of ['text' => string, 'iscorrect' => bool, 'format' => int],
      *  in display order.
+     * @param context|null $context Module context, to purge stale answer file areas.
      * @return void
      */
     public static function update_question_content(
@@ -113,7 +119,8 @@ class questions_repository {
         string $qtype,
         string $questiontext,
         int $questiontextformat,
-        array $answers
+        array $answers,
+        ?context $context = null
     ): void {
         global $DB;
 
@@ -125,7 +132,7 @@ class questions_repository {
             'timemodified' => time(),
         ]);
 
-        $DB->delete_records('playerpuzzle_question_answers', ['questionid' => $questionid]);
+        self::delete_answers($questionid, $context);
         self::save_answers($questionid, $answers);
     }
 
@@ -150,11 +157,18 @@ class questions_repository {
      * Updates a question's own fields and replaces its answer rows. Never touches
      * source/approved/addedby — editing content is not the same action as re-authoring it.
      *
+     * Replacing the answer rows means the old ones' ids (and therefore any file area keyed
+     * by them) are gone — passing $context purges each old answer's 'answertext' file area
+     * before it is deleted, so a re-uploaded image on a later edit never orphans the
+     * previous one. Callers with no file area to worry about (tests, the bank sync's own
+     * update_question_content()) may omit it.
+     *
      * @param int $questionid The question id.
      * @param string $qtype One of self::QTYPES.
      * @param string $questiontext The question prompt.
      * @param string $hint Optional hint text; empty string stored as null.
      * @param array $answers List of ['text' => string, 'iscorrect' => bool], in display order.
+     * @param context|null $context Module context, to purge stale answer file areas.
      * @return void
      */
     public static function update_question(
@@ -162,7 +176,8 @@ class questions_repository {
         string $qtype,
         string $questiontext,
         string $hint,
-        array $answers
+        array $answers,
+        ?context $context = null
     ): void {
         global $DB;
 
@@ -174,21 +189,96 @@ class questions_repository {
             'timemodified' => time(),
         ]);
 
-        $DB->delete_records('playerpuzzle_question_answers', ['questionid' => $questionid]);
+        self::delete_answers($questionid, $context);
         self::save_answers($questionid, $answers);
     }
 
     /**
-     * Deletes a question and its answers.
+     * Overwrites a question's text/format directly, without touching qtype/hint/answers or
+     * any provenance field — the second half of the manual form's two-phase file save:
+     * add_question()/update_question() write a placeholder questiontext first (to get a
+     * real id for the draft file area to attach to), then this call replaces it with the
+     * post-file-processing final text file_postupdate_standard_editor() returns.
      *
      * @param int $questionid The question id.
+     * @param string $questiontext The final, file-processed question prompt.
+     * @param int $questiontextformat FORMAT_* constant for questiontext.
      * @return void
      */
-    public static function delete_question(int $questionid): void {
+    public static function set_question_text(int $questionid, string $questiontext, int $questiontextformat): void {
         global $DB;
 
-        $DB->delete_records('playerpuzzle_question_answers', ['questionid' => $questionid]);
+        $DB->update_record('playerpuzzle_questions', (object) [
+            'id' => $questionid,
+            'questiontext' => $questiontext,
+            'questiontextformat' => $questiontextformat,
+        ]);
+    }
+
+    /**
+     * Overwrites one answer's text/format directly — the per-answer equivalent of
+     * {@see set_question_text()}, for the same two-phase file save.
+     *
+     * @param int $answerid The answer id.
+     * @param string $answertext The final, file-processed answer text.
+     * @param int $answerformat FORMAT_* constant for answertext.
+     * @return void
+     */
+    public static function set_answer_text(int $answerid, string $answertext, int $answerformat): void {
+        global $DB;
+
+        $DB->update_record('playerpuzzle_question_answers', (object) [
+            'id' => $answerid,
+            'answertext' => $answertext,
+            'answerformat' => $answerformat,
+        ]);
+    }
+
+    /**
+     * Deletes a question and its answers, and — when $context is given — the two fileareas
+     * a manual entry's editors or a bank import may have written into. Callers with no file
+     * area to worry about (tests) may omit it.
+     *
+     * @param int $questionid The question id.
+     * @param context|null $context Module context, to purge the question's file areas.
+     * @return void
+     */
+    public static function delete_question(int $questionid, ?context $context = null): void {
+        global $DB;
+
+        self::delete_answers($questionid, $context);
+        if ($context !== null) {
+            get_file_storage()->delete_area_files($context->id, 'mod_playerpuzzle', 'questiontext', $questionid);
+        }
         $DB->delete_records('playerpuzzle_questions', ['id' => $questionid]);
+    }
+
+    /**
+     * Deletes every answer row for a question, purging each one's 'answertext' file area
+     * first when $context is given. Shared by update_question() (replace) and
+     * delete_question() (final removal).
+     *
+     * @param int $questionid The question id.
+     * @param context|null $context Module context, to purge each answer's file area.
+     * @return void
+     */
+    private static function delete_answers(int $questionid, ?context $context = null): void {
+        global $DB;
+
+        if ($context !== null) {
+            $fs = get_file_storage();
+            $answerids = $DB->get_fieldset_select(
+                'playerpuzzle_question_answers',
+                'id',
+                'questionid = :qid',
+                ['qid' => $questionid]
+            );
+            foreach ($answerids as $answerid) {
+                $fs->delete_area_files($context->id, 'mod_playerpuzzle', 'answertext', $answerid);
+            }
+        }
+
+        $DB->delete_records('playerpuzzle_question_answers', ['questionid' => $questionid]);
     }
 
     /**

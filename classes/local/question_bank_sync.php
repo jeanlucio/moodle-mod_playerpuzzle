@@ -28,6 +28,7 @@ namespace mod_playerpuzzle\local;
 use context_course;
 use context_module;
 use core_question\local\bank\question_version_status;
+use file_storage;
 use moodle_exception;
 use stdClass;
 
@@ -38,10 +39,11 @@ use stdClass;
  * rich (no content_to_text() flattening) and, unlike it, never hard-deletes an orphan —
  * an attempt's answered-question log may still point at that id.
  *
- * File support (embedded images in questiontext/answertext) is not implemented yet: an
- * imported question keeps whatever @@PLUGINFILE@@ markers the bank version had, which will
- * not resolve to a real file until PlayerPuzzle gains its own filearea. Text-only questions
- * import cleanly today.
+ * Embedded files (images in questiontext/answertext) are copied verbatim from the source
+ * category's context into PlayerPuzzle's own filearea, keyed by the destination question
+ * or answer id. The @@PLUGINFILE@@ markers already in the copied text need no rewriting —
+ * they resolve against the same filename, now served by playerpuzzle_pluginfile() instead
+ * of core's own question file handler.
  */
 class question_bank_sync {
     /**
@@ -96,6 +98,10 @@ class question_bank_sync {
             throw new moodle_exception('error_categorynotreusable', 'mod_playerpuzzle');
         }
 
+        $sourcecontextid = (int) $DB->get_field('question_categories', 'contextid', ['id' => $categoryid], MUST_EXIST);
+        $destcontext = context_module::instance($cm->id);
+        $fs = get_file_storage();
+
         $rows = $DB->get_records_sql(
             "SELECT q.id AS questionid, q.qtype, q.questiontext, q.questiontextformat, qbe.id AS entryid
                FROM {question} q
@@ -137,19 +143,21 @@ class question_bank_sync {
 
             if (isset($existingmap[$entryid])) {
                 $existing = $existingmap[$entryid];
+                $questionid = (int) $existing->id;
                 questions_repository::update_question_content(
-                    (int) $existing->id,
+                    $questionid,
                     $row->qtype,
                     $row->questiontext,
                     (int) $row->questiontextformat,
-                    $answers
+                    $answers,
+                    $destcontext
                 );
                 if ((int) $existing->approved === 0) {
-                    questions_repository::set_approved((int) $existing->id, true);
+                    questions_repository::set_approved($questionid, true);
                 }
                 $stats->updated++;
             } else {
-                questions_repository::add_question(
+                $questionid = questions_repository::add_question(
                     $playerpuzzleid,
                     $row->qtype,
                     $row->questiontext,
@@ -162,6 +170,33 @@ class question_bank_sync {
                     $entryid
                 );
                 $stats->imported++;
+            }
+
+            self::copy_area_files(
+                $fs,
+                $sourcecontextid,
+                'questiontext',
+                (int) $row->questionid,
+                $destcontext->id,
+                'questiontext',
+                $questionid
+            );
+
+            $destanswers = questions_repository::get_question($questionid, $playerpuzzleid)->answers;
+            foreach ($destanswers as $index => $destanswer) {
+                $sourceanswerid = $answers[$index]['sourceanswerid'] ?? null;
+                if ($sourceanswerid === null) {
+                    continue;
+                }
+                self::copy_area_files(
+                    $fs,
+                    $sourcecontextid,
+                    'answer',
+                    $sourceanswerid,
+                    $destcontext->id,
+                    'answertext',
+                    (int) $destanswer->id
+                );
             }
         }
 
@@ -241,9 +276,16 @@ class question_bank_sync {
      * (qtype_multichoice_options.single = 0) — the game only knows how to grade a single
      * correct choice — or a question with no answer rows at all.
      *
+     * Each entry also carries 'sourceanswerid' (the bank's own question_answers.id) —
+     * questions_repository ignores the unknown key when writing the row, and
+     * sync_from_category() reads it back afterwards to know which bank answer id to copy
+     * embedded files from, matched positionally against the freshly written destination
+     * answers (both sides are produced in the same, stable id order).
+     *
      * @param int $questionid The bank question id.
      * @param string $qtype The question's qtype.
-     * @return array|null List of ['text' => string, 'format' => int, 'iscorrect' => bool].
+     * @return array|null List of ['text' => string, 'format' => int, 'iscorrect' => bool,
+     *  'sourceanswerid' => int].
      */
     private static function load_answers(int $questionid, string $qtype): ?array {
         global $DB;
@@ -270,9 +312,48 @@ class question_bank_sync {
                 // options never fully at 1.0 — same convention question_state's own graded
                 // state resolution uses.
                 'iscorrect' => (float) $row->fraction >= 0.999999,
+                'sourceanswerid' => (int) $row->id,
             ];
         }
 
         return $answers;
+    }
+
+    /**
+     * Copies every file in one question/answer's source file area into PlayerPuzzle's own
+     * filearea for the destination question/answer, purging whatever was there first — a
+     * plain create would fatal on re-sync, since the destination item id is stable across
+     * runs (a freshly recreated answer row aside) and would otherwise collide with the
+     * files copied by an earlier sync of the same entry.
+     *
+     * @param file_storage $fs File storage instance.
+     * @param int $sourcecontextid Context id the source question/category lives in.
+     * @param string $sourcefilearea 'questiontext' or 'answer' (core's own question fileareas).
+     * @param int $sourceitemid The bank question or answer id.
+     * @param int $destcontextid This instance's module context id.
+     * @param string $destfilearea 'questiontext' or 'answertext' (this plugin's own fileareas).
+     * @param int $destitemid The destination playerpuzzle question or answer id.
+     * @return void
+     */
+    private static function copy_area_files(
+        file_storage $fs,
+        int $sourcecontextid,
+        string $sourcefilearea,
+        int $sourceitemid,
+        int $destcontextid,
+        string $destfilearea,
+        int $destitemid
+    ): void {
+        $fs->delete_area_files($destcontextid, 'mod_playerpuzzle', $destfilearea, $destitemid);
+
+        $sourcefiles = $fs->get_area_files($sourcecontextid, 'question', $sourcefilearea, $sourceitemid, 'sortorder', false);
+        foreach ($sourcefiles as $file) {
+            $fs->create_file_from_storedfile([
+                'contextid' => $destcontextid,
+                'component' => 'mod_playerpuzzle',
+                'filearea'  => $destfilearea,
+                'itemid'    => $destitemid,
+            ], $file);
+        }
     }
 }

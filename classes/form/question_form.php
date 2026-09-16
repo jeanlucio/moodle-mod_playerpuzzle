@@ -24,6 +24,8 @@
 
 namespace mod_playerpuzzle\form;
 
+use mod_playerpuzzle\local\question_editor_files;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/formslib.php');
@@ -35,11 +37,18 @@ require_once($CFG->libdir . '/formslib.php');
  * repeat_elements() "add more" control — mirrors mod_playerland\form\question_form's
  * fixed-4-slot pattern already shipped in this ecosystem, and 5 is the same ceiling
  * question_fetcher.php already presents for a core_question multichoice.
+ *
+ * questiontext and each multichoice option are `editor` elements (rich text + embedded
+ * files), matching qtype_multichoice's own edit form. Loading/saving their draft file
+ * areas is orchestrated by managequestions.php, not here — a plain moodleform has no
+ * $this->context of its own, and the two-phase "insert placeholder row, then finalize once
+ * the real id exists" dance belongs with the caller that owns the DB write.
  */
 class question_form extends \moodleform {
     #[\Override]
     protected function definition(): void {
         $mform = $this->_form;
+        $editoroptions = question_editor_files::editor_options($this->_customdata['context']);
 
         $mform->addElement('hidden', 'qid', 0);
         $mform->setType('qid', PARAM_INT);
@@ -53,18 +62,22 @@ class question_form extends \moodleform {
         ]);
         $mform->setType('qtype', PARAM_ALPHA);
 
-        $mform->addElement('textarea', 'questiontext', get_string('questiontext', 'mod_playerpuzzle'), ['rows' => 3]);
-        $mform->setType('questiontext', PARAM_TEXT);
-        $mform->addRule('questiontext', null, 'required', null, 'client');
+        $mform->addElement(
+            'editor',
+            'questiontext_editor',
+            get_string('questiontext', 'mod_playerpuzzle'),
+            ['rows' => 5],
+            $editoroptions
+        );
+        $mform->setType('questiontext_editor', PARAM_RAW);
 
         $mform->addElement('textarea', 'hint', get_string('hint', 'mod_playerpuzzle'), ['rows' => 2]);
         $mform->setType('hint', PARAM_TEXT);
         $mform->addHelpButton('hint', 'hint', 'mod_playerpuzzle');
 
         // True/False: only which side is correct is asked — the answer text itself is
-        // always the two fixed core strings (qtype_truefalse's own "True"/"False"), so a
-        // truefalse question from this bank reads identically to one from the Moodle
-        // question bank once question_fetcher.php reads from both sources.
+        // always the two fixed core strings (qtype_truefalse's own "True"/"False"), never
+        // rich text, so no editor/file area applies to either side.
         $mform->addElement('radio', 'tfcorrect', '', get_string('true', 'qtype_truefalse'), 'true');
         $mform->addElement('radio', 'tfcorrect', '', get_string('false', 'qtype_truefalse'), 'false');
         $mform->setDefault('tfcorrect', 'true');
@@ -74,7 +87,7 @@ class question_form extends \moodleform {
         // qtype_multichoice's own single-answer model (fraction >= 1.0 check).
         for ($i = 1; $i <= 5; $i++) {
             $group = [
-                $mform->createElement('text', "optiontext[$i]", '', ['size' => '50']),
+                $mform->createElement('editor', "optiontext_editor[$i]", '', ['rows' => 2], $editoroptions),
                 $mform->createElement('radio', 'mccorrect', '', '', $i),
             ];
             $mform->addGroup(
@@ -84,7 +97,7 @@ class question_form extends \moodleform {
                 [' '],
                 false
             );
-            $mform->setType("optiontext[$i]", PARAM_TEXT);
+            $mform->setType("optiontext_editor[$i]", PARAM_RAW);
             $mform->hideIf("optiongroup_$i", 'qtype', 'eq', 'truefalse');
         }
         $mform->setDefault('mccorrect', 1);
@@ -103,22 +116,40 @@ class question_form extends \moodleform {
     public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
 
+        if (self::editor_text_is_empty($data['questiontext_editor'] ?? null)) {
+            $errors['questiontext_editor'] = get_string('required');
+        }
+
         if ($data['qtype'] === 'multichoice') {
             $filled = 0;
-            foreach ($data['optiontext'] as $index => $text) {
-                if (trim((string) $text) !== '') {
+            foreach ($data['optiontext_editor'] as $editorvalue) {
+                if (!self::editor_text_is_empty($editorvalue)) {
                     $filled++;
                 }
             }
             if ($filled < 2) {
                 $errors['optiongroup_1'] = get_string('error_atleasttwooptions', 'mod_playerpuzzle');
             }
-            $correcttext = trim((string) ($data['optiontext'][$data['mccorrect']] ?? ''));
-            if ($correcttext === '') {
+            if (self::editor_text_is_empty($data['optiontext_editor'][$data['mccorrect']] ?? null)) {
                 $errors['optiongroup_' . $data['mccorrect']] = get_string('error_correctoptionempty', 'mod_playerpuzzle');
             }
         }
 
         return $errors;
+    }
+
+    /**
+     * Checks whether an editor element's submitted value has no real text — an embedded
+     * image with no caption still counts as content, so this strips tags rather than just
+     * checking for an empty string.
+     *
+     * @param array|null $editorvalue The editor element's submitted ['text' => ..., ...]
+     *  value, or null if the field was not present at all.
+     * @return bool
+     */
+    private static function editor_text_is_empty(?array $editorvalue): bool {
+        $text = (string) ($editorvalue['text'] ?? '');
+
+        return trim(strip_tags($text)) === '' && !str_contains($text, '<img');
     }
 }

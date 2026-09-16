@@ -284,6 +284,108 @@ final class questions_repository_test extends \advanced_testcase {
     }
 
     /**
+     * Creates a real course module context for the file-purge tests below, which need one
+     * to call the file storage API with — the rest of this file's tests use a fabricated
+     * playerpuzzleid and never touch files.
+     *
+     * @return \context_module
+     */
+    private function make_real_context(): \context_module {
+        $course = $this->getDataGenerator()->create_course();
+        $instance = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')
+            ->create_instance(['course' => $course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        return \context_module::instance($cm->id);
+    }
+
+    /**
+     * Tests that delete_question(), given a context, purges both the question's own
+     * questiontext file area and each answer's answertext file area.
+     *
+     * @return void
+     */
+    public function test_delete_question_purges_file_areas_when_context_given(): void {
+        $this->resetAfterTest();
+        $context = $this->make_real_context();
+        $fs = get_file_storage();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Q',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42
+        );
+        $answerid = (int) questions_repository::get_question($questionid, 7)->answers[0]->id;
+
+        $fs->create_file_from_string([
+            'contextid' => $context->id, 'component' => 'mod_playerpuzzle', 'filearea' => 'questiontext',
+            'itemid' => $questionid, 'filepath' => '/', 'filename' => 'q.png',
+        ], 'q bytes');
+        $fs->create_file_from_string([
+            'contextid' => $context->id, 'component' => 'mod_playerpuzzle', 'filearea' => 'answertext',
+            'itemid' => $answerid, 'filepath' => '/', 'filename' => 'a.png',
+        ], 'a bytes');
+
+        questions_repository::delete_question($questionid, $context);
+
+        $qfiles = $fs->get_area_files($context->id, 'mod_playerpuzzle', 'questiontext', $questionid, 'sortorder', false);
+        $afiles = $fs->get_area_files($context->id, 'mod_playerpuzzle', 'answertext', $answerid, 'sortorder', false);
+        $this->assertCount(0, $qfiles);
+        $this->assertCount(0, $afiles);
+    }
+
+    /**
+     * Tests that update_question(), given a context, purges the old answer rows' file
+     * areas before they are deleted and replaced — otherwise a re-uploaded image on a
+     * later edit would leave the previous one behind as an orphaned file forever.
+     *
+     * @return void
+     */
+    public function test_update_question_purges_old_answer_file_areas_when_context_given(): void {
+        $this->resetAfterTest();
+        $context = $this->make_real_context();
+        $fs = get_file_storage();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Q',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42
+        );
+        $oldanswerid = (int) questions_repository::get_question($questionid, 7)->answers[0]->id;
+        $fs->create_file_from_string([
+            'contextid' => $context->id, 'component' => 'mod_playerpuzzle', 'filearea' => 'answertext',
+            'itemid' => $oldanswerid, 'filepath' => '/', 'filename' => 'old.png',
+        ], 'old bytes');
+
+        questions_repository::update_question(
+            $questionid,
+            'multichoice',
+            'Q',
+            '',
+            [
+                ['text' => 'X', 'iscorrect' => true],
+                ['text' => 'Y', 'iscorrect' => false],
+            ],
+            $context
+        );
+
+        $oldfiles = $fs->get_area_files($context->id, 'mod_playerpuzzle', 'answertext', $oldanswerid, 'sortorder', false);
+        $this->assertCount(0, $oldfiles);
+    }
+
+    /**
      * Tests that get_question() returns null for a non-existent id.
      *
      * @return void

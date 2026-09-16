@@ -216,6 +216,41 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a multichoice question with more options than
+     * questions_repository::MAX_MULTICHOICE_ANSWERS is skipped and counted, never imported
+     * half-broken — importing it would leave a question the manual editor's fixed slots
+     * cannot fully display, silently losing the extra options on the first re-save there.
+     *
+     * @return void
+     */
+    public function test_sync_skips_question_with_too_many_options_and_counts_it(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $question = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+
+        $firstanswer = $DB->get_records('question_answers', ['question' => $question->id], 'id ASC', '*', 0, 1);
+        $extraanswer = reset($firstanswer);
+        for ($i = 0; $i < 2; $i++) {
+            $answer = clone $extraanswer;
+            unset($answer->id);
+            $answer->fraction = 0;
+            $DB->insert_record('question_answers', $answer);
+        }
+        $this->assertGreaterThan(
+            questions_repository::MAX_MULTICHOICE_ANSWERS,
+            $DB->count_records('question_answers', ['question' => $question->id])
+        );
+
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(0, $stats->imported);
+        $this->assertSame(1, $stats->skipped);
+        $this->assertSame([], questions_repository::get_questions_for_instance((int) $this->instance->id));
+    }
+
+    /**
      * Tests that re-running the sync on an unchanged category updates the same row rather
      * than duplicating it, matched by sourceid.
      *

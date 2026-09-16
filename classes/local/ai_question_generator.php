@@ -127,8 +127,15 @@ class ai_question_generator {
 
         // The game only ever grades a single correct choice — see question_fetcher.php —
         // so a question with zero or more than one correct answer can never be played
-        // correctly and must be rejected here rather than saved half-broken.
-        if (count($shapedanswers) < 2 || $correctcount !== 1) {
+        // correctly and must be rejected here rather than saved half-broken. The upper bound
+        // matches question_form.php's fixed slot count: the AI is asked for at most that many
+        // options, but nothing stops it from ignoring the prompt, and a question saved with
+        // more would be silently truncated the moment a teacher opens it in that form.
+        if (
+            $correctcount !== 1
+            || count($shapedanswers) < 2
+            || count($shapedanswers) > questions_repository::MAX_MULTICHOICE_ANSWERS
+        ) {
             return null;
         }
 

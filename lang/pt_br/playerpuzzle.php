@@ -94,6 +94,7 @@ $string['error_completionattempts'] = 'As tentativas exigidas devem ser no míni
 $string['error_completionwins'] = 'As vitórias exigidas devem ser no mínimo 1.';
 $string['error_correctoptionempty'] = 'A opção marcada como correta não pode estar vazia.';
 $string['error_hud_cost_qty'] = 'A quantidade precisa ser pelo menos 1 quando um item está configurado.';
+$string['error_toomanyoptionstoedit'] = 'Esta questão tem mais de {$a} opções e não pode ser editada aqui.';
 $string['event_game_completed'] = 'Jogo concluído';
 $string['event_game_started'] = 'Jogo iniciado';
 $string['gamemode'] = 'Modo de jogo';

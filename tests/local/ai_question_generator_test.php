@@ -355,6 +355,28 @@ final class ai_question_generator_test extends \basic_testcase {
     }
 
     /**
+     * More options than questions_repository::MAX_MULTICHOICE_ANSWERS are rejected — the
+     * manual editor's fixed slots cannot display more, so saving one anyway would silently
+     * truncate it the first time a teacher opened and re-saved it there.
+     *
+     * @return void
+     */
+    public function test_validate_shaped_question_rejects_too_many_options(): void {
+        $answers = [];
+        for ($i = 0; $i < questions_repository::MAX_MULTICHOICE_ANSWERS + 1; $i++) {
+            $answers[] = ['text' => 'Option ' . $i, 'iscorrect' => $i === 0];
+        }
+
+        $result = ai_question_generator::validate_shaped_question([
+            'qtype' => 'multichoice',
+            'questiontext' => 'Q?',
+            'answers' => $answers,
+        ]);
+
+        $this->assertNull($result);
+    }
+
+    /**
      * An answer with blank text does not count toward the minimum of two — a teacher
      * clearing an option's text in the preview before saving should not leave it as an
      * empty, unplayable option.

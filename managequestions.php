@@ -165,6 +165,18 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
         if (!$question) {
             redirect($url);
         }
+        // This form has a fixed slot count (question_form.php); a question with more options
+        // than that can only have arrived from AI generation or bank import predating the
+        // ceiling enforced there now. Refuse to open it here instead of silently truncating
+        // it to the visible slots on save.
+        if (count($question->answers) > questions_repository::MAX_MULTICHOICE_ANSWERS) {
+            redirect(
+                $url,
+                get_string('error_toomanyoptionstoedit', 'mod_playerpuzzle', questions_repository::MAX_MULTICHOICE_ANSWERS),
+                null,
+                \core\output\notification::NOTIFY_ERROR
+            );
+        }
 
         $formdata = new stdClass();
         $formdata->qid = $question->id;

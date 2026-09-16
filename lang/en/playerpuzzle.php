@@ -94,6 +94,7 @@ $string['error_completionattempts'] = 'Required attempts must be at least 1.';
 $string['error_completionwins'] = 'Required wins must be at least 1.';
 $string['error_correctoptionempty'] = 'The option marked as correct cannot be empty.';
 $string['error_hud_cost_qty'] = 'The quantity must be at least 1 when an item is configured.';
+$string['error_toomanyoptionstoedit'] = 'This question has more than {$a} options and cannot be edited here.';
 $string['event_game_completed'] = 'Game completed';
 $string['event_game_started'] = 'Game started';
 $string['gamemode'] = 'Game mode';

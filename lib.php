@@ -501,6 +501,12 @@ function playerpuzzle_delete_instance(int $id): bool {
         ['ppid' => $playerpuzzle->id]
     );
     $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $playerpuzzle->id]);
+    $DB->delete_records_select(
+        'playerpuzzle_question_answers',
+        'questionid IN (SELECT id FROM {playerpuzzle_questions} WHERE playerpuzzleid = :ppid)',
+        ['ppid' => $playerpuzzle->id]
+    );
+    $DB->delete_records('playerpuzzle_questions', ['playerpuzzleid' => $playerpuzzle->id]);
     $DB->delete_records('playerpuzzle', ['id' => $playerpuzzle->id]);
     $DB->delete_records('event', ['modulename' => 'playerpuzzle', 'instance' => $playerpuzzle->id]);
 

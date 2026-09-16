@@ -25,6 +25,8 @@
 
 namespace mod_playerpuzzle;
 
+use mod_playerpuzzle\local\questions_repository;
+
 /**
  * Tests for playerpuzzle_add_instance(), playerpuzzle_update_instance() and
  * playerpuzzle_delete_instance().
@@ -198,6 +200,39 @@ final class lib_crud_test extends \advanced_testcase {
         $this->assertFalse($DB->record_exists('playerpuzzle', ['id' => $instance->id]));
         $this->assertSame(0, $DB->count_records('playerpuzzle_attempts', ['playerpuzzleid' => $instance->id]));
         $this->assertSame(0, $DB->count_records('playerpuzzle_attempt_questions', ['attemptid' => $attemptid]));
+    }
+
+    /**
+     * Tests that deleting an instance also deletes its own question bank — a table keyed
+     * by playerpuzzleid, just as prone to being silently forgotten as the attempts tables
+     * already covered above.
+     *
+     * @return void
+     */
+    public function test_delete_instance_also_deletes_own_questions(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+
+        $questionid = questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Q?',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
+
+        $result = playerpuzzle_delete_instance($instance->id);
+
+        $this->assertTrue($result);
+        $this->assertSame(0, $DB->count_records('playerpuzzle_questions', ['playerpuzzleid' => $instance->id]));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_question_answers', ['questionid' => $questionid]));
     }
 
     /**

@@ -21,8 +21,11 @@
 
     Example context (json):
     {
+        "cmid": 2,
         "addurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=add",
         "addquestionlabel": "Add question",
+        "aiavailable": true,
+        "generatewithailabel": "Generate with AI",
         "hasquestions": true,
         "noquestionslabel": "No questions have been added yet.",
         "questioncolumnlabel": "Question",
@@ -36,7 +39,9 @@
                 "qtypelabel": "Multiple choice",
                 "answerspreview": "✓ 4 · 3 · 5",
                 "sourcelabel": "Manual",
-                "isunapproved": false,
+                "isunapproved": true,
+                "approveurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=approve&qid=5",
+                "approvelabel": "Approve",
                 "editurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=edit&qid=5",
                 "deletelink": "<a href=\"#\">Delete</a>"
             }
@@ -46,6 +51,11 @@
     }
 }}
 <a href="{{addurl}}" class="btn btn-primary mb-3">{{addquestionlabel}}</a>
+{{#aiavailable}}
+<button type="button" class="btn btn-outline-primary mb-3 ms-2" data-action="pp-ai-generate" data-cmid="{{cmid}}">
+    {{generatewithailabel}}
+</button>
+{{/aiavailable}}
 
 {{^hasquestions}}
 <div class="alert alert-info" role="alert">{{noquestionslabel}}</div>
@@ -75,6 +85,7 @@
                     {{#isunapproved}}<span class="badge bg-warning text-dark">{{unapprovedlabel}}</span>{{/isunapproved}}
                 </td>
                 <td>
+                    {{#isunapproved}}<a href="{{approveurl}}">{{approvelabel}}</a>{{/isunapproved}}
                     <a href="{{editurl}}">{{#str}} edit, core {{/str}}</a>
                     {{{deletelink}}}
                 </td>

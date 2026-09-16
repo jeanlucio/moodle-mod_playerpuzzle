@@ -59,6 +59,14 @@ if ($action === 'delete' && $questionid) {
     redirect($url, get_string('questiondeleted', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
+if ($action === 'approve' && $questionid) {
+    require_sesskey();
+    if (questions_repository::get_question($questionid, (int) $instance->id)) {
+        questions_repository::set_approved($questionid, true);
+    }
+    redirect($url, get_string('questionapproved', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
+}
+
 $importablecategories = question_bank_sync::get_importable_categories($cm);
 $importform = new import_form($url, ['categories' => $importablecategories]);
 
@@ -208,7 +216,10 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
 
     $mform->display();
 } else {
-    $listcontext = question_list_service::build_list_context($instance, $cmid, $OUTPUT);
+    $listcontext = question_list_service::build_list_context($instance, $cmid, $OUTPUT, $context);
+    if ($listcontext['aiavailable']) {
+        $PAGE->requires->js_call_amd('mod_playerpuzzle/ai_generate', 'init', [$cmid]);
+    }
     echo $OUTPUT->render_from_template('mod_playerpuzzle/managequestions', $listcontext);
 
     echo $OUTPUT->heading(get_string('importheader', 'mod_playerpuzzle'), 3);

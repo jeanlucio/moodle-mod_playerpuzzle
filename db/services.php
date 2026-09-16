@@ -65,4 +65,20 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_generate_questions' => [
+        'classname'    => 'mod_playerpuzzle\external\generate_questions',
+        'methodname'   => 'execute',
+        'description'  => 'Generates an AI question preview batch, without saving it.',
+        'type'         => 'read',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:managequestions',
+    ],
+    'mod_playerpuzzle_save_generated_questions' => [
+        'classname'    => 'mod_playerpuzzle\external\save_generated_questions',
+        'methodname'   => 'execute',
+        'description'  => 'Saves the AI-generated questions a teacher confirmed, pending approval.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:managequestions',
+    ],
 ];

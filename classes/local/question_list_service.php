@@ -25,6 +25,7 @@
 namespace mod_playerpuzzle\local;
 
 use confirm_action;
+use context;
 use moodle_url;
 use pix_icon;
 use renderer_base;
@@ -44,9 +45,10 @@ class question_list_service {
      * @param stdClass $instance The activity instance.
      * @param int $cmid The course module id.
      * @param renderer_base $output Used to render the edit/delete icons.
+     * @param context $context Module context, to check AI availability.
      * @return array Template context for mod_playerpuzzle/managequestions.
      */
-    public static function build_list_context(stdClass $instance, int $cmid, renderer_base $output): array {
+    public static function build_list_context(stdClass $instance, int $cmid, renderer_base $output, context $context): array {
         $questions = questions_repository::get_questions_for_instance((int) $instance->id);
 
         $rows = [];
@@ -59,6 +61,10 @@ class question_list_service {
                 '/mod/playerpuzzle/managequestions.php',
                 ['id' => $cmid, 'action' => 'delete', 'qid' => $question->id, 'sesskey' => sesskey()]
             );
+            $approveurl = new moodle_url(
+                '/mod/playerpuzzle/managequestions.php',
+                ['id' => $cmid, 'action' => 'approve', 'qid' => $question->id, 'sesskey' => sesskey()]
+            );
 
             $answerspreview = array_map(
                 fn(stdClass $answer): string => ((int) $answer->iscorrect === 1 ? '✓ ' : '')
@@ -66,12 +72,15 @@ class question_list_service {
                 $question->answers
             );
 
+            $isunapproved = (int) $question->approved === 0;
             $rows[] = [
                 'questiontext' => content_to_text($question->questiontext, (int) $question->questiontextformat),
                 'qtypelabel' => get_string('qtype_' . $question->qtype, 'mod_playerpuzzle'),
                 'answerspreview' => implode(' · ', $answerspreview),
                 'sourcelabel' => get_string('source_' . $question->source, 'mod_playerpuzzle'),
-                'isunapproved' => (int) $question->approved === 0,
+                'isunapproved' => $isunapproved,
+                'approveurl' => $isunapproved ? $approveurl->out(false) : '',
+                'approvelabel' => get_string('approvequestion', 'mod_playerpuzzle'),
                 'editurl' => $editurl->out(false),
                 'deletelink' => $output->action_icon(
                     $deleteurl,
@@ -82,8 +91,11 @@ class question_list_service {
         }
 
         return [
+            'cmid' => $cmid,
             'addurl' => (new moodle_url('/mod/playerpuzzle/managequestions.php', ['id' => $cmid, 'action' => 'add']))->out(false),
             'addquestionlabel' => get_string('addquestion', 'mod_playerpuzzle'),
+            'aiavailable' => ai_question_generator::has_key($context),
+            'generatewithailabel' => get_string('generatewithai', 'mod_playerpuzzle'),
             'hasquestions' => !empty($rows),
             'noquestionslabel' => get_string('noquestions', 'mod_playerpuzzle'),
             'questioncolumnlabel' => get_string('question', 'mod_playerpuzzle'),

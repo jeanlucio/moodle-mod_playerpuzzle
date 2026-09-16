@@ -1,0 +1,70 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_playerpuzzle/ai_generate_results
+
+    Preview list of an AI-generated question batch, each with a checkbox (checked by
+    default) letting the teacher discard entries before saving. Nothing here is
+    persisted yet — amd/src/ai_generate.js sends only the checked entries to
+    mod_playerpuzzle_save_generated_questions.
+
+    Example context (json):
+    {
+        "hasquestions": true,
+        "noresultslabel": "No questions were generated.",
+        "questions": [
+            {
+                "index": 0,
+                "qtypelabel": "Multiple choice",
+                "questiontext": "What is 2 + 2?",
+                "hashint": true,
+                "hint": "Think basic arithmetic.",
+                "answerspreview": "✓ 4 · 3 · 5"
+            }
+        ],
+        "savelabel": "Save selected"
+    }
+}}
+{{^hasquestions}}
+<div class="alert alert-info" role="alert">{{noresultslabel}}</div>
+{{/hasquestions}}
+{{#hasquestions}}
+<ul class="list-group">
+    {{#questions}}
+    <li class="list-group-item">
+        <div class="form-check">
+            <input
+                class="form-check-input"
+                type="checkbox"
+                checked
+                id="pp-ai-keep-{{index}}"
+                data-region="keep"
+                data-index="{{index}}"
+            >
+            <label class="form-check-label" for="pp-ai-keep-{{index}}">
+                <strong>{{qtypelabel}}:</strong> {{questiontext}}
+                {{#hashint}}
+                <div class="text-muted small"><span aria-hidden="true">💡</span> {{hint}}</div>
+                {{/hashint}}
+                <div class="text-muted small">{{answerspreview}}</div>
+            </label>
+        </div>
+    </li>
+    {{/questions}}
+</ul>
+<button type="button" class="btn btn-primary mt-3" data-action="pp-ai-save-selected">{{savelabel}}</button>
+{{/hasquestions}}

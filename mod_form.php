@@ -35,7 +35,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
      * Defines forms elements.
      */
     public function definition(): void {
-        global $DB, $COURSE;
+        global $COURSE;
 
         $mform = $this->_form;
 
@@ -140,80 +140,11 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $mform->addElement('header', 'questionsettings', get_string('questionsettings', 'mod_playerpuzzle'));
 
-        $mform->addElement('advcheckbox', 'source_questionbank', get_string('source_questionbank', 'mod_playerpuzzle'));
-        $mform->setType('source_questionbank', PARAM_INT);
-        $mform->setDefault('source_questionbank', 1);
-
-        $mform->addElement('advcheckbox', 'source_ownbank', get_string('source_ownbank', 'mod_playerpuzzle'));
-        $mform->setType('source_ownbank', PARAM_INT);
-        $mform->setDefault('source_ownbank', 0);
-        $mform->addHelpButton('source_ownbank', 'source_ownbank', 'mod_playerpuzzle');
-
-        $categories = [];
-        $coursecontext = \context_course::instance($COURSE->id);
-        $contextstocheck = [];
-
-        // Collect parent contexts (system, category, course) and all module contexts.
-        foreach ($coursecontext->get_parent_contexts(true) as $ctx) {
-            $contextstocheck[$ctx->id] = $ctx;
-        }
-
-        $modinfo = get_fast_modinfo($COURSE);
-        foreach ($modinfo->cms as $cm) {
-            $modcontext = \context_module::instance($cm->id);
-            $contextstocheck[$modcontext->id] = $modcontext;
-        }
-
-        $validcontextids = [];
-        foreach ($contextstocheck as $ctx) {
-            try {
-                if (has_capability('moodle/question:useall', $ctx) || has_capability('moodle/question:usemine', $ctx)) {
-                    $validcontextids[] = $ctx->id;
-                }
-            } catch (\Exception $e) {
-                continue;
-            }
-        }
-
-        if (!empty($validcontextids)) {
-            [$insql, $params] = $DB->get_in_or_equal($validcontextids, SQL_PARAMS_NAMED);
-            $sql = "SELECT qc.id, qc.name, qc.contextid, COUNT(qv.id) AS questioncount
-                      FROM {question_categories} qc
-                      JOIN {question_bank_entries} qbe ON qbe.questioncategoryid = qc.id
-                      JOIN {question_versions} qv ON qv.questionbankentryid = qbe.id AND qv.status = 'ready'
-                     WHERE qc.contextid $insql
-                  GROUP BY qc.id, qc.name, qc.contextid
-                    HAVING COUNT(qv.id) > 0
-                  ORDER BY qc.contextid, qc.name ASC";
-            $dbcategories = $DB->get_records_sql($sql, $params);
-
-            if ($dbcategories) {
-                \context_helper::preload_contexts_by_id(array_column($dbcategories, 'contextid'));
-
-                foreach ($dbcategories as $cat) {
-                    try {
-                        $catcontext = \context::instance_by_id($cat->contextid);
-                        $contextname = $catcontext->get_context_name(false, true);
-                        $categories[$cat->id] = format_string($cat->name) .
-                            ' (' . $cat->questioncount . ') (' . $contextname . ')';
-                    } catch (\Exception $e) {
-                        continue;
-                    }
-                }
-            }
-        }
-
-        if (empty($categories)) {
-            $categories[0] = get_string('nocategories', 'mod_playerpuzzle');
-        }
-
-        $mform->addElement('select', 'questioncategory', get_string('questioncategory', 'mod_playerpuzzle'), $categories);
+        // Which Moodle question bank category (if any) to import from lives on
+        // managequestions.php now, not here — this field only keeps the last-imported
+        // category id around between imports (see db/install.xml's comment on the column).
+        $mform->addElement('hidden', 'questioncategory', 0);
         $mform->setType('questioncategory', PARAM_INT);
-        // No custom "required" validation here: a course with zero questions banked
-        // anywhere has no real category to offer (the select falls back to the
-        // "nocategories" placeholder, value 0), and that must remain a valid, saveable
-        // configuration rather than a deadlock.
-        $mform->hideIf('questioncategory', 'source_questionbank', 'notchecked');
 
         $minquestionsoptions = [];
         for ($i = 0; $i <= 10; $i++) {
@@ -381,10 +312,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             $errors['completionwinsgroup'] = get_string('error_completionwins', 'mod_playerpuzzle');
         }
 
-        if (empty($data['source_questionbank']) && empty($data['source_ownbank'])) {
-            $errors['source_questionbank'] = get_string('error_atleastonequestionsource', 'mod_playerpuzzle');
-        }
-
         return $errors;
     }
 
@@ -454,13 +381,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         }
         if (!empty($defaultvalues['completionwins'])) {
             $defaultvalues['completionwinsenabled'] = 1;
-        }
-
-        if (isset($defaultvalues['sources'])) {
-            $defaultvalues['source_questionbank'] =
-                (int) (((int) $defaultvalues['sources'] & PLAYERPUZZLE_SOURCE_QUESTIONBANK) !== 0);
-            $defaultvalues['source_ownbank'] =
-                (int) (((int) $defaultvalues['sources'] & PLAYERPUZZLE_SOURCE_OWNBANK) !== 0);
         }
     }
 

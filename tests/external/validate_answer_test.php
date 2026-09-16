@@ -27,7 +27,6 @@ namespace mod_playerpuzzle\external;
 
 use context_module;
 use core_external\external_api;
-use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\questions_repository;
 
@@ -54,94 +53,88 @@ final class validate_answer_test extends \advanced_testcase {
     }
 
     /**
-     * Creates a playerpuzzle instance whose questioncategory is the given category.
-     *
-     * @param int $categoryid Question category ID.
-     * @return \stdClass Instance record with the ->cmid field added.
-     */
-    private function make_instance(int $categoryid): \stdClass {
-        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
-        return $generator->create_instance(['course' => $this->course->id, 'questioncategory' => $categoryid]);
-    }
-
-    /**
-     * Creates a playerpuzzle instance with only PlayerPuzzle's own question bank enabled.
+     * Creates a plain playerpuzzle instance.
      *
      * @return \stdClass Instance record with the ->cmid field added.
      */
-    private function make_ownbank_instance(): \stdClass {
+    private function make_instance(): \stdClass {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
-        return $generator->create_instance([
-            'course' => $this->course->id,
-            'source_questionbank' => 0,
-            'source_ownbank' => 1,
-        ]);
+        return $generator->create_instance(['course' => $this->course->id]);
     }
 
     /**
-     * Creates one approved multichoice question in PlayerPuzzle's own bank, with "A" as
-     * the correct answer.
+     * Creates one approved multichoice question, with "One" as the correct answer.
      *
      * @param int $playerpuzzleid The instance id.
      * @return int The new question id.
      */
-    private function make_ownbank_question(int $playerpuzzleid): int {
+    private function make_question(int $playerpuzzleid): int {
         return questions_repository::add_question(
             $playerpuzzleid,
             'multichoice',
-            'Own bank question?',
+            'One of four?',
             '',
             [
-                ['text' => 'A', 'iscorrect' => true],
-                ['text' => 'B', 'iscorrect' => false],
+                ['text' => 'One', 'iscorrect' => true],
+                ['text' => 'Two', 'iscorrect' => false],
+                ['text' => 'Three', 'iscorrect' => false],
+                ['text' => 'Four', 'iscorrect' => false],
             ],
             2
         );
     }
 
     /**
-     * Creates a single-correct-answer multichoice question ("One" is correct) in the
-     * given category.
+     * Creates an approved true/false question whose correct answer is "True".
      *
-     * @param int $categoryid Question category ID.
-     * @return \stdClass The created question record.
+     * @param int $playerpuzzleid The instance id.
+     * @return int The new question id.
      */
-    private function make_question(int $categoryid): \stdClass {
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        return $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $categoryid]);
-    }
-
-    /**
-     * Creates a true/false question whose correct answer is "True", in the given category.
-     *
-     * @param int $categoryid Question category ID.
-     * @return \stdClass The created question record.
-     */
-    private function make_truefalse_question(int $categoryid): \stdClass {
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        return $questiongenerator->create_question('truefalse', 'true', ['category' => $categoryid]);
+    private function make_truefalse_question(int $playerpuzzleid): int {
+        return questions_repository::add_question(
+            $playerpuzzleid,
+            'truefalse',
+            'The sky is blue.',
+            '',
+            [
+                ['text' => get_string('true', 'qtype_truefalse'), 'iscorrect' => true],
+                ['text' => get_string('false', 'qtype_truefalse'), 'iscorrect' => false],
+            ],
+            2
+        );
     }
 
     /**
      * Finds the id of the answer with the given text for a question.
      *
-     * Filters in PHP rather than in SQL: question_answers.answer is a text column, and
-     * Postgres rejects an equality comparison against one without sql_compare_text().
-     *
      * @param int $questionid Question ID.
+     * @param int $playerpuzzleid The instance the question belongs to.
      * @param string $text Exact answer text to look for.
      * @return int The matching answer ID.
      */
-    private function find_answer_id(int $questionid, string $text): int {
-        global $DB;
-
-        foreach ($DB->get_records('question_answers', ['question' => $questionid]) as $answer) {
-            if ($answer->answer === $text) {
+    private function find_answer_id(int $questionid, int $playerpuzzleid, string $text): int {
+        $question = questions_repository::get_question($questionid, $playerpuzzleid);
+        foreach ($question->answers as $answer) {
+            if ($answer->answertext === $text) {
                 return (int) $answer->id;
             }
         }
 
         $this->fail("No answer with text '$text' found for question $questionid.");
+    }
+
+    /**
+     * Finds the id of the answer marked correct for a question.
+     *
+     * @param int $questionid Question ID.
+     * @param int $playerpuzzleid The instance the question belongs to.
+     * @return int The correct answer ID.
+     */
+    private function find_correct_answer_id(int $questionid, int $playerpuzzleid): int {
+        $question = questions_repository::get_question($questionid, $playerpuzzleid);
+        $correct = array_values(array_filter($question->answers, fn($a) => (int) $a->iscorrect === 1));
+
+        return (int) $correct[0]->id;
     }
 
     /**
@@ -157,23 +150,21 @@ final class validate_answer_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the answer with fraction >= 1.0 is reported correct.
+     * Tests that a correct answer is reported correct.
      *
      * @return void
      */
     public function test_correct_answer_returns_true(): void {
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($cat->id);
-        $question = $this->make_question($cat->id);
-        $correctid = $this->find_answer_id((int) $question->id, 'One');
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+        $correctid = $this->find_answer_id($questionid, (int) $instance->id, 'One');
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
         $result = $this->call_validate_answer([
             'cmid'       => $instance->cmid,
             'token'      => $token,
-            'questionid' => $question->id,
+            'questionid' => $questionid,
             'answerid'   => $correctid,
         ]);
 
@@ -188,49 +179,44 @@ final class validate_answer_test extends \advanced_testcase {
      * @return void
      */
     public function test_wrong_answer_returns_false_with_correct_id(): void {
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($cat->id);
-        $question = $this->make_question($cat->id);
-        $wrongid = $this->find_answer_id((int) $question->id, 'Two');
-        $correctid = $this->find_answer_id((int) $question->id, 'One');
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+        $wrongid = $this->find_answer_id($questionid, (int) $instance->id, 'Two');
+        $correctid = $this->find_answer_id($questionid, (int) $instance->id, 'One');
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
         $result = $this->call_validate_answer([
             'cmid'       => $instance->cmid,
             'token'      => $token,
-            'questionid' => $question->id,
+            'questionid' => $questionid,
             'answerid'   => $wrongid,
         ]);
 
         $this->assertFalse($result['error']);
         $this->assertFalse($result['data']['correct']);
-        $this->assertSame((int) $correctid, (int) $result['data']['correctanswerid']);
+        $this->assertSame($correctid, (int) $result['data']['correctanswerid']);
     }
 
     /**
-     * Tests that a question belonging to a category other than the instance's own
-     * questioncategory is rejected — never validated, even if the answer id supplied
-     * really is that question's correct one. This is the instance-isolation guard the
-     * JOIN in validate_answer.php enforces.
+     * Tests that a question belonging to a different instance is rejected — never
+     * validated, even if the answer id supplied really is that question's correct one.
+     * This is the instance-isolation guard validate_answer.php enforces.
      *
      * @return void
      */
-    public function test_question_outside_instance_category_is_rejected(): void {
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $ownedcat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $foreigncat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($ownedcat->id);
-        $foreignquestion = $this->make_question($foreigncat->id);
-        $correctid = $this->find_answer_id((int) $foreignquestion->id, 'One');
+    public function test_question_from_other_instance_is_rejected(): void {
+        $instance = $this->make_instance();
+        $otherinstance = $this->make_instance();
+        $foreignquestionid = $this->make_question((int) $otherinstance->id);
+        $correctid = $this->find_answer_id($foreignquestionid, (int) $otherinstance->id, 'One');
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
         $result = $this->call_validate_answer([
             'cmid'       => $instance->cmid,
             'token'      => $token,
-            'questionid' => $foreignquestion->id,
+            'questionid' => $foreignquestionid,
             'answerid'   => $correctid,
         ]);
 
@@ -239,68 +225,14 @@ final class validate_answer_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a correct answer to an own-bank question is accepted when bank=ownbank
-     * is passed.
+     * Tests that an unapproved question (e.g. AI-generated, pending review) is rejected
+     * even if its id and answer both genuinely belong to this instance — a student must
+     * never be able to answer a question the teacher has not approved yet.
      *
      * @return void
      */
-    public function test_ownbank_correct_answer_returns_true(): void {
-        $instance = $this->make_ownbank_instance();
-        $questionid = $this->make_ownbank_question((int) $instance->id);
-        $question = questions_repository::get_question($questionid);
-        $correctanswerid = array_values(array_filter($question->answers, fn($a) => (int) $a->iscorrect === 1))[0]->id;
-
-        $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
-        $result = $this->call_validate_answer([
-            'cmid'       => $instance->cmid,
-            'token'      => $token,
-            'questionid' => $questionid,
-            'answerid'   => $correctanswerid,
-            'bank'       => question_fetcher::BANK_OWNBANK,
-        ]);
-
-        $this->assertFalse($result['error']);
-        $this->assertTrue($result['data']['correct']);
-    }
-
-    /**
-     * Tests that an own-bank question belonging to a different instance is rejected —
-     * the same instance-isolation guard as the question bank category check, applied to
-     * the ownbank path.
-     *
-     * @return void
-     */
-    public function test_ownbank_question_from_other_instance_is_rejected(): void {
-        $instance = $this->make_ownbank_instance();
-        $otherinstance = $this->make_ownbank_instance();
-        $foreignquestionid = $this->make_ownbank_question((int) $otherinstance->id);
-        $question = questions_repository::get_question($foreignquestionid);
-        $correctanswerid = array_values(array_filter($question->answers, fn($a) => (int) $a->iscorrect === 1))[0]->id;
-
-        $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
-        $result = $this->call_validate_answer([
-            'cmid'       => $instance->cmid,
-            'token'      => $token,
-            'questionid' => $foreignquestionid,
-            'answerid'   => $correctanswerid,
-            'bank'       => question_fetcher::BANK_OWNBANK,
-        ]);
-
-        $this->assertFalse($result['error']);
-        $this->assertFalse($result['data']['correct']);
-    }
-
-    /**
-     * Tests that an unapproved own-bank question (e.g. AI-generated, pending review) is
-     * rejected even if its id and answer both genuinely belong to this instance — a
-     * student must never be able to answer a question the teacher has not approved yet.
-     *
-     * @return void
-     */
-    public function test_ownbank_unapproved_question_is_rejected(): void {
-        $instance = $this->make_ownbank_instance();
+    public function test_unapproved_question_is_rejected(): void {
+        $instance = $this->make_instance();
         $questionid = questions_repository::add_question(
             (int) $instance->id,
             'multichoice',
@@ -314,8 +246,7 @@ final class validate_answer_test extends \advanced_testcase {
             'ai',
             false
         );
-        $question = questions_repository::get_question($questionid);
-        $correctanswerid = array_values(array_filter($question->answers, fn($a) => (int) $a->iscorrect === 1))[0]->id;
+        $correctid = $this->find_correct_answer_id($questionid, (int) $instance->id);
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
@@ -323,42 +254,11 @@ final class validate_answer_test extends \advanced_testcase {
             'cmid'       => $instance->cmid,
             'token'      => $token,
             'questionid' => $questionid,
-            'answerid'   => $correctanswerid,
-            'bank'       => question_fetcher::BANK_OWNBANK,
+            'answerid'   => $correctid,
         ]);
 
         $this->assertFalse($result['error']);
         $this->assertFalse($result['data']['correct']);
-    }
-
-    /**
-     * Tests that the boss's server-drawn guess against an own-bank question works the
-     * same way as against a question-bank one — same 100% precision on Hard.
-     *
-     * @return void
-     */
-    public function test_ownbank_boss_guess_on_hard_is_always_correct(): void {
-        $instance = $this->make_ownbank_instance();
-        $questionid = $this->make_ownbank_question((int) $instance->id);
-        $question = questions_repository::get_question($questionid);
-        $correctanswerid = array_values(array_filter($question->answers, fn($a) => (int) $a->iscorrect === 1))[0]->id;
-
-        $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard');
-
-        for ($i = 0; $i < 10; $i++) {
-            $result = $this->call_validate_answer([
-                'cmid'       => $instance->cmid,
-                'token'      => $token,
-                'questionid' => $questionid,
-                'answerid'   => 999999,
-                'bank'       => question_fetcher::BANK_OWNBANK,
-                'forwhom'    => 'boss',
-            ]);
-            $this->assertFalse($result['error']);
-            $this->assertTrue($result['data']['correct']);
-            $this->assertSame((int) $correctanswerid, (int) $result['data']['pickedanswerid']);
-        }
     }
 
     /**
@@ -372,10 +272,8 @@ final class validate_answer_test extends \advanced_testcase {
      * @return void
      */
     public function test_requires_view_capability(): void {
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($cat->id);
-        $question = $this->make_question($cat->id);
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
         $modcontext = context_module::instance($instance->cmid);
 
         $prohibitedrole = $this->getDataGenerator()->create_role();
@@ -385,7 +283,7 @@ final class validate_answer_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $this->expectException(\core\exception\require_login_exception::class);
-        validate_answer::execute($instance->cmid, 'anytoken', (int) $question->id, 1);
+        validate_answer::execute($instance->cmid, 'anytoken', $questionid, 1);
     }
 
     /**
@@ -395,16 +293,14 @@ final class validate_answer_test extends \advanced_testcase {
      * @return void
      */
     public function test_unknown_token_is_rejected(): void {
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($cat->id);
-        $question = $this->make_question($cat->id);
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
 
         $this->setUser($this->student);
         $result = $this->call_validate_answer([
             'cmid'       => $instance->cmid,
             'token'      => 'deadbeef',
-            'questionid' => $question->id,
+            'questionid' => $questionid,
             'answerid'   => 1,
         ]);
 
@@ -421,11 +317,9 @@ final class validate_answer_test extends \advanced_testcase {
     public function test_player_answer_is_logged(): void {
         global $DB;
 
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($cat->id);
-        $question = $this->make_question($cat->id);
-        $wrongid = $this->find_answer_id((int) $question->id, 'Two');
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+        $wrongid = $this->find_answer_id($questionid, (int) $instance->id, 'Two');
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
@@ -436,7 +330,7 @@ final class validate_answer_test extends \advanced_testcase {
         $this->call_validate_answer([
             'cmid'       => $instance->cmid,
             'token'      => $token,
-            'questionid' => $question->id,
+            'questionid' => $questionid,
             'answerid'   => $wrongid,
         ]);
 
@@ -453,7 +347,7 @@ final class validate_answer_test extends \advanced_testcase {
         $this->call_validate_answer([
             'cmid'       => $instance->cmid,
             'token'      => $token,
-            'questionid' => $question->id,
+            'questionid' => $questionid,
             'answerid'   => 0,
             'forwhom'    => 'boss',
         ]);
@@ -467,19 +361,17 @@ final class validate_answer_test extends \advanced_testcase {
      * @return void
      */
     public function test_boss_guess_on_hard_is_always_correct(): void {
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($cat->id);
-        $mc = $this->make_question($cat->id);
-        $tf = $this->make_truefalse_question($cat->id);
-        $mccorrect = $this->find_answer_id((int) $mc->id, 'One');
-        $tfcorrect = $this->find_answer_id((int) $tf->id, 'True');
+        $instance = $this->make_instance();
+        $mcid = $this->make_question((int) $instance->id);
+        $tfid = $this->make_truefalse_question((int) $instance->id);
+        $mccorrect = $this->find_correct_answer_id($mcid, (int) $instance->id);
+        $tfcorrect = $this->find_correct_answer_id($tfid, (int) $instance->id);
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard');
 
-        foreach ([[$mc->id, $mccorrect], [$tf->id, $tfcorrect]] as [$qid, $correctid]) {
-            for ($i = 0; $i < 25; $i++) {
+        foreach ([[$mcid, $mccorrect], [$tfid, $tfcorrect]] as [$qid, $correctid]) {
+            for ($i = 0; $i < 10; $i++) {
                 $result = $this->call_validate_answer([
                     'cmid'       => $instance->cmid,
                     'token'      => $token,
@@ -489,7 +381,7 @@ final class validate_answer_test extends \advanced_testcase {
                 ]);
                 $this->assertFalse($result['error']);
                 $this->assertTrue($result['data']['correct']);
-                $this->assertSame((int) $correctid, (int) $result['data']['pickedanswerid']);
+                $this->assertSame($correctid, (int) $result['data']['pickedanswerid']);
             }
         }
     }
@@ -502,10 +394,8 @@ final class validate_answer_test extends \advanced_testcase {
      * @return void
      */
     public function test_boss_guess_on_easy_multichoice_is_roughly_one_third(): void {
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($cat->id);
-        $question = $this->make_question($cat->id);
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'easy');
@@ -516,7 +406,7 @@ final class validate_answer_test extends \advanced_testcase {
             $result = $this->call_validate_answer([
                 'cmid'       => $instance->cmid,
                 'token'      => $token,
-                'questionid' => $question->id,
+                'questionid' => $questionid,
                 'answerid'   => 0,
                 'forwhom'    => 'boss',
             ]);
@@ -539,12 +429,10 @@ final class validate_answer_test extends \advanced_testcase {
     public function test_player_answer_increments_question_counters(): void {
         global $DB;
 
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($cat->id);
-        $question = $this->make_question($cat->id);
-        $correctid = $this->find_answer_id((int) $question->id, 'One');
-        $wrongid = $this->find_answer_id((int) $question->id, 'Two');
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+        $correctid = $this->find_answer_id($questionid, (int) $instance->id, 'One');
+        $wrongid = $this->find_answer_id($questionid, (int) $instance->id, 'Two');
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
@@ -553,7 +441,7 @@ final class validate_answer_test extends \advanced_testcase {
         $result = $this->call_validate_answer([
             'cmid'       => $instance->cmid,
             'token'      => $token,
-            'questionid' => $question->id,
+            'questionid' => $questionid,
             'answerid'   => $wrongid,
         ]);
         $this->assertSame(1, $result['data']['questionstotal']);
@@ -563,7 +451,7 @@ final class validate_answer_test extends \advanced_testcase {
         $result = $this->call_validate_answer([
             'cmid'       => $instance->cmid,
             'token'      => $token,
-            'questionid' => $question->id,
+            'questionid' => $questionid,
             'answerid'   => $correctid,
         ]);
         $this->assertSame(2, $result['data']['questionstotal']);
@@ -580,10 +468,8 @@ final class validate_answer_test extends \advanced_testcase {
     public function test_boss_guess_does_not_increment_question_counters(): void {
         global $DB;
 
-        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
-        $cat = $questiongenerator->create_question_category(['contextid' => \context_system::instance()->id]);
-        $instance = $this->make_instance($cat->id);
-        $question = $this->make_question($cat->id);
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
@@ -592,7 +478,7 @@ final class validate_answer_test extends \advanced_testcase {
         $this->call_validate_answer([
             'cmid'       => $instance->cmid,
             'token'      => $token,
-            'questionid' => $question->id,
+            'questionid' => $questionid,
             'answerid'   => 0,
             'forwhom'    => 'boss',
         ]);

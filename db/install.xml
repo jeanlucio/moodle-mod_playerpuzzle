@@ -17,8 +17,7 @@
         <FIELD NAME="basebosshp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Base boss HP at Level 1 Phase 1; scales automatically per phase"/>
         <FIELD NAME="bossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Damage dealt by boss per turn"/>
         <FIELD NAME="coingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Base coins per 3-piece Coin match; combo curve applies, does not scale by level/phase"/>
-        <FIELD NAME="questioncategory" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID from question_categories table"/>
-        <FIELD NAME="sources" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Question source bitmask: 1=Moodle question bank category, 2=PlayerPuzzle's own bank"/>
+        <FIELD NAME="questioncategory" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Last Moodle question bank category id imported from via managequestions.php; 0 = none imported yet"/>
         <FIELD NAME="timelimit" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Time limit in minutes (0 means no limit)"/>
         <FIELD NAME="maxattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Max attempts allowed (0 means unlimited)"/>
         <FIELD NAME="hud_coin_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID credited with leftover coins on victory (0 = unconfigured)"/>
@@ -127,8 +126,9 @@
         <FIELD NAME="playerpuzzleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to playerpuzzle"/>
         <FIELD NAME="qtype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="multichoice | truefalse"/>
         <FIELD NAME="questiontext" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="questiontextformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="2" SEQUENCE="false" COMMENT="FORMAT_* constant for questiontext; 2=FORMAT_PLAIN today, ready for rich text once the manual form gains a file-capable editor"/>
         <FIELD NAME="generalfeedback" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
-        <FIELD NAME="hint" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Optional hint text; feeds the Question Hint consumable (Fase 8 Lote D)"/>
+        <FIELD NAME="hint" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Optional hint text; feeds the Question Hint consumable"/>
         <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="manual" SEQUENCE="false" COMMENT="manual | ai"/>
         <FIELD NAME="approved" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Manual questions are approved on entry; ai-generated ones start at 0 until the teacher approves"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -150,6 +150,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="questionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to playerpuzzle_questions"/>
         <FIELD NAME="answertext" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="answerformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="2" SEQUENCE="false" COMMENT="FORMAT_* constant for answertext; 2=FORMAT_PLAIN today, ready for rich text once the manual form gains a file-capable editor"/>
         <FIELD NAME="iscorrect" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
       </FIELDS>

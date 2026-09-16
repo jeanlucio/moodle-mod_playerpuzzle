@@ -50,8 +50,7 @@ $PAGE->set_pagelayout('incourse');
 
 if ($action === 'delete' && $questionid) {
     require_sesskey();
-    $question = questions_repository::get_question($questionid);
-    if ($question && (int) $question->playerpuzzleid === (int) $instance->id) {
+    if (questions_repository::get_question($questionid, (int) $instance->id)) {
         questions_repository::delete_question($questionid);
     }
     redirect($url, get_string('questiondeleted', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
@@ -79,8 +78,7 @@ if ($mform->is_cancelled()) {
     }
 
     if (!empty($data->qid)) {
-        $existing = questions_repository::get_question((int) $data->qid);
-        if ($existing && (int) $existing->playerpuzzleid === (int) $instance->id) {
+        if (questions_repository::get_question((int) $data->qid, (int) $instance->id)) {
             questions_repository::update_question(
                 (int) $data->qid,
                 $data->qtype,
@@ -111,8 +109,8 @@ echo $OUTPUT->header();
 // of redisplaying the form with the error messages.
 if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
     if ($action === 'edit' && $questionid && !$mform->is_submitted()) {
-        $question = questions_repository::get_question($questionid);
-        if (!$question || (int) $question->playerpuzzleid !== (int) $instance->id) {
+        $question = questions_repository::get_question($questionid, (int) $instance->id);
+        if (!$question) {
             redirect($url);
         }
 

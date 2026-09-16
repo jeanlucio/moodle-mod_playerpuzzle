@@ -1023,7 +1023,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                         token: ctx.gameConfig.token,
                                         questionid: question.id,
                                         answerid: selectedAnswer.id,
-                                        bank: question.bank,
                                         forwhom: 'player',
                                     },
                                 }])[0].done(res => {
@@ -1109,7 +1108,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     token: ctx.gameConfig.token,
                                     questionid: question.id,
                                     answerid: 0,
-                                    bank: question.bank,
                                     forwhom: 'boss',
                                 },
                             }])[0].done(res => {

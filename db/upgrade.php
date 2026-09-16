@@ -404,5 +404,43 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091606, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091607) {
+        // Drop sources: the dual-source design (Moodle question bank + PlayerPuzzle's own
+        // bank, unioned at read time) was superseded by a single-source design where the own
+        // bank is the only place questions are read from at runtime, and the Moodle question
+        // bank is only ever imported into it.
+        $table = new xmldb_table('playerpuzzle');
+        $field = new xmldb_field('sources', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '1');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Change questioncategory's default: it now means "last category imported from"
+        // rather than "category to read from every match", and can legitimately stay 0
+        // (nothing imported yet) for the lifetime of an instance, so it needs a real default
+        // instead of relying on the form to always supply a value.
+        $field = new xmldb_field('questioncategory', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_default($table, $field);
+        }
+
+        // Add questiontextformat/answerformat: both tables only ever stored PARAM_TEXT plain
+        // text so far, but the columns are needed now so a future editor upgrade (rich text +
+        // files) does not need its own schema change on top of this one.
+        $questionstable = new xmldb_table('playerpuzzle_questions');
+        $field = new xmldb_field('questiontextformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '2', 'questiontext');
+        if (!$dbman->field_exists($questionstable, $field)) {
+            $dbman->add_field($questionstable, $field);
+        }
+
+        $answerstable = new xmldb_table('playerpuzzle_question_answers');
+        $field = new xmldb_field('answerformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '2', 'answertext');
+        if (!$dbman->field_exists($answerstable, $field)) {
+            $dbman->add_field($answerstable, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026091607, 'playerpuzzle');
+    }
+
     return true;
 }

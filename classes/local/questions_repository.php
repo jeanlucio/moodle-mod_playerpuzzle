@@ -71,6 +71,7 @@ class questions_repository {
             'playerpuzzleid' => $playerpuzzleid,
             'qtype' => $qtype,
             'questiontext' => $questiontext,
+            'questiontextformat' => FORMAT_PLAIN,
             'generalfeedback' => null,
             'hint' => $hint !== '' ? $hint : null,
             'source' => $source,
@@ -131,16 +132,25 @@ class questions_repository {
     }
 
     /**
-     * Returns a single question with its answers attached as ->answers (ordered by
-     * sortorder), or null if it does not exist.
+     * Returns a single question owned by the given instance, with its answers attached as
+     * ->answers (ordered by sortorder), or null if it does not exist or belongs to a
+     * different instance.
+     *
+     * The ownership check is baked into this same lookup — never a separate "load, then
+     * check the caller got the right owner" step — so a foreign id never reaches the
+     * answers query at all.
      *
      * @param int $questionid The question id.
+     * @param int $playerpuzzleid The instance the question must belong to.
      * @return stdClass|null
      */
-    public static function get_question(int $questionid): ?stdClass {
+    public static function get_question(int $questionid, int $playerpuzzleid): ?stdClass {
         global $DB;
 
-        $question = $DB->get_record('playerpuzzle_questions', ['id' => $questionid]);
+        $question = $DB->get_record('playerpuzzle_questions', [
+            'id' => $questionid,
+            'playerpuzzleid' => $playerpuzzleid,
+        ]);
         if (!$question) {
             return null;
         }
@@ -208,6 +218,7 @@ class questions_repository {
             $DB->insert_record('playerpuzzle_question_answers', (object) [
                 'questionid' => $questionid,
                 'answertext' => $answer['text'],
+                'answerformat' => FORMAT_PLAIN,
                 'iscorrect' => !empty($answer['iscorrect']) ? 1 : 0,
                 'sortorder' => $sortorder++,
             ]);

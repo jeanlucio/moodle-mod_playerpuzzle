@@ -55,7 +55,7 @@ final class questions_repository_test extends \advanced_testcase {
             42
         );
 
-        $question = questions_repository::get_question($questionid);
+        $question = questions_repository::get_question($questionid, 7);
 
         $this->assertNotNull($question);
         $this->assertSame(7, (int) $question->playerpuzzleid);
@@ -93,7 +93,7 @@ final class questions_repository_test extends \advanced_testcase {
             42
         );
 
-        $question = questions_repository::get_question($questionid);
+        $question = questions_repository::get_question($questionid, 7);
 
         $this->assertNull($question->hint);
     }
@@ -120,7 +120,7 @@ final class questions_repository_test extends \advanced_testcase {
             false
         );
 
-        $question = questions_repository::get_question($questionid);
+        $question = questions_repository::get_question($questionid, 7);
 
         $this->assertSame('ai', $question->source);
         $this->assertSame(0, (int) $question->approved);
@@ -160,7 +160,7 @@ final class questions_repository_test extends \advanced_testcase {
             ]
         );
 
-        $question = questions_repository::get_question($questionid);
+        $question = questions_repository::get_question($questionid, 7);
 
         $this->assertSame('Updated text', $question->questiontext);
         $this->assertSame('New hint', $question->hint);
@@ -199,7 +199,7 @@ final class questions_repository_test extends \advanced_testcase {
 
         questions_repository::delete_question($questionid);
 
-        $this->assertNull(questions_repository::get_question($questionid));
+        $this->assertNull(questions_repository::get_question($questionid, 7));
         $this->assertSame(0, $DB->count_records('playerpuzzle_question_answers', ['questionid' => $questionid]));
     }
 
@@ -211,7 +211,33 @@ final class questions_repository_test extends \advanced_testcase {
     public function test_get_question_returns_null_when_not_found(): void {
         $this->resetAfterTest();
 
-        $this->assertNull(questions_repository::get_question(99999));
+        $this->assertNull(questions_repository::get_question(99999, 7));
+    }
+
+    /**
+     * Tests that get_question() returns null when the id is real but belongs to a
+     * different instance — the ownership check is baked into the same lookup, never a
+     * separate "load, then check" step, so a foreign id never even reaches the answers
+     * query.
+     *
+     * @return void
+     */
+    public function test_get_question_returns_null_for_a_different_instance(): void {
+        $this->resetAfterTest();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Belongs to instance 7',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42
+        );
+
+        $this->assertNull(questions_repository::get_question($questionid, 9));
     }
 
     /**

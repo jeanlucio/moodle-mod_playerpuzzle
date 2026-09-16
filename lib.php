@@ -110,6 +110,15 @@ function playerpuzzle_get_difficulty_options(): array {
 }
 
 /**
+ * Tells Moodle this plugin uses a branded icon (disables purpose recolour filter).
+ *
+ * @return bool True, since this plugin's icon should keep its own colours.
+ */
+function mod_playerpuzzle_is_branded(): bool {
+    return true;
+}
+
+/**
  * Indicates API features that the playerpuzzle supports.
  *
  * @param string $feature The feature to check.

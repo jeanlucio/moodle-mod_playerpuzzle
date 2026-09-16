@@ -391,6 +391,31 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a checkpoint left with the boss already at 0 HP is discarded on resume,
+     * instead of reopening an already-won fight. This is the state a student can be left in
+     * if they exit from the phase-complete screen before advance_phase runs: the pagehide
+     * safety net (save_combat_state) still persists the just-finished (HP-0) snapshot for the
+     * phase that was never actually advanced.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_discards_a_checkpoint_with_dead_boss(): void {
+        global $DB;
+
+        $token = security::generate_attempt_token(1, 2);
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'combatstate',
+            '{"boardgrid":[1,2,3],"currentturn":"boss","currentbosshp":0}',
+            ['token' => $token]
+        );
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertNull($result->combatstate);
+    }
+
+    /**
      * Tests that a brand new attempt resumes on the level/phase of the student's most
      * recently finished attempt when that attempt was lost — the original "an attempt is a
      * continuous winning streak" design (only a loss should send the student back to

@@ -846,10 +846,16 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // 30/08/2026).
             document.getElementById('playerpuzzle-phasecomplete').showModal();
 
-            const advanceAndContinue = () => {
+            // Both buttons must go through advance_phase before doing anything else: the win
+            // is only durable once this call lands (there is no separate "record the win" step
+            // like showEndScreen's save_progress). Exiting without it left the attempt parked
+            // on the just-defeated phase with a stale, already-0 boss HP checkpoint instead of
+            // advancing (reported live, 16/09/2026) — mirror that guard on both buttons instead
+            // of only on "Continue".
+            const performAdvance = (onSuccess) => {
                 $('#pp-phase-status').removeClass('text-success text-danger').addClass('text-muted')
                     .text(strings.advancingphase);
-                $('#btn-pp-continue-phase, #pp-phase-difficulty').prop('disabled', true);
+                $('#btn-pp-continue-phase, #btn-pp-exit-phase, #pp-phase-difficulty').prop('disabled', true);
 
                 Ajax.call([{
                     methodname: 'mod_playerpuzzle_advance_phase',
@@ -861,28 +867,28 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         bosscoinsearnedsofar: Math.round(this.bossGold),
                         difficulty: $('#pp-phase-difficulty').val() || 'normal',
                     },
-                }])[0].done(res => {
-                    // Announce the transition for screen-reader users, then give it a beat to
-                    // be read before the full page reload wipes the live region.
-                    const total = parseInt(this.gameConfig.maxlevels, 10) * 10 || 10;
-                    Accessibility.announce(
-                        strings.phaseadvanced
-                            .replace('{$a->level}', res.currentlevel)
-                            .replace('{$a->phase}', res.currentphase)
-                            .replace('{$a->total}', total)
-                    );
-                    me.time.delayedCall(1600, () => this.submitRestartForm());
-                }).fail(() => {
+                }])[0].done(onSuccess).fail(() => {
                     $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
                         .text(strings.phaseadvanceerror);
-                    $('#btn-pp-continue-phase, #pp-phase-difficulty').prop('disabled', false);
+                    $('#btn-pp-continue-phase, #btn-pp-exit-phase, #pp-phase-difficulty').prop('disabled', false);
                 });
             };
 
-            $('#btn-pp-continue-phase').on('click', advanceAndContinue);
-            $('#btn-pp-exit-phase').on('click', () => {
+            $('#btn-pp-continue-phase').on('click', () => performAdvance(res => {
+                // Announce the transition for screen-reader users, then give it a beat to
+                // be read before the full page reload wipes the live region.
+                const total = parseInt(this.gameConfig.maxlevels, 10) * 10 || 10;
+                Accessibility.announce(
+                    strings.phaseadvanced
+                        .replace('{$a->level}', res.currentlevel)
+                        .replace('{$a->phase}', res.currentphase)
+                        .replace('{$a->total}', total)
+                );
+                me.time.delayedCall(1600, () => this.submitRestartForm());
+            }));
+            $('#btn-pp-exit-phase').on('click', () => performAdvance(() => {
                 window.location.href = this.gameConfig.viewurl;
-            });
+            }));
         }
 
         openQuestionModal(trigger) {

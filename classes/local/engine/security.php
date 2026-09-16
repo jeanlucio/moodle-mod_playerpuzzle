@@ -172,6 +172,18 @@ class security {
             $attempt->timemodified = time();
             $DB->update_record('playerpuzzle_attempts', $attempt);
 
+            // A checkpoint with the boss already at 0 HP can only mean the phase was won and
+            // the pagehide/beacon safety net (save_combat_state) persisted that instant, but
+            // advance_phase was never reached to move the attempt to the next phase (e.g. the
+            // student exited from the phase-complete screen before that call finished/existed
+            // — reported live, 16/09/2026). Resuming it verbatim would reopen an already-dead
+            // boss on the same phase instead of a fresh fight, so treat it the same as no
+            // checkpoint at all.
+            $combatstate = combat_state::decode($attempt->combatstate);
+            if ($combatstate !== null && (int) ($combatstate['currentbosshp'] ?? 1) <= 0) {
+                $combatstate = null;
+            }
+
             return (object) [
                 'attemptid' => (int) $attempt->id,
                 'token' => $token,
@@ -182,7 +194,7 @@ class security {
                 'coinsearned' => (int) $attempt->coins_earned,
                 'bosscoinsearned' => (int) $attempt->boss_coins_earned,
                 'coinsspent' => (int) $attempt->coins_spent,
-                'combatstate' => combat_state::decode($attempt->combatstate),
+                'combatstate' => $combatstate,
                 'isnew' => false,
             ];
         }

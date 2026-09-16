@@ -26,6 +26,7 @@
 namespace mod_playerpuzzle;
 
 use core_courseformat\local\cmactions;
+use mod_playerpuzzle\local\questions_repository;
 
 /**
  * Tests that backing up and restoring a playerpuzzle activity — either duplicating it or
@@ -204,6 +205,168 @@ final class backup_restore_test extends \advanced_testcase {
             'itemmodule'   => 'playerpuzzle',
             'iteminstance' => $newinstance->id,
         ]));
+    }
+
+    /**
+     * Duplicating an activity copies its own question bank (a fresh question and answer
+     * row each, never the same ids) even though userinfo is off — a bank question is
+     * course content, not user data, the same rule already covered above for attempts
+     * (which correctly do NOT survive a duplicate).
+     *
+     * @return void
+     */
+    public function test_duplicate_activity_copies_bank_questions(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/course/lib.php');
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $questionid = questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Capital of France?',
+            'Think Eiffel Tower.',
+            [
+                ['text' => 'Paris', 'iscorrect' => true],
+                ['text' => 'Lyon', 'iscorrect' => false],
+            ],
+            2
+        );
+
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id, $course->id, false, MUST_EXIST);
+        $newcm = $this->duplicate_cm($course, $cm);
+
+        $newquestions = questions_repository::get_questions_for_instance((int) $newcm->instance);
+        $this->assertCount(1, $newquestions);
+        $newquestion = reset($newquestions);
+        $this->assertNotSame($questionid, (int) $newquestion->id);
+        $this->assertSame('Capital of France?', $newquestion->questiontext);
+        $this->assertSame('Think Eiffel Tower.', $newquestion->hint);
+        $this->assertCount(2, $newquestion->answers);
+        $correct = array_values(array_filter($newquestion->answers, fn($a) => (int) $a->iscorrect === 1));
+        $this->assertSame('Paris', $correct[0]->answertext);
+    }
+
+    /**
+     * A full course backup/restore correctly remaps an attempt's logged question row to the
+     * bank question's new id — a regression test for the namespace bug found while adding
+     * backup/restore coverage: the previous code resolved questionid via the generic
+     * 'question' mapping namespace (core's own real question bank), which nothing ever
+     * registers a mapping under any more since the engine reads only this activity's own
+     * bank — get_mappingid() on the wrong namespace never errors, it silently always
+     * resolves to 0, so this assertion is the only thing that would have caught it.
+     *
+     * @return void
+     */
+    public function test_backup_restore_remaps_attempt_question_to_new_bank_question(): void {
+        global $DB;
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $questionid = questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Q?',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
+        $attemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id,
+            'userid'         => $user->id,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'won',
+            'timecreated'    => time(),
+            'timefinished'   => time(),
+        ]);
+        $this->make_question_log($attemptid, $questionid);
+        // A logged question whose original id was never part of any bank (e.g. the source
+        // question was deleted before this backup was taken) must survive restore with
+        // questionid dropped to 0, not error out — the snapshot text already on the row is
+        // what the post-game review actually displays.
+        $this->make_question_log($attemptid, 999999);
+
+        $newcourse = $this->backup_and_restore_into_new_course($course);
+
+        $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+        $newquestions = questions_repository::get_questions_for_instance((int) $newinstance->id);
+        $this->assertCount(1, $newquestions);
+        $newquestionid = (int) reset($newquestions)->id;
+        $this->assertNotSame($questionid, $newquestionid);
+
+        $newattempt = $DB->get_record(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $newinstance->id],
+            '*',
+            MUST_EXIST
+        );
+        $logs = $DB->get_records('playerpuzzle_attempt_questions', ['attemptid' => $newattempt->id], 'id ASC');
+        $logs = array_values($logs);
+        $this->assertCount(2, $logs);
+        $this->assertSame($newquestionid, (int) $logs[0]->questionid);
+        $this->assertSame(0, (int) $logs[1]->questionid);
+    }
+
+    /**
+     * A file embedded in a bank question's questiontext survives a full course
+     * backup/restore, copied into the restored question's own new id.
+     *
+     * @return void
+     */
+    public function test_backup_restore_carries_bank_question_files(): void {
+        global $DB;
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $questionid = questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            '<p>See @@PLUGINFILE@@/pic.png</p>',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id, $course->id, false, MUST_EXIST);
+        get_file_storage()->create_file_from_string([
+            'contextid' => \context_module::instance($cm->id)->id,
+            'component' => 'mod_playerpuzzle',
+            'filearea'  => 'questiontext',
+            'itemid'    => $questionid,
+            'filepath'  => '/',
+            'filename'  => 'pic.png',
+        ], 'image bytes');
+
+        $newcourse = $this->backup_and_restore_into_new_course($course);
+
+        $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+        $newquestions = questions_repository::get_questions_for_instance((int) $newinstance->id);
+        $newquestion = reset($newquestions);
+        $newcm = get_coursemodule_from_instance('playerpuzzle', $newinstance->id, $newcourse->id, false, MUST_EXIST);
+
+        $files = get_file_storage()->get_area_files(
+            \context_module::instance($newcm->id)->id,
+            'mod_playerpuzzle',
+            'questiontext',
+            $newquestion->id,
+            'sortorder',
+            false
+        );
+        $this->assertCount(1, $files);
+        $this->assertSame('image bytes', reset($files)->get_content());
     }
 
     /**

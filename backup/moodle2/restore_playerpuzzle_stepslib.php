@@ -36,6 +36,14 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         $userinfo = $this->get_setting_value('userinfo');
 
         $paths[] = new restore_path_element('playerpuzzle', '/activity/playerpuzzle');
+        $paths[] = new restore_path_element(
+            'playerpuzzle_bankquestion',
+            '/activity/playerpuzzle/bankquestions/bankquestion'
+        );
+        $paths[] = new restore_path_element(
+            'playerpuzzle_bankanswer',
+            '/activity/playerpuzzle/bankquestions/bankquestion/bankanswers/bankanswer'
+        );
 
         if ($userinfo) {
             $paths[] = new restore_path_element(
@@ -141,6 +149,61 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
     }
 
     /**
+     * Restores a question belonging to the activity's own question bank.
+     *
+     * @param array|object $data XML data for this element.
+     * @return void
+     */
+    public function process_playerpuzzle_bankquestion(array|object $data): void {
+        global $DB;
+
+        $data = (object) $data;
+        $oldid = $data->id;
+
+        $data->playerpuzzleid = $this->get_new_parentid('playerpuzzle');
+        $data->timecreated = $this->apply_date_offset($data->timecreated);
+        $data->timemodified = $this->apply_date_offset($data->timemodified);
+        // Fall back to 0 (anonymous) when unmapped — addedby is content metadata, not
+        // personal data itself, so it is always present here regardless of $userinfo.
+        $data->addedby = (int) $this->get_mappingid('user', $data->addedby, 0);
+
+        $newitemid = $DB->insert_record('playerpuzzle_questions', $data);
+        // Registered under the same name as the path element, so process_playerpuzzle_
+        // bankanswer() can resolve it via get_new_parentid(), and process_playerpuzzle_
+        // attempt_question() — a same-instance sibling processed later in the same
+        // document — can resolve it via get_mappingid(), which does not require the name
+        // to match a path element. The 4th argument (true) is mandatory for
+        // after_execute()'s add_related_files() to find this row's questiontext file: it
+        // records the old activity context as this mapping's parentitemid, which is
+        // exactly what add_related_files()'s own SQL join matches a file's old contextid
+        // against — omitting it means the join finds nothing and the file is silently
+        // never restored, mirroring mod_glossary's own set_mapping('glossary_entry', ...,
+        // true) for glossary_entries.
+        $this->set_mapping('playerpuzzle_bankquestion', $oldid, $newitemid, true);
+    }
+
+    /**
+     * Restores an answer belonging to a restored bank question.
+     *
+     * @param array|object $data XML data for this element.
+     * @return void
+     */
+    public function process_playerpuzzle_bankanswer(array|object $data): void {
+        global $DB;
+
+        $data = (object) $data;
+        $oldid = $data->id;
+
+        $data->questionid = $this->get_new_parentid('playerpuzzle_bankquestion');
+
+        $newitemid = $DB->insert_record('playerpuzzle_question_answers', $data);
+        // Registered purely so after_execute()'s add_related_files() can remap an
+        // answertext file's itemid — nothing else references a bank answer's id. The 4th
+        // argument (true) is mandatory, same reasoning as process_playerpuzzle_bankquestion().
+        $this->set_mapping('playerpuzzle_bankanswer', $oldid, $newitemid, true);
+    }
+
+    /**
      * Restores a student attempt record (only when userinfo is enabled).
      *
      * @param array|object $data XML data for this element.
@@ -189,7 +252,10 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         $data = (object) $data;
 
         $data->attemptid = $this->get_new_parentid('playerpuzzle_attempt');
-        $data->questionid = (int) $this->get_mappingid('question', $data->questionid, 0);
+        // Questionid points at this activity's own bank (see the Wave 1 revert to a single
+        // question source), never the real Moodle question bank — the same namespace the
+        // backup step annotates it under.
+        $data->questionid = (int) $this->get_mappingid('playerpuzzle_bankquestion', $data->questionid, 0);
         $data->timecreated = $this->apply_date_offset($data->timecreated);
 
         $DB->insert_record('playerpuzzle_attempt_questions', $data);
@@ -224,5 +290,7 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
      */
     protected function after_execute(): void {
         $this->add_related_files('mod_playerpuzzle', 'intro', null);
+        $this->add_related_files('mod_playerpuzzle', 'questiontext', 'playerpuzzle_bankquestion');
+        $this->add_related_files('mod_playerpuzzle', 'answertext', 'playerpuzzle_bankanswer');
     }
 }

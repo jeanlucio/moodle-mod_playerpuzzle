@@ -24,42 +24,82 @@
 
 namespace mod_playerpuzzle\local;
 
-use confirm_action;
 use context;
 use moodle_url;
-use pix_icon;
 use renderer_base;
 use stdClass;
 
 /**
  * Builds the mod_playerpuzzle/managequestions template context.
+ *
+ * Mirrors mod_playerwords/managewords.php's own listing (sortable columns, bulk
+ * approve/delete, draw count, paging bar) — ported deliberately for consistency across the
+ * two management screens, not independently designed.
  */
 class question_list_service {
+    /** @var string[] Columns the listing offers a sort link for. */
+    private const SORTABLE_COLUMNS = ['qtype', 'source', 'approved'];
+
     /**
      * Builds the template context for the question listing screen.
      *
-     * Delete links are real core_renderer::action_icon() calls with a confirm_action, not a
-     * plain data-confirm attribute on an anchor — the latter is inert without its own JS
-     * wiring (no core behaviour binds to it), which would make Cancel/Confirm a silent no-op.
-     *
      * @param stdClass $instance The activity instance.
      * @param int $cmid The course module id.
-     * @param renderer_base $output Used to render the edit/delete icons.
+     * @param renderer_base $output Used to render the paging bar.
      * @param context $context Module context, to check AI availability.
+     * @param string $sort Column to sort by (already validated by the caller).
+     * @param string $dir 'ASC' or 'DESC' (already validated by the caller).
+     * @param int $page Zero-based page number.
      * @return array Template context for mod_playerpuzzle/managequestions.
      */
-    public static function build_list_context(stdClass $instance, int $cmid, renderer_base $output, context $context): array {
-        $questions = questions_repository::get_questions_for_instance((int) $instance->id);
+    public static function build_list_context(
+        stdClass $instance,
+        int $cmid,
+        renderer_base $output,
+        context $context,
+        string $sort = 'id',
+        string $dir = 'DESC',
+        int $page = 0
+    ): array {
+        $perpage = questions_repository::MANAGE_PERPAGE;
+        $pool = questions_repository::get_questions_for_management(
+            (int) $instance->id,
+            $page,
+            $perpage,
+            $sort,
+            $dir
+        );
+        $drawcounts = questions_repository::get_draw_counts((int) $instance->id);
+
+        $baseurl = new moodle_url('/mod/playerpuzzle/managequestions.php', ['id' => $cmid]);
+
+        $sorticons = [];
+        $sorturls = [];
+        foreach (self::SORTABLE_COLUMNS as $col) {
+            if ($sort === $col) {
+                $newdir = ($dir === 'ASC') ? 'DESC' : 'ASC';
+                $icon = ($dir === 'ASC') ? 'fa-sort-up' : 'fa-sort-down';
+            } else {
+                $newdir = 'ASC';
+                $icon = 'fa-sort';
+            }
+            $sorticons[$col] = $icon;
+            $colurl = clone $baseurl;
+            $colurl->param('sort', $col);
+            $colurl->param('dir', $newdir);
+            $sorturls[$col] = $colurl->out(false);
+        }
+
+        $pagingbaseurl = clone $baseurl;
+        $pagingbaseurl->param('sort', $sort);
+        $pagingbaseurl->param('dir', $dir);
+        $pagingbar = $output->paging_bar($pool['total'], $page, $perpage, $pagingbaseurl);
 
         $rows = [];
-        foreach ($questions as $question) {
+        foreach ($pool['rows'] as $question) {
             $editurl = new moodle_url(
                 '/mod/playerpuzzle/managequestions.php',
                 ['id' => $cmid, 'action' => 'edit', 'qid' => $question->id]
-            );
-            $deleteurl = new moodle_url(
-                '/mod/playerpuzzle/managequestions.php',
-                ['id' => $cmid, 'action' => 'delete', 'qid' => $question->id, 'sesskey' => sesskey()]
             );
             $approveurl = new moodle_url(
                 '/mod/playerpuzzle/managequestions.php',
@@ -74,24 +114,25 @@ class question_list_service {
 
             $isunapproved = (int) $question->approved === 0;
             $rows[] = [
+                'id' => (int) $question->id,
                 'questiontext' => content_to_text($question->questiontext, (int) $question->questiontextformat),
                 'qtypelabel' => get_string('qtype_' . $question->qtype, 'mod_playerpuzzle'),
                 'answerspreview' => implode(' · ', $answerspreview),
                 'sourcelabel' => get_string('source_' . $question->source, 'mod_playerpuzzle'),
-                'isunapproved' => $isunapproved,
+                'statuslabel' => $isunapproved
+                    ? get_string('pendingstatus', 'mod_playerpuzzle')
+                    : get_string('approvedstatus', 'mod_playerpuzzle'),
+                'ispending' => $isunapproved,
                 'approveurl' => $isunapproved ? $approveurl->out(false) : '',
                 'approvelabel' => get_string('approvequestion', 'mod_playerpuzzle'),
                 'editurl' => $editurl->out(false),
-                'deletelink' => $output->action_icon(
-                    $deleteurl,
-                    new pix_icon('t/delete', get_string('delete')),
-                    new confirm_action(get_string('confirmdeletequestion', 'mod_playerpuzzle'))
-                ),
+                'drawcount' => $drawcounts[(int) $question->id] ?? 0,
             ];
         }
 
         return [
             'cmid' => $cmid,
+            'sesskey' => sesskey(),
             'addurl' => (new moodle_url('/mod/playerpuzzle/managequestions.php', ['id' => $cmid, 'action' => 'add']))->out(false),
             'addquestionlabel' => get_string('addquestion', 'mod_playerpuzzle'),
             'aiavailable' => ai_question_generator::has_key($context),
@@ -101,9 +142,28 @@ class question_list_service {
             'questioncolumnlabel' => get_string('question', 'mod_playerpuzzle'),
             'typecolumnlabel' => get_string('questiontype', 'mod_playerpuzzle'),
             'sourcecolumnlabel' => get_string('source', 'mod_playerpuzzle'),
+            'statuscolumnlabel' => get_string('statuscolumnlabel', 'mod_playerpuzzle'),
+            'drawcountcolumnlabel' => get_string('drawcountcolumnlabel', 'mod_playerpuzzle'),
             'actionscolumnlabel' => get_string('actions'),
-            'unapprovedlabel' => get_string('unapproved', 'mod_playerpuzzle'),
+            'sort_qtype_url' => $sorturls['qtype'],
+            'sort_qtype_icon' => $sorticons['qtype'],
+            'sort_source_url' => $sorturls['source'],
+            'sort_source_icon' => $sorticons['source'],
+            'sort_approved_url' => $sorturls['approved'],
+            'sort_approved_icon' => $sorticons['approved'],
+            'selectalllabel' => get_string('selectall', 'mod_playerpuzzle'),
+            'selectquestionlabel' => get_string('selectquestion', 'mod_playerpuzzle'),
+            'bulkapprovebutton' => get_string('bulkapprovebutton', 'mod_playerpuzzle'),
+            'bulkapprovebuttontitle' => get_string('bulkapprovebuttontitle', 'mod_playerpuzzle'),
+            'bulkapproveconfirm' => get_string('bulkapproveconfirm', 'mod_playerpuzzle'),
+            'bulkdeletebutton' => get_string('bulkdeletebutton', 'mod_playerpuzzle'),
+            'bulkdeleteconfirm' => get_string('bulkdeleteconfirm', 'mod_playerpuzzle'),
+            'deletequestionbutton' => get_string('delete'),
+            'deletequestiontitle' => get_string('deletequestiontitle', 'mod_playerpuzzle'),
+            'deletequestionconfirm' => get_string('confirmdeletequestion', 'mod_playerpuzzle'),
+            'editquestionbutton' => get_string('edit'),
             'questions' => $rows,
+            'pagingbar' => $pagingbar,
             'backurl' => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cmid]))->out(false),
             'backlabel' => get_string('back', 'core'),
         ];

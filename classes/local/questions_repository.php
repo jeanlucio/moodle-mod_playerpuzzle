@@ -41,6 +41,12 @@ class questions_repository {
      */
     public const QTYPES = ['multichoice', 'truefalse'];
 
+    /** @var int Rows per page on the management listing. */
+    public const MANAGE_PERPAGE = 30;
+
+    /** @var string[] Columns get_questions_for_management() may sort by. */
+    private const MANAGE_SORTABLE_COLUMNS = ['id', 'qtype', 'source', 'approved'];
+
     /**
      * Creates a question with its answers in one transaction-free pair of inserts (answers
      * always follow their parent's id, never orphaned by a mid-write failure at this scale).
@@ -351,6 +357,145 @@ class questions_repository {
         }
 
         return array_values($questions);
+    }
+
+    /**
+     * Returns one page of an instance's question pool, ordered by the given column, for the
+     * management listing. Mirrors mod_playerwords\local\words_repository::get_recent_words().
+     *
+     * $sort/$dir are re-validated here against the same allow-list managequestions.php already
+     * applies before calling this — defence in depth, so the method is safe by construction for
+     * any future caller, not only the one that happens to validate correctly today.
+     *
+     * @param int $playerpuzzleid The instance id.
+     * @param int $page Zero-based page number.
+     * @param int $perpage Rows per page. Pass 0 together with $page = 0 for every row unpaginated.
+     * @param string $sort Column to order by; falls back to 'id' when not in the allow-list.
+     * @param string $dir 'ASC' or 'DESC'; falls back to 'DESC'.
+     * @return array{rows: stdClass[], total: int} Rows have ->answers attached, same shape as
+     *  get_question(); 'total' is the unpaginated row count, for the paging bar.
+     */
+    public static function get_questions_for_management(
+        int $playerpuzzleid,
+        int $page = 0,
+        int $perpage = 0,
+        string $sort = 'id',
+        string $dir = 'DESC'
+    ): array {
+        global $DB;
+
+        if (!in_array($sort, self::MANAGE_SORTABLE_COLUMNS, true)) {
+            $sort = 'id';
+        }
+        $dir = (strtoupper($dir) === 'ASC') ? 'ASC' : 'DESC';
+
+        $total = $DB->count_records('playerpuzzle_questions', ['playerpuzzleid' => $playerpuzzleid]);
+
+        $questions = $DB->get_records(
+            'playerpuzzle_questions',
+            ['playerpuzzleid' => $playerpuzzleid],
+            "$sort $dir, id DESC",
+            '*',
+            $page * $perpage,
+            $perpage
+        );
+
+        if ($questions) {
+            $answersbyquestion = [];
+            [$insql, $params] = $DB->get_in_or_equal(array_keys($questions));
+            $allanswers = $DB->get_records_select(
+                'playerpuzzle_question_answers',
+                "questionid $insql",
+                $params,
+                'questionid ASC, sortorder ASC'
+            );
+            foreach ($allanswers as $answer) {
+                $answersbyquestion[$answer->questionid][] = $answer;
+            }
+            foreach ($questions as $question) {
+                $question->answers = $answersbyquestion[$question->id] ?? [];
+            }
+        }
+
+        return [
+            'rows' => array_values($questions),
+            'total' => (int) $total,
+        ];
+    }
+
+    /**
+     * Returns how many times each question in an instance has actually been answered by a
+     * student, keyed by question id — questions never answered are simply absent, callers
+     * should default to 0. Counts playerpuzzle_attempt_questions rows (one per question
+     * answered during an attempt), the same log the post-game review/teacher report read.
+     *
+     * @param int $playerpuzzleid The instance id.
+     * @return array<int, int> Question id => times answered.
+     */
+    public static function get_draw_counts(int $playerpuzzleid): array {
+        global $DB;
+
+        $sql = "SELECT aq.questionid, COUNT(*) AS timesdrawn
+                  FROM {playerpuzzle_attempt_questions} aq
+                  JOIN {playerpuzzle_attempts} a ON a.id = aq.attemptid
+                 WHERE a.playerpuzzleid = :playerpuzzleid
+              GROUP BY aq.questionid";
+        $records = $DB->get_records_sql($sql, ['playerpuzzleid' => $playerpuzzleid]);
+
+        $counts = [];
+        foreach ($records as $record) {
+            $counts[(int) $record->questionid] = (int) $record->timesdrawn;
+        }
+        return $counts;
+    }
+
+    /**
+     * Approves every given question belonging to the instance in one statement — the bulk
+     * counterpart to set_approved(true, ...) for the management listing's "Approve selected".
+     *
+     * @param int[] $questionids Question ids to approve.
+     * @param int $playerpuzzleid The instance every id must belong to.
+     * @return void
+     */
+    public static function approve_questions_bulk(array $questionids, int $playerpuzzleid): void {
+        global $DB;
+
+        if (empty($questionids)) {
+            return;
+        }
+        [$insql, $inparams] = $DB->get_in_or_equal($questionids, SQL_PARAMS_NAMED, 'qid');
+        $inparams['playerpuzzleid'] = $playerpuzzleid;
+        $condition = "id $insql AND playerpuzzleid = :playerpuzzleid";
+        $DB->set_field_select('playerpuzzle_questions', 'approved', 1, $condition, $inparams);
+        $DB->set_field_select('playerpuzzle_questions', 'timemodified', time(), $condition, $inparams);
+    }
+
+    /**
+     * Deletes every given question (and its answers/file areas) belonging to the instance in
+     * one pass — the bulk counterpart to delete_question() for "Delete selected".
+     *
+     * @param int[] $questionids Question ids to delete.
+     * @param int $playerpuzzleid The instance every id must belong to.
+     * @param context|null $context Module context, to purge each question's file areas.
+     * @return void
+     */
+    public static function delete_questions_bulk(array $questionids, int $playerpuzzleid, ?context $context = null): void {
+        global $DB;
+
+        if (empty($questionids)) {
+            return;
+        }
+        [$insql, $params] = $DB->get_in_or_equal($questionids);
+        $params[] = $playerpuzzleid;
+        $ownedids = $DB->get_fieldset_select(
+            'playerpuzzle_questions',
+            'id',
+            "id $insql AND playerpuzzleid = ?",
+            $params
+        );
+        foreach ($ownedids as $ownedid) {
+            self::delete_question((int) $ownedid, $context);
+        }
     }
 
     /**

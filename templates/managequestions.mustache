@@ -22,6 +22,7 @@
     Example context (json):
     {
         "cmid": 2,
+        "sesskey": "abc123",
         "addurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=add",
         "addquestionlabel": "Add question",
         "aiavailable": true,
@@ -31,21 +32,42 @@
         "questioncolumnlabel": "Question",
         "typecolumnlabel": "Type",
         "sourcecolumnlabel": "Source",
+        "statuscolumnlabel": "Status",
+        "drawcountcolumnlabel": "Times drawn",
         "actionscolumnlabel": "Actions",
-        "unapprovedlabel": "Awaiting approval",
+        "sort_qtype_url": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&sort=qtype&dir=ASC",
+        "sort_qtype_icon": "fa-sort",
+        "sort_source_url": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&sort=source&dir=ASC",
+        "sort_source_icon": "fa-sort",
+        "sort_approved_url": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&sort=approved&dir=ASC",
+        "sort_approved_icon": "fa-sort",
+        "selectalllabel": "Select all questions",
+        "selectquestionlabel": "Select question",
+        "bulkapprovebutton": "Approve selected",
+        "bulkapprovebuttontitle": "Approve selected questions",
+        "bulkapproveconfirm": "Are you sure you want to approve the selected questions?",
+        "bulkdeletebutton": "Delete selected",
+        "bulkdeleteconfirm": "Are you sure you want to delete the selected questions?",
+        "deletequestionbutton": "Delete",
+        "deletequestiontitle": "Delete question",
+        "deletequestionconfirm": "Are you sure you want to delete this question?",
+        "editquestionbutton": "Edit",
         "questions": [
             {
+                "id": 5,
                 "questiontext": "What is 2 + 2?",
                 "qtypelabel": "Multiple choice",
                 "answerspreview": "✓ 4 · 3 · 5",
                 "sourcelabel": "Manual",
-                "isunapproved": true,
+                "statuslabel": "Pending approval",
+                "ispending": true,
                 "approveurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=approve&qid=5",
                 "approvelabel": "Approve",
                 "editurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=edit&qid=5",
-                "deletelink": "<a href=\"#\">Delete</a>"
+                "drawcount": 3
             }
         ],
+        "pagingbar": "<nav aria-label=\"pagination\">…</nav>",
         "backurl": "https://example.com/mod/playerpuzzle/view.php?id=2",
         "backlabel": "Back"
     }
@@ -62,38 +84,111 @@
 {{/hasquestions}}
 
 {{#hasquestions}}
-<div class="table-responsive">
-    <table class="generaltable">
-        <thead>
-            <tr>
-                <th scope="col">{{questioncolumnlabel}}</th>
-                <th scope="col">{{typecolumnlabel}}</th>
-                <th scope="col">{{sourcecolumnlabel}}</th>
-                <th scope="col">{{actionscolumnlabel}}</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{#questions}}
-            <tr>
-                <td>
-                    {{questiontext}}
-                    <div class="text-muted small">{{answerspreview}}</div>
-                </td>
-                <td>{{qtypelabel}}</td>
-                <td>
-                    {{sourcelabel}}
-                    {{#isunapproved}}<span class="badge bg-warning text-dark">{{unapprovedlabel}}</span>{{/isunapproved}}
-                </td>
-                <td>
-                    {{#isunapproved}}<a href="{{approveurl}}">{{approvelabel}}</a>{{/isunapproved}}
-                    <a href="{{editurl}}">{{#str}} edit, core {{/str}}</a>
-                    {{{deletelink}}}
-                </td>
-            </tr>
-            {{/questions}}
-        </tbody>
-    </table>
-</div>
+<form id="playerpuzzle-bulk-form" method="post" action="{{{config.wwwroot}}}/mod/playerpuzzle/managequestions.php">
+    <input type="hidden" name="id" value="{{cmid}}">
+    <input type="hidden" id="playerpuzzle-bulk-action" name="bulkaction" value="">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+
+    <div class="mb-2">
+        <button type="button"
+                id="playerpuzzle-bulk-approve-btn"
+                class="btn btn-outline-success btn-sm me-2"
+                data-labelbase="{{bulkapprovebutton}}"
+                data-title="{{bulkapprovebuttontitle}}"
+                data-confirm="{{bulkapproveconfirm}}"
+                disabled>
+            {{bulkapprovebutton}}
+        </button>
+        <button type="button"
+                id="playerpuzzle-bulk-delete-btn"
+                class="btn btn-outline-danger btn-sm"
+                data-labelbase="{{bulkdeletebutton}}"
+                data-title="{{deletequestiontitle}}"
+                data-confirm="{{bulkdeleteconfirm}}"
+                disabled>
+            {{bulkdeletebutton}}
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="generaltable">
+            <thead>
+                <tr>
+                    <th scope="col">
+                        <input type="checkbox"
+                               id="playerpuzzle-select-all"
+                               class="form-check-input"
+                               aria-label="{{selectalllabel}}">
+                    </th>
+                    <th scope="col">{{questioncolumnlabel}}</th>
+                    <th scope="col">
+                        <a href="{{{sort_qtype_url}}}" class="text-reset text-decoration-none">
+                            {{typecolumnlabel}}
+                            <i class="fa {{sort_qtype_icon}}" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th scope="col">
+                        <a href="{{{sort_source_url}}}" class="text-reset text-decoration-none">
+                            {{sourcecolumnlabel}}
+                            <i class="fa {{sort_source_icon}}" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th scope="col">
+                        <a href="{{{sort_approved_url}}}" class="text-reset text-decoration-none">
+                            {{statuscolumnlabel}}
+                            <i class="fa {{sort_approved_icon}}" aria-hidden="true"></i>
+                        </a>
+                    </th>
+                    <th scope="col">{{drawcountcolumnlabel}}</th>
+                    <th scope="col">{{actionscolumnlabel}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#questions}}
+                <tr>
+                    <td>
+                        <input type="checkbox"
+                               name="bulk_ids[]"
+                               value="{{id}}"
+                               class="form-check-input playerpuzzle-bulk-check"
+                               aria-label="{{selectquestionlabel}} {{questiontext}}"
+                               {{#ispending}}data-pending="1"{{/ispending}}>
+                    </td>
+                    <td>
+                        {{questiontext}}
+                        <div class="text-muted small">{{answerspreview}}</div>
+                    </td>
+                    <td>{{qtypelabel}}</td>
+                    <td>{{sourcelabel}}</td>
+                    <td>
+                        {{#ispending}}<span class="badge bg-warning text-dark">{{statuslabel}}</span>{{/ispending}}
+                        {{^ispending}}<span class="badge bg-success">{{statuslabel}}</span>{{/ispending}}
+                    </td>
+                    <td>{{drawcount}}</td>
+                    <td>
+                        <a href="{{{editurl}}}" class="btn btn-outline-secondary btn-sm me-1">
+                            {{editquestionbutton}}
+                        </a>
+                        {{#ispending}}
+                        <a href="{{{approveurl}}}" class="btn btn-outline-success btn-sm me-1">
+                            {{approvelabel}}
+                        </a>
+                        {{/ispending}}
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm playerpuzzle-single-delete-btn"
+                                data-questionid="{{id}}"
+                                data-title="{{deletequestiontitle}}"
+                                data-confirm="{{deletequestionconfirm}}">
+                            {{deletequestionbutton}}
+                        </button>
+                    </td>
+                </tr>
+                {{/questions}}
+            </tbody>
+        </table>
+    </div>
+    {{{pagingbar}}}
+</form>
 {{/hasquestions}}
 
 <a href="{{backurl}}" class="btn btn-secondary mt-3">{{backlabel}}</a>

@@ -487,4 +487,219 @@ final class questions_repository_test extends \advanced_testcase {
 
         $this->assertSame([], questions_repository::get_questions_for_instance(7));
     }
+
+    /**
+     * Tests that get_questions_for_management() scopes by instance, paginates, sorts by an
+     * allowed column, falls back to 'id' for an unknown one, and attaches each row's answers.
+     *
+     * @return void
+     */
+    public function test_get_questions_for_management_scopes_paginates_and_sorts(): void {
+        $this->resetAfterTest();
+
+        $first = questions_repository::add_question(
+            7,
+            'multichoice',
+            'A question',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42,
+            'ai'
+        );
+        $second = questions_repository::add_question(
+            7,
+            'truefalse',
+            'B question',
+            '',
+            [
+                ['text' => get_string('true', 'qtype_truefalse'), 'iscorrect' => true],
+                ['text' => get_string('false', 'qtype_truefalse'), 'iscorrect' => false],
+            ],
+            42,
+            'manual'
+        );
+        // Belongs to a different instance — must never leak into instance 7's listing.
+        questions_repository::add_question(
+            9,
+            'multichoice',
+            'Other instance question',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42
+        );
+
+        $pool = questions_repository::get_questions_for_management(7, 0, 1, 'source', 'ASC');
+
+        $this->assertSame(2, $pool['total']);
+        $this->assertCount(1, $pool['rows']);
+        $this->assertSame($first, (int) $pool['rows'][0]->id);
+        $this->assertNotEmpty($pool['rows'][0]->answers);
+
+        $secondpage = questions_repository::get_questions_for_management(7, 1, 1, 'source', 'ASC');
+        $this->assertCount(1, $secondpage['rows']);
+        $this->assertSame($second, (int) $secondpage['rows'][0]->id);
+
+        $fallback = questions_repository::get_questions_for_management(7, 0, 30, 'notacolumn', 'ASC');
+        $this->assertCount(2, $fallback['rows']);
+    }
+
+    /**
+     * Tests that get_draw_counts() counts each question's rows in
+     * playerpuzzle_attempt_questions across every attempt of the instance, and never counts
+     * a question drawn only in a different instance's attempt.
+     *
+     * @return void
+     */
+    public function test_get_draw_counts_counts_per_question_within_instance(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Drawn question',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42
+        );
+        $neverdrawn = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Never drawn',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42
+        );
+
+        $now = time();
+        $attemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => 7,
+            'userid' => 2,
+            'token' => 'tok-instance-7',
+            'timecreated' => $now,
+        ]);
+        $otherattemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => 9,
+            'userid' => 2,
+            'token' => 'tok-instance-9',
+            'timecreated' => $now,
+        ]);
+
+        for ($i = 0; $i < 2; $i++) {
+            $DB->insert_record('playerpuzzle_attempt_questions', (object) [
+                'attemptid' => $attemptid,
+                'questionid' => $questionid,
+                'iscorrect' => 1,
+                'timecreated' => $now,
+            ]);
+        }
+        // Same question id drawn in a different instance's attempt — must not be counted here.
+        $DB->insert_record('playerpuzzle_attempt_questions', (object) [
+            'attemptid' => $otherattemptid,
+            'questionid' => $questionid,
+            'iscorrect' => 1,
+            'timecreated' => $now,
+        ]);
+
+        $counts = questions_repository::get_draw_counts(7);
+
+        $this->assertSame(2, $counts[$questionid]);
+        $this->assertArrayNotHasKey($neverdrawn, $counts);
+    }
+
+    /**
+     * Tests that approve_questions_bulk() approves every given id belonging to the instance,
+     * and never touches an id belonging to a different one.
+     *
+     * @return void
+     */
+    public function test_approve_questions_bulk_approves_owned_ids_only(): void {
+        $this->resetAfterTest();
+
+        $pending = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Pending',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42,
+            'ai',
+            false
+        );
+        $foreign = questions_repository::add_question(
+            9,
+            'multichoice',
+            'Belongs to another instance',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42,
+            'ai',
+            false
+        );
+
+        questions_repository::approve_questions_bulk([$pending, $foreign], 7);
+
+        $this->assertSame(1, (int) questions_repository::get_question($pending, 7)->approved);
+        $this->assertSame(0, (int) questions_repository::get_question($foreign, 9)->approved);
+    }
+
+    /**
+     * Tests that delete_questions_bulk() deletes every given id belonging to the instance
+     * (including its answers), and leaves an id belonging to a different instance untouched.
+     *
+     * @return void
+     */
+    public function test_delete_questions_bulk_deletes_owned_ids_only(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+
+        $owned = questions_repository::add_question(
+            7,
+            'multichoice',
+            'To be deleted',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42
+        );
+        $foreign = questions_repository::add_question(
+            9,
+            'multichoice',
+            'Belongs to another instance',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42
+        );
+
+        questions_repository::delete_questions_bulk([$owned, $foreign], 7);
+
+        $this->assertNull(questions_repository::get_question($owned, 7));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_question_answers', ['questionid' => $owned]));
+        $this->assertNotNull(questions_repository::get_question($foreign, 9));
+    }
 }

@@ -67,6 +67,32 @@ if ($action === 'approve' && $questionid) {
     redirect($url, get_string('questionapproved', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
 }
 
+$bulkaction = optional_param('bulkaction', '', PARAM_ALPHA);
+if ($bulkaction !== '') {
+    require_sesskey();
+    $bulkids = array_values(array_filter(array_map('intval', optional_param_array('bulk_ids', [], PARAM_INT))));
+    if ($bulkaction === 'delete') {
+        questions_repository::delete_questions_bulk($bulkids, (int) $instance->id, $context);
+        redirect($url, get_string('bulkdeleted', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
+    } else if ($bulkaction === 'approve') {
+        questions_repository::approve_questions_bulk($bulkids, (int) $instance->id);
+        redirect($url, get_string('bulkapproved', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
+    }
+}
+
+$sort = optional_param('sort', 'id', PARAM_ALPHA);
+$dir = optional_param('dir', 'DESC', PARAM_ALPHA);
+$page = optional_param('page', 0, PARAM_INT);
+
+$allowedsorts = ['id', 'qtype', 'source', 'approved'];
+if (!in_array($sort, $allowedsorts, true)) {
+    $sort = 'id';
+}
+$dir = strtoupper($dir);
+if (!in_array($dir, ['ASC', 'DESC'], true)) {
+    $dir = 'DESC';
+}
+
 $importablecategories = question_bank_sync::get_importable_categories($cm);
 $importform = new import_form($url, ['categories' => $importablecategories]);
 
@@ -235,18 +261,25 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
 
     $mform->display();
 } else {
-    $listcontext = question_list_service::build_list_context($instance, $cmid, $OUTPUT, $context);
-    if ($listcontext['aiavailable']) {
-        $PAGE->requires->js_call_amd('mod_playerpuzzle/ai_generate', 'init', [$cmid]);
-    }
-    echo $OUTPUT->render_from_template('mod_playerpuzzle/managequestions', $listcontext);
+    echo $OUTPUT->heading(format_string($instance->name, true, ['context' => $context]));
 
+    // The import-from-bank option lives above the question list, not after it — a teacher
+    // scanning the page top-to-bottom sees it before deciding whether to add/generate
+    // questions manually, instead of risking it going unnoticed at the very end of a long,
+    // paginated list (reported live, 17/09/2026).
     echo $OUTPUT->heading(get_string('importheader', 'mod_playerpuzzle'), 3);
     if (empty($importablecategories)) {
         echo $OUTPUT->notification(get_string('noimportablecategories', 'mod_playerpuzzle'), 'info');
     } else {
         $importform->display();
     }
+
+    $listcontext = question_list_service::build_list_context($instance, $cmid, $OUTPUT, $context, $sort, $dir, $page);
+    if ($listcontext['aiavailable']) {
+        $PAGE->requires->js_call_amd('mod_playerpuzzle/ai_generate', 'init', [$cmid]);
+    }
+    $PAGE->requires->js_call_amd('mod_playerpuzzle/managequestions', 'init');
+    echo $OUTPUT->render_from_template('mod_playerpuzzle/managequestions', $listcontext);
 }
 
 echo $OUTPUT->footer();

@@ -112,18 +112,36 @@ class question_list_service {
                 $question->answers
             );
 
-            $isunapproved = (int) $question->approved === 0;
+            // Only 'ai' ever reaches approved = 0 through a review queue a teacher is meant to
+            // act on; question_bank_sync::sync_from_category() is the only other place that
+            // clears the flag, for a 'bank' row orphaned by its source category disappearing —
+            // that is a disabled state, not a pending one, and the fix is resyncing, not
+            // approving. 'manual' never reaches approved = 0 through any code path today, but
+            // is treated the same as 'bank' here rather than as unreachable, so a future
+            // manual-disable action would get the right label for free.
+            $isaipending = (int) $question->approved === 0 && $question->source === 'ai';
+            $isdisabled = (int) $question->approved === 0 && $question->source !== 'ai';
+            if ($isaipending) {
+                $statuslabel = get_string('pendingstatus', 'mod_playerpuzzle');
+                $statusbadgeclass = 'bg-warning text-dark';
+            } else if ($isdisabled) {
+                $statuslabel = get_string('disabledstatus', 'mod_playerpuzzle');
+                $statusbadgeclass = 'bg-secondary pp-status-disabled';
+            } else {
+                $statuslabel = get_string('approvedstatus', 'mod_playerpuzzle');
+                $statusbadgeclass = 'bg-success';
+            }
+
             $rows[] = [
                 'id' => (int) $question->id,
                 'questiontext' => content_to_text($question->questiontext, (int) $question->questiontextformat),
                 'qtypelabel' => get_string('qtype_' . $question->qtype, 'mod_playerpuzzle'),
                 'answerspreview' => implode(' · ', $answerspreview),
                 'sourcelabel' => get_string('source_' . $question->source, 'mod_playerpuzzle'),
-                'statuslabel' => $isunapproved
-                    ? get_string('pendingstatus', 'mod_playerpuzzle')
-                    : get_string('approvedstatus', 'mod_playerpuzzle'),
-                'ispending' => $isunapproved,
-                'approveurl' => $isunapproved ? $approveurl->out(false) : '',
+                'statuslabel' => $statuslabel,
+                'statusbadgeclass' => $statusbadgeclass,
+                'ispending' => $isaipending,
+                'approveurl' => $isaipending ? $approveurl->out(false) : '',
                 'approvelabel' => get_string('approvequestion', 'mod_playerpuzzle'),
                 'editurl' => $editurl->out(false),
                 'drawcount' => $drawcounts[(int) $question->id] ?? 0,

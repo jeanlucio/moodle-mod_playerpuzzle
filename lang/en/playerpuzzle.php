@@ -92,6 +92,7 @@ $string['deletequestiontitle'] = 'Delete question';
 $string['difficulty_easy'] = 'Easy';
 $string['difficulty_hard'] = 'Hard';
 $string['difficulty_normal'] = 'Normal';
+$string['disabledstatus'] = 'Disabled';
 $string['drawcountcolumnlabel'] = 'Times drawn';
 $string['duedate'] = 'Due date';
 $string['duedate_help'] = 'Shown as a calendar event and in the course "up next" list. Purely informational — it does not block play before or after this date.';

@@ -596,3 +596,11 @@ body.path-mod-playerpuzzle .pp-debrief::backdrop {
 body.path-mod-playerpuzzle .pp-debrief-question {
     color: var(--gray-800, #343a40);
 }
+
+/**
+ * Question management listing: bg-secondary alone has insufficient text contrast
+ * (white text on gray fails WCAG) — force dark text on the "Disabled" status badge.
+ */
+body.path-mod-playerpuzzle .badge.pp-status-disabled {
+    color: var(--bs-dark, #000);
+}

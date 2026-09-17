@@ -60,6 +60,7 @@
                 "answerspreview": "✓ 4 · 3 · 5",
                 "sourcelabel": "Manual",
                 "statuslabel": "Pending approval",
+                "statusbadgeclass": "bg-warning text-dark",
                 "ispending": true,
                 "approveurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=approve&qid=5",
                 "approvelabel": "Approve",
@@ -161,8 +162,7 @@
                     <td>{{qtypelabel}}</td>
                     <td>{{sourcelabel}}</td>
                     <td>
-                        {{#ispending}}<span class="badge bg-warning text-dark">{{statuslabel}}</span>{{/ispending}}
-                        {{^ispending}}<span class="badge bg-success">{{statuslabel}}</span>{{/ispending}}
+                        <span class="badge {{statusbadgeclass}}">{{statuslabel}}</span>
                     </td>
                     <td>{{drawcount}}</td>
                     <td>

@@ -92,6 +92,7 @@ $string['deletequestiontitle'] = 'Excluir pergunta';
 $string['difficulty_easy'] = 'Fácil';
 $string['difficulty_hard'] = 'Difícil';
 $string['difficulty_normal'] = 'Normal';
+$string['disabledstatus'] = 'Desativada';
 $string['drawcountcolumnlabel'] = 'Vezes sorteada';
 $string['duedate'] = 'Prazo final';
 $string['duedate_help'] = 'Aparece como um evento de calendário e na lista "Em breve" do curso. É só informativo — não bloqueia o jogo antes ou depois dessa data.';

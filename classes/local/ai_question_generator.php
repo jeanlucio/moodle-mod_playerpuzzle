@@ -42,6 +42,14 @@ class ai_question_generator {
     private const MAX_COUNT = 10;
 
     /**
+     * Ceiling on multichoice answers per AI-generated question. Unlike
+     * questions_repository's manual editor (a growable repeat_elements() form with no fixed
+     * ceiling), this one exists purely to keep the model from hallucinating an implausibly
+     * long option list, not because of any UI/storage constraint.
+     */
+    public const MAX_ANSWERS = 5;
+
+    /**
      * Returns true when an AI source (hub key or core_ai) is available.
      *
      * local_aihub is a site-wide BYOK service with no per-course scoping of its own, so
@@ -128,13 +136,12 @@ class ai_question_generator {
         // The game only ever grades a single correct choice — see question_fetcher.php —
         // so a question with zero or more than one correct answer can never be played
         // correctly and must be rejected here rather than saved half-broken. The upper bound
-        // matches question_form.php's fixed slot count: the AI is asked for at most that many
-        // options, but nothing stops it from ignoring the prompt, and a question saved with
-        // more would be silently truncated the moment a teacher opens it in that form.
+        // is self::MAX_ANSWERS: the AI is asked for at most that many options, but nothing
+        // stops it from ignoring the prompt and returning more.
         if (
             $correctcount !== 1
             || count($shapedanswers) < 2
-            || count($shapedanswers) > questions_repository::MAX_MULTICHOICE_ANSWERS
+            || count($shapedanswers) > self::MAX_ANSWERS
         ) {
             return null;
         }
@@ -295,7 +302,7 @@ class ai_question_generator {
             "You are generating quiz questions for an educational game about the topic: \"{$topic}\".",
             "Generate {$count} questions. Write all text in language: {$langname}.",
             'Use only these two types: "multichoice" and "truefalse".',
-            'For "multichoice": 2 to 5 short options, with exactly one marked "correct": true.',
+            'For "multichoice": 2 to ' . self::MAX_ANSWERS . ' short options, with exactly one marked "correct": true.',
             'For "truefalse": "answer" is a JSON boolean, true or false.',
             'For every question, "hint" is one short clue sentence that helps without giving away'
                 . ' the answer; use an empty string if no good hint applies.',

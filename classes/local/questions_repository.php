@@ -42,15 +42,6 @@ class questions_repository {
     public const QTYPES = ['multichoice', 'truefalse'];
 
     /**
-     * Ceiling on multichoice options the manual question_form.php can display/edit (a fixed
-     * 5-slot layout, not a repeat_elements() "add more" control). Every path that can put a
-     * question into this table (manual entry, AI generation, real question bank import) must
-     * respect this same ceiling, or a question saved elsewhere with more options would be
-     * silently truncated the moment a teacher opens and re-saves it through that form.
-     */
-    public const MAX_MULTICHOICE_ANSWERS = 5;
-
-    /**
      * Creates a question with its answers in one transaction-free pair of inserts (answers
      * always follow their parent's id, never orphaned by a mid-write failure at this scale).
      *

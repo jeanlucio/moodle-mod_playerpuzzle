@@ -274,10 +274,7 @@ class question_bank_sync {
      * questions_repository. Returns null when the question must be skipped: a multichoice
      * question configured to accept more than one correct answer
      * (qtype_multichoice_options.single = 0) — the game only knows how to grade a single
-     * correct choice — a question with no answer rows at all, or a multichoice question with
-     * more options than questions_repository::MAX_MULTICHOICE_ANSWERS, the fixed ceiling
-     * question_form.php's manual editor can display (importing it anyway would silently lose
-     * the extra options the moment a teacher opened and re-saved it there).
+     * correct choice — or a question with no answer rows at all.
      *
      * Each entry also carries 'sourceanswerid' (the bank's own question_answers.id) —
      * questions_repository ignores the unknown key when writing the row, and
@@ -301,7 +298,7 @@ class question_bank_sync {
         }
 
         $rows = $DB->get_records('question_answers', ['question' => $questionid], 'id ASC');
-        if (empty($rows) || count($rows) > questions_repository::MAX_MULTICHOICE_ANSWERS) {
+        if (empty($rows)) {
             return null;
         }
 

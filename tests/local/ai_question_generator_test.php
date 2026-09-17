@@ -355,15 +355,15 @@ final class ai_question_generator_test extends \basic_testcase {
     }
 
     /**
-     * More options than questions_repository::MAX_MULTICHOICE_ANSWERS are rejected — the
-     * manual editor's fixed slots cannot display more, so saving one anyway would silently
-     * truncate it the first time a teacher opened and re-saved it there.
+     * More options than ai_question_generator::MAX_ANSWERS are rejected — this ceiling
+     * exists purely to keep the model from hallucinating an implausible option list, unlike
+     * the manual editor, which has no such ceiling.
      *
      * @return void
      */
     public function test_validate_shaped_question_rejects_too_many_options(): void {
         $answers = [];
-        for ($i = 0; $i < questions_repository::MAX_MULTICHOICE_ANSWERS + 1; $i++) {
+        for ($i = 0; $i < ai_question_generator::MAX_ANSWERS + 1; $i++) {
             $answers[] = ['text' => 'Option ' . $i, 'iscorrect' => $i === 0];
         }
 

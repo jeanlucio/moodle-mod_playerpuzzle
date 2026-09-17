@@ -80,7 +80,22 @@ if (!empty($importablecategories) && ($importdata = $importform->get_data())) {
     );
 }
 
-$mform = new question_form($url, ['context' => $context]);
+// Fetched here, before constructing the form, so its answer count can size the
+// multichoice repeat_elements() block on the form's first (non-postback) render — the
+// value only matters for that first render; a postback (an "Add more" click or the real
+// submit) always carries its own repeat count in the option_repeats hidden field instead.
+$editquestion = null;
+if ($action === 'edit' && $questionid) {
+    $editquestion = questions_repository::get_question($questionid, (int) $instance->id);
+    if (!$editquestion) {
+        redirect($url);
+    }
+}
+
+$mform = new question_form($url, [
+    'context' => $context,
+    'answercount' => $editquestion ? count($editquestion->answers) : 0,
+]);
 
 if ($mform->is_cancelled()) {
     redirect($url);
@@ -160,23 +175,8 @@ echo $OUTPUT->header();
 // too — otherwise a validation error would silently fall through to the list below instead
 // of redisplaying the form with the error messages.
 if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
-    if ($action === 'edit' && $questionid && !$mform->is_submitted()) {
-        $question = questions_repository::get_question($questionid, (int) $instance->id);
-        if (!$question) {
-            redirect($url);
-        }
-        // This form has a fixed slot count (question_form.php); a question with more options
-        // than that can only have arrived from AI generation or bank import predating the
-        // ceiling enforced there now. Refuse to open it here instead of silently truncating
-        // it to the visible slots on save.
-        if (count($question->answers) > questions_repository::MAX_MULTICHOICE_ANSWERS) {
-            redirect(
-                $url,
-                get_string('error_toomanyoptionstoedit', 'mod_playerpuzzle', questions_repository::MAX_MULTICHOICE_ANSWERS),
-                null,
-                \core\output\notification::NOTIFY_ERROR
-            );
-        }
+    if ($action === 'edit' && $editquestion && !$mform->is_submitted()) {
+        $question = $editquestion;
 
         $formdata = new stdClass();
         $formdata->qid = $question->id;
@@ -213,6 +213,13 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
                 }
                 $i++;
             }
+            // Pad any remaining rendered slots (the form always shows at least 5) with
+            // blank editors, same as a brand new question below — otherwise a question
+            // with fewer than 5 saved answers would leave its unused slots without the
+            // draft file area prepare() sets up.
+            for (; $i <= question_form::initial_repeat_count(count($question->answers)); $i++) {
+                $optiontexteditors[$i] = question_editor_files::prepare('', FORMAT_HTML, null, $context, 'answertext');
+            }
             $formdata->optiontext_editor = $optiontexteditors;
         }
 
@@ -220,7 +227,7 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
     } else if (!$mform->is_submitted()) {
         $formdata = ['cmid' => $cm->id];
         $formdata['questiontext_editor'] = question_editor_files::prepare('', FORMAT_HTML, null, $context, 'questiontext');
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= question_form::initial_repeat_count(0); $i++) {
             $formdata['optiontext_editor'][$i] = question_editor_files::prepare('', FORMAT_HTML, null, $context, 'answertext');
         }
         $mform->set_data($formdata);

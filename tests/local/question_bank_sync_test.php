@@ -216,14 +216,14 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a multichoice question with more options than
-     * questions_repository::MAX_MULTICHOICE_ANSWERS is skipped and counted, never imported
-     * half-broken — importing it would leave a question the manual editor's fixed slots
-     * cannot fully display, silently losing the extra options on the first re-save there.
+     * Tests that a source multichoice question with more than 5 options is still imported in
+     * full, never truncated — question_form.php's manual editor is a growable
+     * repeat_elements() control with no fixed ceiling, so there is nothing here that would
+     * lose the extra options on a later re-save.
      *
      * @return void
      */
-    public function test_sync_skips_question_with_too_many_options_and_counts_it(): void {
+    public function test_sync_imports_a_question_with_more_than_five_options(): void {
         global $DB;
 
         $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
@@ -238,16 +238,14 @@ final class question_bank_sync_test extends \advanced_testcase {
             $answer->fraction = 0;
             $DB->insert_record('question_answers', $answer);
         }
-        $this->assertGreaterThan(
-            questions_repository::MAX_MULTICHOICE_ANSWERS,
-            $DB->count_records('question_answers', ['question' => $question->id])
-        );
+        $sourcecount = $DB->count_records('question_answers', ['question' => $question->id]);
+        $this->assertGreaterThan(5, $sourcecount);
 
         $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
 
-        $this->assertSame(0, $stats->imported);
-        $this->assertSame(1, $stats->skipped);
-        $this->assertSame([], questions_repository::get_questions_for_instance((int) $this->instance->id));
+        $this->assertSame(1, $stats->imported);
+        $imported = questions_repository::get_questions_for_instance((int) $this->instance->id)[0];
+        $this->assertCount($sourcecount, $imported->answers);
     }
 
     /**

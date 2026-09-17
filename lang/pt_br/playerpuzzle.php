@@ -24,6 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+$string['addmorealternatives'] = 'Adicionar mais {no} alternativas';
 $string['addquestion'] = 'Adicionar pergunta';
 $string['advancingphase'] = 'Avançando para a próxima fase...';
 $string['aicount'] = 'Quantas perguntas';
@@ -94,7 +95,6 @@ $string['error_completionattempts'] = 'As tentativas exigidas devem ser no míni
 $string['error_completionwins'] = 'As vitórias exigidas devem ser no mínimo 1.';
 $string['error_correctoptionempty'] = 'A opção marcada como correta não pode estar vazia.';
 $string['error_hud_cost_qty'] = 'A quantidade precisa ser pelo menos 1 quando um item está configurado.';
-$string['error_toomanyoptionstoedit'] = 'Esta questão tem mais de {$a} opções e não pode ser editada aqui.';
 $string['event_game_completed'] = 'Jogo concluído';
 $string['event_game_started'] = 'Jogo iniciado';
 $string['gamemode'] = 'Modo de jogo';
@@ -190,7 +190,7 @@ $string['minquestions'] = 'Mínimo de perguntas por partida';
 $string['minquestions_help'] = 'O estudante precisa responder pelo menos essa quantidade de perguntas (certas ou erradas) antes que a partida possa terminar em vitória. Se o chefe chegar a 0 de HP antes do contador atingir esse valor, o chefe revive com 50% do HP e o combate continua. Defina como 0 para desativar essa exigência.';
 $string['minquestionsnotmet'] = 'Esta tentativa ainda não pode ser vencida: é preciso responder pelo menos {$a} pergunta(s) antes.';
 $string['modulename'] = 'PlayerPuzzle';
-$string['modulename_help'] = 'A atividade PlayerPuzzle permite que o professor crie um jogo RPG Match-3 onde os estudantes combinam gemas para derrotar um chefe, respondem perguntas e ganham moedas.';
+$string['modulename_help'] = 'A atividade PlayerPuzzle permite que o professor crie um jogo RPG Match-3 onde os estudantes combinam gemas para derrotar um chefe, respondem perguntas e ganham moedas. As perguntas podem ser digitadas manualmente, importadas do banco de questões do curso, ou geradas por IA.';
 $string['modulenameplural'] = 'PlayerPuzzles';
 $string['name'] = 'Nome da fase';
 $string['nextlevel'] = 'Próximo nível: {$a}';

@@ -269,6 +269,46 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a re-sync actually propagates an edit made to the source question's text
+     * and to one of its answers — the "updated" count the two tests above already exercise
+     * covers a re-sync where nothing changed; this one confirms the opposite case, where the
+     * teacher genuinely edited the question in the real bank, end to end through
+     * sync_from_category() rather than by calling update_question_content() directly.
+     *
+     * @return void
+     */
+    public function test_sync_propagates_an_edit_to_the_source_question_on_rerun(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $question = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+        $before = questions_repository::get_questions_for_instance((int) $this->instance->id);
+        $questionid = (int) $before[0]->id;
+        $this->assertStringNotContainsString('Edited', $before[0]->questiontext);
+
+        // Simulates the teacher editing the question in the real question bank — same
+        // convention the orphan test below uses (mutate the row directly instead of driving
+        // the core question bank's edit UI), since sync_from_category() only ever reads
+        // question.questiontext/question_answers.answer for the latest ready version, never
+        // how that content got there.
+        $DB->set_field('question', 'questiontext', 'Edited question text', ['id' => $question->id]);
+        $answerid = $DB->get_field('question_answers', 'id', ['question' => $question->id, 'fraction' => 1], IGNORE_MULTIPLE);
+        $DB->set_field('question_answers', 'answer', 'Edited correct answer', ['id' => $answerid]);
+
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(0, $stats->imported);
+        $this->assertSame(1, $stats->updated);
+        $after = questions_repository::get_question($questionid, (int) $this->instance->id);
+        $this->assertSame('Edited question text', $after->questiontext);
+        $correct = array_values(array_filter($after->answers, fn($a) => (int) $a->iscorrect === 1));
+        $this->assertSame('Edited correct answer', $correct[0]->answertext);
+    }
+
+    /**
      * Tests that a bank-sourced row whose bank entry disappears from the category (deleted,
      * in this test) is soft-disabled — approved flips to 0 — never hard-deleted, since an
      * attempt's answered-question log may still reference its id.

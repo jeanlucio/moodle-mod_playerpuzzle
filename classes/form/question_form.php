@@ -136,8 +136,13 @@ class question_form extends \moodleform {
 
         for ($i = 1; $i <= $repeats; $i++) {
             $group = [
+                // The radio comes first (and carries its own visible text) so it reads as
+                // "mark this one correct, here is its text" instead of trailing silently
+                // after the editor with no indication of what it does — the group's own
+                // label stays blank (matches every other row) rather than acting as a
+                // fallback accessible name for the radio.
+                $mform->createElement('radio', 'mccorrect', '', get_string('markcorrect', 'mod_playerpuzzle'), $i),
                 $mform->createElement('editor', "optiontext_editor[$i]", '', ['rows' => 2], $editoroptions),
-                $mform->createElement('radio', 'mccorrect', '', '', $i),
             ];
             $mform->addGroup(
                 $group,
@@ -153,7 +158,7 @@ class question_form extends \moodleform {
         $mform->addElement(
             'submit',
             'option_add_fields',
-            get_string('addmorealternatives', 'mod_playerpuzzle'),
+            str_ireplace('{no}', 3, get_string('addmorealternatives', 'mod_playerpuzzle')),
             [],
             false
         );

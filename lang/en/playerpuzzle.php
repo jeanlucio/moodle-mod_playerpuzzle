@@ -176,6 +176,7 @@ $string['lobby_shieldstock'] = 'Shield: {$a}';
 $string['lobby_swordstock'] = 'Sword: {$a}';
 $string['manafull'] = 'Mana meter full. A question challenge has opened.';
 $string['managequestions'] = 'Manage questions';
+$string['markcorrect'] = 'Correct';
 $string['max_single_matches'] = 'Number of single matches';
 $string['maxattempts'] = 'Maximum attempts';
 $string['maxattempts_help'] = 'Counts only attempts that end in defeat across the whole campaign, not phases played — winning a phase never spends one. After a defeat, the next attempt resumes on that same level and phase, not from the beginning. 0 means unlimited.';

@@ -176,6 +176,7 @@ $string['lobby_shieldstock'] = 'Escudo: {$a}';
 $string['lobby_swordstock'] = 'Espada: {$a}';
 $string['manafull'] = 'Medidor de mana cheio. Um desafio de pergunta foi aberto.';
 $string['managequestions'] = 'Gerenciar perguntas';
+$string['markcorrect'] = 'Correta';
 $string['max_single_matches'] = 'Número de Partidas Únicas';
 $string['maxattempts'] = 'Número máximo de tentativas';
 $string['maxattempts_help'] = 'Conta só as tentativas que terminam em derrota ao longo de toda a campanha, não quantas fases o estudante jogou — vencer uma fase nunca gasta uma tentativa. Depois de uma derrota, a próxima tentativa retoma no mesmo nível e fase, não do início. 0 significa ilimitado.';

@@ -256,6 +256,69 @@ final class questions_repository_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that approve_question() — the management screen's own action, distinct from
+     * set_approved() which the bank sync calls internally — approves a disabled bank
+     * question and also clears its sourceid, detaching it from future sync runs.
+     *
+     * @return void
+     */
+    public function test_approve_question_approves_and_detaches_a_bank_question(): void {
+        $this->resetAfterTest();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Orphaned bank question',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            0,
+            'bank',
+            false,
+            FORMAT_PLAIN,
+            123
+        );
+
+        questions_repository::approve_question($questionid);
+
+        $question = questions_repository::get_question($questionid, 7);
+        $this->assertSame(1, (int) $question->approved);
+        $this->assertNull($question->sourceid);
+    }
+
+    /**
+     * Tests that approve_question() is a harmless no-op on the sourceid front for an
+     * AI-generated question, which never had one to begin with.
+     *
+     * @return void
+     */
+    public function test_approve_question_is_safe_on_an_ai_question_without_sourceid(): void {
+        $this->resetAfterTest();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Generated question',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42,
+            'ai',
+            false
+        );
+
+        questions_repository::approve_question($questionid);
+
+        $question = questions_repository::get_question($questionid, 7);
+        $this->assertSame(1, (int) $question->approved);
+        $this->assertNull($question->sourceid);
+    }
+
+    /**
      * Tests that delete_question() removes both the question and its answer rows.
      *
      * @return void
@@ -660,6 +723,39 @@ final class questions_repository_test extends \advanced_testcase {
 
         $this->assertSame(1, (int) questions_repository::get_question($pending, 7)->approved);
         $this->assertSame(0, (int) questions_repository::get_question($foreign, 9)->approved);
+    }
+
+    /**
+     * Tests that approve_questions_bulk() also clears sourceid on a disabled bank question —
+     * same detach-from-sync behaviour as the single-row approve_question(), so a "select all,
+     * approve" pass reactivates disabled bank rows exactly like clicking "Reactivate" on each.
+     *
+     * @return void
+     */
+    public function test_approve_questions_bulk_also_detaches_a_bank_question(): void {
+        $this->resetAfterTest();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Orphaned bank question',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            0,
+            'bank',
+            false,
+            FORMAT_PLAIN,
+            123
+        );
+
+        questions_repository::approve_questions_bulk([$questionid], 7);
+
+        $question = questions_repository::get_question($questionid, 7);
+        $this->assertSame(1, (int) $question->approved);
+        $this->assertNull($question->sourceid);
     }
 
     /**

@@ -115,21 +115,28 @@ class question_list_service {
             // Only 'ai' ever reaches approved = 0 through a review queue a teacher is meant to
             // act on; question_bank_sync::sync_from_category() is the only other place that
             // clears the flag, for a 'bank' row orphaned by its source category disappearing —
-            // that is a disabled state, not a pending one, and the fix is resyncing, not
-            // approving. 'manual' never reaches approved = 0 through any code path today, but
-            // is treated the same as 'bank' here rather than as unreachable, so a future
-            // manual-disable action would get the right label for free.
+            // that is a disabled state, not a pending one. 'manual' never reaches approved = 0
+            // through any code path today, but is treated the same as 'bank' here rather than
+            // as unreachable, so a future manual-disable action would get the right label for
+            // free. Both states can be approved from here — approve_question()/
+            // approve_questions_bulk() also clear sourceid, so reactivating a disabled bank
+            // question detaches it from the sync instead of letting the next run disable it
+            // again; only the button's own label differs, to tell the teacher why it was off.
             $isaipending = (int) $question->approved === 0 && $question->source === 'ai';
             $isdisabled = (int) $question->approved === 0 && $question->source !== 'ai';
+            $canapprove = $isaipending || $isdisabled;
             if ($isaipending) {
                 $statuslabel = get_string('pendingstatus', 'mod_playerpuzzle');
                 $statusbadgeclass = 'bg-warning text-dark';
+                $approvelabel = get_string('approvequestion', 'mod_playerpuzzle');
             } else if ($isdisabled) {
                 $statuslabel = get_string('disabledstatus', 'mod_playerpuzzle');
                 $statusbadgeclass = 'bg-secondary pp-status-disabled';
+                $approvelabel = get_string('reactivatequestion', 'mod_playerpuzzle');
             } else {
                 $statuslabel = get_string('approvedstatus', 'mod_playerpuzzle');
                 $statusbadgeclass = 'bg-success';
+                $approvelabel = '';
             }
 
             $rows[] = [
@@ -140,9 +147,9 @@ class question_list_service {
                 'sourcelabel' => get_string('source_' . $question->source, 'mod_playerpuzzle'),
                 'statuslabel' => $statuslabel,
                 'statusbadgeclass' => $statusbadgeclass,
-                'ispending' => $isaipending,
-                'approveurl' => $isaipending ? $approveurl->out(false) : '',
-                'approvelabel' => get_string('approvequestion', 'mod_playerpuzzle'),
+                'canapprove' => $canapprove,
+                'approveurl' => $canapprove ? $approveurl->out(false) : '',
+                'approvelabel' => $approvelabel,
                 'editurl' => $editurl->out(false),
                 'drawcount' => $drawcounts[(int) $question->id] ?? 0,
             ];

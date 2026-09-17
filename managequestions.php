@@ -62,7 +62,7 @@ if ($action === 'delete' && $questionid) {
 if ($action === 'approve' && $questionid) {
     require_sesskey();
     if (questions_repository::get_question($questionid, (int) $instance->id)) {
-        questions_repository::set_approved($questionid, true);
+        questions_repository::approve_question($questionid);
     }
     redirect($url, get_string('questionapproved', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
 }

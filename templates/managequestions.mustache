@@ -61,7 +61,7 @@
                 "sourcelabel": "Manual",
                 "statuslabel": "Pending approval",
                 "statusbadgeclass": "bg-warning text-dark",
-                "ispending": true,
+                "canapprove": true,
                 "approveurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=approve&qid=5",
                 "approvelabel": "Approve",
                 "editurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&action=edit&qid=5",
@@ -153,7 +153,7 @@
                                value="{{id}}"
                                class="form-check-input playerpuzzle-bulk-check"
                                aria-label="{{selectquestionlabel}} {{questiontext}}"
-                               {{#ispending}}data-pending="1"{{/ispending}}>
+                               {{#canapprove}}data-approvable="1"{{/canapprove}}>
                     </td>
                     <td>
                         {{questiontext}}
@@ -169,11 +169,11 @@
                         <a href="{{{editurl}}}" class="btn btn-outline-secondary btn-sm me-1">
                             {{editquestionbutton}}
                         </a>
-                        {{#ispending}}
+                        {{#canapprove}}
                         <a href="{{{approveurl}}}" class="btn btn-outline-success btn-sm me-1">
                             {{approvelabel}}
                         </a>
-                        {{/ispending}}
+                        {{/canapprove}}
                         <button type="button"
                                 class="btn btn-outline-danger btn-sm playerpuzzle-single-delete-btn"
                                 data-questionid="{{id}}"

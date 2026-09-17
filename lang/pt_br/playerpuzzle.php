@@ -288,6 +288,7 @@ $string['questionsettings'] = 'Configurações de perguntas';
 $string['questionsprogress'] = 'Pergunta respondida. {$a->current} de {$a->total} necessárias.';
 $string['questiontext'] = 'Texto da pergunta';
 $string['questiontype'] = 'Tipo de pergunta';
+$string['reactivatequestion'] = 'Reativar';
 $string['report_attempts'] = 'Tentativas';
 $string['report_avgdamage'] = 'Dano médio no chefe';
 $string['report_avgquestions'] = 'Média corretas/total';

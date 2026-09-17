@@ -341,6 +341,44 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
+     * Tests the intentional consequence of approve_question() detaching a reactivated bank
+     * question from sync (clearing sourceid): if the source entry later comes back and the
+     * teacher resyncs, it is imported again as a brand new row, not re-linked to the one the
+     * teacher explicitly chose to keep as its own copy. A rare edge case, accepted by design
+     * (see questions_repository::approve_question()'s docblock) rather than a bug — asserted
+     * here so it reads as intentional if anyone stumbles on the duplicate later.
+     *
+     * @return void
+     */
+    public function test_reactivated_detached_question_is_reimported_as_new_row_if_source_returns(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $question = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+        $before = questions_repository::get_questions_for_instance((int) $this->instance->id);
+        $questionid = (int) $before[0]->id;
+
+        // The source entry disappears (soft-disabled by sync)...
+        $DB->set_field('question_versions', 'status', 'draft', ['questionid' => $question->id]);
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        // ...the teacher reactivates the plugin's own copy anyway, detaching it...
+        questions_repository::approve_question($questionid);
+        $this->assertNull(questions_repository::get_question($questionid, (int) $this->instance->id)->sourceid);
+
+        // ...and the source entry comes back before the next resync.
+        $DB->set_field('question_versions', 'status', 'ready', ['questionid' => $question->id]);
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(1, $stats->imported);
+        $this->assertSame(0, $stats->updated);
+        $this->assertCount(2, questions_repository::get_questions_for_instance((int) $this->instance->id));
+    }
+
+    /**
      * Tests that a manual question already in the instance's own bank is never touched by
      * a sync run, even one importing questions into the same instance.
      *

@@ -40,14 +40,15 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
     /**
      * Refreshes both bulk-action button states and labels based on current selection.
      *
-     * The approve button is enabled only when at least one pending question is
-     * checked. The delete button is enabled when at least one question (any status)
-     * is checked. Both labels show the relevant count in parentheses.
+     * The approve button is enabled only when at least one approvable question (pending
+     * AI review, or disabled and reactivatable) is checked. The delete button is enabled
+     * when at least one question (any status) is checked. Both labels show the relevant
+     * count in parentheses.
      */
     const updateBulkButtons = () => {
         const totalCount = document.querySelectorAll('.playerpuzzle-bulk-check:checked').length;
-        const pendingCount = document.querySelectorAll(
-            '.playerpuzzle-bulk-check:checked[data-pending="1"]'
+        const approvableCount = document.querySelectorAll(
+            '.playerpuzzle-bulk-check:checked[data-approvable="1"]'
         ).length;
 
         if (bulkDeleteBtn) {
@@ -56,8 +57,8 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
         }
 
         if (bulkApproveBtn) {
-            bulkApproveBtn.disabled = pendingCount === 0;
-            bulkApproveBtn.textContent = `${bulkApproveBtn.dataset.labelbase} (${pendingCount})`;
+            bulkApproveBtn.disabled = approvableCount === 0;
+            bulkApproveBtn.textContent = `${bulkApproveBtn.dataset.labelbase} (${approvableCount})`;
         }
     };
 

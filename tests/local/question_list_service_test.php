@@ -83,19 +83,20 @@ final class question_list_service_test extends \advanced_testcase {
         $row = $listcontext['questions'][0];
         $this->assertSame(get_string('pendingstatus', 'mod_playerpuzzle'), $row['statuslabel']);
         $this->assertSame('bg-warning text-dark', $row['statusbadgeclass']);
-        $this->assertTrue($row['ispending']);
+        $this->assertTrue($row['canapprove']);
+        $this->assertSame(get_string('approvequestion', 'mod_playerpuzzle'), $row['approvelabel']);
         $this->assertNotSame('', $row['approveurl']);
     }
 
     /**
      * Tests that a bank-sourced question disabled by the sync (orphaned from its source
-     * category) shows the disabled label, gets the secondary badge class, and offers no
-     * approve link — reactivating it is resyncing, not approving (§R7 of
-     * banco-questoes-unificacao.md).
+     * category) shows the disabled label, gets the secondary badge class, and offers a
+     * "Reactivate" link (not "Approve") — the wording tells the teacher why it was off,
+     * even though the underlying action (approve_question()) is the same either way.
      *
      * @return void
      */
-    public function test_bank_sourced_unapproved_question_is_labelled_disabled_without_approve_link(): void {
+    public function test_bank_sourced_unapproved_question_is_labelled_disabled_with_reactivate_link(): void {
         global $PAGE;
 
         $this->resetAfterTest();
@@ -127,8 +128,9 @@ final class question_list_service_test extends \advanced_testcase {
         $row = $listcontext['questions'][0];
         $this->assertSame(get_string('disabledstatus', 'mod_playerpuzzle'), $row['statuslabel']);
         $this->assertSame('bg-secondary pp-status-disabled', $row['statusbadgeclass']);
-        $this->assertFalse($row['ispending']);
-        $this->assertSame('', $row['approveurl']);
+        $this->assertTrue($row['canapprove']);
+        $this->assertSame(get_string('reactivatequestion', 'mod_playerpuzzle'), $row['approvelabel']);
+        $this->assertNotSame('', $row['approveurl']);
     }
 
     /**
@@ -165,7 +167,7 @@ final class question_list_service_test extends \advanced_testcase {
         $row = $listcontext['questions'][0];
         $this->assertSame(get_string('approvedstatus', 'mod_playerpuzzle'), $row['statuslabel']);
         $this->assertSame('bg-success', $row['statusbadgeclass']);
-        $this->assertFalse($row['ispending']);
+        $this->assertFalse($row['canapprove']);
         $this->assertSame('', $row['approveurl']);
     }
 }

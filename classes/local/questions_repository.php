@@ -160,6 +160,27 @@ class questions_repository {
     }
 
     /**
+     * Approves a question from the management screen — distinct from set_approved(), which
+     * the bank sync also uses internally to re-enable a row that reappears in its source
+     * category (question_bank_sync::sync_from_category()) and must keep sourceid intact for
+     * that matching to keep working. This one also clears sourceid: a teacher approving a
+     * question the sync had disabled is choosing to keep it even though its source category
+     * no longer offers it, so the next sync must treat it as a plugin-owned copy from then on
+     * instead of disabling it again. A no-op for 'ai'/'manual' questions, which never had a
+     * sourceid to begin with.
+     *
+     * @param int $questionid The question id.
+     * @return void
+     */
+    public static function approve_question(int $questionid): void {
+        global $DB;
+
+        $DB->set_field('playerpuzzle_questions', 'approved', 1, ['id' => $questionid]);
+        $DB->set_field('playerpuzzle_questions', 'sourceid', null, ['id' => $questionid]);
+        $DB->set_field('playerpuzzle_questions', 'timemodified', time(), ['id' => $questionid]);
+    }
+
+    /**
      * Updates a question's own fields and replaces its answer rows. Never touches
      * source/approved/addedby — editing content is not the same action as re-authoring it.
      *
@@ -451,7 +472,9 @@ class questions_repository {
 
     /**
      * Approves every given question belonging to the instance in one statement — the bulk
-     * counterpart to set_approved(true, ...) for the management listing's "Approve selected".
+     * counterpart to approve_question() for the management listing's "Approve selected",
+     * including the same sourceid clearing for any bank-sourced row the sync had disabled
+     * (see approve_question()'s docblock for why).
      *
      * @param int[] $questionids Question ids to approve.
      * @param int $playerpuzzleid The instance every id must belong to.
@@ -467,6 +490,7 @@ class questions_repository {
         $inparams['playerpuzzleid'] = $playerpuzzleid;
         $condition = "id $insql AND playerpuzzleid = :playerpuzzleid";
         $DB->set_field_select('playerpuzzle_questions', 'approved', 1, $condition, $inparams);
+        $DB->set_field_select('playerpuzzle_questions', 'sourceid', null, $condition, $inparams);
         $DB->set_field_select('playerpuzzle_questions', 'timemodified', time(), $condition, $inparams);
     }
 

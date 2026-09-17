@@ -288,6 +288,7 @@ $string['questionsettings'] = 'Question settings';
 $string['questionsprogress'] = 'Question answered. {$a->current} of {$a->total} required.';
 $string['questiontext'] = 'Question text';
 $string['questiontype'] = 'Question type';
+$string['reactivatequestion'] = 'Reactivate';
 $string['report_attempts'] = 'Attempts';
 $string['report_avgdamage'] = 'Avg. boss damage';
 $string['report_avgquestions'] = 'Avg. correct/total';

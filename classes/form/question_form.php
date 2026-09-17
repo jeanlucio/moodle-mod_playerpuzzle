@@ -116,10 +116,7 @@ class question_form extends \moodleform {
         // button was clicked, lock the count against tampering via setConstants()) — called
         // directly, rather than through repeat_elements() itself, so the "Add more" button
         // can be placed after the option rows instead of before them (repeat_elements()
-        // always adds it at a fixed point in the call, which would put it above the rows
-        // here since $elementobjs would otherwise have to stay empty — our answer's editor
-        // and its "correct" radio must stay paired in one addGroup(), which
-        // qtype_multichoice's own per-option grade dropdown does not need).
+        // always adds it at a fixed point in the call).
         $mform->registerNoSubmitButton('option_add_fields');
         $repeats = $this->optional_param(
             'option_repeats',
@@ -134,27 +131,28 @@ class question_form extends \moodleform {
         $mform->setType('option_repeats', PARAM_INT);
         $mform->setConstants(['option_repeats' => $repeats]);
 
+        // Editor and radio are two separate, consecutive elements (never grouped) — the
+        // same shape question/type/multichoice/edit_multichoice_form.php uses for its own
+        // per-answer editor + grade select, which is what puts the radio in its own compact
+        // row right below the option text instead of fighting it for space on one line.
         for ($i = 1; $i <= $repeats; $i++) {
-            $group = [
-                // The radio comes first (and carries its own visible text) so it reads as
-                // "mark this one correct, here is its text" instead of trailing silently
-                // after the editor with no indication of what it does — the group's own
-                // label stays blank (matches every other row) rather than acting as a
-                // fallback accessible name for the radio.
-                $mform->createElement('radio', 'mccorrect', '', get_string('markcorrect', 'mod_playerpuzzle'), $i),
-                $mform->createElement('editor', "optiontext_editor[$i]", '', ['rows' => 2], $editoroptions),
-            ];
-            $mform->addGroup(
-                $group,
-                "optiongroup_$i",
+            $mform->addElement(
+                'editor',
+                "optiontext_editor[$i]",
                 get_string('optionnum', 'mod_playerpuzzle', $i),
-                [' '],
-                false
+                ['rows' => 2],
+                $editoroptions
             );
             $mform->setType("optiontext_editor[$i]", PARAM_RAW);
-            $mform->hideIf("optiongroup_$i", 'qtype', 'eq', 'truefalse');
+            $mform->hideIf("optiontext_editor[$i]", 'qtype', 'eq', 'truefalse');
+
+            $mform->addElement('radio', 'mccorrect', '', get_string('markcorrect', 'mod_playerpuzzle'), $i);
         }
         $mform->setDefault('mccorrect', 1);
+        // A single hideIf covers every mccorrect radio at once — they always hide together
+        // regardless of $i, so there is no need (and no clean way, since they share one
+        // element name) to hide them one at a time like the editors above.
+        $mform->hideIf('mccorrect', 'qtype', 'eq', 'truefalse');
         $mform->addElement(
             'submit',
             'option_add_fields',
@@ -190,10 +188,11 @@ class question_form extends \moodleform {
                 }
             }
             if ($filled < 2) {
-                $errors['optiongroup_1'] = get_string('error_atleasttwooptions', 'mod_playerpuzzle');
+                $errors['optiontext_editor[1]'] = get_string('error_atleasttwooptions', 'mod_playerpuzzle');
             }
             if (self::editor_text_is_empty($data['optiontext_editor'][$data['mccorrect']] ?? null)) {
-                $errors['optiongroup_' . $data['mccorrect']] = get_string('error_correctoptionempty', 'mod_playerpuzzle');
+                $errors['optiontext_editor[' . $data['mccorrect'] . ']'] =
+                    get_string('error_correctoptionempty', 'mod_playerpuzzle');
             }
         }
 

@@ -347,16 +347,19 @@ define([
             containerDOM.appendChild(document.getElementById('playerpuzzle-modal'));
 
             this.ui.L = L;
+            // Sets this.musicOn/this.sfxOn from the loaded user preference (defaulting to
+            // enabled), read below before the sound objects are created.
             this.ui.setupStaticUI();
 
-            this.sfxSwap = this.sound.add('sfx_swap', {volume: 0.6});
-            this.sfxMatch = this.sound.add('sfx_match', {volume: 0.5});
-            this.sfxHit = this.sound.add('sfx_hit', {volume: 0.8});
+            const sfxVolume = this.sfxOn ? 1 : 0;
+            this.sfxSwap = this.sound.add('sfx_swap', {volume: 0.6 * sfxVolume});
+            this.sfxMatch = this.sound.add('sfx_match', {volume: 0.5 * sfxVolume});
+            this.sfxHit = this.sound.add('sfx_hit', {volume: 0.8 * sfxVolume});
             this.bgMusic = this.sound.add('bg_music', {volume: 0.3, loop: true});
 
             const me = this;
             const startMusic = () => {
-                if (!me.bgMusic.isPlaying) {
+                if (me.musicOn && !me.bgMusic.isPlaying) {
                     me.bgMusic.play();
                 }
             };

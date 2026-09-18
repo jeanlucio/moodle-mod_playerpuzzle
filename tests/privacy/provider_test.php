@@ -30,6 +30,7 @@ use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
+use mod_playerpuzzle\local\sound_preferences;
 
 /**
  * Tests for the Privacy API provider.
@@ -89,6 +90,54 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $collection = provider::get_metadata($collection);
         $keys = array_map(fn($item) => $item->get_name(), $collection->get_collection());
         $this->assertContains('playerpuzzle_attempts', $keys);
+    }
+
+    /**
+     * Tests that get_metadata declares both sound-channel user preferences.
+     *
+     * @return void
+     */
+    public function test_get_metadata_declares_sound_preferences(): void {
+        $collection = new collection('mod_playerpuzzle');
+        $collection = provider::get_metadata($collection);
+        $keys = array_map(fn($item) => $item->get_name(), $collection->get_collection());
+
+        $this->assertContains(sound_preferences::preference_name('music'), $keys);
+        $this->assertContains(sound_preferences::preference_name('sfx'), $keys);
+    }
+
+    /**
+     * Tests that a user who never touched either sound preference exports nothing.
+     *
+     * @return void
+     */
+    public function test_export_user_preferences_no_pref(): void {
+        $user = $this->getDataGenerator()->create_user();
+
+        provider::export_user_preferences((int) $user->id);
+
+        $writer = writer::with_context(\context_system::instance());
+        $this->assertFalse($writer->has_any_data());
+    }
+
+    /**
+     * Tests that a user who toggled one channel exports exactly that one preference,
+     * under the mod_playerpuzzle component — never the untouched sibling channel.
+     *
+     * @return void
+     */
+    public function test_export_user_preferences_one_channel_set(): void {
+        $user = $this->getDataGenerator()->create_user();
+        sound_preferences::set_enabled('music', false, (int) $user->id);
+
+        provider::export_user_preferences((int) $user->id);
+
+        $writer = writer::with_context(\context_system::instance());
+        $this->assertTrue($writer->has_any_data());
+
+        $prefs = (array) $writer->get_user_preferences('mod_playerpuzzle');
+        $this->assertCount(1, $prefs);
+        $this->assertArrayHasKey(sound_preferences::preference_name('music'), $prefs);
     }
 
     /**

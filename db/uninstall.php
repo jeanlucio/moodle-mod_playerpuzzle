@@ -15,18 +15,31 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Pre-uninstallation steps for mod_playerpuzzle.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+/**
+ * Custom uninstallation steps for mod_playerpuzzle.
+ *
+ * Every table declared in db/install.xml is dropped automatically by core
+ * (drop_plugin_tables()) and needs no attention here. The one thing core does
+ * not clean up is per-user preferences, since they live in the core
+ * user_preferences table rather than a plugin table.
+ *
+ * @return bool True on success.
+ */
+function xmldb_playerpuzzle_uninstall(): bool {
+    global $DB;
 
-$plugin->component = 'mod_playerpuzzle';
-$plugin->version   = 2026091802;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2024100700;        // Requires: Moodle 4.5+.
-$plugin->supported = [405, 502];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = 'v0.1.0';         // User-friendly version number.
+    $DB->delete_records_select(
+        'user_preferences',
+        $DB->sql_like('name', ':prefix'),
+        ['prefix' => 'mod_playerpuzzle_%']
+    );
+
+    return true;
+}

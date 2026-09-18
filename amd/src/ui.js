@@ -23,7 +23,7 @@
 
 /* global Phaser */
 
-define(['jquery'], function($) {
+define(['jquery', 'core/ajax'], function($, Ajax) {
     'use strict';
 
     // Font Awesome 6 Free (solid, weight 900) is bundled by Moodle core (theme_boost) and
@@ -896,8 +896,8 @@ define(['jquery'], function($) {
             const me = this.scene;
             const L = this.L;
 
-            me.musicOn = true;
-            me.sfxOn = true;
+            me.musicOn = this.gameConfig.musicenabled !== false;
+            me.sfxOn = this.gameConfig.sfxenabled !== false;
 
             // Row of 3 compact icon buttons, right-aligned — rightmost is Expandir, matching
             // where the old bracket-text button always sat; Efeitos and Música step leftward
@@ -910,7 +910,7 @@ define(['jquery'], function($) {
             const xMusic = xEffects - gap;
 
             const badgeMusic = this.createButtonBadge(xMusic, y, r);
-            const iconMusic = this.createMusicIcon(xMusic, y, r, true);
+            const iconMusic = this.createMusicIcon(xMusic, y, r, me.musicOn);
             badgeMusic.on('pointerup', () => {
                 this.guardAgainstDoubleTap('music', () => {
                     if (me.board && me.board.swipePiece !== null) {
@@ -923,11 +923,13 @@ define(['jquery'], function($) {
                     } else {
                         me.bgMusic.pause();
                     }
+                    this.saveSoundPreference('music', me.musicOn);
                 });
             });
 
             const badgeEffects = this.createButtonBadge(xEffects, y, r);
             const iconEffects = this.createEffectsIcon(xEffects, y, r);
+            iconEffects.setAlpha(me.sfxOn ? 1 : 0.4);
             badgeEffects.on('pointerup', () => {
                 this.guardAgainstDoubleTap('effects', () => {
                     if (me.board && me.board.swipePiece !== null) {
@@ -941,6 +943,7 @@ define(['jquery'], function($) {
                     me.sfxSwap.setVolume(0.6 * vol);
                     me.sfxMatch.setVolume(0.5 * vol);
                     me.sfxHit.setVolume(0.8 * vol);
+                    this.saveSoundPreference('sfx', me.sfxOn);
                 });
             });
 
@@ -961,6 +964,27 @@ define(['jquery'], function($) {
                     });
                 });
             });
+        }
+
+        /**
+         * Persists a Música/Efeitos toggle as a user preference, fire-and-forget — the icon
+         * and the actual sound have already been updated client-side by the caller before
+         * this runs, so nothing in the UI waits on the round trip, and a failure (network
+         * blip) is silently ignored: worst case, the toggle simply does not survive a reload,
+         * the same behaviour as before this preference existed.
+         *
+         * @param {string} type 'music' or 'sfx'.
+         * @param {boolean} enabled New state.
+         */
+        saveSoundPreference(type, enabled) {
+            Ajax.call([{
+                methodname: 'mod_playerpuzzle_set_sound_preference',
+                args: {
+                    cmid: this.gameConfig.cmid,
+                    type,
+                    enabled,
+                },
+            }])[0].fail(error => window.console.error(error));
         }
 
         updateBossBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {

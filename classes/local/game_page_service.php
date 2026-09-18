@@ -275,6 +275,8 @@ class game_page_service {
             'mobile'               => $ismobile,
             'viewurl'              => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
             'enablespeech'         => (bool) get_config('mod_playerpuzzle', 'enablespeech'),
+            'musicenabled'         => sound_preferences::is_enabled('music', $userid),
+            'sfxenabled'           => sound_preferences::is_enabled('sfx', $userid),
         ];
     }
 }

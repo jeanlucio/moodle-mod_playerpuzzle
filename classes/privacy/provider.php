@@ -31,6 +31,7 @@ use core_privacy\local\request\contextlist;
 use core_privacy\local\request\transform;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
+use mod_playerpuzzle\local\sound_preferences;
 
 /**
  * Privacy provider for mod_playerpuzzle.
@@ -48,7 +49,8 @@ use core_privacy\local\request\writer;
 class provider implements
     \core_privacy\local\metadata\provider,
     \core_privacy\local\request\core_userlist_provider,
-    \core_privacy\local\request\plugin\provider {
+    \core_privacy\local\request\plugin\provider,
+    \core_privacy\local\request\user_preference_provider {
     /**
      * Returns metadata about personal data stored by this plugin.
      *
@@ -112,7 +114,43 @@ class provider implements
             'addedby' => 'privacy:metadata:pq:addedby',
         ], 'privacy:metadata:playerpuzzle_questions');
 
+        $collection->add_user_preference(
+            sound_preferences::preference_name('music'),
+            'privacy:metadata:preference:music'
+        );
+        $collection->add_user_preference(
+            sound_preferences::preference_name('sfx'),
+            'privacy:metadata:preference:sfx'
+        );
+
         return $collection;
+    }
+
+    /**
+     * Exports the Música/Efeitos preferences for the given user, when either has ever been
+     * set — get_user_preferences() with no default (null) is the only way to distinguish
+     * "never toggled" from "toggled back to the default enabled state", the same
+     * distinction has_seen_intro()-style boolean preferences do not need to make.
+     *
+     * @param int $userid The user id.
+     * @return void
+     */
+    #[\Override]
+    public static function export_user_preferences(int $userid): void {
+        foreach (sound_preferences::TYPES as $type) {
+            $name = sound_preferences::preference_name($type);
+            $value = get_user_preferences($name, null, $userid);
+            if ($value === null) {
+                continue;
+            }
+
+            writer::export_user_preference(
+                'mod_playerpuzzle',
+                $name,
+                transform::yesno((bool) $value),
+                get_string('privacy:metadata:preference:' . $type, 'mod_playerpuzzle')
+            );
+        }
     }
 
     /**

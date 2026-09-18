@@ -81,4 +81,12 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:managequestions',
     ],
+    'mod_playerpuzzle_set_sound_preference' => [
+        'classname'    => 'mod_playerpuzzle\external\set_sound_preference',
+        'methodname'   => 'execute',
+        'description'  => 'Saves whether the Música or Efeitos channel is enabled for the current user.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
 ];

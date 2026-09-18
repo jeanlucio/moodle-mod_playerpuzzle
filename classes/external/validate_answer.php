@@ -149,8 +149,8 @@ class validate_answer extends external_api {
             (int) $attempt->currentlevel,
             (int) $attempt->currentphase,
             question_fetcher::get_question_text($questionid, $context),
-            question_fetcher::get_answer_text($params['answerid'], $context),
-            $correctanswerid !== null ? question_fetcher::get_answer_text($correctanswerid, $context) : '',
+            question_fetcher::get_answer_text($params['answerid'], $questionid, $context),
+            $correctanswerid !== null ? question_fetcher::get_answer_text($correctanswerid, $questionid, $context) : '',
             $correct
         );
 

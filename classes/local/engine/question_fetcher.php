@@ -118,16 +118,27 @@ class question_fetcher {
     }
 
     /**
-     * Returns the formatted text of one answer, or an empty string if it is gone.
+     * Returns the formatted text of one answer, validated to belong to the given question
+     * first — never by isolated PK. Returns an empty string both when the answer is gone
+     * and when it belongs to a different question, the same "caller cannot tell why" shape
+     * get_hint_text() uses. Without this, an answerid from any question on the site could be
+     * logged/echoed back as the student's own "chosen answer" text (security audit finding,
+     * Fase 9): is_answer_correct() already scoped its correctness check by questionid, but
+     * this lookup did not, so the correctness result stayed honest while the logged/returned
+     * text did not.
      *
      * @param int $answerid The answer ID.
+     * @param int $questionid The question the answer must belong to.
      * @param \context $context Context for formatting.
      * @return string
      */
-    public static function get_answer_text(int $answerid, \context $context): string {
+    public static function get_answer_text(int $answerid, int $questionid, \context $context): string {
         global $DB;
 
-        $answer = $DB->get_record('playerpuzzle_question_answers', ['id' => $answerid], 'answertext, answerformat');
+        $answer = $DB->get_record('playerpuzzle_question_answers', [
+            'id'         => $answerid,
+            'questionid' => $questionid,
+        ], 'answertext, answerformat');
         if (!$answer) {
             return '';
         }

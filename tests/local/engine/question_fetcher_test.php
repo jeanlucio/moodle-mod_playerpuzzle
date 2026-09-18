@@ -287,13 +287,33 @@ final class question_fetcher_test extends \advanced_testcase {
         $answerid = (int) $question->answers[0]->id;
         $context = \context_system::instance();
 
-        $this->assertStringContainsString('A', question_fetcher::get_answer_text($answerid, $context));
+        $this->assertStringContainsString('A', question_fetcher::get_answer_text($answerid, $questionid, $context));
         $this->assertStringContainsString(
             'What is the capital of France?',
             question_fetcher::get_question_text($questionid, $context)
         );
         $this->assertSame('', question_fetcher::get_question_text(0, $context));
-        $this->assertSame('', question_fetcher::get_answer_text(0, $context));
+        $this->assertSame('', question_fetcher::get_answer_text(0, $questionid, $context));
+    }
+
+    /**
+     * Tests that get_answer_text() returns an empty string for an answer id belonging to a
+     * different question — never validated by isolated PK. Without this, an answerid from
+     * any question on the site could be logged/echoed back as the student's own "chosen
+     * answer" text (security audit finding, Fase 9), even though is_answer_correct() already
+     * scoped its own correctness check by questionid.
+     *
+     * @return void
+     */
+    public function test_get_answer_text_returns_empty_for_answer_of_different_question(): void {
+        $questiona = $this->make_question(7);
+        $questionb = $this->make_question(7);
+        $qb = questions_repository::get_question($questionb, 7);
+        $answeridb = (int) $qb->answers[0]->id;
+        $context = \context_system::instance();
+
+        $this->assertSame('', question_fetcher::get_answer_text($answeridb, $questiona, $context));
+        $this->assertNotSame('', question_fetcher::get_answer_text($answeridb, $questionb, $context));
     }
 
     /**

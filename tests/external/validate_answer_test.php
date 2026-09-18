@@ -420,6 +420,45 @@ final class validate_answer_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that an answerid belonging to a different question is never logged as the
+     * student's "chosen answer" text — the actual close of the security audit's first
+     * finding. Before the fix, get_answer_text() read by isolated PK, so a forged answerid
+     * from any question on the site (even a different instance/course) had its text stored
+     * in playerpuzzle_attempt_questions and echoed back to the student in the post-game
+     * debrief. is_answer_correct() was always scoped by questionid, so correctness itself
+     * stays honest (false) regardless — only the logged text was ever the leak.
+     *
+     * @return void
+     */
+    public function test_answer_from_a_different_question_is_never_logged(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $otherinstance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+        $foreignquestionid = $this->make_question((int) $otherinstance->id);
+        $foreignanswerid = $this->find_answer_id($foreignquestionid, (int) $otherinstance->id, 'One');
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $this->put_question_open($token, $questionid);
+        $result = $this->call_validate_answer([
+            'cmid'     => $instance->cmid,
+            'token'    => $token,
+            'answerid' => $foreignanswerid,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertFalse($result['data']['correct']);
+
+        $rows = $DB->get_records('playerpuzzle_attempt_questions', ['attemptid' => $attemptid]);
+        $row = reset($rows);
+        $this->assertSame('', $row->chosenanswer);
+    }
+
+    /**
      * Tests that on Hard the boss's server-drawn guess always lands on the correct answer
      * (100% precision), for both question types, and that the submitted answerid is ignored.
      * Also proves the exploit the security audit flagged is closed structurally, not just

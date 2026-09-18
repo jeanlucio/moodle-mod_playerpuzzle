@@ -455,5 +455,18 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091608, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091803) {
+        // Add istutorial: flags an attempt as the user's first-ever one at this instance,
+        // decided once at creation (Fase 9 — first-match tutorial, reduced boss HP at
+        // Level 1/Phase 1 only).
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('istutorial', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'difficulty');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026091803, 'playerpuzzle');
+    }
+
     return true;
 }

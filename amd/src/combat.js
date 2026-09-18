@@ -31,6 +31,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
     // check without a round trip on every coin change.
     const CONSUMABLE_PRICES = {potion: 8, shield: 10, magic: 12, sword: 10, hint: 5};
 
+    // Maps a piece's numeric type (0-6, same indexing as board.js's own PIECE_NAME_KEYS) to
+    // the lang string key holding its one-time tutorial balloon text.
+    const PIECE_TUTORIAL_KEYS = [
+        'tutorialballoon_star', 'tutorialballoon_grimoire', 'tutorialballoon_orb',
+        'tutorialballoon_sword', 'tutorialballoon_shield', 'tutorialballoon_potion',
+        'tutorialballoon_coin'
+    ];
+
     /**
      * Sends one combat checkpoint via navigator.sendBeacon(), replicating the envelope
      * lib/ajax/service.php expects (methodname/args) — sendBeacon has no XHR/Promise
@@ -84,6 +92,15 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             );
             this.coinsSpent = parseInt(gameConfig.coinsspent, 10) || 0;
             this.currentTurn = 'player';
+
+            // First-attempt tutorial (Fase 9): the server already decided istutorial once, at
+            // attempt creation (security::generate_attempt_token()) — this is a read-only
+            // mirror, never re-derived client-side. tutorialSeenTypes tracks which piece types
+            // already got their one-time context balloon this session (not persisted — a
+            // reload simply re-shows any type not yet seen again, a harmless repeat, not a bug).
+            this.istutorial = !!gameConfig.istutorial;
+            this.tutorialSeenTypes = new Set();
+            this.tutorialQuestionInstructionShown = false;
 
             // Carried forward from the ledger, not reset to 0 — a mid-phase page reload (or a
             // Campaign attempt resuming a phase already partway through) must not forget coins
@@ -389,8 +406,57 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 triggeredBy = 'boss';
             }
 
+            this.triggerTutorialBalloons(destroyedPieces, matchGroups);
             this.updateUI();
             return {damage: damageDealt, question: questionTriggered, trigger: triggeredBy};
+        }
+
+        /**
+         * Fires the one-time tutorial context balloon for each newly-matched piece type this
+         * turn, in a first-attempt tutorial only, and only for the player's own turn (the
+         * boss's matches are never something the student needs explained). Kept as its own
+         * method rather than inlined into processEffects()'s own loops: that function is
+         * already at ESLint's complexity ceiling, and every type this checks is already known
+         * once destroyedPieces/matchGroups exist, so a second, simpler pass over the same data
+         * costs nothing beyond the one extra call site.
+         *
+         * @param {Array} destroyedPieces Pieces destroyed this turn (star/grimoire/orb/
+         *  shield/potion effects are resolved per piece).
+         * @param {Array} matchGroups Match groups this turn (sword/coin effects are resolved
+         *  per group, driven by combo size).
+         */
+        triggerTutorialBalloons(destroyedPieces, matchGroups) {
+            if (!this.istutorial || this.currentTurn !== 'player') {
+                return;
+            }
+            for (const piece of destroyedPieces) {
+                this.maybeShowTutorialBalloon(piece.type);
+            }
+            for (const group of matchGroups) {
+                if (group.type === 3 || group.type === 6) {
+                    this.maybeShowTutorialBalloon(group.type);
+                }
+            }
+        }
+
+        /**
+         * Shows a one-time context balloon explaining a piece type's effect. A no-op for
+         * every later match of the same type this session — callers (triggerTutorialBalloons())
+         * already guard on istutorial/currentTurn, this only adds the per-type "seen" check.
+         *
+         * @param {number} type Piece type (0-6).
+         */
+        maybeShowTutorialBalloon(type) {
+            if (this.tutorialSeenTypes.has(type)) {
+                return;
+            }
+            this.tutorialSeenTypes.add(type);
+
+            const key = PIECE_TUTORIAL_KEYS[type];
+            const text = key && this.strings[key];
+            if (text) {
+                this.scene.ui.showTutorialBalloon(text);
+            }
         }
 
         /**
@@ -957,9 +1023,17 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         question = ctx.gameConfig.questions[idx];
                     }
 
-                    const questionText = trigger === 'boss'
+                    let questionText = trigger === 'boss'
                         ? `<strong class="text-danger pp-bold">${ctx.strings.bosstrigger}</strong><br><br>${question.text}`
                         : question.text;
+
+                    // First-attempt tutorial (Fase 9): shown once ever this session, only for
+                    // the player's own question challenge — the boss's is auto-resolved with
+                    // no player interaction, so the instruction would have nothing to explain.
+                    if (trigger === 'player' && ctx.istutorial && !ctx.tutorialQuestionInstructionShown) {
+                        ctx.tutorialQuestionInstructionShown = true;
+                        questionText += `<br><br><em>${ctx.strings.tutorialquestioninstruction}</em>`;
+                    }
 
                     $('#playerpuzzle-question-text').html(questionText);
                     const answersContainer = $('#playerpuzzle-answers-container');

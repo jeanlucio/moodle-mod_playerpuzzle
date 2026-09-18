@@ -139,6 +139,8 @@ class game_page_service {
      * @param string $difficulty Student-chosen difficulty for a fresh attempt; not applied
      *  when an in-progress attempt is resumed (that attempt keeps its current phase's own
      *  difficulty, which advance_phase changes between phases).
+     * @param bool $skiptutorial Whether the student opted out of the first-attempt tutorial
+     *  from the Lobby; only meaningful when a brand new attempt is about to be created.
      * @return array JS game config for game_boot.js.
      */
     public static function build_game_config(
@@ -147,7 +149,8 @@ class game_page_service {
         context_module $context,
         int $userid,
         bool $ismobile,
-        string $difficulty = 'normal'
+        string $difficulty = 'normal',
+        bool $skiptutorial = false
     ): array {
         global $OUTPUT;
 
@@ -155,7 +158,8 @@ class game_page_service {
             (int) $instance->id,
             $userid,
             $difficulty,
-            (int) $instance->maxlevels
+            (int) $instance->maxlevels,
+            $skiptutorial
         );
         $difficulty = $attemptinfo->difficulty;
 
@@ -171,14 +175,20 @@ class game_page_service {
         // Boss HP and boss damage carry the level/phase scaling and then the difficulty
         // factor on top (Easy halves, Hard doubles). Student HP is never touched by
         // difficulty. save_progress/advance_phase apply the same factor to their own clamp,
-        // so the grade a run produces is unaffected by the difficulty chosen.
-        $bosshp = combat::apply_difficulty(
-            combat::calculate_boss_hp(
-                (int) $instance->basebosshp,
-                $attemptinfo->currentlevel,
-                $attemptinfo->currentphase
+        // so the grade a run produces is unaffected by the difficulty chosen. The tutorial
+        // reduction is applied last, and only to the boss's own HP — never to bossdamage below.
+        $bosshp = combat::apply_tutorial_reduction(
+            combat::apply_difficulty(
+                combat::calculate_boss_hp(
+                    (int) $instance->basebosshp,
+                    $attemptinfo->currentlevel,
+                    $attemptinfo->currentphase
+                ),
+                $difficulty
             ),
-            $difficulty
+            $attemptinfo->istutorial,
+            $attemptinfo->currentlevel,
+            $attemptinfo->currentphase
         );
         $studenthp = combat::calculate_student_hp(
             (int) $instance->basestudenthp,
@@ -277,6 +287,7 @@ class game_page_service {
             'enablespeech'         => (bool) get_config('mod_playerpuzzle', 'enablespeech'),
             'musicenabled'         => sound_preferences::is_enabled('music', $userid),
             'sfxenabled'           => sound_preferences::is_enabled('sfx', $userid),
+            'istutorial'           => $attemptinfo->istutorial,
         ];
     }
 }

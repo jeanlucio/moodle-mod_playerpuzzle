@@ -376,7 +376,18 @@ final class game_page_service_test extends \advanced_testcase {
         ]);
         $context = \context_module::instance($cm->id);
 
-        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+        // Skips the tutorial: this is the student's first-ever attempt at the instance,
+        // which would otherwise trigger the Fase 9 tutorial's own Level 1/Phase 1 HP
+        // reduction — irrelevant to what this test actually checks.
+        $config = game_page_service::build_game_config(
+            $cm,
+            $instance,
+            $context,
+            (int) $this->student->id,
+            false,
+            'normal',
+            true
+        );
 
         $this->assertSame(250, $config['bosshp']);
         $this->assertSame(80, $config['studenthp']);
@@ -400,7 +411,8 @@ final class game_page_service_test extends \advanced_testcase {
         $context = \context_module::instance($cm->id);
 
         $studentid = (int) $this->student->id;
-        $hard = game_page_service::build_game_config($cm, $instance, $context, $studentid, false, 'hard');
+        // Skips the tutorial (see test_build_game_config_single_match_uses_base_hp() above).
+        $hard = game_page_service::build_game_config($cm, $instance, $context, $studentid, false, 'hard', true);
         $this->assertSame(400, $hard['bosshp']);
         $this->assertSame(20, $hard['bossdamage']);
         $this->assertSame(100, $hard['studenthp']);
@@ -422,10 +434,16 @@ final class game_page_service_test extends \advanced_testcase {
         ]);
         $context = \context_module::instance($cm->id);
 
+        // Last arg skips the tutorial (see test_build_game_config_single_match_uses_base_hp()
+        // above) — irrelevant here since the attempt is resumed, not created, but passed for
+        // consistency with the other difficulty-scaling tests in this file.
         \mod_playerpuzzle\local\engine\security::generate_attempt_token(
             (int) $instance->id,
             (int) $this->student->id,
-            'hard'
+            'hard',
+            1,
+            1,
+            true
         );
 
         $studentid = (int) $this->student->id;

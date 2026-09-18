@@ -127,7 +127,11 @@ final class advance_phase_test extends \advanced_testcase {
      */
     private function put_attempt_at(int $instanceid, int $level, int $phase): string {
         global $DB;
-        $token = security::generate_attempt_token($instanceid, (int) $this->student->id);
+        // Skips the tutorial: this generic helper backs 19 call sites testing progression
+        // mechanics unrelated to the Fase 9 tutorial, several of which land on Level 1/Phase
+        // 1 — the tutorial's own boss-HP reduction there would otherwise silently change
+        // their expected numbers. Tests for the tutorial itself create their own attempt.
+        $token = security::generate_attempt_token($instanceid, (int) $this->student->id, 'normal', 1, 1, true);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', $level, ['token' => $token]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', $phase, ['token' => $token]);
         return $token;
@@ -281,7 +285,9 @@ final class advance_phase_test extends \advanced_testcase {
 
         $instance = $this->make_instance(['basebosshp' => 100]);
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard');
+        // Last arg skips the Fase 9 tutorial's own Level 1/Phase 1 HP reduction (see
+        // put_attempt_at()'s own docblock above for why).
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard', 1, 1, true);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 1, ['token' => $token]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 1, ['token' => $token]);
 

@@ -23,7 +23,7 @@
 
 /* global Phaser */
 
-define(['jquery', 'core/ajax'], function($, Ajax) {
+define(['jquery', 'core/ajax', 'mod_playerpuzzle/accessibility'], function($, Ajax, Accessibility) {
     'use strict';
 
     // Font Awesome 6 Free (solid, weight 900) is bundled by Moodle core (theme_boost) and
@@ -401,6 +401,79 @@ define(['jquery', 'core/ajax'], function($, Ajax) {
                 alpha: 0,
                 duration: 900,
                 onComplete: () => text.destroy()
+            });
+        }
+
+        /**
+         * Shows a one-time tutorial context balloon: a rounded box with the given text,
+         * centered above the board, auto-fading after a few seconds (Fase 9 — first-attempt
+         * onboarding). Also announced via Accessibility.announce(), since the balloon itself
+         * has no DOM/ARIA presence — same rationale as every other Canvas-only feedback in
+         * this module.
+         *
+         * @param {string} text Balloon text, already resolved to the piece type involved.
+         */
+        showTutorialBalloon(text) {
+            const me = this.scene;
+            const L = this.L;
+            Accessibility.announce(text);
+
+            // A second balloon can arrive while the previous one is still on screen (two
+            // different match types in quick succession). Without tearing the old one down
+            // first, both boxes coexist and their text overlaps, since box height varies with
+            // text length and the newer box does not necessarily cover the older one.
+            if (this.tutorialBalloonTimer) {
+                this.tutorialBalloonTimer.remove(false);
+                this.tutorialBalloonTimer = null;
+            }
+            if (this.tutorialBalloonLabel) {
+                this.tutorialBalloonLabel.destroy();
+                this.tutorialBalloonLabel = null;
+            }
+            if (this.tutorialBalloonBg) {
+                this.tutorialBalloonBg.destroy();
+                this.tutorialBalloonBg = null;
+            }
+
+            const cx = L.w / 2;
+            const y = Math.max(70, L.boardOffY - 190);
+            const boxW = Math.min(L.w - 40, 380);
+
+            const label = me.add.text(cx, y, text, {
+                fontSize: '15px',
+                fontStyle: 'bold',
+                color: '#2a1c10',
+                align: 'center',
+                wordWrap: {width: boxW - 24}
+            }).setOrigin(0.5).setDepth(20);
+
+            const boxH = label.height + 20;
+            const bg = me.add.graphics().setDepth(19);
+            bg.fillStyle(0xffd873, 0.95);
+            bg.lineStyle(2, 0xb9822a, 1);
+            bg.fillRoundedRect(cx - (boxW / 2), y - (boxH / 2), boxW, boxH, 10);
+            bg.strokeRoundedRect(cx - (boxW / 2), y - (boxH / 2), boxW, boxH, 10);
+
+            this.tutorialBalloonLabel = label;
+            this.tutorialBalloonBg = bg;
+
+            this.tutorialBalloonTimer = me.time.delayedCall(4500, () => {
+                this.tutorialBalloonTimer = null;
+                me.tweens.add({
+                    targets: [label, bg],
+                    alpha: 0,
+                    duration: 400,
+                    onComplete: () => {
+                        label.destroy();
+                        bg.destroy();
+                        if (this.tutorialBalloonLabel === label) {
+                            this.tutorialBalloonLabel = null;
+                        }
+                        if (this.tutorialBalloonBg === bg) {
+                            this.tutorialBalloonBg = null;
+                        }
+                    }
+                });
             });
         }
 

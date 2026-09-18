@@ -188,6 +188,85 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a user's genuinely first-ever attempt at an instance is flagged istutorial,
+     * both on the returned object and on the persisted row.
+     *
+     * @return void
+     */
+    public function test_generate_attempt_token_flags_a_genuine_first_attempt_as_tutorial(): void {
+        global $DB;
+
+        $token = security::generate_attempt_token(1, 2);
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame(1, (int) $attempt->istutorial);
+    }
+
+    /**
+     * Tests that a second attempt (after the first one finished) is never flagged
+     * istutorial again — "ausência de registros" means no attempt row at all, not just
+     * no in-progress one.
+     *
+     * @return void
+     */
+    public function test_generate_attempt_token_does_not_flag_a_second_attempt(): void {
+        global $DB;
+
+        $firsttoken = security::generate_attempt_token(1, 2);
+        security::validate_and_consume_token($firsttoken, 1, 2, 'lost');
+
+        $secondtoken = security::generate_attempt_token(1, 2);
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $secondtoken], '*', MUST_EXIST);
+        $this->assertSame(0, (int) $attempt->istutorial);
+    }
+
+    /**
+     * Tests that passing skiptutorial=true on a genuine first attempt suppresses the flag —
+     * the student explicitly opted out from the Lobby.
+     *
+     * @return void
+     */
+    public function test_generate_attempt_token_respects_skiptutorial(): void {
+        global $DB;
+
+        $token = security::generate_attempt_token(1, 2, 'normal', 1, 1, true);
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame(0, (int) $attempt->istutorial);
+    }
+
+    /**
+     * Tests that resume_or_create_attempt_token() surfaces istutorial for a brand new
+     * attempt, both when eligible and when skipped.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_surfaces_istutorial_for_a_new_attempt(): void {
+        $eligible = security::resume_or_create_attempt_token(1, 2);
+        $this->assertTrue($eligible->istutorial);
+
+        $skipped = security::resume_or_create_attempt_token(1, 3, 'normal', 10, true);
+        $this->assertFalse($skipped->istutorial);
+    }
+
+    /**
+     * Tests that resuming an in-progress tutorial attempt keeps istutorial true, read from
+     * the persisted row rather than re-derived — by the time it is resumed, the row itself
+     * already exists, so re-deriving from "no attempt rows exist yet" would wrongly flip it
+     * to false.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_keeps_istutorial_true_on_resume(): void {
+        security::generate_attempt_token(1, 2);
+
+        $result = security::resume_or_create_attempt_token(1, 2);
+
+        $this->assertTrue($result->istutorial);
+    }
+
+    /**
      * Tests that resuming an existing in-progress attempt preserves its currentlevel/
      * currentphase, rather than restarting the Campaign at Level 1, Phase 1 — an
      * attempt is a continuous winning streak, not reset by reloading play.php.

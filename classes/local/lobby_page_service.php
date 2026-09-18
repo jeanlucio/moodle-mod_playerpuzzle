@@ -103,8 +103,38 @@ class lobby_page_service {
         $data += self::build_progress_context($instance, $attempt, $userid);
         $data += self::build_minquestions_context($instance);
         $data += self::build_difficulty_context($attempt);
+        $data += self::build_tutorial_context($instance, $userid);
 
         return $data;
+    }
+
+    /**
+     * Builds the "Pular Tutorial" checkbox context: shown only before a student's genuine
+     * first-ever attempt at this instance, matching the same "ausência de registros"
+     * condition security::generate_attempt_token() re-derives independently server-side
+     * (§4.12) — this is only ever a convenience for the form, never trusted on its own.
+     * Never shown once any attempt row exists (including an in-progress tutorial one being
+     * resumed): the choice is offered exactly once, right before that first attempt starts.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @return array
+     */
+    private static function build_tutorial_context(stdClass $instance, int $userid): array {
+        global $DB;
+
+        $hasanyattempt = $DB->record_exists('playerpuzzle_attempts', [
+            'playerpuzzleid' => $instance->id,
+            'userid'         => $userid,
+        ]);
+        if ($hasanyattempt) {
+            return [];
+        }
+
+        return [
+            'istutorialeligible' => true,
+            'skiptutoriallabel'  => get_string('skiptutorial', 'mod_playerpuzzle'),
+        ];
     }
 
     /**

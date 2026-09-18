@@ -125,10 +125,16 @@ class advance_phase extends external_api {
 
         // Sanity check: the client cannot simply claim victory — the reported damage
         // must genuinely clear the boss HP the server itself calculated for the phase
-        // being left, including this run's difficulty factor, or advancing is refused.
-        $currentbosshp = combat::apply_difficulty(
-            combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase),
-            (string) $attempt->difficulty
+        // being left, including this run's difficulty factor and the tutorial reduction
+        // (Level 1/Phase 1 of a first-ever attempt only), or advancing is refused.
+        $currentbosshp = combat::apply_tutorial_reduction(
+            combat::apply_difficulty(
+                combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase),
+                (string) $attempt->difficulty
+            ),
+            (bool) $attempt->istutorial,
+            $currentlevel,
+            $currentphase
         );
         if ($params['damage'] < $currentbosshp) {
             throw new moodle_exception('phasenotwon', 'mod_playerpuzzle');
@@ -234,9 +240,14 @@ class advance_phase extends external_api {
             'currentlevel' => $newlevel,
             'currentphase' => $newphase,
             'difficulty'   => $newdifficulty,
-            'bosshp'       => combat::apply_difficulty(
-                combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $newlevel, $newphase),
-                $newdifficulty
+            'bosshp'       => combat::apply_tutorial_reduction(
+                combat::apply_difficulty(
+                    combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $newlevel, $newphase),
+                    $newdifficulty
+                ),
+                (bool) $attempt->istutorial,
+                $newlevel,
+                $newphase
             ),
             'studenthp'    => combat::calculate_student_hp((int) $playerpuzzle->basestudenthp, $newlevel, $newphase),
             'coinsbanked'  => $coinsbanked,

@@ -55,6 +55,10 @@ class security {
      * @param int $currentlevel Level this attempt starts on (see resume_or_create_attempt_token()
      *  for why this is not always 1).
      * @param int $currentphase Phase this attempt starts on.
+     * @param bool $skiptutorial Whether the student opted out of the tutorial from the Lobby.
+     *  Only meaningful when this genuinely is the user's first-ever attempt at the instance —
+     *  a returning student passing true here is a harmless no-op, since istutorial would
+     *  already come out false for them regardless.
      * @return string The generated secure token.
      */
     public static function generate_attempt_token(
@@ -62,9 +66,19 @@ class security {
         int $userid,
         string $difficulty = 'normal',
         int $currentlevel = 1,
-        int $currentphase = 1
+        int $currentphase = 1,
+        bool $skiptutorial = false
     ): string {
         global $DB;
+
+        // Decided once, here, before the insert below creates the first row for this user/
+        // instance — never recomputed on resume (see resume_or_create_attempt_token()), since
+        // by the time a tutorial attempt is resumed a row already exists and would otherwise
+        // make this look like "not the first attempt" anymore.
+        $isfirstattempt = !$DB->record_exists('playerpuzzle_attempts', [
+            'playerpuzzleid' => $playerpuzzleid,
+            'userid'         => $userid,
+        ]);
 
         // Generate a secure 64-character hex token using PHP 7+ random_bytes.
         $token = bin2hex(random_bytes(32));
@@ -74,6 +88,7 @@ class security {
         $attempt->userid = $userid;
         $attempt->token = $token;
         $attempt->difficulty = self::clean_difficulty($difficulty);
+        $attempt->istutorial = ($isfirstattempt && !$skiptutorial) ? 1 : 0;
         $attempt->status = 'inprogress';
         $attempt->currentlevel = $currentlevel;
         $attempt->currentphase = $currentphase;
@@ -143,16 +158,20 @@ class security {
      *  level/phase down if the teacher has since reduced it below where the student had
      *  reached (Single Match always passes/keeps the default, since its attempts never
      *  advance past Level 1, Phase 1 in the first place).
+     * @param bool $skiptutorial Whether the student opted out of the tutorial from the Lobby.
+     *  Only used when a brand new attempt is created; ignored when resuming, since the
+     *  attempt's own istutorial was already decided at its creation.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned, ->coinsspent,
-     *  ->combatstate, ->isnew (true when a brand new attempt row was just created, so the
-     *  caller can trigger a game_started event exactly once per attempt).
+     *  ->combatstate, ->istutorial, ->isnew (true when a brand new attempt row was just
+     *  created, so the caller can trigger a game_started event exactly once per attempt).
      */
     public static function resume_or_create_attempt_token(
         int $playerpuzzleid,
         int $userid,
         string $difficulty = 'normal',
-        int $maxlevels = 10
+        int $maxlevels = 10,
+        bool $skiptutorial = false
     ): \stdClass {
         global $DB;
 
@@ -195,6 +214,7 @@ class security {
                 'bosscoinsearned' => (int) $attempt->boss_coins_earned,
                 'coinsspent' => (int) $attempt->coins_spent,
                 'combatstate' => $combatstate,
+                'istutorial' => (bool) $attempt->istutorial,
                 'isnew' => false,
             ];
         }
@@ -205,10 +225,18 @@ class security {
             max(1, $maxlevels)
         );
 
-        $token = self::generate_attempt_token($playerpuzzleid, $userid, $difficulty, $startlevel, $startphase);
+        $token = self::generate_attempt_token(
+            $playerpuzzleid,
+            $userid,
+            $difficulty,
+            $startlevel,
+            $startphase,
+            $skiptutorial
+        );
+        $newrow = $DB->get_record('playerpuzzle_attempts', ['token' => $token], 'id, istutorial', MUST_EXIST);
 
         return (object) [
-            'attemptid' => (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token], MUST_EXIST),
+            'attemptid' => (int) $newrow->id,
             'token' => $token,
             'currentlevel' => $startlevel,
             'currentphase' => $startphase,
@@ -218,6 +246,7 @@ class security {
             'bosscoinsearned' => 0,
             'coinsspent' => 0,
             'combatstate' => null,
+            'istutorial' => (bool) $newrow->istutorial,
             'isnew' => true,
         ];
     }

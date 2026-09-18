@@ -516,6 +516,20 @@ body.path-mod-playerpuzzle .pp-lobby-difficulty-option input:checked + label {
     box-shadow: 0 4px 10px rgba(224, 168, 62, 0.4);
 }
 
+body.path-mod-playerpuzzle .pp-lobby-tutorial-skip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    font-size: 0.85rem;
+    color: #cfc6b0;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-tutorial-skip label {
+    cursor: pointer;
+}
+
 body.path-mod-playerpuzzle .pp-lobby-play {
     width: 100%;
     font-weight: 800;

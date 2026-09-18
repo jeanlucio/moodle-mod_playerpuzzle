@@ -494,6 +494,9 @@ define([
                     'requirejserror', 'saveerror', 'savingprogress',
                     'shoperror', 'shuffling',
                     'turnstart_intro', 'turnstart_move',
+                    'tutorialballoon_coin', 'tutorialballoon_grimoire', 'tutorialballoon_orb',
+                    'tutorialballoon_potion', 'tutorialballoon_shield', 'tutorialballoon_star',
+                    'tutorialballoon_sword', 'tutorialquestioninstruction',
                     'victory'
                 ];
 

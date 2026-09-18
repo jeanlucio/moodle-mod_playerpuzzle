@@ -238,6 +238,61 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the "Pular Tutorial" checkbox is offered when the student has never made
+     * any attempt at this instance — the same "ausência de registros" condition
+     * security::generate_attempt_token() re-derives independently server-side.
+     *
+     * @return void
+     */
+    public function test_build_page_data_offers_skip_tutorial_with_no_prior_attempt(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertTrue($data['istutorialeligible']);
+        $this->assertSame(get_string('skiptutorial', 'mod_playerpuzzle'), $data['skiptutoriallabel']);
+    }
+
+    /**
+     * Tests that the "Pular Tutorial" checkbox is never offered once any attempt row
+     * exists for this student at this instance — including a finished one, not just an
+     * in-progress one — since the tutorial choice is only ever offered once, before the
+     * very first attempt is created.
+     *
+     * @return void
+     */
+    public function test_build_page_data_never_offers_skip_tutorial_after_any_attempt(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id
+        );
+        \mod_playerpuzzle\local\engine\security::validate_and_consume_token(
+            $token,
+            (int) $instance->id,
+            (int) $this->student->id,
+            'lost'
+        );
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertArrayNotHasKey('istutorialeligible', $data);
+    }
+
+    /**
      * Tests that, after a defeat, the Lobby shows where the next attempt will actually
      * resume (see security::determine_start_level()) rather than implying a fresh Level 1
      * start when it is not one — the whole point of the fix being tested here.

@@ -57,6 +57,12 @@ $ismobile = optional_param('mobile', 0, PARAM_INT) === 1;
 // a known value inside security::clean_difficulty().
 $difficulty = optional_param('difficulty', PLAYERPUZZLE_DIFFICULTY_NORMAL, PARAM_ALPHA);
 
+// Only shown on the Lobby (and only meaningful) for a genuinely first-ever attempt at this
+// instance — build_game_config()/security::generate_attempt_token() re-derive that
+// independently server-side, so a stray/forged value here can never grant tutorial mode to
+// someone who does not otherwise qualify for it.
+$skiptutorial = optional_param('skiptutorial', 0, PARAM_BOOL);
+
 // Previously switched to a chromeless 'embedded' layout for mobile devices, opened in a new
 // tab by the Lobby's own form — removed per explicit user feedback (27/08/2026): the game now
 // always stays in the same window, in the normal course layout, using the same
@@ -72,7 +78,8 @@ $jsconfig = \mod_playerpuzzle\local\game_page_service::build_game_config(
     $context,
     (int) $USER->id,
     $ismobile,
-    $difficulty
+    $difficulty,
+    $skiptutorial
 );
 
 // Phaser itself is loaded dynamically from inside game_boot.js (mirrors

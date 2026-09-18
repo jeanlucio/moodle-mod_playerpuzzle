@@ -135,14 +135,21 @@ class save_progress extends external_api {
         // how far the student actually progressed (Single Match always carries currentlevel =
         // currentphase = 1, so the formula returns the base HP unchanged there). The same
         // difficulty factor game_page_service used to build the fight is applied here, so a
-        // Hard-mode loss is scored against the doubled boss HP it was really fighting.
-        $bosshp = combat::apply_difficulty(
-            combat::calculate_boss_hp(
-                (int) $playerpuzzle->basebosshp,
-                (int) $attempt->currentlevel,
-                (int) $attempt->currentphase
+        // Hard-mode loss is scored against the doubled boss HP it was really fighting. The
+        // tutorial reduction (Level 1/Phase 1 of a first-ever attempt only) is applied last,
+        // matching the reduced HP the client was actually shown for that fight.
+        $bosshp = combat::apply_tutorial_reduction(
+            combat::apply_difficulty(
+                combat::calculate_boss_hp(
+                    (int) $playerpuzzle->basebosshp,
+                    (int) $attempt->currentlevel,
+                    (int) $attempt->currentphase
+                ),
+                (string) $attempt->difficulty
             ),
-            (string) $attempt->difficulty
+            (bool) $attempt->istutorial,
+            (int) $attempt->currentlevel,
+            (int) $attempt->currentphase
         );
         $safedamage = max(0, min($params['damage'], $bosshp));
         $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);

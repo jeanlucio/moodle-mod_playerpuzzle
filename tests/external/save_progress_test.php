@@ -425,7 +425,9 @@ final class save_progress_test extends \advanced_testcase {
         $instance = $this->make_instance(['basebosshp' => 100]);
 
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard');
+        // Last arg skips the Fase 9 tutorial's own Level 1/Phase 1 HP reduction, which would
+        // otherwise apply to this student's first-ever attempt and change the numbers below.
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard', 1, 1, true);
 
         // Hard boss HP at Level 1, Phase 1 with basebosshp=100 is 200. 150 damage is a
         // 75% dent — the score, not a clamped-to-100 100%.
@@ -626,7 +628,9 @@ final class save_progress_test extends \advanced_testcase {
         $instance = $this->make_instance(['hud_coin_item' => $itemid, 'basebosshp' => 500]);
 
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        // Last arg skips the Fase 9 tutorial's own Level 1/Phase 1 HP reduction, which would
+        // otherwise apply to this student's first-ever attempt and change the ceiling below.
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 1, true);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,

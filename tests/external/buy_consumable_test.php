@@ -261,7 +261,9 @@ final class buy_consumable_test extends \advanced_testcase {
         // / scaled bossdamage 10 * coingain 10 * Normal factor 1.0 = 50.
         $instance = $this->make_instance(['basebosshp' => 50]);
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        // Last arg skips the Fase 9 tutorial's own Level 1/Phase 1 HP reduction, which would
+        // otherwise apply to this student's first-ever attempt and change the ceiling below.
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 1, true);
 
         $result = $this->call_buy_consumable($this->local_args($instance, $token, [
             'type'             => 'sword',

@@ -102,6 +102,32 @@ class combat {
     }
 
     /**
+     * Fraction of the boss's own HP the first-attempt tutorial leaves it with, at Level 1
+     * Phase 1 only — the easiest possible fight in the game, used purely as an onboarding
+     * ramp (Fase 9).
+     */
+    private const TUTORIAL_BOSS_HP_FACTOR = 0.25;
+
+    /**
+     * Reduces the boss's own HP for a tutorial attempt's very first phase. Never applies
+     * past Level 1/Phase 1 (even within the same tutorial attempt) and never touches boss
+     * damage output — call this only on the boss's own HP, not on a calculate_boss_hp()
+     * result reused to scale bossdamage.
+     *
+     * @param int $bosshp The already level/phase/difficulty-scaled boss HP.
+     * @param bool $istutorial Whether this attempt was the user's first-ever at the instance.
+     * @param int $level Current level.
+     * @param int $phase Current phase.
+     * @return int The boss HP, reduced when applicable.
+     */
+    public static function apply_tutorial_reduction(int $bosshp, bool $istutorial, int $level, int $phase): int {
+        if ($istutorial && $level === 1 && $phase === 1) {
+            return (int) round($bosshp * self::TUTORIAL_BOSS_HP_FACTOR);
+        }
+        return $bosshp;
+    }
+
+    /**
      * Calculates the student HP for a given level/phase, scaled from the teacher-configured
      * base HP.
      *

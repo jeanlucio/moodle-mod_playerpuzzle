@@ -154,10 +154,16 @@ class buy_consumable extends external_api {
         // The ceiling is a stable per-phase value (this phase's own full boss HP), not tied
         // to damage dealt so far — a student who has not yet landed a Sword hit can still have
         // genuinely earned coins from Coin/Shield/Magic matches, which happen independently on
-        // the board. See combat::coin_ceiling()'s own docblock for why.
-        $currentbosshp = combat::apply_difficulty(
-            combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $level, $phase),
-            $difficulty
+        // the board. See combat::coin_ceiling()'s own docblock for why. Tutorial reduction
+        // applied last, matching the reduced HP the client was actually shown for this fight.
+        $currentbosshp = combat::apply_tutorial_reduction(
+            combat::apply_difficulty(
+                combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $level, $phase),
+                $difficulty
+            ),
+            (bool) $attempt->istutorial,
+            $level,
+            $phase
         );
         $scaledbossdamage = combat::apply_difficulty(
             combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $level, $phase),

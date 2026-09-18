@@ -54,14 +54,17 @@ class provider implements
     /**
      * Returns metadata about personal data stored by this plugin.
      *
-     * playerpuzzle_attempts carries three columns not listed below, each a deliberate
+     * playerpuzzle_attempts carries four columns not listed below, each a deliberate
      * exclusion rather than an oversight: playerpuzzleid is a structural foreign key,
      * never itself exported (every export/delete call is already scoped by instance);
      * token is an opaque, unpredictable anti-replay value with no personal information
      * and is never exported; timemodified always mirrors either timecreated (set at
      * attempt creation) or timefinished (set the moment security::validate_and_
      * consume_token() moves the attempt to its final status), so it never carries
-     * information beyond what timecreated/timefinished already declare.
+     * information beyond what timecreated/timefinished already declare; istutorial is
+     * gameplay-flow metadata (whether this attempt got the Fase 9 onboarding boss-HP
+     * reduction), the same category as currentlevel/currentphase, not personal data
+     * about the user.
      *
      * @param collection $collection The initialised collection to add items to.
      * @return collection A listing of user data stored through this system.

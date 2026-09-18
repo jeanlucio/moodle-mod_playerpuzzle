@@ -67,6 +67,7 @@
         <FIELD NAME="boss_coins_earned" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Same ledger, boss side; nets against coins_earned at payout"/>
         <FIELD NAME="coins_spent" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Coins spent on source=local consumable purchases this phase/match"/>
         <FIELD NAME="combatstate" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON snapshot of the in-progress board/combat, for resuming after a reload; null = no fight in progress for the current phase"/>
+        <FIELD NAME="currentquestionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Question drawn server-side and currently open for this attempt (0 = none); the client never chooses which question is in play"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" DECIMALS="5" SEQUENCE="false" COMMENT="Final calculated grade"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="inprogress" SEQUENCE="false" COMMENT="Status: inprogress, won, lost, timeout, abandoned"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>

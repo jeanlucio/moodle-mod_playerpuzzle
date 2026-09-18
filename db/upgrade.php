@@ -488,5 +488,21 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091804, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091805) {
+        // Server-tracked "current open question" per attempt (security audit finding —
+        // classes/external/validate_answer.php's forwhom=boss path used to accept any
+        // client-supplied questionid, turning it into a free oracle for the correct answer
+        // of any approved question in the instance). The client no longer chooses which
+        // question is in play; the server draws it and validate_answer only ever operates
+        // on this column, never a client-supplied id.
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('currentquestionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'combatstate');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026091805, 'playerpuzzle');
+    }
+
     return true;
 }

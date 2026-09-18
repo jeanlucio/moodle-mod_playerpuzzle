@@ -317,6 +317,96 @@ final class backup_restore_test extends \advanced_testcase {
     }
 
     /**
+     * The attempt's own currentquestionid (the question server-drawn and currently open,
+     * security audit fix — Fase 9) is remapped to the restored bank question's new id, same
+     * namespace/pattern as playerpuzzle_attempt_questions.questionid above. An unmapped id
+     * (the original question was not part of this backup) must fall back to 0 — "nothing
+     * open" — rather than leak a stale id pointing at the wrong question in the new course.
+     *
+     * @return void
+     */
+    public function test_backup_restore_remaps_currentquestionid_to_new_bank_question(): void {
+        global $DB;
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $questionid = questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Q?',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid'    => $instance->id,
+            'userid'            => $user->id,
+            'token'             => bin2hex(random_bytes(32)),
+            'status'            => 'inprogress',
+            'currentquestionid' => $questionid,
+            'timecreated'       => time(),
+        ]);
+
+        $newcourse = $this->backup_and_restore_into_new_course($course);
+
+        $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+        $newquestions = questions_repository::get_questions_for_instance((int) $newinstance->id);
+        $newquestionid = (int) reset($newquestions)->id;
+
+        $newattempt = $DB->get_record(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $newinstance->id],
+            '*',
+            MUST_EXIST
+        );
+        $this->assertSame($newquestionid, (int) $newattempt->currentquestionid);
+    }
+
+    /**
+     * An attempt whose currentquestionid points at a question that was never part of this
+     * backup (deleted before the backup was taken) survives restore with it dropped to 0,
+     * not an error and not the stale original id.
+     *
+     * @return void
+     */
+    public function test_backup_restore_drops_an_unmapped_currentquestionid_to_zero(): void {
+        global $DB;
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid'    => $instance->id,
+            'userid'            => $user->id,
+            'token'             => bin2hex(random_bytes(32)),
+            'status'            => 'inprogress',
+            'currentquestionid' => 999999,
+            'timecreated'       => time(),
+        ]);
+
+        $newcourse = $this->backup_and_restore_into_new_course($course);
+
+        $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+        $newattempt = $DB->get_record(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $newinstance->id],
+            '*',
+            MUST_EXIST
+        );
+        $this->assertSame(0, (int) $newattempt->currentquestionid);
+    }
+
+    /**
      * A file embedded in a bank question's questiontext survives a full course
      * backup/restore, copied into the restored question's own new id.
      *

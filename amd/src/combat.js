@@ -1047,7 +1047,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 Accessibility.announce(this.strings.manafull);
             }
 
-            setTimeout(() => {
+            setTimeout(async() => {
                 me.scene.pause();
                 const dialogEl = document.getElementById('playerpuzzle-modal');
 
@@ -1058,10 +1058,30 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     // restored explicitly to it when the dialog closes.
                     const previouslyFocused = document.activeElement;
 
-                    let question = {text: ctx.strings.questionerror, options: []};
-                    if (ctx.gameConfig.questions && ctx.gameConfig.questions.length > 0) {
-                        const idx = Math.floor(Math.random() * ctx.gameConfig.questions.length);
-                        question = ctx.gameConfig.questions[idx];
+                    // The question is drawn server-side, never picked by the client — the
+                    // client used to Math.random() an index into a full Blind JSON list of
+                    // every approved question, which meant it could name any of them to
+                    // validate_answer's forwhom=boss path on demand (security audit finding,
+                    // Fase 9: on Hard difficulty the boss's guess is correct with probability
+                    // 1.0, so that alone was a free oracle for the correct answer of any
+                    // question in the instance, at any time). Falls back to the same
+                    // "no question" state a missing/empty pool always showed.
+                    let question = {text: ctx.strings.questionerror, options: [], hashint: false};
+                    try {
+                        const res = await Ajax.call([{
+                            methodname: 'mod_playerpuzzle_draw_question',
+                            args: {cmid: ctx.gameConfig.cmid, token: ctx.gameConfig.token},
+                        }])[0];
+                        if (res.available) {
+                            question = {
+                                id: res.id,
+                                text: res.text,
+                                hashint: res.hashint,
+                                options: res.options,
+                            };
+                        }
+                    } catch (err) {
+                        // Question stays the questionerror/no-options fallback above.
                     }
 
                     let questionText = trigger === 'boss'
@@ -1192,7 +1212,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     args: {
                                         cmid: ctx.gameConfig.cmid,
                                         token: ctx.gameConfig.token,
-                                        questionid: question.id,
                                         answerid: selectedAnswer.id,
                                         forwhom: 'player',
                                     },
@@ -1277,7 +1296,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 args: {
                                     cmid: ctx.gameConfig.cmid,
                                     token: ctx.gameConfig.token,
-                                    questionid: question.id,
                                     answerid: 0,
                                     forwhom: 'boss',
                                 },

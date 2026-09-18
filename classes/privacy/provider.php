@@ -54,7 +54,7 @@ class provider implements
     /**
      * Returns metadata about personal data stored by this plugin.
      *
-     * playerpuzzle_attempts carries four columns not listed below, each a deliberate
+     * playerpuzzle_attempts carries five columns not listed below, each a deliberate
      * exclusion rather than an oversight: playerpuzzleid is a structural foreign key,
      * never itself exported (every export/delete call is already scoped by instance);
      * token is an opaque, unpredictable anti-replay value with no personal information
@@ -63,7 +63,11 @@ class provider implements
      * consume_token() moves the attempt to its final status), so it never carries
      * information beyond what timecreated/timefinished already declare; isdemo is
      * gameplay-flow metadata (whether this attempt was a disposable Demo request, Fase 9),
-     * the same category as currentlevel/currentphase, not personal data about the user.
+     * the same category as currentlevel/currentphase, not personal data about the user;
+     * currentquestionid is transient server state (which question is currently open for
+     * this attempt, security audit fix, Fase 9), always 0 outside of a live in-progress
+     * fight and carrying no narrative value to a personal-data export — the same category
+     * as isdemo, not personal data about the user.
      *
      * @param collection $collection The initialised collection to add items to.
      * @return collection A listing of user data stored through this system.

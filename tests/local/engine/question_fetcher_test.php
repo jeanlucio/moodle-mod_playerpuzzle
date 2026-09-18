@@ -61,59 +61,48 @@ final class question_fetcher_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the frontend payload never carries iscorrect or any other correctness
-     * signal alongside an option — the Blind JSON contract: the correct answer must never
-     * reach the client before the server validates it.
+     * Tests that draw_random_question_id() only ever returns an id belonging to the
+     * requested instance, ignoring a question that belongs to another one.
      *
      * @return void
      */
-    public function test_get_questions_for_frontend_never_leaks_correctness(): void {
-        $this->make_question(7);
+    public function test_draw_random_question_id_scoped_to_instance(): void {
+        $questionid = $this->make_question(7);
+        questions_repository::add_question(
+            9,
+            'multichoice',
+            'Belongs to a different instance?',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
 
-        $questions = question_fetcher::get_questions_for_frontend(7, \context_system::instance());
+        $drawn = question_fetcher::draw_random_question_id(7);
 
-        $this->assertCount(1, $questions);
-        $this->assertNotEmpty($questions[0]['options']);
-        foreach ($questions[0]['options'] as $option) {
-            $this->assertSame(['id', 'text'], array_keys($option));
-        }
+        $this->assertSame($questionid, $drawn);
     }
 
     /**
-     * Tests that only questions belonging to the requested instance are returned.
+     * Tests that draw_random_question_id() returns null when the instance has no approved
+     * questions at all — draw_question.php's own "available: false" fallback depends on this.
      *
      * @return void
      */
-    public function test_get_questions_for_frontend_scoped_to_instance(): void {
-        $this->make_question(7);
-
-        $questions = question_fetcher::get_questions_for_frontend(9, \context_system::instance());
-
-        $this->assertSame([], $questions);
+    public function test_draw_random_question_id_returns_null_without_approved_questions(): void {
+        $this->assertNull(question_fetcher::draw_random_question_id(7));
     }
 
     /**
-     * Tests that the returned set never exceeds the requested limit.
+     * Tests that draw_random_question_id() never draws an unapproved question (e.g.
+     * AI-generated, pending review) — a match must never be offered one a teacher has not
+     * approved yet.
      *
      * @return void
      */
-    public function test_get_questions_for_frontend_respects_limit(): void {
-        for ($i = 0; $i < 3; $i++) {
-            $this->make_question(7);
-        }
-
-        $questions = question_fetcher::get_questions_for_frontend(7, \context_system::instance(), 2);
-
-        $this->assertCount(2, $questions);
-    }
-
-    /**
-     * Tests that an unapproved question (e.g. AI-generated, pending review) is never
-     * offered to a match.
-     *
-     * @return void
-     */
-    public function test_get_questions_for_frontend_excludes_unapproved_question(): void {
+    public function test_draw_random_question_id_excludes_unapproved_question(): void {
         questions_repository::add_question(
             7,
             'multichoice',
@@ -128,9 +117,61 @@ final class question_fetcher_test extends \advanced_testcase {
             false
         );
 
-        $questions = question_fetcher::get_questions_for_frontend(7, \context_system::instance());
+        $this->assertNull(question_fetcher::draw_random_question_id(7));
+    }
 
-        $this->assertSame([], $questions);
+    /**
+     * Tests that get_single_question() never carries iscorrect or any other correctness
+     * signal alongside an option — the Blind JSON contract: the correct answer must never
+     * reach the client before the server validates it.
+     *
+     * @return void
+     */
+    public function test_get_single_question_never_leaks_correctness(): void {
+        $questionid = $this->make_question(7);
+
+        $question = question_fetcher::get_single_question($questionid, 7, \context_system::instance());
+
+        $this->assertNotEmpty($question['options']);
+        foreach ($question['options'] as $option) {
+            $this->assertSame(['id', 'text'], array_keys($option));
+        }
+    }
+
+    /**
+     * Tests that get_single_question() returns null for a question belonging to a
+     * different instance — never validated by isolated PK.
+     *
+     * @return void
+     */
+    public function test_get_single_question_scoped_to_instance(): void {
+        $questionid = $this->make_question(7);
+
+        $this->assertNull(question_fetcher::get_single_question($questionid, 9, \context_system::instance()));
+    }
+
+    /**
+     * Tests that get_single_question() returns null for an unapproved question, even when
+     * the instance id given is the real one it belongs to.
+     *
+     * @return void
+     */
+    public function test_get_single_question_excludes_unapproved_question(): void {
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Pending AI question?',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2,
+            'ai',
+            false
+        );
+
+        $this->assertNull(question_fetcher::get_single_question($questionid, 7, \context_system::instance()));
     }
 
     /**
@@ -275,14 +316,14 @@ final class question_fetcher_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the frontend payload flags whether a question has a hint, without ever
+     * Tests that get_single_question() flags whether a question has a hint, without ever
      * carrying the hint text itself — the text is only sent after a paid buy_consumable
      * call authorizes it (Blind JSON: nothing the client has not paid for).
      *
      * @return void
      */
-    public function test_get_questions_for_frontend_flags_hashint_without_leaking_text(): void {
-        questions_repository::add_question(
+    public function test_get_single_question_flags_hashint_without_leaking_text(): void {
+        $withhint = questions_repository::add_question(
             7,
             'multichoice',
             'With a hint?',
@@ -293,17 +334,16 @@ final class question_fetcher_test extends \advanced_testcase {
             ],
             2
         );
-        $this->make_question(7);
+        $withouthint = $this->make_question(7);
+        $context = \context_system::instance();
 
-        $questions = question_fetcher::get_questions_for_frontend(7, \context_system::instance(), 10);
+        $withhintquestion = question_fetcher::get_single_question($withhint, 7, $context);
+        $withouthintquestion = question_fetcher::get_single_question($withouthint, 7, $context);
 
-        $byhashint = array_column($questions, 'hashint');
-        sort($byhashint);
-        $this->assertSame([false, true], $byhashint);
-        foreach ($questions as $question) {
-            $this->assertArrayNotHasKey('hint', $question);
-            $this->assertStringNotContainsString('Secret hint text.', json_encode($question));
-        }
+        $this->assertTrue($withhintquestion['hashint']);
+        $this->assertFalse($withouthintquestion['hashint']);
+        $this->assertArrayNotHasKey('hint', $withhintquestion);
+        $this->assertStringNotContainsString('Secret hint text.', json_encode($withhintquestion));
     }
 
     /**

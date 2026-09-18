@@ -33,6 +33,14 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_draw_question' => [
+        'classname'    => 'mod_playerpuzzle\external\draw_question',
+        'methodname'   => 'execute',
+        'description'  => 'Draws (or re-serves the already-open) question for a mana-full challenge.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
     'mod_playerpuzzle_validate_answer' => [
         'classname'    => 'mod_playerpuzzle\external\validate_answer',
         'methodname'   => 'execute',

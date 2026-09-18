@@ -32,15 +32,15 @@ namespace mod_playerpuzzle\local\engine;
  */
 class question_fetcher {
     /**
-     * Retrieves random approved questions for an instance, without revealing the correct
-     * answers.
+     * Draws one random approved question id for the instance, or null if none exist. The
+     * caller (draw_question.php) is the only thing that ever decides which question is "in
+     * play" — the client never chooses, closing the oracle a client-supplied questionid used
+     * to open on validate_answer's forwhom=boss path (security audit, Fase 9).
      *
      * @param int $playerpuzzleid The instance id.
-     * @param \context $context The context for formatting the HTML text.
-     * @param int $limit How many questions to retrieve.
-     * @return array Array of formatted questions ready to be sent to the frontend.
+     * @return int|null
      */
-    public static function get_questions_for_frontend(int $playerpuzzleid, \context $context, int $limit = 10): array {
+    public static function draw_random_question_id(int $playerpuzzleid): ?int {
         global $DB;
 
         $ids = $DB->get_fieldset_select(
@@ -50,13 +50,36 @@ class question_fetcher {
             ['ppid' => $playerpuzzleid]
         );
         if (empty($ids)) {
-            return [];
+            return null;
         }
 
-        shuffle($ids);
-        $selectedids = array_slice($ids, 0, $limit);
+        return (int) $ids[array_rand($ids)];
+    }
 
-        return array_values(self::format_batch($selectedids, $context));
+    /**
+     * Returns one question in the frontend (Blind JSON) shape, validated to belong to the
+     * given instance and be approved before any of its content is read — never by isolated
+     * PK. Returns null both when the question does not belong to the instance and when it no
+     * longer exists/is approved, the same "caller cannot tell why" shape get_hint_text() uses.
+     *
+     * @param int $questionid The question id, already drawn server-side.
+     * @param int $playerpuzzleid The instance the question must belong to.
+     * @param \context $context The context for formatting the HTML text.
+     * @return array|null Formatted question ready to send to the frontend, or null.
+     */
+    public static function get_single_question(int $questionid, int $playerpuzzleid, \context $context): ?array {
+        global $DB;
+
+        $valid = $DB->record_exists('playerpuzzle_questions', [
+            'id'             => $questionid,
+            'playerpuzzleid' => $playerpuzzleid,
+            'approved'       => 1,
+        ]);
+        if (!$valid) {
+            return null;
+        }
+
+        return self::format_batch([$questionid], $context)[$questionid] ?? null;
     }
 
     /**

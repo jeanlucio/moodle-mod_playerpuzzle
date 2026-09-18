@@ -88,6 +88,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'boss_coins_earned',
             'coins_spent',
             'combatstate',
+            'currentquestionid',
             'score',
             'status',
             'timecreated',
@@ -142,8 +143,9 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
         // Build the tree. Bank questions (and their answers) are added before attempts, so
         // the playerpuzzle_bankquestion mapping already exists — via the same-name
         // set_mapping() call in the restore step — by the time an attempt's logged question
-        // row needs to remap questionid; both are children of the same activity instance in
-        // the same document, so no after_execute() deferral is needed here.
+        // row needs to remap questionid, or the attempt itself needs to remap its own
+        // currentquestionid; all are children of the same activity instance in the same
+        // document, so no after_execute() deferral is needed here.
         $playerpuzzle->add_child($bankquestions);
         $bankquestions->add_child($bankquestion);
         $bankquestion->add_child($bankanswers);

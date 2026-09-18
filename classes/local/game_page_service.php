@@ -26,7 +26,6 @@ namespace mod_playerpuzzle\local;
 
 use context_module;
 use mod_playerpuzzle\local\engine\combat;
-use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\engine\security;
 use moodle_exception;
 use moodle_url;
@@ -133,7 +132,9 @@ class game_page_service {
      * Resumes or creates the attempt, and assembles the full JS game config: the scaled
      * boss/student HP and combat damage for the attempt's current level/phase (Single Match
      * always resolves to the base values unchanged, since its attempts stay at Level 1,
-     * Phase 1), the anti-replay token, sprites, and the Blind JSON question set.
+     * Phase 1), the anti-replay token, and sprites. Questions are no longer bundled here —
+     * the client draws one at a time from mod_playerpuzzle_draw_question, server-picked, so
+     * it never learns which question the next challenge will be ahead of time.
      *
      * @param stdClass $cm Course module.
      * @param stdClass $instance Activity instance.
@@ -235,8 +236,6 @@ class game_page_service {
             combat::difficulty_coin_factor($difficulty)
         );
 
-        $questions = question_fetcher::get_questions_for_frontend((int) $instance->id, $context);
-
         $consumableuses = [];
         foreach (attempt_consumables::TYPES as $type) {
             $consumableuses[$type] = attempt_consumables::get_uses($attemptinfo->attemptid, $type);
@@ -315,7 +314,6 @@ class game_page_service {
             'stagebgurl'           => $stagebgurl,
             'bgurl'                => $bgurl,
             'spriteurls'           => $spriteurls,
-            'questions'            => $questions,
             'mobile'               => $ismobile,
             'viewurl'              => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
             'enablespeech'         => (bool) get_config('mod_playerpuzzle', 'enablespeech'),

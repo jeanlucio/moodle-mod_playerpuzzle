@@ -217,6 +217,11 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
 
         $data->playerpuzzleid = $this->get_new_parentid('playerpuzzle');
         $data->userid = $this->get_mappingid('user', $data->userid);
+        // Same namespace/fallback as process_playerpuzzle_attempt_question()'s own
+        // questionid remap below: 0 (no question currently open) when the original question
+        // no longer exists or was not part of this restore, rather than leaking a stale id
+        // that would point at the wrong question in the target course.
+        $data->currentquestionid = (int) $this->get_mappingid('playerpuzzle_bankquestion', $data->currentquestionid, 0);
         $data->timecreated = $this->apply_date_offset($data->timecreated);
         $data->timefinished = $this->apply_date_offset($data->timefinished);
         $data->timemodified = $this->apply_date_offset($data->timemodified);

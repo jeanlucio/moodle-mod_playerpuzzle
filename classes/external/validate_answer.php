@@ -45,11 +45,10 @@ class validate_answer extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid'       => new external_value(PARAM_INT, 'Course module ID'),
-            'token'      => new external_value(PARAM_ALPHANUM, 'Anti-replay token of the in-progress attempt'),
-            'questionid' => new external_value(PARAM_INT, 'Question ID'),
-            'answerid'   => new external_value(PARAM_INT, 'Answer ID submitted by the player; ignored for the boss'),
-            'forwhom'    => new external_value(
+            'cmid'     => new external_value(PARAM_INT, 'Course module ID'),
+            'token'    => new external_value(PARAM_ALPHANUM, 'Anti-replay token of the in-progress attempt'),
+            'answerid' => new external_value(PARAM_INT, 'Answer ID submitted by the player; ignored for the boss'),
+            'forwhom'  => new external_value(
                 PARAM_ALPHA,
                 'Whose answer this is: "player" validates the submitted answer, "boss" draws the boss guess server-side',
                 VALUE_DEFAULT,
@@ -63,9 +62,16 @@ class validate_answer extends external_api {
      * difficulty-weighted precision, and returns the outcome. The boss draw never happens
      * on the client, so the correct answer is never revealed to it (Blind JSON).
      *
+     * Always operates on the attempt's own currentquestionid (set by draw_question.php) —
+     * never a client-supplied question id. Before this, a client could call forwhom=boss for
+     * any approved question id of the instance, at will, turning the endpoint into a free
+     * oracle for the correct answer (security audit finding, Fase 9): on Hard difficulty the
+     * boss's guess is correct with probability 1.0, so a single call already revealed it.
+     * Tying the question to server state closes this — the client can no longer choose which
+     * question to probe.
+     *
      * @param int $cmid Course module ID.
      * @param string $token Anti-replay token of the in-progress attempt.
-     * @param int $questionid Question ID.
      * @param int $answerid Answer ID submitted (player only).
      * @param string $forwhom "player" or "boss".
      * @return array Result matrix.
@@ -73,18 +79,16 @@ class validate_answer extends external_api {
     public static function execute(
         int $cmid,
         string $token,
-        int $questionid,
         int $answerid,
         string $forwhom = 'player'
     ): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
-            'cmid'       => $cmid,
-            'token'      => $token,
-            'questionid' => $questionid,
-            'answerid'   => $answerid,
-            'forwhom'    => $forwhom,
+            'cmid'     => $cmid,
+            'token'    => $token,
+            'answerid' => $answerid,
+            'forwhom'  => $forwhom,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -104,23 +108,29 @@ class validate_answer extends external_api {
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
 
+        $questionid = (int) $attempt->currentquestionid;
+
         // Instance isolation: the question must belong to this instance and be approved,
-        // never validated by isolated PK.
-        $valid = $DB->record_exists('playerpuzzle_questions', [
-            'id'             => $params['questionid'],
+        // never validated by isolated PK. Also covers the case of no question ever drawn
+        // (currentquestionid = 0) or one that vanished (deleted/disapproved) since the draw.
+        $valid = $questionid > 0 && $DB->record_exists('playerpuzzle_questions', [
+            'id'             => $questionid,
             'playerpuzzleid' => (int) $playerpuzzle->id,
             'approved'       => 1,
         ]);
         if (!$valid) {
+            self::consume_current_question($attempt);
             return ['correct' => false];
         }
 
         if ($params['forwhom'] === 'boss') {
-            return self::draw_boss_guess($params['questionid'], (string) $attempt->difficulty);
+            $result = self::draw_boss_guess($questionid, (string) $attempt->difficulty);
+            self::consume_current_question($attempt);
+            return $result;
         }
 
-        $correct = question_fetcher::is_answer_correct($params['questionid'], $params['answerid']);
-        $correctanswerid = question_fetcher::get_correct_answer_id($params['questionid']);
+        $correct = question_fetcher::is_answer_correct($questionid, $params['answerid']);
+        $correctanswerid = question_fetcher::get_correct_answer_id($questionid);
 
         // Server-side source of truth for how many questions this attempt has answered so
         // far (right or wrong): the boss-revive rule and the "Perguntas: X/N" HUD counter
@@ -129,16 +139,16 @@ class validate_answer extends external_api {
         if ($correct) {
             $attempt->questions_correct = (int) $attempt->questions_correct + 1;
         }
-        $DB->update_record('playerpuzzle_attempts', $attempt);
+        self::consume_current_question($attempt);
 
         // Log the student's answer for the post-game review — a text snapshot, so it still
         // reads correctly if the source question is later edited or removed.
         attempt_questions::record(
             (int) $attempt->id,
-            $params['questionid'],
+            $questionid,
             (int) $attempt->currentlevel,
             (int) $attempt->currentphase,
-            question_fetcher::get_question_text($params['questionid'], $context),
+            question_fetcher::get_question_text($questionid, $context),
             question_fetcher::get_answer_text($params['answerid'], $context),
             $correctanswerid !== null ? question_fetcher::get_answer_text($correctanswerid, $context) : '',
             $correct
@@ -150,6 +160,25 @@ class validate_answer extends external_api {
         }
 
         return $result;
+    }
+
+    /**
+     * Clears currentquestionid and persists the attempt — called on every path out of
+     * execute() once a question has been resolved (answered, guessed, or found invalid), so
+     * a repeated call without a fresh draw_question.php call always finds none open. This is
+     * the actual anti-replay guarantee for the question-draw flow, mirroring
+     * security::validate_and_consume_token()'s own consume-on-use pattern.
+     *
+     * @param \stdClass $attempt The attempt row, with questions_total/questions_correct
+     *  already updated by the caller if applicable — persisted here in the same update.
+     * @return void
+     */
+    private static function consume_current_question(\stdClass $attempt): void {
+        global $DB;
+
+        $attempt->currentquestionid = 0;
+        $attempt->timemodified = time();
+        $DB->update_record('playerpuzzle_attempts', $attempt);
     }
 
     /**

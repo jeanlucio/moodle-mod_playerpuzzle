@@ -413,13 +413,21 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Fires the one-time tutorial context balloon for each newly-matched piece type this
-         * turn, in a first-attempt tutorial only, and only for the player's own turn (the
-         * boss's matches are never something the student needs explained). Kept as its own
-         * method rather than inlined into processEffects()'s own loops: that function is
-         * already at ESLint's complexity ceiling, and every type this checks is already known
-         * once destroyedPieces/matchGroups exist, so a second, simpler pass over the same data
+         * Fires the one-time tutorial context balloon for a newly-matched piece type this
+         * turn, in a Demo match only, and only for the player's own turn (the boss's matches
+         * are never something the student needs explained). Kept as its own method rather
+         * than inlined into processEffects()'s own loops: that function is already at
+         * ESLint's complexity ceiling, and every type this checks is already known once
+         * destroyedPieces/matchGroups exist, so a second, simpler pass over the same data
          * costs nothing beyond the one extra call site.
+         *
+         * Only ever shows one balloon per call, even when several different types are
+         * destroyed in the same turn: ui.js::showTutorialBalloon() replaces whatever balloon
+         * is currently up, so showing more than one here would just have each new call erase
+         * the previous before the student ever sees it. Only the type actually shown is
+         * marked "seen" — every other new type this turn stays eligible and gets its own
+         * balloon the next time it is destroyed on its own (or is the last new type in some
+         * later turn).
          *
          * @param {Array} destroyedPieces Pieces destroyed this turn (star/grimoire/orb/
          *  shield/potion effects are resolved per piece).
@@ -430,29 +438,24 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             if (!this.isdemo || this.currentTurn !== 'player') {
                 return;
             }
-            for (const piece of destroyedPieces) {
-                this.maybeShowTutorialBalloon(piece.type);
-            }
-            for (const group of matchGroups) {
-                if (group.type === 3 || group.type === 6) {
-                    this.maybeShowTutorialBalloon(group.type);
-                }
-            }
-        }
 
-        /**
-         * Shows a one-time context balloon explaining a piece type's effect. A no-op for
-         * every later match of the same type this session — callers (triggerTutorialBalloons())
-         * already guard on isdemo/currentTurn, this only adds the per-type "seen" check.
-         *
-         * @param {number} type Piece type (0-6).
-         */
-        maybeShowTutorialBalloon(type) {
-            if (this.tutorialSeenTypes.has(type)) {
+            const newtypes = [];
+            const addIfNew = type => {
+                if (!this.tutorialSeenTypes.has(type) && !newtypes.includes(type)) {
+                    newtypes.push(type);
+                }
+            };
+            destroyedPieces.forEach(piece => addIfNew(piece.type));
+            matchGroups
+                .filter(group => group.type === 3 || group.type === 6)
+                .forEach(group => addIfNew(group.type));
+
+            if (newtypes.length === 0) {
                 return;
             }
-            this.tutorialSeenTypes.add(type);
 
+            const type = newtypes[newtypes.length - 1];
+            this.tutorialSeenTypes.add(type);
             const key = PIECE_TUTORIAL_KEYS[type];
             const text = key && this.strings[key];
             if (text) {

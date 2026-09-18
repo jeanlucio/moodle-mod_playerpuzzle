@@ -273,4 +273,118 @@ final class question_fetcher_test extends \advanced_testcase {
         $this->assertContains(question_fetcher::get_correct_answer_id($questionid), $ids);
         $this->assertCount(3, $ids);
     }
+
+    /**
+     * Tests that the frontend payload flags whether a question has a hint, without ever
+     * carrying the hint text itself — the text is only sent after a paid buy_consumable
+     * call authorizes it (Blind JSON: nothing the client has not paid for).
+     *
+     * @return void
+     */
+    public function test_get_questions_for_frontend_flags_hashint_without_leaking_text(): void {
+        questions_repository::add_question(
+            7,
+            'multichoice',
+            'With a hint?',
+            'Secret hint text.',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
+        $this->make_question(7);
+
+        $questions = question_fetcher::get_questions_for_frontend(7, \context_system::instance(), 10);
+
+        $byhashint = array_column($questions, 'hashint');
+        sort($byhashint);
+        $this->assertSame([false, true], $byhashint);
+        foreach ($questions as $question) {
+            $this->assertArrayNotHasKey('hint', $question);
+            $this->assertStringNotContainsString('Secret hint text.', json_encode($question));
+        }
+    }
+
+    /**
+     * Tests that get_hint_text() returns the formatted hint for a question that belongs to
+     * the instance and has one.
+     *
+     * @return void
+     */
+    public function test_get_hint_text_returns_formatted_hint(): void {
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'With a hint?',
+            'Secret hint text.',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
+
+        $hint = question_fetcher::get_hint_text($questionid, 7, \context_system::instance());
+
+        $this->assertStringContainsString('Secret hint text.', $hint);
+    }
+
+    /**
+     * Tests that get_hint_text() returns null for a question with no hint.
+     *
+     * @return void
+     */
+    public function test_get_hint_text_returns_null_when_no_hint(): void {
+        $questionid = $this->make_question(7);
+
+        $this->assertNull(question_fetcher::get_hint_text($questionid, 7, \context_system::instance()));
+    }
+
+    /**
+     * Tests that get_hint_text() never returns a hint for a question belonging to a
+     * different instance — isolation, not just an unfiltered lookup by id.
+     *
+     * @return void
+     */
+    public function test_get_hint_text_returns_null_for_a_different_instance(): void {
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'With a hint?',
+            'Secret hint text.',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2
+        );
+
+        $this->assertNull(question_fetcher::get_hint_text($questionid, 9, \context_system::instance()));
+    }
+
+    /**
+     * Tests that get_hint_text() never returns a hint for an unapproved question — the same
+     * gate get_questions_for_frontend() applies, so a hint can never be bought for a question
+     * a match could never actually serve.
+     *
+     * @return void
+     */
+    public function test_get_hint_text_returns_null_for_unapproved_question(): void {
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Pending AI question?',
+            'Secret hint text.',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            2,
+            'ai',
+            false
+        );
+
+        $this->assertNull(question_fetcher::get_hint_text($questionid, 7, \context_system::instance()));
+    }
 }

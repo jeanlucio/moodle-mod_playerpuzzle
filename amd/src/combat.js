@@ -29,7 +29,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
     // Mirrors combat::CONSUMABLE_PRICES server-side — the server is still the source of
     // truth (buy_consumable re-validates), this copy only drives the shop badges/afford
     // check without a round trip on every coin change.
-    const CONSUMABLE_PRICES = {potion: 8, shield: 10, magic: 12, sword: 10};
+    const CONSUMABLE_PRICES = {potion: 8, shield: 10, magic: 12, sword: 10, hint: 5};
 
     /**
      * Sends one combat checkpoint via navigator.sendBeacon(), replicating the envelope
@@ -79,7 +79,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // ledger window (see coin_ledger.php), same pattern as questionsTotal above.
             this.maxConsumables = parseInt(gameConfig.maxconsumables, 10) || 1;
             this.consumableUses = Object.assign(
-                {potion: 0, shield: 0, magic: 0, sword: 0},
+                {potion: 0, shield: 0, magic: 0, sword: 0, hint: 0},
                 gameConfig.consumableuses || {}
             );
             this.coinsSpent = parseInt(gameConfig.coinsspent, 10) || 0;
@@ -711,6 +711,46 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
+         * Buys the Question Hint consumable for the question currently open in the modal and
+         * reveals its text once the server authorizes the purchase. Kept separate from
+         * requestPurchase() rather than folded into it: Dica has no PlayerHUD funding source
+         * (always 'local', same as Magia Rápida), needs the extra questionid argument, and its
+         * "effect" is revealing text in the modal rather than a combat-state change, so nothing
+         * about its success path fits applyConsumableEffect()'s switch.
+         *
+         * @param {number} questionid The question currently open in the modal.
+         */
+        requestHint(questionid) {
+            const me = this.scene;
+
+            Ajax.call([{
+                methodname: 'mod_playerpuzzle_buy_consumable',
+                args: {
+                    cmid: this.gameConfig.cmid,
+                    token: this.gameConfig.token,
+                    type: 'hint',
+                    source: 'local',
+                    questionid,
+                    coinsearnedsofar: Math.round(this.playerGold),
+                    bosscoinsearnedsofar: Math.round(this.bossGold),
+                },
+            }])[0].done(res => {
+                if (!res.success) {
+                    return;
+                }
+                const price = this.consumablePrice('hint');
+                this.coinsSpent += price;
+                me.ui.showCoinFloat(price);
+                this.consumableUses.hint = (this.consumableUses.hint || 0) + 1;
+                $('#playerpuzzle-hint-text').text(res.hinttext).show();
+                $('#playerpuzzle-btn-hint').hide().prop('disabled', true).off('click');
+                this.updateUI();
+            }).fail(error => {
+                Notification.alert(this.strings.shoperror, (error && error.message) || this.strings.shoperror);
+            });
+        }
+
+        /**
          * Applies a purchased consumable's in-combat effect. Only ever called after the
          * server has authorized the purchase (buy_consumable's {success: true}) — the
          * effect itself is entirely client-side, same as every other board-piece effect.
@@ -926,6 +966,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     answersContainer.empty();
                     $('#playerpuzzle-btn-confirm').hide().off('click');
                     $('#playerpuzzle-btn-skip').hide().off('click');
+                    $('#playerpuzzle-hint-text').hide().empty();
+                    $('#playerpuzzle-btn-hint').hide().prop('disabled', false).off('click');
 
                     const closeModal = () => {
                         dialogEl.close();
@@ -945,6 +987,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                             $('#playerpuzzle-btn-skip').show().on('click', closeModal);
                             $('#playerpuzzle-btn-confirm').text(ctx.strings.btnattack)
                                 .prop('disabled', true).show();
+
+                            if (question.hashint) {
+                                const hintPrice = ctx.consumablePrice('hint');
+                                $('#playerpuzzle-btn-hint')
+                                    .text(ctx.strings.hintbutton.replace('{$a}', hintPrice))
+                                    .show()
+                                    .on('click', () => ctx.requestHint(question.id));
+                            }
 
                             let selectedAnswer = null;
 

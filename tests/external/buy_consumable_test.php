@@ -31,6 +31,7 @@ use core_external\external_api;
 use mod_playerpuzzle\local\attempt_consumables;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\questions_repository;
 
 /**
  * Tests for the mod_playerpuzzle_buy_consumable web service.
@@ -304,7 +305,7 @@ final class buy_consumable_test extends \advanced_testcase {
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
-        $result = $this->call_buy_consumable($this->local_args($instance, $token, ['type' => 'hint']));
+        $result = $this->call_buy_consumable($this->local_args($instance, $token, ['type' => 'bogus']));
 
         $this->assertTrue($result['error']);
         $this->assertSame('consumabletypeinvalid', $result['exception']->errorcode);
@@ -449,5 +450,124 @@ final class buy_consumable_test extends \advanced_testcase {
 
         $this->expectException(\core\exception\require_login_exception::class);
         buy_consumable::execute($instance->cmid, $token, 'potion', 'local', 100, 0);
+    }
+
+    /**
+     * Creates an approved multichoice question with the given hint (or none), belonging to
+     * the given instance.
+     *
+     * @param int $playerpuzzleid The instance the question belongs to.
+     * @param string $hint Hint text; empty string stores null (no hint).
+     * @return int The new question id.
+     */
+    private function make_question(int $playerpuzzleid, string $hint = ''): int {
+        return questions_repository::add_question(
+            $playerpuzzleid,
+            'multichoice',
+            'Question?',
+            $hint,
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            0
+        );
+    }
+
+    /**
+     * Tests a successful hint purchase: debits coins, records the use, and returns the
+     * question's own hint text, formatted.
+     *
+     * @return void
+     */
+    public function test_hint_purchase_success_reveals_text_and_debits_coins(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id, 'Think about it.');
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $result = $this->call_buy_consumable($this->local_args($instance, $token, [
+            'type'       => 'hint',
+            'questionid' => $questionid,
+        ]));
+
+        $this->assertFalse($result['error']);
+        $this->assertTrue($result['data']['success']);
+        $this->assertStringContainsString('Think about it.', $result['data']['hinttext']);
+        // Hint costs 5; newbalance = 100 - 5 = 95.
+        $this->assertSame(95, $result['data']['newbalance']);
+        $this->assertSame(5, (int) $DB->get_field('playerpuzzle_attempts', 'coins_spent', ['id' => $attemptid]));
+        $this->assertSame(1, attempt_consumables::get_uses($attemptid, 'hint'));
+    }
+
+    /**
+     * Tests that a question with no hint is rejected, without debiting anything.
+     *
+     * @return void
+     */
+    public function test_hint_purchase_rejects_a_question_without_a_hint(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $result = $this->call_buy_consumable($this->local_args($instance, $token, [
+            'type'       => 'hint',
+            'questionid' => $questionid,
+        ]));
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('hintnotavailable', $result['exception']->errorcode);
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle_attempts', 'coins_spent', ['id' => $attemptid]));
+    }
+
+    /**
+     * Tests instance isolation: a question id belonging to a different instance is rejected
+     * even though it has a hint of its own.
+     *
+     * @return void
+     */
+    public function test_hint_purchase_rejects_a_question_from_another_instance(): void {
+        $instance = $this->make_instance();
+        $otherinstance = $this->make_instance();
+        $questionid = $this->make_question((int) $otherinstance->id, 'Not yours.');
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_buy_consumable($this->local_args($instance, $token, [
+            'type'       => 'hint',
+            'questionid' => $questionid,
+        ]));
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('hintnotavailable', $result['exception']->errorcode);
+    }
+
+    /**
+     * Tests that Dica da Questão, like Magia Rápida, has no PlayerHUD source — always
+     * local-coin-only.
+     *
+     * @return void
+     */
+    public function test_hint_has_no_hud_source(): void {
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id, 'Think about it.');
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_buy_consumable($this->local_args($instance, $token, [
+            'type'       => 'hint',
+            'source'     => 'hud',
+            'questionid' => $questionid,
+        ]));
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('consumablesourceunavailable', $result['exception']->errorcode);
     }
 }

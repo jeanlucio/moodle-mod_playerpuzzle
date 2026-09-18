@@ -112,6 +112,33 @@ class question_fetcher {
     }
 
     /**
+     * Returns the formatted hint text for a question, validating it belongs to the given
+     * instance before reading it — never by isolated PK. Returns null both when the question
+     * does not belong to the instance and when it has no hint, so the caller cannot tell the
+     * two apart from the return value alone (buy_consumable.php raises its own error either
+     * way, without leaking which case it was).
+     *
+     * @param int $questionid The question ID.
+     * @param int $playerpuzzleid The instance the question must belong to.
+     * @param \context $context Context for formatting.
+     * @return string|null The formatted hint text, or null if unavailable.
+     */
+    public static function get_hint_text(int $questionid, int $playerpuzzleid, \context $context): ?string {
+        global $DB;
+
+        $hint = $DB->get_field('playerpuzzle_questions', 'hint', [
+            'id' => $questionid,
+            'playerpuzzleid' => $playerpuzzleid,
+            'approved' => 1,
+        ]);
+        if ($hint === false || $hint === null || trim($hint) === '') {
+            return null;
+        }
+
+        return format_text($hint, FORMAT_PLAIN, ['context' => $context]);
+    }
+
+    /**
      * Returns the qtype of a question ('multichoice' or 'truefalse'), or null if unknown.
      *
      * @param int $questionid The question ID.
@@ -174,7 +201,7 @@ class question_fetcher {
 
         [$insql, $inparams] = $DB->get_in_or_equal($ids);
         $rawquestions = $DB->get_records_sql(
-            "SELECT id, qtype, questiontext, questiontextformat FROM {playerpuzzle_questions} WHERE id $insql",
+            "SELECT id, qtype, questiontext, questiontextformat, hint FROM {playerpuzzle_questions} WHERE id $insql",
             $inparams
         );
 
@@ -217,6 +244,10 @@ class question_fetcher {
                     (int) $q->id
                 ),
                 'options' => $options,
+                // Whether a hint exists, not its text — the text itself is only ever sent
+                // after buy_consumable(type=hint) authorizes the purchase (Blind JSON: the
+                // client learns nothing it has not paid for).
+                'hashint' => $q->hint !== null && trim($q->hint) !== '',
             ];
         }
 

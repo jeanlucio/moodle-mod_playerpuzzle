@@ -32,6 +32,7 @@ use core_external\external_value;
 use mod_playerpuzzle\local\attempt_consumables;
 use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
+use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\hud_service;
 use moodle_exception;
 
@@ -61,10 +62,16 @@ class buy_consumable extends external_api {
         return new external_function_parameters([
             'cmid'                 => new external_value(PARAM_INT, 'Course module ID'),
             'token'                => new external_value(PARAM_ALPHANUM, 'Anti-replay token of the in-progress attempt'),
-            'type'                 => new external_value(PARAM_ALPHA, 'Consumable type: potion, shield, magic or sword'),
+            'type'                 => new external_value(PARAM_ALPHA, 'Consumable type: potion, shield, magic, sword or hint'),
             'source'               => new external_value(PARAM_ALPHA, 'Funding source: local (coins) or hud (PlayerHUD stock)'),
             'coinsearnedsofar'     => new external_value(PARAM_INT, 'Player coins earned so far this phase/match, client-reported'),
             'bosscoinsearnedsofar' => new external_value(PARAM_INT, 'Boss coins earned so far this phase/match, client-reported'),
+            'questionid'           => new external_value(
+                PARAM_INT,
+                'The open question, required only for type=hint',
+                VALUE_DEFAULT,
+                0
+            ),
         ]);
     }
 
@@ -77,7 +84,8 @@ class buy_consumable extends external_api {
      * @param string $source Funding source.
      * @param int $coinsearnedsofar Player coins earned so far, client-reported.
      * @param int $bosscoinsearnedsofar Boss coins earned so far, client-reported.
-     * @return array Result with success, newbalance and apply.
+     * @param int $questionid The open question, required only for type=hint.
+     * @return array Result with success, newbalance, apply and hinttext.
      */
     public static function execute(
         int $cmid,
@@ -85,7 +93,8 @@ class buy_consumable extends external_api {
         string $type,
         string $source,
         int $coinsearnedsofar,
-        int $bosscoinsearnedsofar
+        int $bosscoinsearnedsofar,
+        int $questionid = 0
     ): array {
         global $DB, $USER;
 
@@ -96,6 +105,7 @@ class buy_consumable extends external_api {
             'source'               => $source,
             'coinsearnedsofar'     => $coinsearnedsofar,
             'bosscoinsearnedsofar' => $bosscoinsearnedsofar,
+            'questionid'           => $questionid,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -124,6 +134,17 @@ class buy_consumable extends external_api {
 
         if (attempt_consumables::get_uses((int) $attempt->id, $params['type']) >= (int) $playerpuzzle->maxconsumables) {
             throw new moodle_exception('consumablelimitreached', 'mod_playerpuzzle');
+        }
+
+        // Instance isolation, validated before any read of the hint itself: the question
+        // must belong to this instance, be approved, and actually have a hint — never
+        // trusted from the client, and checked before spending any coins on it.
+        $hinttext = '';
+        if ($params['type'] === 'hint') {
+            $hinttext = question_fetcher::get_hint_text($params['questionid'], (int) $playerpuzzle->id, $context);
+            if ($hinttext === null) {
+                throw new moodle_exception('hintnotavailable', 'mod_playerpuzzle');
+            }
         }
 
         $difficulty = (string) $attempt->difficulty;
@@ -179,6 +200,7 @@ class buy_consumable extends external_api {
             'success'    => true,
             'newbalance' => coin_ledger::spendable($attempt),
             'apply'      => $params['type'],
+            'hinttext'   => $hinttext,
         ];
     }
 
@@ -192,6 +214,7 @@ class buy_consumable extends external_api {
             'success'    => new external_value(PARAM_BOOL, 'Whether the purchase was authorized'),
             'newbalance' => new external_value(PARAM_INT, 'Local coin balance available after this purchase'),
             'apply'      => new external_value(PARAM_ALPHA, 'The consumable type the client should now apply'),
+            'hinttext'   => new external_value(PARAM_RAW, 'Formatted hint text, only populated for type=hint'),
         ]);
     }
 }

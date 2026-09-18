@@ -472,6 +472,7 @@ define([
                     'debriefsummary', 'debrieftitle', 'debriefwrongsr', 'debriefyouranswer',
                     'defeat',
                     'difficulty_easy', 'difficulty_hard', 'difficulty_normal',
+                    'hintbutton',
                     'historylogattack', 'historylogcoins', 'historylogcritical', 'historylogempty',
                     'historylogheal', 'historylogmana', 'historylogmultiplier',
                     'historylogmultiplierlost', 'historylogpoisoncharge', 'historylogpoisontick',

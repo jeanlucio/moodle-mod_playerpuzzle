@@ -82,7 +82,7 @@ class combat {
      * Fixed shop prices in local coins, per consumable type. Not teacher-configurable — only
      * the per-attempt use limit (maxconsumables) is.
      */
-    private const CONSUMABLE_PRICES = ['potion' => 8, 'shield' => 10, 'magic' => 12, 'sword' => 10];
+    private const CONSUMABLE_PRICES = ['potion' => 8, 'shield' => 10, 'magic' => 12, 'sword' => 10, 'hint' => 5];
 
     /**
      * Calculates the boss HP for a given level/phase, scaled from the teacher-configured

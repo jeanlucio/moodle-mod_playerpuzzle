@@ -471,6 +471,66 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that build_game_config() reports the same coin ceiling
+     * buy_consumable.php/save_progress.php independently recompute server-side — the client
+     * needs this to keep its own shop-badge/coin display from showing a balance the server
+     * would never honour (see combat.js::availableCoinBalance()'s own docblock).
+     *
+     * @return void
+     */
+    public function test_build_game_config_reports_the_coin_ceiling(): void {
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode'   => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'basebosshp' => 200,
+            'bossdamage' => 10,
+            'coingain'   => 10,
+        ]);
+        $context = \context_module::instance($cm->id);
+
+        // Hard boss HP here is 400, scaled bossdamage is 20: ceiling = (400/20) * 10 * 3.0 = 600.
+        $config = game_page_service::build_game_config(
+            $cm,
+            $instance,
+            $context,
+            (int) $this->student->id,
+            false,
+            'hard'
+        );
+
+        $this->assertSame(600, $config['coinceiling']);
+    }
+
+    /**
+     * Tests that a Demo attempt's coin ceiling (§4.12 Fase 9) is anchored to the fixed
+     * combat::DEMO_HP, not the instance's own (possibly much larger) basebosshp — matching
+     * buy_consumable.php's own isdemo branch.
+     *
+     * @return void
+     */
+    public function test_build_game_config_demo_coin_ceiling_uses_fixed_hp(): void {
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'basebosshp' => 100000,
+            'bossdamage' => 10,
+            'coingain'   => 10,
+        ]);
+        $context = \context_module::instance($cm->id);
+
+        // Demo boss HP is fixed at 50, scaled bossdamage is 10 (Normal, Level 1/Phase 1):
+        // ceiling = (50/10) * 10 * 1.0 = 50, regardless of the huge basebosshp above.
+        $config = game_page_service::build_game_config(
+            $cm,
+            $instance,
+            $context,
+            (int) $this->student->id,
+            false,
+            'normal',
+            true
+        );
+
+        $this->assertSame(50, $config['coinceiling']);
+    }
+
+    /**
      * Tests that a Demo attempt (§4.12 Fase 9) always fights at the fixed combat::DEMO_HP,
      * ignoring the instance's own configured HP/difficulty entirely — even on Hard, even on
      * a Campaign instance whose gamemode is reported to the client as 'single' instead.

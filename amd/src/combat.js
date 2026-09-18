@@ -107,6 +107,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // Campaign attempt resuming a phase already partway through) must not forget coins
             // already earned this window.
             this.playerGold = parseInt(gameConfig.coinsearnedsofar, 10) || 0;
+            // Mirrors combat::coin_ceiling() — see availableCoinBalance()'s own docblock for
+            // why this must clamp the displayed/spendable balance, not just playerGold's own
+            // unbounded growth from board matches. Falls back to no ceiling at all (rather
+            // than 0, which would block every purchase) if the value is ever missing/invalid.
+            const parsedceiling = parseInt(gameConfig.coinceiling, 10);
+            this.coinCeiling = Number.isFinite(parsedceiling) ? parsedceiling : Infinity;
             this.playerShieldMeter = 0;
             this.playerShieldReady = false;
             this.playerMultiplier = 1;
@@ -528,21 +534,47 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Coins actually spendable right now: the player's own gross earnings, minus
-         * whatever has already been spent this phase/match — mirrors
-         * coin_ledger::spendable() server-side (the actual authority; this only drives the
-         * shop badges' enabled/disabled look, buy_consumable.php re-validates for real).
-         * Deliberately does not net the boss's own coin gains against this, unlike
-         * showEndScreen()'s final netGold — the boss racking up its own coins by matching
-         * Coin pieces on its own turns was silently blocking the player from spending coins
-         * they had genuinely and separately earned, found via a real playtest report
-         * (14/09/2026). Netting against the boss's share is a final-reward concept, not a
-         * mid-match spending-power one — see coin_ledger::spendable()'s own docblock.
+         * Coins actually spendable right now: the player's own gross earnings (clamped to
+         * this phase/match's coin ceiling), minus whatever has already been spent this
+         * window — mirrors coin_ledger::spendable() server-side (the actual authority; this
+         * only drives the shop badges' enabled/disabled look and the HUD coin display,
+         * buy_consumable.php re-validates for real). Deliberately does not net the boss's own
+         * coin gains against this, unlike showEndScreen()'s final netGold — the boss racking
+         * up its own coins by matching Coin pieces on its own turns was silently blocking the
+         * player from spending coins they had genuinely and separately earned, found via a
+         * real playtest report (14/09/2026). Netting against the boss's share is a
+         * final-reward concept, not a mid-match spending-power one — see
+         * coin_ledger::spendable()'s own docblock.
+         *
+         * Clamping to coinCeiling here is mandatory, not cosmetic: without it, playerGold
+         * keeps growing unbounded from board matches alone, and the badges/HUD would show
+         * (and let the student attempt to spend) a balance the server was never going to
+         * honour — surfacing as a confusing "insufficient coins" error on a purchase that
+         * looked perfectly affordable on screen. Found via a real Demo playtest report
+         * (18/09/2026): the Demo's small fixed HP gives it a proportionally small ceiling,
+         * easy to exceed in a single sitting, but the same gap existed in every game mode.
          *
          * @returns {number}
          */
         availableCoinBalance() {
-            return Math.max(0, Math.round(this.playerGold) - this.coinsSpent);
+            const earned = Math.min(Math.round(this.playerGold), this.coinCeiling);
+            return Math.max(0, earned - this.coinsSpent);
+        }
+
+        /**
+         * The final reward this window would pay out right now: gross earnings minus the
+         * boss's own share, both clamped to the same coin ceiling as availableCoinBalance() —
+         * mirrors coin_ledger::available() server-side (the actual authority for the real
+         * payout; this only drives the end-of-match/phase-complete screens' own preview).
+         * Never subtracts coinsSpent, unlike availableCoinBalance(): what has already been
+         * spent on consumables is gone either way, not part of "what would be banked".
+         *
+         * @returns {number}
+         */
+        netCoinBalance() {
+            const earned = Math.min(Math.round(this.playerGold), this.coinCeiling);
+            const bossearned = Math.min(Math.round(this.bossGold), this.coinCeiling);
+            return Math.max(0, earned - bossearned);
         }
 
         /**
@@ -939,7 +971,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             me.input.enabled = false;
             me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
 
-            const netGold = Math.round(Math.max(0, this.playerGold - this.bossGold));
+            const netGold = this.netCoinBalance();
 
             const context = {
                 msg: strings.phasecompletetitle,
@@ -1284,7 +1316,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             // The boss's own Coin total (bossGold) never buys it anything — it exists purely to
             // net against the student's balance here, the only place it is spent.
-            const netGold = Math.round(Math.max(0, this.playerGold - this.bossGold));
+            const netGold = this.netCoinBalance();
             // A defeat/timeout discards the session's coins server-side — showing the collected
             // total here first, only to contradict it with "0" once the save confirms, reads as
             // a bug. Showing the true outcome (0) up front avoids that.

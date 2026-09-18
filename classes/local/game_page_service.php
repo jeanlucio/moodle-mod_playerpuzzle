@@ -219,6 +219,22 @@ class game_page_service {
             );
         }
 
+        // Mirrors combat::coin_ceiling(), the same plausibility ceiling buy_consumable.php/
+        // save_progress.php/advance_phase.php independently recompute server-side on every
+        // call. Sent to the client purely so its own shop-badge enable/disable state and coin
+        // display can match that ceiling — without it, the client's own playerGold tracker
+        // grows unbounded from board matches and can show (and let the student attempt to
+        // spend) a balance the server was never going to honour, surfacing as a confusing
+        // "insufficient coins" error on a click that looked perfectly affordable. Recomputed
+        // fresh on every play.php load (including the reload after a Campaign phase advances),
+        // so it always matches the phase actually being played.
+        $coinceiling = combat::coin_ceiling(
+            $bosshp,
+            $bossdamage,
+            (int) $instance->coingain,
+            combat::difficulty_coin_factor($difficulty)
+        );
+
         $questions = question_fetcher::get_questions_for_frontend((int) $instance->id, $context);
 
         $consumableuses = [];
@@ -282,6 +298,7 @@ class game_page_service {
             // matches what the server will actually bank (Easy 0.5x, Hard 3x). The client
             // still sends the raw, unmultiplied gold; the server re-applies this factor.
             'coinfactor'           => combat::difficulty_coin_factor($difficulty),
+            'coinceiling'          => $coinceiling,
             'currentlevel'         => $attemptinfo->currentlevel,
             'currentphase'         => $attemptinfo->currentphase,
             'maxlevels'            => (int) $instance->maxlevels,

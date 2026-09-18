@@ -171,7 +171,7 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a configured consumable-stock item (Espada) shows the units the student
+     * Tests that a configured consumable-stock item (Sword) shows the units the student
      * currently holds, using the reframed "stock" label rather than the old "level" one.
      *
      * @return void
@@ -240,7 +240,7 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the "Jogar Demo" button is always offered, regardless of prior attempt
+     * Tests that the "Play Demo" button is always offered, regardless of prior attempt
      * history — unlike the old one-shot tutorial checkbox, it is an on-demand action the
      * student may use as many times as they like.
      *

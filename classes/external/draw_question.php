@@ -41,8 +41,7 @@ use moodle_exception;
  * the attempt's own currentquestionid, which validate_answer.php then exclusively trusts (a
  * client-supplied questionid is never accepted there any more). This closes the oracle a
  * client-supplied questionid used to open on validate_answer's forwhom=boss path — since the
- * client no longer picks the question, there is nothing left to probe on demand (security
- * audit finding, Fase 9).
+ * client no longer picks the question, there is nothing left to probe on demand.
  */
 class draw_question extends external_api {
     /**

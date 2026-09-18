@@ -61,18 +61,18 @@ class save_combat_state extends external_api {
             ),
             'currentplayerhp'    => new external_value(PARAM_INT, 'Student HP right now'),
             'currentbosshp'      => new external_value(PARAM_INT, 'Boss HP right now'),
-            'playershieldmeter'  => new external_value(PARAM_INT, 'Student Escudo meter, 0-100'),
+            'playershieldmeter'  => new external_value(PARAM_INT, 'Student Shield meter, 0-100'),
             'playershieldready'  => new external_value(PARAM_BOOL, 'Whether the student\'s next hit is blocked'),
-            'playerpoisonmeter'  => new external_value(PARAM_INT, 'Student Veneno meter, 0-100'),
-            'playerpoisonrounds' => new external_value(PARAM_INT, 'Student Veneno rounds remaining'),
+            'playerpoisonmeter'  => new external_value(PARAM_INT, 'Student Poison meter, 0-100'),
+            'playerpoisonrounds' => new external_value(PARAM_INT, 'Student Poison rounds remaining'),
             'playermana'         => new external_value(PARAM_INT, 'Student Mana meter, 0-100'),
-            'playermultiplier'   => new external_value(PARAM_FLOAT, 'Student Estrela multiplier'),
-            'bossshieldmeter'    => new external_value(PARAM_INT, 'Boss Escudo meter, 0-100'),
+            'playermultiplier'   => new external_value(PARAM_FLOAT, 'Student Star multiplier'),
+            'bossshieldmeter'    => new external_value(PARAM_INT, 'Boss Shield meter, 0-100'),
             'bossshieldready'    => new external_value(PARAM_BOOL, 'Whether the boss\'s next hit is blocked'),
-            'bosspoisonmeter'    => new external_value(PARAM_INT, 'Boss Veneno meter, 0-100'),
-            'bosspoisonrounds'   => new external_value(PARAM_INT, 'Boss Veneno rounds remaining'),
+            'bosspoisonmeter'    => new external_value(PARAM_INT, 'Boss Poison meter, 0-100'),
+            'bosspoisonrounds'   => new external_value(PARAM_INT, 'Boss Poison rounds remaining'),
             'bossmana'           => new external_value(PARAM_INT, 'Boss Mana meter, 0-100'),
-            'bossmultiplier'     => new external_value(PARAM_FLOAT, 'Boss Estrela multiplier'),
+            'bossmultiplier'     => new external_value(PARAM_FLOAT, 'Boss Star multiplier'),
             'currentturn'        => new external_value(PARAM_ALPHA, 'Whose turn is next: player or boss'),
         ]);
     }
@@ -85,18 +85,18 @@ class save_combat_state extends external_api {
      * @param int[] $boardgrid Flat 8x8 board grid.
      * @param int $currentplayerhp Student HP right now.
      * @param int $currentbosshp Boss HP right now.
-     * @param int $playershieldmeter Student Escudo meter.
+     * @param int $playershieldmeter Student Shield meter.
      * @param bool $playershieldready Whether the student's next hit is blocked.
-     * @param int $playerpoisonmeter Student Veneno meter.
-     * @param int $playerpoisonrounds Student Veneno rounds remaining.
+     * @param int $playerpoisonmeter Student Poison meter.
+     * @param int $playerpoisonrounds Student Poison rounds remaining.
      * @param int $playermana Student Mana meter.
-     * @param float $playermultiplier Student Estrela multiplier.
-     * @param int $bossshieldmeter Boss Escudo meter.
+     * @param float $playermultiplier Student Star multiplier.
+     * @param int $bossshieldmeter Boss Shield meter.
      * @param bool $bossshieldready Whether the boss's next hit is blocked.
-     * @param int $bosspoisonmeter Boss Veneno meter.
-     * @param int $bosspoisonrounds Boss Veneno rounds remaining.
+     * @param int $bosspoisonmeter Boss Poison meter.
+     * @param int $bosspoisonrounds Boss Poison rounds remaining.
      * @param int $bossmana Boss Mana meter.
-     * @param float $bossmultiplier Boss Estrela multiplier.
+     * @param float $bossmultiplier Boss Star multiplier.
      * @param string $currentturn Whose turn is next.
      * @return array Result with success.
      */

@@ -102,8 +102,8 @@ class combat {
     }
 
     /**
-     * Fixed boss/student HP for a Demo match (Fase 9 onboarding) — a short, on-demand
-     * practice fight the student can request from the Lobby at any time. Deliberately
+     * Fixed boss/student HP for a Demo match — a short, on-demand practice fight the
+     * student can request from the Lobby at any time. Deliberately
      * ignores the instance's own basebosshp/basestudenthp/difficulty/level/phase scaling
      * entirely: a Demo is not a scaled-down real fight, it is a fixed, predictable one.
      */

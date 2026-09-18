@@ -43,7 +43,7 @@ body.path-mod-playerpuzzle .pp-canvas-desktop {
     aspect-ratio: 16/9;
     /* Capped instead of 100%, so the game embeds at a modest, playerland-style footprint
        (960x540) rather than stretching edge to edge of the course content column — the
-       Expandir button (Phaser's own Scale.FIT + the browser Fullscreen API) still fills the
+       Expand button (Phaser's own Scale.FIT + the browser Fullscreen API) still fills the
        whole screen on request, since fullscreen sizing is independent of this cap. */
     max-width: 960px;
 }
@@ -55,7 +55,7 @@ body.path-mod-playerpuzzle .pp-loading-text {
 /**
  * `none` used to sit here, blocking every default touch gesture anywhere over the canvas —
  * since the canvas fills most of a phone screen, that trapped players unable to scroll the
- * page through it at all (28/08/2026). `manipulation` (pan-x + pan-y, no double-tap/pinch
+ * page through it at all. `manipulation` (pan-x + pan-y, no double-tap/pinch
  * zoom) restores normal scrolling by default; board.js still blocks it narrowly, only for a
  * touch that starts on an actual board piece, via its own non-passive touchstart listener
  * (see board.js::maybeBlockScroll() and game_boot.js's touch.capture:false comment).
@@ -167,7 +167,7 @@ body.path-mod-playerpuzzle .pp-question-modal-footer {
  * max-height + overflow-y: auto on the body prevents viewport overflow on very
  * long questions.
  *
- * Gated on a max-width media query, not a device/pagelayout check (27/08/2026) — the modal
+ * Gated on a max-width media query, not a device/pagelayout check — the modal
  * is a page-level <dialog>, independent of the game canvas, and a real phone's viewport is
  * narrow regardless of whether Moodle's own navigation is showing around it. The .pp-answer-btn
  * class itself is still only added by combat.js on devices game_page_service detected as
@@ -208,8 +208,8 @@ body.path-mod-playerpuzzle .pp-question-modal-footer {
  * (native focus/ESC/top-layer handling). Was a plain overlay <div> with no focus
  * containment at all — a student changing the next phase's difficulty could have focus
  * drift onto page furniture outside the canvas (e.g. the course index drawer toggle) with
- * no way back to the select except a mouse click landing exactly on it again (reported
- * live, 30/08/2026). showModal() traps focus inside automatically. The canvas's own
+ * no way back to the select except a mouse click landing exactly on it again.
+ * showModal() traps focus inside automatically. The canvas's own
  * dimming rect (fillRect at depth 99 in showPhaseCompleteScreen()) already darkens the
  * board, so the dialog's own ::backdrop stays transparent instead of double-dimming.
  */
@@ -517,8 +517,8 @@ body.path-mod-playerpuzzle .pp-lobby-difficulty-option input:checked + label {
 }
 
 /**
- * Secondary "Jogar Demo" action (§4.12 Fase 9) — a quieter outline style than the main
- * Jogar button below, since it is an optional practice fight, not the primary action.
+ * Secondary "Play Demo" action — a quieter outline style than the main Play button below,
+ * since it is an optional practice fight, not the primary action.
  */
 body.path-mod-playerpuzzle .pp-lobby-playdemo {
     width: 100%;
@@ -571,7 +571,7 @@ body.path-mod-playerpuzzle .pp-lobby-play:focus-visible {
 
 /**
  * Teacher-only "Manage questions" link — a quiet secondary action, never competing
- * visually with the Jogar button above it.
+ * visually with the Play button above it.
  */
 body.path-mod-playerpuzzle .pp-lobby-managelink {
     color: #cdb37a;
@@ -625,7 +625,7 @@ body.path-mod-playerpuzzle .pp-debrief-question {
 }
 
 /**
- * Demo match walkthrough (§4.12 Fase 9) — same dialog treatment as .pp-debrief, its own
+ * Demo match walkthrough — same dialog treatment as .pp-debrief, its own
  * class since the two are never shown together and may need to diverge later.
  */
 body.path-mod-playerpuzzle .pp-demo-walkthrough {

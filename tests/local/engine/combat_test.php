@@ -194,7 +194,7 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
-     * Tests the fixed Demo match HP constant (§4.12 Fase 9) — a Demo always fights at this
+     * Tests the fixed Demo match HP constant — a Demo always fights at this
      * exact value, never derived from any instance config.
      *
      * @return void

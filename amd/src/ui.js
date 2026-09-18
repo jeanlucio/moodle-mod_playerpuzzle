@@ -29,11 +29,11 @@ define(
     'use strict';
 
     // Font Awesome 6 Free (solid, weight 900) is bundled by Moodle core (theme_boost) and
-    // already used across the rest of the site — reusing its glyphs here means Música and
-    // Efeitos share a single consistent vector font instead of depending on the OS's own
+    // already used across the rest of the site — reusing its glyphs here means Music and
+    // Sound Effects share a single consistent vector font instead of depending on the OS's own
     // color-emoji font, which is what made the previous 🔊/🔇/⚙️ glyphs render visibly
-    // clipped against the badge circle on at least one real device (reported live,
-    // 29/08/2026). Codepoints from theme_boost/scss/fontawesome/_variables.scss.
+    // clipped against the badge circle on at least one real device.
+    // Codepoints from theme_boost/scss/fontawesome/_variables.scss.
     const FA_FONT_FAMILY = '"Font Awesome 6 Free"';
     const FA_VOLUME_HIGH = '\uf028';
     const FA_VOLUME_XMARK = '\uf6a9';
@@ -58,11 +58,11 @@ define(
          * default touch handling, but only for a touch starting on an actual board piece
          * (touch.capture is deliberately off — see game_boot.js — so page scroll keeps
          * working everywhere else). Every interactive element outside the board (this
-         * badge, the top-row Música/Efeitos/Expandir buttons) never calls preventDefault(),
+         * badge, the top-row Music/Sound Effects/Expand buttons) never calls preventDefault(),
          * so on a real touchscreen the browser also synthesizes a compatibility mouse
          * down/up/click sequence for the same tap shortly after — which Phaser's own input
          * manager turns into a second 'pointerup'/'pointerdown' on top of the touch's own.
-         * The visible symptom is a control (like Música) toggling on then immediately back
+         * The visible symptom is a control (like Music) toggling on then immediately back
          * off from a single tap, reading as "the button doesn't work". This debounce is a
          * simpler general fix than duplicating board.js's per-region preventDefault() logic
          * for every small hit area outside the board.
@@ -124,9 +124,9 @@ define(
                 this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
                     .setDisplaySize(L.bossScale, L.bossScale);
 
-                // Consumables row: Poção + Espada — the two purchasable consumíveis with no
-                // meter of their own (Escudo/Magia Rápida fill a ring, so their buy badges sit
-                // on that ring). Espada's own effect is an extra attack worth a 3-piece combo
+                // Consumables row: Potion + Sword — the two purchasable consumables with no
+                // meter of their own (Shield/Quick Magic fill a ring, so their buy badges sit
+                // on that ring). Sword's own effect is an extra attack worth a 3-piece combo
                 // (1x boss damage).
                 me.add.image(L.potionX, L.potionY, 'item5')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
@@ -140,7 +140,7 @@ define(
                 this.txtGold = this.addResourceChip(L.goldX, L.goldY, 'item6', '0', L.indicatorIconSize);
                 this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0', L.indicatorIconSize);
 
-                // Boss side: same layout translated by the panel offset. Potion/Espada shown
+                // Boss side: same layout translated by the panel offset. Potion/Sword shown
                 // for visual parity only (no boss shop) — plain icon, never a purchase badge.
                 me.add.image(L.bossPotionX, L.bossPotionY, 'item5')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
@@ -153,9 +153,9 @@ define(
                     L.bossStarX, L.bossStarY, 'item0', 'x1.0', L.indicatorIconSize
                 );
 
-                // Purchase badges for the two consumíveis unified with their own board piece
-                // (Escudo, Magia Rápida/Grimório). Not shown for the boss (no shop) or the mana
-                // Orb ring (not a purchasable consumível).
+                // Purchase badges for the two consumables unified with their own board piece
+                // (Shield, Quick Magic/Grimoire). Not shown for the boss (no shop) or the mana
+                // Orb ring (not a purchasable consumable).
                 this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12', 'magic');
                 this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10', 'shield');
 
@@ -168,7 +168,7 @@ define(
                 // panel_stone.png/scroll_banner.png (those are sized for the desktop's wide
                 // 16:9 stage band, which this 9:16 column doesn't have — every extra px of
                 // chrome here is a px stolen from the board). Decided after prototyping the
-                // whole column as an interactive artifact (26/08/2026).
+                // whole column as an interactive artifact.
                 this.drawSimplePanel(L.panelTopBoss, L.panelBottomBoss);
                 this.drawSimplePanel(L.panelTopPlayer, L.panelBottomPlayer);
 
@@ -191,14 +191,13 @@ define(
                 this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
                 this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
 
-                // Purchase badges for Escudo/Magia Rápida, scaled down (see
+                // Purchase badges for Shield/Quick Magic, scaled down (see
                 // createPurchaseBadge()'s own docblock) — mobile's rings are themselves half
                 // desktop's radius, and the WCAG 24x24 real-px floor is met here without the
                 // desktop's full 46x34 size, since mobile's canvas has no 0.75 CSS shrink to
-                // compensate for. Not shown for the boss (no shop) or the mana Orb ring. Espada
+                // compensate for. Not shown for the boss (no shop) or the mana Orb ring. Sword
                 // has no mobile badge yet — the mobile layout has no Sword icon in its resource
-                // row (see game_boot.js's mobile L object), a pre-existing gap this lote does
-                // not close.
+                // row (see game_boot.js's mobile L object), a pre-existing gap not yet closed.
                 this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12', 'magic', L.badgeScale);
                 this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10', 'shield', L.badgeScale);
 
@@ -225,8 +224,7 @@ define(
 
             // Status badges themselves are created lazily on the first updatePlayerBar()/
             // updateBossBar() call (via combat.js's own initial updateUI()) — see
-            // updateStatusBadges(). Sit on both layouts — mobile included since 26/08/2026,
-            // no longer desktop-only.
+            // updateStatusBadges(). Sit on both layouts, mobile included.
 
             this.setupProgressIndicator();
             this.setupQuestionsCounter();
@@ -291,16 +289,16 @@ define(
         }
 
         /**
-         * The clickable purchase badge for a consumable type — Escudo and Magia Rápida (both
-         * unified with their own board piece), plus Poção and Espada, so every purchasable
-         * consumível shares one price convention and one click target. Overlaps the target
+         * The clickable purchase badge for a consumable type — Shield and Quick Magic (both
+         * unified with their own board piece), plus Potion and Sword, so every purchasable
+         * consumable shares one price convention and one click target. Overlaps the target
          * icon's own bottom-right corner. A transparent Phaser zone is the actual interactive
          * hit area (drawing directly on the graphics/image objects instead would mean giving
          * each one its own hit area and keeping them all in sync).
          *
          * Sized at 46x34 logical units at scale 1 (desktop's default, every call site below
-         * except the mobile branch of setupStaticUI) — with the game embed capped at 960px
-         * (a6fb4ec), that's the smallest size clearing the 24x24px real touch-target minimum
+         * except the mobile branch of setupStaticUI) — with the game embed capped at 960px,
+         * that's the smallest size clearing the 24x24px real touch-target minimum
          * (WCAG 2.5.8) at the embed's own maximum size (960/1280 scale = 0.75, so 24 / 0.75 =
          * 32 logical units is the floor). Mobile's canvas has no such shrink (its own
          * `.pp-canvas-container` caps at the same 540px as the logical design width, a true
@@ -308,8 +306,8 @@ define(
          * more importantly, mobile's rings are themselves half desktop's radius (16 vs 32,
          * see game_boot.js's two L objects), and the default 46x34 badge is bigger than the
          * ring itself, swallowing its colored arc entirely. Mobile's purchase-badge calls
-         * pass a smaller scale for this reason — verified live (27/08/2026) that the ring's
-         * own arc/icon stays visible next to the badge at that size.
+         * pass a smaller scale for this reason, keeping the ring's own arc/icon visible next
+         * to the badge at that size.
          *
          * @param {number} iconX Target icon's center X (ring or resource chip).
          * @param {number} iconY Target icon's center Y.
@@ -407,9 +405,9 @@ define(
         }
 
         /**
-         * Shows a one-time tutorial context balloon: a rounded box with the given text,
-         * centered above the board, auto-fading after a few seconds (Fase 9 — Demo match
-         * onboarding). Also announced via Accessibility.announce(), since the balloon itself
+         * Shows a one-time tutorial context balloon during a Demo match: a rounded box with
+         * the given text, centered above the board, auto-fading after a few seconds. Also
+         * announced via Accessibility.announce(), since the balloon itself
          * has no DOM/ARIA presence — same rationale as every other Canvas-only feedback in
          * this module.
          *
@@ -482,8 +480,8 @@ define(
         }
 
         /**
-         * Shows the static Demo match walkthrough (§4.12 Fase 9): a short, paged dialog
-         * explaining the HP bars and the Música/Efeitos/Expandir buttons, shown every time a
+         * Shows the static Demo match walkthrough: a short, paged dialog
+         * explaining the HP bars and the Music/Sound Effects/Expand buttons, shown every time a
          * Demo starts (not just once) — combat/board input stays disabled (the caller sets
          * scene.input.enabled = false before calling this) until the student steps through
          * every page and dismisses it, at which point onDismiss() re-enables it.
@@ -596,7 +594,7 @@ define(
         /**
          * Creates (on first call, per prefix) or updates (on later calls) the persistent
          * "Status" badges hanging off a HP bar's own bottom-right corner — one small badge per
-         * currently active effect (Veneno = poison rounds pending, Escudo = block armed), side
+         * currently active effect (Poison = poison rounds pending, Shield = block armed), side
          * by side, packed from the corner inward with no gap where an inactive one would have
          * sat. Mirrors updateRing()'s create-once-then-refresh pattern: game objects are cached
          * in this.statusBadges[prefix] and repositioned/shown or hidden on every call, never
@@ -658,7 +656,7 @@ define(
         }
 
         /**
-         * Simplified panel backing for mobile (26/08/2026): a plain translucent
+         * Simplified panel backing for mobile: a plain translucent
          * rounded rect spanning most of the column's width behind one HUD cluster, standing in
          * for the desktop's carved-stone artwork — that art is sized for a wide 16:9 stage band
          * this 9:16 column doesn't have, and every extra px of chrome here is a px stolen from
@@ -679,7 +677,7 @@ define(
 
         /**
          * Mobile-only replacement for desktop's two always-visible 5-line history boxes — no
-         * room for both at this aspect ratio. A single button opens a modal with Você/Chefe
+         * room for both at this aspect ratio. A single button opens a modal with Player/Boss
          * tabs instead. See showHistoryModalMobile().
          */
         setupHistoryButtonMobile() {
@@ -695,9 +693,9 @@ define(
 
         /**
          * Opens the mobile history modal: created fresh on open, fully destroyed on close.
-         * Both sides' logs are shown at once, stacked (Você above Chefe) — an earlier version
-         * used click-to-switch tabs instead, but the user only discovered the Chefe side
-         * existed by accident and expected both visible without an extra tap (27/08/2026);
+         * Both sides' logs are shown at once, stacked (Player above Boss) — an earlier
+         * version used click-to-switch tabs instead, but a user only discovered the Boss
+         * side existed by accident and expected both visible without an extra tap;
          * stacking, not side-by-side columns, keeps each line's own width close to the
          * modal's own 85%-of-canvas width, since Portuguese history strings ("💥 Crítico! -33
          * HP") don't comfortably fit a half-width column at this font size. Content is filled
@@ -740,15 +738,15 @@ define(
                 }).setOrigin(0, 0).setDepth(21));
             }
 
-            const headerChefeY = linesYouStartY + (5 * 24) + 30;
-            me.add.text(lineX, headerChefeY, this.strings.hpboss, {
+            const headerBossY = linesYouStartY + (5 * 24) + 30;
+            me.add.text(lineX, headerBossY, this.strings.hpboss, {
                 fontSize: '15px', fill: '#ff6b6b', fontStyle: 'bold'
             }).setOrigin(0, 0.5).setDepth(21);
 
             const bossLines = [];
-            const linesChefeStartY = headerChefeY + 26;
+            const linesBossStartY = headerBossY + 26;
             for (let i = 0; i < 5; i++) {
-                bossLines.push(me.add.text(lineX, linesChefeStartY + (i * 24), '', {
+                bossLines.push(me.add.text(lineX, linesBossStartY + (i * 24), '', {
                     fontSize: '13px', fill: '#e9e6dd'
                 }).setOrigin(0, 0).setDepth(21));
             }
@@ -778,9 +776,9 @@ define(
          * doesn't need to track modal state itself.
          *
          * An empty log shows the same "no moves yet" placeholder desktop's createHistoryLog()
-         * pre-fills line 0 with — without it, an empty Chefe block (real: the boss hasn't
+         * pre-fills line 0 with — without it, an empty Boss block (real: the boss hasn't
          * landed a loggable match yet, since its own turns share this same log path) looked
-         * identical to a broken one (27/08/2026).
+         * identical to a broken one.
          */
         renderHistoryModalLines() {
             if (!this._historyModalOpen) {
@@ -807,7 +805,7 @@ define(
         pushHistoryLog(side, text) {
             const log = side === 'player' ? this.playerLog : this.bossLog;
             // 5 lines either way: desktop's own always-visible boxes, or the mobile modal's
-            // per-side block (stacked Você/Chefe, 27/08/2026 — see showHistoryModalMobile()).
+            // per-side block (stacked Player/Boss — see showHistoryModalMobile()).
             const maxLines = this.L.hasCharacterStage ? this.playerLogLines.length : 5;
 
             log.unshift(text);
@@ -915,8 +913,8 @@ define(
          * Shows "Level X — Phase Y of 10" in the HUD for Campaign mode. Single Match has
          * no levels/phases, so the indicator is skipped entirely for it. Desktop keeps it on
          * the button row (y:20); mobile gives it a dedicated row below the buttons instead —
-         * live measurement showed only ~104px free between Efeitos and Expandir there, not
-         * enough at any readable size (26/08/2026).
+         * live measurement showed only ~104px free between Sound Effects and Expand there, not
+         * enough at any readable size.
          */
         setupProgressIndicator() {
             if (this.gameConfig.gamemode !== 'campaign') {
@@ -938,8 +936,8 @@ define(
 
         /**
          * Draws the shared dark-fill, bronze-bordered circular badge used by all 3 compact top
-         * buttons (Música/Efeitos/Expandir) — replaces the old bracket-text "[ Word ]" style
-         * (28/08/2026), which read as generic HTML/Bootstrap controls, with the same visual
+         * buttons (Music/Sound Effects/Expand) — replaces the old bracket-text "[ Word ]" style,
+         * which read as generic HTML/Bootstrap controls, with the same visual
          * language already used for rings and purchase badges. The circle itself is the
          * interactive target (Phaser auto-generates a matching circular hit area), not the
          * icon glyph on top of it — sidesteps the old workaround of an oversized rectangular
@@ -958,10 +956,10 @@ define(
         }
 
         /**
-         * Draws the Expandir/Encolher button's own icon: four corner brackets pointing outward
+         * Draws the Expand/Collapse button's own icon: four corner brackets pointing outward
          * from near the badge's edge (tap to enter fullscreen), or pulled toward the center and
          * pointing outward from there (already fullscreen, tap to exit) — redrawn on each
-         * toggle since the shape itself changes, unlike Música/Efeitos which just dim.
+         * toggle since the shape itself changes, unlike Music/Sound Effects which just dim.
          *
          * @param {Phaser.GameObjects.Graphics} g Graphics object to draw into (cleared first).
          * @param {number} cx Center X.
@@ -997,12 +995,11 @@ define(
         }
 
         /**
-         * Creates the Música button's icon as a Font Awesome glyph (see the FA_* constants
+         * Creates the Music button's icon as a Font Awesome glyph (see the FA_* constants
          * above), swapped between the volume-high and volume-xmark glyphs on toggle. Replaces
-         * an earlier hand-drawn Graphics speaker shape the user found visually odd, and before
+         * an earlier hand-drawn Graphics speaker shape found visually odd, and before
          * that the 🔊/🔇 emoji glyphs, whose color-emoji font metrics rendered visibly clipped
-         * against the top of the badge circle on at least one real device (reported live,
-         * 29/08/2026).
+         * against the top of the badge circle on at least one real device.
          *
          * @param {number} cx Center X.
          * @param {number} cy Center Y.
@@ -1020,11 +1017,10 @@ define(
         }
 
         /**
-         * Creates the Efeitos button's icon as a Font Awesome drum glyph — a gear was used
+         * Creates the Sound Effects button's icon as a Font Awesome drum glyph — a gear was used
          * originally, but reads as a generic app-settings control rather than specifically
-         * "sound effects", so it was swapped for a drum (reported live, 30/08/2026). The
-         * on/off state is conveyed by dimming the whole icon's alpha (unchanged), not by
-         * swapping glyphs.
+         * "sound effects", so it was swapped for a drum. The on/off state is conveyed by
+         * dimming the whole icon's alpha (unchanged), not by swapping glyphs.
          *
          * @param {number} cx Center X.
          * @param {number} cy Center Y.
@@ -1047,8 +1043,8 @@ define(
             me.musicOn = this.gameConfig.musicenabled !== false;
             me.sfxOn = this.gameConfig.sfxenabled !== false;
 
-            // Row of 3 compact icon buttons, right-aligned — rightmost is Expandir, matching
-            // where the old bracket-text button always sat; Efeitos and Música step leftward
+            // Row of 3 compact icon buttons, right-aligned — rightmost is Expand, matching
+            // where the old bracket-text button always sat; Sound Effects and Music step leftward
             // from there by the same gap.
             const y = L.topBtnY;
             const r = L.topBtnRadius;
@@ -1115,7 +1111,7 @@ define(
         }
 
         /**
-         * Persists a Música/Efeitos toggle as a user preference, fire-and-forget — the icon
+         * Persists a Music/Sound Effects toggle as a user preference, fire-and-forget — the icon
          * and the actual sound have already been updated client-side by the caller before
          * this runs, so nothing in the UI waits on the round trip, and a failure (network
          * blip) is silently ignored: worst case, the toggle simply does not survive a reload,

@@ -140,8 +140,7 @@ final class validate_answer_test extends \advanced_testcase {
     /**
      * Sets the question currently "open" for an attempt directly on the row — mirrors what
      * draw_question.php would have stored, without needing a real Ajax round trip in every
-     * test. validate_answer.php trusts only this column, never a client-supplied questionid
-     * (security audit finding, Fase 9).
+     * test. validate_answer.php trusts only this column, never a client-supplied questionid.
      *
      * @param string $token The attempt's token.
      * @param int $questionid Question id to mark as currently open.
@@ -239,8 +238,8 @@ final class validate_answer_test extends \advanced_testcase {
      * validated, even if the answer id supplied really is that question's correct one.
      * This is the instance-isolation guard validate_answer.php enforces. Simulates a
      * corrupted/forged currentquestionid rather than a client-supplied one, since the
-     * client can no longer name a questionid at all (security audit fix, Fase 9) — the
-     * check still matters as defense in depth.
+     * client can no longer name a questionid at all — the check still matters as defense
+     * in depth.
      *
      * @return void
      */
@@ -347,9 +346,8 @@ final class validate_answer_test extends \advanced_testcase {
     /**
      * Tests that the web service no longer accepts a questionid argument at all — the
      * parameter was removed, not merely ignored, so a client attempting to supply one is
-     * rejected by Moodle's own parameter validation before execute() ever runs. This is the
-     * actual close of the security audit finding: there is no longer any shape of request
-     * that lets the client name which question to probe.
+     * rejected by Moodle's own parameter validation before execute() ever runs: there is no
+     * shape of request that lets the client name which question to probe.
      *
      * @return void
      */
@@ -421,12 +419,12 @@ final class validate_answer_test extends \advanced_testcase {
 
     /**
      * Tests that an answerid belonging to a different question is never logged as the
-     * student's "chosen answer" text — the actual close of the security audit's first
-     * finding. Before the fix, get_answer_text() read by isolated PK, so a forged answerid
-     * from any question on the site (even a different instance/course) had its text stored
-     * in playerpuzzle_attempt_questions and echoed back to the student in the post-game
-     * debrief. is_answer_correct() was always scoped by questionid, so correctness itself
-     * stays honest (false) regardless — only the logged text was ever the leak.
+     * student's "chosen answer" text. Without get_answer_text()'s own questionid check, a
+     * forged answerid from any question on the site (even a different instance/course)
+     * would have its text stored in playerpuzzle_attempt_questions and echoed back to the
+     * student in the post-game debrief. is_answer_correct() is always scoped by questionid,
+     * so correctness itself stays honest (false) regardless — only the logged text was ever
+     * at risk of leaking.
      *
      * @return void
      */
@@ -461,11 +459,10 @@ final class validate_answer_test extends \advanced_testcase {
     /**
      * Tests that on Hard the boss's server-drawn guess always lands on the correct answer
      * (100% precision), for both question types, and that the submitted answerid is ignored.
-     * Also proves the exploit the security audit flagged is closed structurally, not just
-     * behaviourally: even though a single call already reveals the answer (100% precision on
-     * Hard is an intentional difficulty feature, not the bug), the client can no longer name
-     * *which* question to probe — see test_a_client_supplied_questionid_is_rejected_as_an_
-     * unknown_parameter() for that half of the fix.
+     * 100% precision on Hard is an intentional difficulty feature, not a bug — what actually
+     * matters for isolation is that the client can no longer name *which* question this
+     * applies to; see test_a_client_supplied_questionid_is_rejected_as_an_unknown_
+     * parameter() for that guarantee.
      *
      * @return void
      */

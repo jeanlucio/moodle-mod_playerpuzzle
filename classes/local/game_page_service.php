@@ -145,7 +145,7 @@ class game_page_service {
      *  when an in-progress attempt is resumed (that attempt keeps its current phase's own
      *  difficulty, which advance_phase changes between phases). Ignored entirely for a Demo
      *  attempt, which always fights at a fixed HP regardless of difficulty.
-     * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Jogar Demo"
+     * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Play Demo"
      *  button) — fixed HP on both sides, always Level 1/Phase 1, never counted for grade,
      *  coins, completion, or the attempt limit.
      * @return array JS game config for game_boot.js.
@@ -244,7 +244,7 @@ class game_page_service {
         // Whether a PlayerHUD item is configured for each type (never its stock quantity,
         // which the client cannot know without an extra round trip) — lets the client try
         // source=hud first only where it could possibly succeed, falling back to source=local
-        // otherwise. Magia Rápida has no PlayerHUD item at all, so it is always false.
+        // otherwise. Quick Magic has no PlayerHUD item at all, so it is always false.
         $hudconfigured = [
             'potion' => (int) $instance->hud_potion_item > 0,
             'shield' => (int) $instance->hud_shield_item > 0,

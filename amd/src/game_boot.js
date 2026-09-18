@@ -213,8 +213,8 @@ define([
                 bossUiX: 920, bossHpY: 300, bossTxtY: 314,
                 playerUiX: 60, playerHpY: 300, playerTxtY: 314,
 
-                // Consumables row: the two purchasable consumíveis with no meter of their own
-                // (Poção, Espada). Escudo and Magia Rápida fill a ring instead, so their buy
+                // Consumables row: the two purchasable consumables with no meter of their own
+                // (Potion, Sword). Shield and Quick Magic fill a ring instead, so their buy
                 // badges live on that ring, not here. Coin/Star used to share this row but
                 // they're passive readouts, not buttons — moved down beside the history block
                 // (goldX/starX below), leaving this row to hold two items with room to breathe.
@@ -222,7 +222,7 @@ define([
                 // width on each edge.
                 potionX: 130, potionY: 388, swordX: 290, swordY: 388,
                 // Boss side is the player row translated by the panel offset (860) — Potion and
-                // Espada shown for visual parity only (no boss shop), plain icon, no buy badge.
+                // Sword shown for visual parity only (no boss shop), plain icon, no buy badge.
                 bossPotionX: 990, bossPotionY: 388, bossSwordX: 1150, bossSwordY: 388,
 
                 // Coin/Star: passive quantity readouts, moved out of the action area to sit
@@ -247,16 +247,16 @@ define([
                 // bottom of the ring row above it.
                 historyTitleY: 548, historyLineY: 585, historyLineHeight: 24,
 
-                // Compact circular icon buttons (Música/Efeitos/Expandir), right-aligned —
-                // replaces the old bracket-text "[ Word ]" buttons (28/08/2026), which read as
+                // Compact circular icon buttons (Music/Sound Effects/Expand), right-aligned —
+                // replaces the old bracket-text "[ Word ]" buttons, which read as
                 // generic HTML/Bootstrap controls rather than the game's own bronze-accent
                 // dark-fill language already used for rings/badges. ui.js computes each
                 // button's own X from L.w, topBtnGap and its position in the row (rightmost =
-                // Expandir), so only the shared Y/radius/gap live here.
+                // Expand), so only the shared Y/radius/gap live here.
                 topBtnY: 26, topBtnRadius: 20, topBtnGap: 50
             } : {
-                // Reorganized (26/08/2026) after the mobile layout was found broken, not just
-                // unpolished: the level/phase indicator text was clipped by the Expandir
+                // Reorganized after the mobile layout was found broken, not just
+                // unpolished: the level/phase indicator text was clipped by the Expand
                 // button (see progressIndicatorFontSize/X below), Coin/Star were raw emoji
                 // text nearly unreadable against the sky background, and nothing visually
                 // grouped the boss's own HUD cluster from the player's. Prototyped first as an
@@ -271,7 +271,7 @@ define([
                 hasCharacterStage: false,
                 bgX: 270, bgY: 480, bgW: 540, bgH: 960,
 
-                // Top bar: the icon-button row (Música/Efeitos/Expandir, see the desktop L's
+                // Top bar: the icon-button row (Music/Sound Effects/Expand, see the desktop L's
                 // own topBtnY/Radius/Gap comment) stays on row 1. The level/phase indicator
                 // gets its own row 2 below instead of squeezing into row 1 alongside the
                 // buttons — even now that they're compact circles instead of the old wide
@@ -285,7 +285,7 @@ define([
                 // Boss cluster: sprite, HP bar (+Status badges hanging off its own corner),
                 // Coin/Star (no Potion — boss has no shop; also fixes a pre-existing gap where
                 // the boss's own coin count was never shown on mobile at all, unlike Star),
-                // then Grimório/Escudo/Orbe (no purchase badges, same reason). panelTop/Bottom
+                // then Grimoire/Shield/Orb (no purchase badges, same reason). panelTop/Bottom
                 // bound the translucent backing rect drawn behind this whole cluster.
                 panelTopBoss: 92, panelBottomBoss: 254,
                 bossX: 270, bossY: 115, bossScale: 90,
@@ -302,13 +302,13 @@ define([
                 boardOffX: 77.5, boardOffY: 289.5,
 
                 // Player cluster: same structure as the boss's, plus Potion in the resource row
-                // and purchase badges on Potion/Escudo/Grimório, all absent from the boss's
+                // and purchase badges on Potion/Shield/Grimoire, all absent from the boss's
                 // copy since the boss has no shop.
                 panelTopPlayer: 710, panelBottomPlayer: 828,
                 // Player sprite sits beside the bar/resource/ring stack, in the panel's own
                 // left margin (16 to playerUiX's 120, a 104px gap) — not centered above like
-                // the boss's, per the user's own suggestion (27/08/2026): the boss can afford
-                // that because its panel is taller (162px vs this one's 118), and matching that
+                // the boss's: the boss can afford that because its panel is taller (162px vs
+                // this one's 118), and matching that
                 // approach here would have meant growing this panel too, cascading into
                 // re-tuning the board position and every row below it. 76px keeps a ~14px
                 // margin on both sides of the gap; centered on the vertical midpoint of the
@@ -321,16 +321,16 @@ define([
                 playerRingY: 798, playerGrimoireX: 170, playerShieldRingX: 270, playerOrbX: 370,
 
                 // History: one button (not two always-visible 5-line blocks like desktop —
-                // there's no room) opening a modal with Você/Chefe tabs, see
+                // there's no room) opening a modal with Player/Boss tabs, see
                 // ui.js::showHistoryModalMobile().
                 historyBtnY: 838,
 
                 resourceIconSize: 32,
                 ringRadius: 16, ringThickness: 4, ringIconSize: 22,
 
-                // Purchase badge scale for ui.js::createPurchaseBadge() — found live
-                // (27/08/2026) that the desktop's default 46x34 badge is bigger than mobile's
-                // own 32px-diameter ring, swallowing its colored arc entirely. 0.72 is the
+                // Purchase badge scale for ui.js::createPurchaseBadge() — the desktop's default
+                // 46x34 badge is bigger than mobile's own 32px-diameter ring, swallowing its
+                // colored arc entirely. 0.72 is the
                 // smallest scale that still clears the WCAG 24x24 real-px floor at mobile's
                 // true 1:1 CSS scale (34 * 0.72 ≈ 24.5), leaving the ring's own icon/arc
                 // visible next to it. See createPurchaseBadge()'s own docblock for the full
@@ -340,9 +340,9 @@ define([
 
             const containerDOM = document.getElementById('playerpuzzle-canvas-container');
             containerDOM.querySelectorAll('p').forEach(el => el.remove());
-            // Applied regardless of device (27/08/2026): mobile no longer gets a separate
-            // full-viewport embedded layout, so a phone rotated to landscape gets the same
-            // capped 16:9 desktop treatment a wide browser window would.
+            // Applied regardless of device: mobile no longer gets a separate full-viewport
+            // embedded layout, so a phone rotated to landscape gets the same capped 16:9
+            // desktop treatment a wide browser window would.
             containerDOM.classList.toggle('pp-canvas-desktop', isDesk);
             containerDOM.appendChild(document.getElementById('playerpuzzle-modal'));
 
@@ -387,7 +387,7 @@ define([
 
             this.combat.updateUI();
 
-            // Demo match (§4.12 Fase 9): board/combat input stays locked until the student
+            // Demo match: board/combat input stays locked until the student
             // steps through the static walkthrough — re-enabled by its own onDismiss callback.
             if (gameConfig.isdemo) {
                 this.input.enabled = false;
@@ -424,7 +424,7 @@ define([
                 mouse: {
                     preventDefaultWheel: false
                 },
-                // False (28/08/2026): with capture:true, Phaser's own input manager calls
+                // False: with capture:true, Phaser's own input manager calls
                 // preventDefault() on every touch anywhere over the canvas unconditionally —
                 // combined with the canvas' own touch-action CSS, that blocked page scroll
                 // through the ENTIRE canvas, not just the board, trapping mobile players who

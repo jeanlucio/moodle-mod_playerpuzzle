@@ -215,11 +215,11 @@ final class buy_consumable_test extends \advanced_testcase {
 
     /**
      * Tests that a purchase succeeds on genuinely-earned coins even when the boss has not
-     * taken any damage yet this phase — the regression case for the bug a real playtest
-     * found (28/08/2026): the coin ceiling used to be sized to damage dealt so far, which
-     * floored to 0 before a student's first Sword hit, blocking every purchase even with
-     * real coins on hand. The ceiling is now sized to this phase's own boss HP instead
-     * (combat::coin_ceiling()), a stable value independent of live combat progress.
+     * taken any damage yet this phase — a regression check for sizing the coin ceiling to
+     * damage dealt so far, which floored to 0 before a student's first Sword hit, blocking
+     * every purchase even with real coins on hand. The ceiling is now sized to this phase's
+     * own boss HP instead (combat::coin_ceiling()), a stable value independent of live
+     * combat progress.
      *
      * @return void
      */
@@ -228,15 +228,13 @@ final class buy_consumable_test extends \advanced_testcase {
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
-        // Mirrors a real playtest report: 20 coins earned, boss earned 10, buying a
-        // 10-coin Shield — with the boss still at full HP (no damage dealt this phase).
-        // bosscoinsearnedsofar is deliberately non-zero here too, doubling as a regression
-        // check for a second real bug found later (14/09/2026): the purchase gate used to
-        // call coin_ledger::available() (nets the boss's own coin share against the
-        // student's — correct for the final phase/match payout, wrong for a mid-match
-        // spending check) instead of coin_ledger::spendable() (no boss netting) — newbalance
-        // = 20 - 10 (shield price) = 10, not 0 as it would be if the boss's 10 were still
-        // subtracted.
+        // 20 coins earned, boss earned 10, buying a 10-coin Shield — with the boss still at
+        // full HP (no damage dealt this phase). bosscoinsearnedsofar is deliberately
+        // non-zero here too, doubling as a regression check that the purchase gate calls
+        // coin_ledger::spendable() (no boss netting), not coin_ledger::available() (nets the
+        // boss's own coin share against the student's — correct for the final phase/match
+        // payout, wrong for a mid-match spending check) — newbalance = 20 - 10 (shield price)
+        // = 10, not 0 as it would be if the boss's 10 were still subtracted.
         $result = $this->call_buy_consumable($this->local_args($instance, $token, [
             'type'                 => 'shield',
             'coinsearnedsofar'     => 20,
@@ -274,7 +272,7 @@ final class buy_consumable_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a Demo attempt's (§4.12 Fase 9) local-shop coin ceiling is always sized
+     * Tests that a Demo attempt's local-shop coin ceiling is always sized
      * to the fixed combat::DEMO_HP, ignoring the instance's own configured basebosshp
      * entirely — a Demo may still use the local shop, just never anchored to real numbers.
      *
@@ -304,7 +302,7 @@ final class buy_consumable_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a Demo attempt (§4.12 Fase 9) may never spend the student's real
+     * Tests that a Demo attempt may never spend the student's real
      * PlayerHUD inventory, even when the instance has a real item configured for that
      * consumable type — a Demo has no economic effect by design.
      *
@@ -388,7 +386,7 @@ final class buy_consumable_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that Magia Rápida (magic) has no PlayerHUD source at all — it is
+     * Tests that Quick Magic (magic) has no PlayerHUD source at all — it is
      * local-coin-only, so source=hud is always rejected for it.
      *
      * @return void
@@ -610,7 +608,7 @@ final class buy_consumable_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that Dica da Questão, like Magia Rápida, has no PlayerHUD source — always
+     * Tests that Question Hint, like Quick Magic, has no PlayerHUD source — always
      * local-coin-only.
      *
      * @return void

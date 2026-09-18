@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 require_sesskey();
 
-// The Lobby's "Jogar Demo" button (§4.12 Fase 9): a disposable, on-demand practice fight
+// The Lobby's "Play Demo" button: a disposable, on-demand practice fight
 // with fixed HP, never counted for grade/coins/completion/attempt-limit — see
 // game_page_service::build_game_config()'s own $isdemo branch. The attempt-limit and
 // retry-cost gates below are for real progress only, so both are skipped for it entirely.
@@ -66,10 +66,10 @@ $ismobile = optional_param('mobile', 0, PARAM_INT) === 1;
 $difficulty = optional_param('difficulty', PLAYERPUZZLE_DIFFICULTY_NORMAL, PARAM_ALPHA);
 
 // Previously switched to a chromeless 'embedded' layout for mobile devices, opened in a new
-// tab by the Lobby's own form — removed per explicit user feedback (27/08/2026): the game now
-// always stays in the same window, in the normal course layout, using the same
-// Expandir/Encolher fullscreen toggle as desktop (see ui.js::setupButtons()) instead of a
-// device-specific windowing trick. $ismobile is still passed into the JS game config below —
+// tab by the Lobby's own form — removed because the game now always stays in the same window,
+// in the normal course layout, using the same Expand/Collapse fullscreen toggle as desktop
+// (see ui.js::setupButtons()) instead of a device-specific windowing trick.
+// $ismobile is still passed into the JS game config below —
 // it now only drives a CSS sizing tweak for the question modal's answer buttons.
 $PAGE->set_pagelayout('incourse');
 $PAGE->blocks->show_only_fake_blocks();

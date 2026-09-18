@@ -266,7 +266,7 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
     // The import-from-bank option lives above the question list, not after it — a teacher
     // scanning the page top-to-bottom sees it before deciding whether to add/generate
     // questions manually, instead of risking it going unnoticed at the very end of a long,
-    // paginated list (reported live, 17/09/2026).
+    // paginated list.
     echo $OUTPUT->heading(get_string('importheader', 'mod_playerpuzzle'), 3);
     if (empty($importablecategories)) {
         echo $OUTPUT->notification(get_string('noimportablecategories', 'mod_playerpuzzle'), 'info');

@@ -64,16 +64,16 @@ $capabilities = [
     ],
 
     // Ability to manage PlayerPuzzle's own question bank (add/edit/delete questions).
-    // RISK_SPAM, not RISK_XSS (security audit finding #3, moodle-security-audit,
-    // 2026-09-18): the question/answer editors this capability unlocks always render with
-    // noclean => false (question_editor_files::editor_options()) and are displayed through
-    // format_text() without noclean/trusttext (question_fetcher::format_with_files()), so
-    // there is no live-HTML path for this capability to unlock, unlike moodle/question:add
-    // (lib/db/access.php), which does render noclean => true and correctly carries
-    // RISK_XSS for it. What this capability genuinely unlocks — authored content (links,
-    // external images) shown to every student in the question modal — is exactly the shape
-    // core marks RISK_SPAM for elsewhere (mod/forum:replypost, mod/glossary:write,
-    // mod/data:writeentry, mod/wiki:editpage): visible to other users, cleaned on output.
+    // RISK_SPAM, not RISK_XSS: the question/answer editors this capability unlocks always
+    // render with noclean => false (question_editor_files::editor_options()) and are
+    // displayed through format_text() without noclean/trusttext
+    // (question_fetcher::format_with_files()), so there is no live-HTML path for this
+    // capability to unlock, unlike moodle/question:add (lib/db/access.php), which does
+    // render noclean => true and correctly carries RISK_XSS for it. What this capability
+    // genuinely unlocks — authored content (links, external images) shown to every student
+    // in the question modal — is exactly the shape core marks RISK_SPAM for elsewhere
+    // (mod/forum:replypost, mod/glossary:write, mod/data:writeentry, mod/wiki:editpage):
+    // visible to other users, cleaned on output.
     'mod/playerpuzzle:managequestions' => [
         'riskbitmask' => RISK_SPAM,
         'captype' => 'write',

@@ -63,12 +63,12 @@ class validate_answer extends external_api {
      * on the client, so the correct answer is never revealed to it (Blind JSON).
      *
      * Always operates on the attempt's own currentquestionid (set by draw_question.php) —
-     * never a client-supplied question id. Before this, a client could call forwhom=boss for
-     * any approved question id of the instance, at will, turning the endpoint into a free
-     * oracle for the correct answer (security audit finding, Fase 9): on Hard difficulty the
-     * boss's guess is correct with probability 1.0, so a single call already revealed it.
-     * Tying the question to server state closes this — the client can no longer choose which
-     * question to probe.
+     * never a client-supplied question id. A client-chosen question id here would let a
+     * caller invoke forwhom=boss for any approved question of the instance, at will, turning
+     * the endpoint into a free oracle for the correct answer: on Hard difficulty the boss's
+     * guess is correct with probability 1.0, so a single call would already reveal it. Tying
+     * the question to server state is what prevents the client from choosing which question
+     * to probe.
      *
      * @param int $cmid Course module ID.
      * @param string $token Anti-replay token of the in-progress attempt.

@@ -105,11 +105,10 @@ final class coin_ledger_test extends \basic_testcase {
 
     /**
      * Tests spendable() subtracts only what has already been spent, never the boss's own
-     * share — the fix for a real playtest bug (14/09/2026) where a boss that had simply
-     * matched some Coin pieces on its own turns silently blocked the student from spending
-     * coins the student had genuinely and separately earned. available() (netting the
-     * boss's share) is correct for the final phase/match payout; spendable() is the one
-     * meant for a mid-match purchase gate.
+     * share — a boss that had simply matched some Coin pieces on its own turns must not
+     * silently block the student from spending coins the student had genuinely and
+     * separately earned. available() (netting the boss's share) is correct for the final
+     * phase/match payout; spendable() is the one meant for a mid-match purchase gate.
      *
      * @return void
      */

@@ -188,7 +188,7 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
-     * A finished Demo attempt (§4.12 Fase 9) never appears in the teacher report — it is a
+     * A finished Demo attempt never appears in the teacher report — it is a
      * disposable practice fight, not a real submission.
      *
      * @return void
@@ -378,7 +378,7 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
-     * A finished Demo attempt's score (§4.12 Fase 9) is never counted in the class-wide
+     * A finished Demo attempt's score is never counted in the class-wide
      * score distribution — it fought a fixed, disposable HP, not a real result.
      *
      * @return void
@@ -441,7 +441,7 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
-     * A student who has only ever won a Demo match (§4.12 Fase 9) is never counted as
+     * A student who has only ever won a Demo match is never counted as
      * having completed the activity — a Demo win is not a real completion.
      *
      * @return void

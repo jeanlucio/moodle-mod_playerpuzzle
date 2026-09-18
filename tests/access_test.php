@@ -44,9 +44,7 @@ final class access_test extends \advanced_testcase {
      * cleaned on output (question_editor_files::editor_options()'s noclean => false,
      * question_fetcher::format_with_files()'s plain format_text() call), so RISK_XSS would
      * be the wrong risk to claim here — unlike moodle/question:add, which genuinely renders
-     * with noclean => true. Missing riskbitmask entirely left the role-definition screen
-     * with no warning at all for this capability (security audit finding #3,
-     * moodle-security-audit, 2026-09-18).
+     * with noclean => true.
      *
      * @return void
      */

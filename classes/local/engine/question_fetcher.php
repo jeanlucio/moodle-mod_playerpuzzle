@@ -34,8 +34,8 @@ class question_fetcher {
     /**
      * Draws one random approved question id for the instance, or null if none exist. The
      * caller (draw_question.php) is the only thing that ever decides which question is "in
-     * play" — the client never chooses, closing the oracle a client-supplied questionid used
-     * to open on validate_answer's forwhom=boss path (security audit, Fase 9).
+     * play" — the client never chooses, so it cannot name an arbitrary questionid to
+     * validate_answer's forwhom=boss path.
      *
      * @param int $playerpuzzleid The instance id.
      * @return int|null
@@ -122,10 +122,9 @@ class question_fetcher {
      * first — never by isolated PK. Returns an empty string both when the answer is gone
      * and when it belongs to a different question, the same "caller cannot tell why" shape
      * get_hint_text() uses. Without this, an answerid from any question on the site could be
-     * logged/echoed back as the student's own "chosen answer" text (security audit finding,
-     * Fase 9): is_answer_correct() already scoped its correctness check by questionid, but
-     * this lookup did not, so the correctness result stayed honest while the logged/returned
-     * text did not.
+     * logged/echoed back as the student's own "chosen answer" text: is_answer_correct()
+     * already scoped its correctness check by questionid, but this lookup did not, so the
+     * correctness result stayed honest while the logged/returned text did not.
      *
      * @param int $answerid The answer ID.
      * @param int $questionid The question the answer must belong to.

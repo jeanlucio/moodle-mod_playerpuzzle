@@ -55,7 +55,7 @@ class security {
      * @param int $currentlevel Level this attempt starts on (see resume_or_create_attempt_token()
      *  for why this is not always 1).
      * @param int $currentphase Phase this attempt starts on.
-     * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Jogar Demo"
+     * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Play Demo"
      *  button), never counted for grade/coins/completion/attempt-limit.
      * @return string The generated secure token.
      */
@@ -150,7 +150,7 @@ class security {
      *  reached (Single Match always passes/keeps the default, since its attempts never
      *  advance past Level 1, Phase 1 in the first place). Ignored for a Demo attempt, which
      *  always starts at Level 1/Phase 1.
-     * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Jogar Demo"
+     * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Play Demo"
      *  button). A Demo request only ever resumes another in-progress Demo, never a real
      *  attempt, and vice versa — the two are entirely separate resume namespaces.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
@@ -191,10 +191,9 @@ class security {
             // A checkpoint with the boss already at 0 HP can only mean the phase was won and
             // the pagehide/beacon safety net (save_combat_state) persisted that instant, but
             // advance_phase was never reached to move the attempt to the next phase (e.g. the
-            // student exited from the phase-complete screen before that call finished/existed
-            // — reported live, 16/09/2026). Resuming it verbatim would reopen an already-dead
-            // boss on the same phase instead of a fresh fight, so treat it the same as no
-            // checkpoint at all.
+            // student exited from the phase-complete screen before that call finished).
+            // Resuming it verbatim would reopen an already-dead boss on the same phase instead
+            // of a fresh fight, so treat it the same as no checkpoint at all.
             $combatstate = combat_state::decode($attempt->combatstate);
             if ($combatstate !== null && (int) ($combatstate['currentbosshp'] ?? 1) <= 0) {
                 $combatstate = null;

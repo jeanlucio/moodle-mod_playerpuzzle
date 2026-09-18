@@ -93,8 +93,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.coinsSpent = parseInt(gameConfig.coinsspent, 10) || 0;
             this.currentTurn = 'player';
 
-            // Demo match (§4.12 Fase 9): the server already decided isdemo once, at attempt
-            // creation (security::generate_attempt_token(), from the Lobby's "Jogar Demo"
+            // Demo match: the server already decided isdemo once, at attempt
+            // creation (security::generate_attempt_token(), from the Lobby's "Play Demo"
             // button) — this is a read-only mirror, never re-derived client-side.
             // tutorialSeenTypes tracks which piece types already got their one-time context
             // balloon this session (not persisted — a reload simply re-shows any type not yet
@@ -541,18 +541,17 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * buy_consumable.php re-validates for real). Deliberately does not net the boss's own
          * coin gains against this, unlike showEndScreen()'s final netGold — the boss racking
          * up its own coins by matching Coin pieces on its own turns was silently blocking the
-         * player from spending coins they had genuinely and separately earned, found via a
-         * real playtest report (14/09/2026). Netting against the boss's share is a
-         * final-reward concept, not a mid-match spending-power one — see
+         * player from spending coins they had genuinely and separately earned. Netting against
+         * the boss's share is a final-reward concept, not a mid-match spending-power one — see
          * coin_ledger::spendable()'s own docblock.
          *
          * Clamping to coinCeiling here is mandatory, not cosmetic: without it, playerGold
          * keeps growing unbounded from board matches alone, and the badges/HUD would show
          * (and let the student attempt to spend) a balance the server was never going to
          * honour — surfacing as a confusing "insufficient coins" error on a purchase that
-         * looked perfectly affordable on screen. Found via a real Demo playtest report
-         * (18/09/2026): the Demo's small fixed HP gives it a proportionally small ceiling,
-         * easy to exceed in a single sitting, but the same gap existed in every game mode.
+         * looked perfectly affordable on screen. The Demo mode's small fixed HP gives it a
+         * proportionally small ceiling, easy to exceed in a single sitting, but the same gap
+         * existed in every game mode.
          *
          * @returns {number}
          */
@@ -623,9 +622,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     .replace('{$a->damage}', Math.round(amount))
                     .replace('{$a->hp}', Math.round(this.currentPlayerHp))
             );
-            // Mirrors applyDamageToBoss()'s own tint flash (28/08/2026) — replaces a screen
-            // shake the player found disruptive, now that a player sprite actually exists on
-            // every layout (mobile included) to carry the same feedback the boss already had.
+            // Mirrors applyDamageToBoss()'s own tint flash — replaces a screen shake found
+            // disruptive, now that a player sprite actually exists on every layout (mobile
+            // included) to carry the same feedback the boss already had.
             me.ui.playerSprite.setTint(0xff0000);
             me.time.delayedCall(200, () => {
                 me.ui.playerSprite.clearTint();
@@ -686,7 +685,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 this.currentPlayerHp = Math.max(0, this.currentPlayerHp - this.baseDamage);
                 this.playerPoisonRounds--;
                 this.updateUI();
-                // Mirrors passTurnToBoss()'s own poison-tick tint (28/08/2026), replacing a
+                // Mirrors passTurnToBoss()'s own poison-tick tint, replacing a
                 // screen shake — see applyDamageToPlayer()'s own comment for why.
                 me.ui.playerSprite.setTint(0xff00ff);
                 me.ui.pushHistoryLog('player', this.strings.historylogpoisontick.replace('{$a}', this.baseDamage));
@@ -751,8 +750,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * Tries PlayerHUD stock first when one is configured for this type, falling back to
          * local coins if the student turns out to have none. Shield alone gets a client-side
          * "already armed" guard — there is nothing to gain from buying a second charge before
-         * the first is spent, so it is worth skipping the round trip entirely for it; Magia
-         * Rápida has no such guard, matching its board-piece twin (the Grimoire never blocks
+         * the first is spent, so it is worth skipping the round trip entirely for it; Quick
+         * Magic has no such guard, matching its board-piece twin (the Grimoire never blocks
          * overfilling either).
          *
          * @param {string} type One of 'potion', 'shield', 'magic', 'sword'.
@@ -815,8 +814,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         /**
          * Buys the Question Hint consumable for the question currently open in the modal and
          * reveals its text once the server authorizes the purchase. Kept separate from
-         * requestPurchase() rather than folded into it: Dica has no PlayerHUD funding source
-         * (always 'local', same as Magia Rápida), needs the extra questionid argument, and its
+         * requestPurchase() rather than folded into it: Hint has no PlayerHUD funding source
+         * (always 'local', same as Quick Magic), needs the extra questionid argument, and its
          * "effect" is revealing text in the modal rather than a combat-state change, so nothing
          * about its success path fits applyConsumableEffect()'s switch.
          *
@@ -904,7 +903,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Submits a real POST to play.php, mirroring the Lobby's own "Jogar" form. A Phaser
+         * Submits a real POST to play.php, mirroring the Lobby's own Play form. A Phaser
          * scene.restart() would only reset client-side state and keep reusing a token the
          * server has already rotated or consumed, so the next attempt's own save/advance
          * call would always fail with an invalid-token error.
@@ -989,16 +988,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // the dialog and promotes it to the browser's top layer — without it, this was a
             // plain absolutely-positioned <div> with no focus containment at all, letting
             // focus drift onto page furniture outside the canvas (e.g. the course index
-            // drawer toggle) while choosing the next phase's difficulty (reported live,
-            // 30/08/2026).
+            // drawer toggle) while choosing the next phase's difficulty.
             document.getElementById('playerpuzzle-phasecomplete').showModal();
 
             // Both buttons must go through advance_phase before doing anything else: the win
             // is only durable once this call lands (there is no separate "record the win" step
             // like showEndScreen's save_progress). Exiting without it left the attempt parked
             // on the just-defeated phase with a stale, already-0 boss HP checkpoint instead of
-            // advancing (reported live, 16/09/2026) — mirror that guard on both buttons instead
-            // of only on "Continue".
+            // advancing — mirror that guard on both buttons instead of only on "Continue".
             const performAdvance = (onSuccess) => {
                 $('#pp-phase-status').removeClass('text-success text-danger').addClass('text-muted')
                     .text(strings.advancingphase);
@@ -1058,14 +1055,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     // restored explicitly to it when the dialog closes.
                     const previouslyFocused = document.activeElement;
 
-                    // The question is drawn server-side, never picked by the client — the
-                    // client used to Math.random() an index into a full Blind JSON list of
-                    // every approved question, which meant it could name any of them to
-                    // validate_answer's forwhom=boss path on demand (security audit finding,
-                    // Fase 9: on Hard difficulty the boss's guess is correct with probability
-                    // 1.0, so that alone was a free oracle for the correct answer of any
-                    // question in the instance, at any time). Falls back to the same
-                    // "no question" state a missing/empty pool always showed.
+                    // The question is drawn server-side, never picked by the client — naming
+                    // an arbitrary questionid to validate_answer's forwhom=boss path would
+                    // otherwise let the client probe any approved question in the instance:
+                    // on Hard difficulty the boss's guess is correct with probability 1.0, so
+                    // that alone would be a free oracle for the correct answer. Falls back to
+                    // the same "no question" state a missing/empty pool always showed.
                     let question = {text: ctx.strings.questionerror, options: [], hashint: false};
                     try {
                         const res = await Ajax.call([{
@@ -1088,7 +1083,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         ? `<strong class="text-danger pp-bold">${ctx.strings.bosstrigger}</strong><br><br>${question.text}`
                         : question.text;
 
-                    // Demo match (§4.12 Fase 9): shown once per session, only for the player's
+                    // Demo match: shown once per session, only for the player's
                     // own question challenge — the boss's is auto-resolved with no player
                     // interaction, so the instruction would have nothing to explain.
                     if (trigger === 'player' && ctx.isdemo && !ctx.tutorialQuestionInstructionShown) {

@@ -88,9 +88,9 @@ class coin_ledger {
      * buy_consumable.php used to call available() for its purchase gate too, which meant a
      * boss that had simply been matching Coin pieces on its own turns could silently block
      * the student from spending coins the student had genuinely and separately earned,
-     * mid-fight. Found via a real playtest report (14/09/2026): coins shown on screen, both
-     * consumables greyed out, no damage dealt yet — the boss's own coin total was being
-     * subtracted from spending power it was never meant to affect.
+     * mid-fight — coins shown on screen, both consumables greyed out, no damage dealt yet,
+     * because the boss's own coin total was being subtracted from spending power it was
+     * never meant to affect.
      *
      * @param stdClass $attempt The attempt row.
      * @return int

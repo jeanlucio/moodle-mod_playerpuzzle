@@ -524,7 +524,7 @@ final class advance_phase_test extends \advanced_testcase {
     /**
      * Tests that advancing a phase also clears the maxconsumables use count, the same
      * per-phase window the coin ledger itself resets — a student who bought their one
-     * allowed Poção in phase 1 must be able to buy one again in phase 2, not stay locked
+     * allowed Potion in phase 1 must be able to buy one again in phase 2, not stay locked
      * out of that type for the rest of the Campaign attempt.
      *
      * @return void
@@ -603,7 +603,7 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a Demo attempt (§4.12 Fase 9) is rejected outright — combat.js never
+     * Tests that a Demo attempt is rejected outright — combat.js never
      * legitimately calls this endpoint for one (it is always a one-shot fight, reported to
      * the client as gamemode 'single'), so a request against one is refused rather than
      * silently handled.

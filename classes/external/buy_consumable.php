@@ -44,8 +44,8 @@ use moodle_exception;
  */
 class buy_consumable extends external_api {
     /**
-     * PlayerHUD instance fields backing the source=hud path, keyed by consumable type. Magia
-     * Rápida has no PlayerHUD stock item — it is local-coin-only.
+     * PlayerHUD instance fields backing the source=hud path, keyed by consumable type. Quick
+     * Magic has no PlayerHUD stock item — it is local-coin-only.
      */
     private const HUD_ITEM_FIELDS = [
         'potion' => 'hud_potion_item',
@@ -151,8 +151,7 @@ class buy_consumable extends external_api {
         if ($isdemo && $params['source'] === 'hud') {
             // A Demo attempt may still use the local (in-match coin) shop — that is part of
             // what it demonstrates — but never spend the student's real PlayerHUD inventory:
-            // that would be a genuine economic effect from a match meant to have none (§4.12
-            // Fase 9).
+            // that would be a genuine economic effect from a match meant to have none.
             throw new moodle_exception('consumablesourceunavailable', 'mod_playerpuzzle');
         }
 

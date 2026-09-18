@@ -55,7 +55,7 @@ class lobby_page_service {
         global $DB, $OUTPUT;
         // Carried through to play.php's own game config purely as a CSS sizing hint for the
         // question modal's answer buttons (see game_page_service::build_game_config()) — it no
-        // longer picks a different page layout or opens a new window (27/08/2026).
+        // longer picks a different page layout or opens a new window.
         $ismobile = core_useragent::is_ios() || core_useragent::is_webkit_android();
         $playparams = ['id' => $cm->id];
         if ($ismobile) {
@@ -65,7 +65,7 @@ class lobby_page_service {
         $data = [
             'playurl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
             'playtext' => get_string('playgame', 'mod_playerpuzzle'),
-            // The Lobby's on-demand practice fight (§4.12 Fase 9): reuses play.php's own
+            // The Lobby's on-demand practice fight: reuses play.php's own
             // isdemo flag, posted as a hidden field rather than a query param — same pattern
             // as the real Play form's difficulty choice.
             'demourl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
@@ -118,8 +118,8 @@ class lobby_page_service {
 
     /**
      * Builds the PlayerHUD balances context: the coin balance, and the stock the student is
-     * carrying of each consumable that has a PlayerHUD item configured (Espada, Escudo,
-     * Poção). Only the items the teacher actually configured are shown — an unconfigured
+     * carrying of each consumable that has a PlayerHUD item configured (Sword, Shield,
+     * Potion). Only the items the teacher actually configured are shown — an unconfigured
      * item (id 0) has nothing meaningful to display. Each stat carries both a raw numeric
      * value (the visible HUD chip, paired with an icon) and the full sentence (used as the
      * chip's aria-label, so a screen reader still hears "Coins: 42" instead of a bare "42").

@@ -119,7 +119,7 @@ final class lib_update_grades_test extends \advanced_testcase {
     }
 
     /**
-     * A finished Demo attempt (§4.12 Fase 9) never contributes to the gradebook, even when
+     * A finished Demo attempt never contributes to the gradebook, even when
      * it is the student's only attempt row — a disposable, fixed-HP practice fight has no
      * grade to give.
      *

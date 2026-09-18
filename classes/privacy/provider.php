@@ -62,12 +62,12 @@ class provider implements
      * attempt creation) or timefinished (set the moment security::validate_and_
      * consume_token() moves the attempt to its final status), so it never carries
      * information beyond what timecreated/timefinished already declare; isdemo is
-     * gameplay-flow metadata (whether this attempt was a disposable Demo request, Fase 9),
-     * the same category as currentlevel/currentphase, not personal data about the user;
+     * gameplay-flow metadata (whether this attempt was a disposable Demo request), the same
+     * category as currentlevel/currentphase, not personal data about the user;
      * currentquestionid is transient server state (which question is currently open for
-     * this attempt, security audit fix, Fase 9), always 0 outside of a live in-progress
-     * fight and carrying no narrative value to a personal-data export — the same category
-     * as isdemo, not personal data about the user.
+     * this attempt), always 0 outside of a live in-progress fight and carrying no narrative
+     * value to a personal-data export — the same category as isdemo, not personal data
+     * about the user.
      *
      * @param collection $collection The initialised collection to add items to.
      * @return collection A listing of user data stored through this system.
@@ -133,7 +133,7 @@ class provider implements
     }
 
     /**
-     * Exports the Música/Efeitos preferences for the given user, when either has ever been
+     * Exports the Music/Sound Effects preferences for the given user, when either has ever been
      * set — get_user_preferences() with no default (null) is the only way to distinguish
      * "never toggled" from "toggled back to the default enabled state", the same
      * distinction has_seen_intro()-style boolean preferences do not need to make.

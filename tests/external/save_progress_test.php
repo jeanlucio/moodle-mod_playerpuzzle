@@ -642,7 +642,7 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a victorious Demo attempt (§4.12 Fase 9) never banks coins, even with a
+     * Tests that a victorious Demo attempt never banks coins, even with a
      * PlayerHUD coin item configured and a genuine win reported — a Demo has no economic
      * effect by design, since it is repeatable at will.
      *

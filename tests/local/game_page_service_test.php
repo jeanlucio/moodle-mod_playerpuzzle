@@ -86,7 +86,7 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Inserts a finished Demo attempt row for the given instance/user (§4.12 Fase 9).
+     * Inserts a finished Demo attempt row for the given instance/user.
      *
      * @param int $instanceid Activity instance ID.
      * @param int $userid User ID.
@@ -247,7 +247,7 @@ final class game_page_service_test extends \advanced_testcase {
 
     /**
      * Tests that finished Demo attempts never count against the real attempt limit — a
-     * student who has only ever played the Demo still gets every real try (§4.12 Fase 9).
+     * student who has only ever played the Demo still gets every real try.
      *
      * @return void
      */
@@ -501,7 +501,7 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a Demo attempt's coin ceiling (§4.12 Fase 9) is anchored to the fixed
+     * Tests that a Demo attempt's coin ceiling is anchored to the fixed
      * combat::DEMO_HP, not the instance's own (possibly much larger) basebosshp — matching
      * buy_consumable.php's own isdemo branch.
      *
@@ -531,7 +531,7 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a Demo attempt (§4.12 Fase 9) always fights at the fixed combat::DEMO_HP,
+     * Tests that a Demo attempt always fights at the fixed combat::DEMO_HP,
      * ignoring the instance's own configured HP/difficulty entirely — even on Hard, even on
      * a Campaign instance whose gamemode is reported to the client as 'single' instead.
      *
@@ -635,7 +635,7 @@ final class game_page_service_test extends \advanced_testcase {
 
     /**
      * Tests that hudconfigured reflects which PlayerHUD items are actually set, and that
-     * Magia Rápida is always false — it has no PlayerHUD item at all.
+     * Quick Magic is always false — it has no PlayerHUD item at all.
      *
      * @return void
      */

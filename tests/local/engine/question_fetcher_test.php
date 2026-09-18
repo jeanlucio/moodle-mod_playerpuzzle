@@ -300,8 +300,8 @@ final class question_fetcher_test extends \advanced_testcase {
      * Tests that get_answer_text() returns an empty string for an answer id belonging to a
      * different question — never validated by isolated PK. Without this, an answerid from
      * any question on the site could be logged/echoed back as the student's own "chosen
-     * answer" text (security audit finding, Fase 9), even though is_answer_correct() already
-     * scoped its own correctness check by questionid.
+     * answer" text, even though is_answer_correct() already scoped its own correctness
+     * check by questionid.
      *
      * @return void
      */

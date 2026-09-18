@@ -355,7 +355,7 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
             // on an actual board piece, so scrolling still works everywhere else on the canvas
             // (HUD, panels, margins). Added directly on the canvas element, not through
             // Phaser's input plugin, specifically so it stays non-passive and preventDefault()
-            // has any effect (28/08/2026).
+            // has any effect.
             this.scene.game.canvas.addEventListener(
                 'touchstart', event => this.maybeBlockScroll(event), {passive: false}
             );

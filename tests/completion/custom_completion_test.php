@@ -63,7 +63,7 @@ final class custom_completion_test extends advanced_testcase {
      * @param int $instanceid Activity instance ID.
      * @param int $userid User ID.
      * @param string $status One of security::FINAL_STATUSES, or 'inprogress'.
-     * @param bool $isdemo Whether the row is a disposable Demo attempt (§4.12 Fase 9).
+     * @param bool $isdemo Whether the row is a disposable Demo attempt.
      * @return void
      */
     private function make_attempt(int $instanceid, int $userid, string $status, bool $isdemo = false): void {
@@ -137,7 +137,7 @@ final class custom_completion_test extends advanced_testcase {
     }
 
     /**
-     * A finished Demo attempt (§4.12 Fase 9) never counts towards completionattempts — an
+     * A finished Demo attempt never counts towards completionattempts — an
      * unlimited, repeatable, zero-stakes practice fight cannot satisfy this rule on its own.
      *
      * @return void
@@ -197,7 +197,7 @@ final class custom_completion_test extends advanced_testcase {
     }
 
     /**
-     * A Demo attempt's win (§4.12 Fase 9) never counts towards completionwins — a Demo win
+     * A Demo attempt's win never counts towards completionwins — a Demo win
      * is not a real win.
      *
      * @return void

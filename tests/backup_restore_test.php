@@ -317,9 +317,9 @@ final class backup_restore_test extends \advanced_testcase {
     }
 
     /**
-     * The attempt's own currentquestionid (the question server-drawn and currently open,
-     * security audit fix — Fase 9) is remapped to the restored bank question's new id, same
-     * namespace/pattern as playerpuzzle_attempt_questions.questionid above. An unmapped id
+     * The attempt's own currentquestionid (the question server-drawn and currently open) is
+     * remapped to the restored bank question's new id, same namespace/pattern as
+     * playerpuzzle_attempt_questions.questionid above. An unmapped id
      * (the original question was not part of this backup) must fall back to 0 — "nothing
      * open" — rather than leak a stale id pointing at the wrong question in the new course.
      *

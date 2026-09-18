@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for the Música/Efeitos sound preferences service.
+ * Unit tests for the Music/Sound Effects sound preferences service.
  *
  * @package    mod_playerpuzzle
  * @category   test

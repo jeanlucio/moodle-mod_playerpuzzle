@@ -191,7 +191,7 @@ class save_progress extends external_api {
         if ($isvictory && !$isdemo) {
             // Defeat/timeout discards the session's coins; only a win banks them, and only into
             // the item the teacher configured — PlayerPuzzle keeps no local currency of its own.
-            // A Demo win never banks anything (§4.12 Fase 9): it is a disposable practice fight,
+            // A Demo win never banks anything: it is a disposable practice fight,
             // repeatable at will, and would otherwise let coins/XP be farmed without limit.
             $payable = coin_ledger::available($attempt);
             $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);

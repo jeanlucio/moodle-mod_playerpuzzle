@@ -31,9 +31,9 @@ namespace mod_playerpuzzle\local;
  */
 class attempt_consumables {
     /**
-     * Valid consumable types. 'hint' (Dica da Questão, Phase 8 Lote D) shares this same
-     * per-attempt use-limit table with the other four, even though it is bought from inside
-     * the question modal rather than the side-panel shop.
+     * Valid consumable types. 'hint' (Question Hint) shares this same per-attempt use-limit
+     * table with the other four, even though it is bought from inside the question modal
+     * rather than the side-panel shop.
      */
     public const TYPES = ['potion', 'shield', 'magic', 'sword', 'hint'];
 

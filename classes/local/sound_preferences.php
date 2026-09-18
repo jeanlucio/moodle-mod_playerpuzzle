@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Service tracking the per-user Música/Efeitos toggle preferences.
+ * Service tracking the per-user Music/Sound Effects toggle preferences.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -25,7 +25,7 @@
 namespace mod_playerpuzzle\local;
 
 /**
- * Reads and writes the two independent sound-channel preferences (Música/Efeitos).
+ * Reads and writes the two independent sound-channel preferences (Music/Sound Effects).
  *
  * Kept as two separate user_preferences rows rather than one combined value: the HUD
  * already ships two independently clickable badges (mirrors mod_playerland's own

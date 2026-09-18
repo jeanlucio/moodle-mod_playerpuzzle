@@ -457,8 +457,8 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
 
     if ($oldversion < 2026091803) {
         // Add istutorial: flags an attempt as the user's first-ever one at this instance,
-        // decided once at creation (Fase 9 — first-match tutorial, reduced boss HP at
-        // Level 1/Phase 1 only).
+        // decided once at creation — first-match tutorial, reduced boss HP at Level
+        // 1/Phase 1 only.
         $table = new xmldb_table('playerpuzzle_attempts');
         $field = new xmldb_field('istutorial', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'difficulty');
         if (!$dbman->field_exists($table, $field)) {
@@ -470,9 +470,8 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
 
     if ($oldversion < 2026091804) {
         // Replace istutorial with isdemo: the automatic first-attempt tutorial gate is
-        // replaced by an on-demand, repeatable "Jogar Demo" button on the Lobby (Fase 9,
-        // redesigned after live feedback) — never counted for grade/coins/completion/
-        // attempt-limit, fixed HP on both sides.
+        // replaced by an on-demand, repeatable "Play Demo" button on the Lobby — never
+        // counted for grade/coins/completion/attempt-limit, fixed HP on both sides.
         $table = new xmldb_table('playerpuzzle_attempts');
 
         $oldfield = new xmldb_field('istutorial');
@@ -489,12 +488,11 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
     }
 
     if ($oldversion < 2026091805) {
-        // Server-tracked "current open question" per attempt (security audit finding —
-        // classes/external/validate_answer.php's forwhom=boss path used to accept any
-        // client-supplied questionid, turning it into a free oracle for the correct answer
-        // of any approved question in the instance). The client no longer chooses which
-        // question is in play; the server draws it and validate_answer only ever operates
-        // on this column, never a client-supplied id.
+        // Server-tracked "current open question" per attempt: a client-supplied questionid
+        // on validate_answer.php's forwhom=boss path would let a caller probe any approved
+        // question of the instance for its correct answer. The client no longer chooses
+        // which question is in play; the server draws it and validate_answer only ever
+        // operates on this column, never a client-supplied id.
         $table = new xmldb_table('playerpuzzle_attempts');
         $field = new xmldb_field('currentquestionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'combatstate');
         if (!$dbman->field_exists($table, $field)) {

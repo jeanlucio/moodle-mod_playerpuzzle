@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * External function to persist a Música/Efeitos toggle as a user preference.
+ * External function to persist a Music/Sound Effects toggle as a user preference.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -33,7 +33,7 @@ use mod_playerpuzzle\local\sound_preferences;
 use moodle_exception;
 
 /**
- * Saves whether the Música or Efeitos channel is enabled for the current user.
+ * Saves whether the Music or Sound Effects channel is enabled for the current user.
  *
  * The preference itself is site-wide, not scoped to this instance (a student who mutes
  * music in one PlayerPuzzle activity should not hear it start again in another) — cmid is

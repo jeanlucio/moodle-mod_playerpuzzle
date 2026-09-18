@@ -119,6 +119,32 @@ final class lib_update_grades_test extends \advanced_testcase {
     }
 
     /**
+     * A finished Demo attempt (§4.12 Fase 9) never contributes to the gradebook, even when
+     * it is the student's only attempt row — a disposable, fixed-HP practice fight has no
+     * grade to give.
+     *
+     * @return void
+     */
+    public function test_update_grades_ignores_demo_attempts(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance([
+            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
+        ]);
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->make_attempt(
+            $instance->id,
+            $user->id,
+            ['currentphase' => 10, 'status' => 'won', 'timefinished' => time(), 'isdemo' => 1]
+        );
+        playerpuzzle_update_grades($instance, $user->id);
+
+        $gradeitem = $this->fetch_grade_item($instance);
+        $this->assertFalse($gradeitem->has_grades());
+    }
+
+    /**
      * A student who still has other attempts after one is deleted gets their grade
      * recomputed from what remains, taking the furthest progress among them.
      *

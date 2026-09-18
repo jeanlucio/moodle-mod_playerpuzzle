@@ -47,8 +47,8 @@
             {"value": "hard", "label": "Hard", "checked": false}
         ],
         "difficultycurrent": "",
-        "istutorialeligible": true,
-        "skiptutoriallabel": "Skip Tutorial",
+        "demourl": "/mod/playerpuzzle/play.php?id=1&isdemo=1",
+        "playdemotext": "Play Demo",
         "canmanagequestions": true,
         "managequestionsurl": "/mod/playerpuzzle/managequestions.php?id=1",
         "managequestionslabel": "Manage questions"
@@ -139,14 +139,13 @@
                 </fieldset>
                 {{/difficultylabel}}
 
-                {{#istutorialeligible}}
-                <div class="pp-lobby-tutorial-skip">
-                    <input type="checkbox" id="pp-skip-tutorial" name="skiptutorial" value="1">
-                    <label for="pp-skip-tutorial">{{skiptutoriallabel}}</label>
-                </div>
-                {{/istutorialeligible}}
-
                 <button type="submit" class="pp-lobby-play">{{playtext}}</button>
+            </form>
+
+            <form method="post" action="{{{demourl}}}">
+                <input type="hidden" name="sesskey" value="{{sesskey}}">
+                <input type="hidden" name="isdemo" value="1">
+                <button type="submit" class="pp-lobby-playdemo">{{playdemotext}}</button>
             </form>
 
             {{#minquestionstext}}

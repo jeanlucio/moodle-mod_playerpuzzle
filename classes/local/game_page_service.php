@@ -66,9 +66,11 @@ class game_page_service {
             return;
         }
 
+        // Demo attempts never count against this limit — see check_retry_cost()'s own
+        // isdemo exclusion for the same rationale.
         $finishedattempts = $DB->count_records_select(
             'playerpuzzle_attempts',
-            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress',
+            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0',
             ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress']
         );
         if ($finishedattempts >= $limit) {
@@ -105,9 +107,11 @@ class game_page_service {
             return;
         }
 
+        // Demo attempts never count as a real "finished attempt" here — a student who has
+        // only ever played the Demo still gets a free first real try.
         $finishedattempts = $DB->count_records_select(
             'playerpuzzle_attempts',
-            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress',
+            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0',
             ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress']
         );
         if ($finishedattempts === 0) {
@@ -138,9 +142,11 @@ class game_page_service {
      * @param bool $ismobile Whether the request is from a mobile device.
      * @param string $difficulty Student-chosen difficulty for a fresh attempt; not applied
      *  when an in-progress attempt is resumed (that attempt keeps its current phase's own
-     *  difficulty, which advance_phase changes between phases).
-     * @param bool $skiptutorial Whether the student opted out of the first-attempt tutorial
-     *  from the Lobby; only meaningful when a brand new attempt is about to be created.
+     *  difficulty, which advance_phase changes between phases). Ignored entirely for a Demo
+     *  attempt, which always fights at a fixed HP regardless of difficulty.
+     * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Jogar Demo"
+     *  button) — fixed HP on both sides, always Level 1/Phase 1, never counted for grade,
+     *  coins, completion, or the attempt limit.
      * @return array JS game config for game_boot.js.
      */
     public static function build_game_config(
@@ -150,7 +156,7 @@ class game_page_service {
         int $userid,
         bool $ismobile,
         string $difficulty = 'normal',
-        bool $skiptutorial = false
+        bool $isdemo = false
     ): array {
         global $OUTPUT;
 
@@ -159,7 +165,7 @@ class game_page_service {
             $userid,
             $difficulty,
             (int) $instance->maxlevels,
-            $skiptutorial
+            $isdemo
         );
         $difficulty = $attemptinfo->difficulty;
 
@@ -172,39 +178,46 @@ class game_page_service {
             $event->trigger();
         }
 
-        // Boss HP and boss damage carry the level/phase scaling and then the difficulty
-        // factor on top (Easy halves, Hard doubles). Student HP is never touched by
-        // difficulty. save_progress/advance_phase apply the same factor to their own clamp,
-        // so the grade a run produces is unaffected by the difficulty chosen. The tutorial
-        // reduction is applied last, and only to the boss's own HP — never to bossdamage below.
-        $bosshp = combat::apply_tutorial_reduction(
-            combat::apply_difficulty(
+        if ($isdemo) {
+            // Fixed, predictable practice fight — deliberately bypasses every real scaling
+            // formula (basebosshp/basestudenthp/difficulty/level/phase).
+            $bosshp = combat::DEMO_HP;
+            $studenthp = combat::DEMO_HP;
+            $bossdamage = combat::calculate_boss_hp(
+                (int) $instance->bossdamage,
+                $attemptinfo->currentlevel,
+                $attemptinfo->currentphase
+            );
+        } else {
+            // Boss HP and boss damage carry the level/phase scaling and then the difficulty
+            // factor on top (Easy halves, Hard doubles). Student HP is never touched by
+            // difficulty. save_progress/advance_phase apply the same factor to their own
+            // clamp, so the grade a run produces is unaffected by the difficulty chosen.
+            $bosshp = combat::apply_difficulty(
                 combat::calculate_boss_hp(
                     (int) $instance->basebosshp,
                     $attemptinfo->currentlevel,
                     $attemptinfo->currentphase
                 ),
                 $difficulty
-            ),
-            $attemptinfo->istutorial,
-            $attemptinfo->currentlevel,
-            $attemptinfo->currentphase
-        );
-        $studenthp = combat::calculate_student_hp(
-            (int) $instance->basestudenthp,
-            $attemptinfo->currentlevel,
-            $attemptinfo->currentphase
-        );
-        // Reuses the boss HP formula for combat damage: same shape of growth, and it keeps a
-        // single source of truth for "how much combat should scale" at this level/phase.
-        $bossdamage = combat::apply_difficulty(
-            combat::calculate_boss_hp(
-                (int) $instance->bossdamage,
+            );
+            $studenthp = combat::calculate_student_hp(
+                (int) $instance->basestudenthp,
                 $attemptinfo->currentlevel,
                 $attemptinfo->currentphase
-            ),
-            $difficulty
-        );
+            );
+            // Reuses the boss HP formula for combat damage: same shape of growth, and it
+            // keeps a single source of truth for "how much combat should scale" at this
+            // level/phase.
+            $bossdamage = combat::apply_difficulty(
+                combat::calculate_boss_hp(
+                    (int) $instance->bossdamage,
+                    $attemptinfo->currentlevel,
+                    $attemptinfo->currentphase
+                ),
+                $difficulty
+            );
+        }
 
         $questions = question_fetcher::get_questions_for_frontend((int) $instance->id, $context);
 
@@ -240,7 +253,11 @@ class game_page_service {
         return [
             'cmid'                 => $cm->id,
             'token'                => $attemptinfo->token,
-            'gamemode'             => $instance->gamemode,
+            // A Demo is always reported as 'single' to the client regardless of the
+            // instance's own configured gamemode: it is a one-shot fight (no advance_phase),
+            // exactly the flow combat.js already has for Single Match — see
+            // combat.js::hasNextPhase()'s gamemode gate.
+            'gamemode'             => $isdemo ? PLAYERPUZZLE_GAMEMODE_SINGLE : $instance->gamemode,
             'difficulty'           => $difficulty,
             // The client never counts its own answered questions for the "Perguntas: X/N" HUD
             // counter or the boss-revive rule — it only ever mirrors this server-reported total,
@@ -287,7 +304,7 @@ class game_page_service {
             'enablespeech'         => (bool) get_config('mod_playerpuzzle', 'enablespeech'),
             'musicenabled'         => sound_preferences::is_enabled('music', $userid),
             'sfxenabled'           => sound_preferences::is_enabled('sfx', $userid),
-            'istutorial'           => $attemptinfo->istutorial,
+            'isdemo'               => $attemptinfo->isdemo,
         ];
     }
 }

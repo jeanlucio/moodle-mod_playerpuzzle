@@ -386,6 +386,15 @@ define([
             this.board = new BoardHandler(this, L, strings);
 
             this.combat.updateUI();
+
+            // Demo match (§4.12 Fase 9): board/combat input stays locked until the student
+            // steps through the static walkthrough — re-enabled by its own onDismiss callback.
+            if (gameConfig.isdemo) {
+                this.input.enabled = false;
+                this.ui.showDemoWalkthrough(() => {
+                    this.input.enabled = true;
+                });
+            }
         };
 
         const create = function() {
@@ -474,6 +483,13 @@ define([
                     'debriefcorrectanswer', 'debriefcorrectsr', 'debriefempty', 'debriefreview',
                     'debriefsummary', 'debrieftitle', 'debriefwrongsr', 'debriefyouranswer',
                     'defeat',
+                    'demostep_fullscreen_text', 'demostep_fullscreen_title',
+                    'demostep_hp_text', 'demostep_hp_title',
+                    'demostep_music_text', 'demostep_music_title',
+                    'demostep_sfx_text', 'demostep_sfx_title',
+                    'demostep_welcome_text', 'demostep_welcome_title',
+                    'demowalkthrough_next', 'demowalkthrough_progress', 'demowalkthrough_start',
+                    'demowalkthrough_title',
                     'difficulty_easy', 'difficulty_hard', 'difficulty_normal',
                     'hintbutton',
                     'historylogattack', 'historylogcoins', 'historylogcritical', 'historylogempty',

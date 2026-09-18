@@ -61,10 +61,9 @@ class provider implements
      * and is never exported; timemodified always mirrors either timecreated (set at
      * attempt creation) or timefinished (set the moment security::validate_and_
      * consume_token() moves the attempt to its final status), so it never carries
-     * information beyond what timecreated/timefinished already declare; istutorial is
-     * gameplay-flow metadata (whether this attempt got the Fase 9 onboarding boss-HP
-     * reduction), the same category as currentlevel/currentphase, not personal data
-     * about the user.
+     * information beyond what timecreated/timefinished already declare; isdemo is
+     * gameplay-flow metadata (whether this attempt was a disposable Demo request, Fase 9),
+     * the same category as currentlevel/currentphase, not personal data about the user.
      *
      * @param collection $collection The initialised collection to add items to.
      * @return collection A listing of user data stored through this system.

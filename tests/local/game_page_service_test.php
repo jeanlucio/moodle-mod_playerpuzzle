@@ -86,6 +86,26 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Inserts a finished Demo attempt row for the given instance/user (§4.12 Fase 9).
+     *
+     * @param int $instanceid Activity instance ID.
+     * @param int $userid User ID.
+     * @return void
+     */
+    private function make_finished_demo_attempt(int $instanceid, int $userid): void {
+        global $DB;
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instanceid,
+            'userid'         => $userid,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'lost',
+            'isdemo'         => 1,
+            'timecreated'    => time(),
+            'timefinished'   => time(),
+        ]);
+    }
+
+    /**
      * Inserts a block_playerhud block instance and one item in the course, returning
      * both IDs.
      *
@@ -226,6 +246,25 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that finished Demo attempts never count against the real attempt limit — a
+     * student who has only ever played the Demo still gets every real try (§4.12 Fase 9).
+     *
+     * @return void
+     */
+    public function test_check_attempt_limit_ignores_demo_attempts(): void {
+        [, $instance] = $this->make_cm_and_instance([
+            'gamemode'    => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'maxattempts' => 1,
+        ]);
+        for ($i = 0; $i < 5; $i++) {
+            $this->make_finished_demo_attempt($instance->id, (int) $this->student->id);
+        }
+
+        game_page_service::check_attempt_limit($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
      * Tests that the very first attempt is always free, even with a retry-cost item
      * configured and no balance to pay it.
      *
@@ -326,6 +365,23 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a student who has only ever played the Demo still gets a free first real
+     * attempt — Demo history never counts as "a finished attempt" for the retry-cost gate.
+     *
+     * @return void
+     */
+    public function test_check_retry_cost_ignores_demo_attempts(): void {
+        [, $itemid] = $this->make_hud_item();
+        [, $instance] = $this->make_cm_and_instance(['hud_retry_cost_item' => $itemid]);
+        $this->make_finished_demo_attempt($instance->id, (int) $this->student->id);
+        $this->make_finished_demo_attempt($instance->id, (int) $this->student->id);
+
+        // No balance granted at all — would throw if Demo history counted as a real attempt.
+        game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
      * Tests that build_game_config() resolves the scaled boss/student HP for the
      * attempt's own level/phase, not the raw configured base.
      *
@@ -376,17 +432,12 @@ final class game_page_service_test extends \advanced_testcase {
         ]);
         $context = \context_module::instance($cm->id);
 
-        // Skips the tutorial: this is the student's first-ever attempt at the instance,
-        // which would otherwise trigger the Fase 9 tutorial's own Level 1/Phase 1 HP
-        // reduction — irrelevant to what this test actually checks.
         $config = game_page_service::build_game_config(
             $cm,
             $instance,
             $context,
             (int) $this->student->id,
-            false,
-            'normal',
-            true
+            false
         );
 
         $this->assertSame(250, $config['bosshp']);
@@ -411,13 +462,45 @@ final class game_page_service_test extends \advanced_testcase {
         $context = \context_module::instance($cm->id);
 
         $studentid = (int) $this->student->id;
-        // Skips the tutorial (see test_build_game_config_single_match_uses_base_hp() above).
-        $hard = game_page_service::build_game_config($cm, $instance, $context, $studentid, false, 'hard', true);
+        $hard = game_page_service::build_game_config($cm, $instance, $context, $studentid, false, 'hard');
         $this->assertSame(400, $hard['bosshp']);
         $this->assertSame(20, $hard['bossdamage']);
         $this->assertSame(100, $hard['studenthp']);
         $this->assertSame('hard', $hard['difficulty']);
         $this->assertSame(3.0, $hard['coinfactor']);
+    }
+
+    /**
+     * Tests that a Demo attempt (§4.12 Fase 9) always fights at the fixed combat::DEMO_HP,
+     * ignoring the instance's own configured HP/difficulty entirely — even on Hard, even on
+     * a Campaign instance whose gamemode is reported to the client as 'single' instead.
+     *
+     * @return void
+     */
+    public function test_build_game_config_demo_uses_fixed_hp(): void {
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode'      => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'basebosshp'    => 1000,
+            'basestudenthp' => 250,
+        ]);
+        $context = \context_module::instance($cm->id);
+
+        $config = game_page_service::build_game_config(
+            $cm,
+            $instance,
+            $context,
+            (int) $this->student->id,
+            false,
+            'hard',
+            true
+        );
+
+        $this->assertSame(50, $config['bosshp']);
+        $this->assertSame(50, $config['studenthp']);
+        $this->assertSame(PLAYERPUZZLE_GAMEMODE_SINGLE, $config['gamemode']);
+        $this->assertSame(1, $config['currentlevel']);
+        $this->assertSame(1, $config['currentphase']);
+        $this->assertTrue($config['isdemo']);
     }
 
     /**
@@ -434,16 +517,12 @@ final class game_page_service_test extends \advanced_testcase {
         ]);
         $context = \context_module::instance($cm->id);
 
-        // Last arg skips the tutorial (see test_build_game_config_single_match_uses_base_hp()
-        // above) — irrelevant here since the attempt is resumed, not created, but passed for
-        // consistency with the other difficulty-scaling tests in this file.
         \mod_playerpuzzle\local\engine\security::generate_attempt_token(
             (int) $instance->id,
             (int) $this->student->id,
             'hard',
             1,
-            1,
-            true
+            1
         );
 
         $studentid = (int) $this->student->id;

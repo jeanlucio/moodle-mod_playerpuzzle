@@ -147,6 +147,15 @@ class buy_consumable extends external_api {
             }
         }
 
+        $isdemo = (bool) $attempt->isdemo;
+        if ($isdemo && $params['source'] === 'hud') {
+            // A Demo attempt may still use the local (in-match coin) shop — that is part of
+            // what it demonstrates — but never spend the student's real PlayerHUD inventory:
+            // that would be a genuine economic effect from a match meant to have none (§4.12
+            // Fase 9).
+            throw new moodle_exception('consumablesourceunavailable', 'mod_playerpuzzle');
+        }
+
         $difficulty = (string) $attempt->difficulty;
         $level = (int) $attempt->currentlevel;
         $phase = (int) $attempt->currentphase;
@@ -154,16 +163,11 @@ class buy_consumable extends external_api {
         // The ceiling is a stable per-phase value (this phase's own full boss HP), not tied
         // to damage dealt so far — a student who has not yet landed a Sword hit can still have
         // genuinely earned coins from Coin/Shield/Magic matches, which happen independently on
-        // the board. See combat::coin_ceiling()'s own docblock for why. Tutorial reduction
-        // applied last, matching the reduced HP the client was actually shown for this fight.
-        $currentbosshp = combat::apply_tutorial_reduction(
-            combat::apply_difficulty(
-                combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $level, $phase),
-                $difficulty
-            ),
-            (bool) $attempt->istutorial,
-            $level,
-            $phase
+        // the board. See combat::coin_ceiling()'s own docblock for why. A Demo attempt always
+        // fought the fixed combat::DEMO_HP instead, matching what the client was shown.
+        $currentbosshp = $isdemo ? combat::DEMO_HP : combat::apply_difficulty(
+            combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $level, $phase),
+            $difficulty
         );
         $scaledbossdamage = combat::apply_difficulty(
             combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $level, $phase),

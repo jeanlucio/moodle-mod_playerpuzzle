@@ -93,12 +93,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.coinsSpent = parseInt(gameConfig.coinsspent, 10) || 0;
             this.currentTurn = 'player';
 
-            // First-attempt tutorial (Fase 9): the server already decided istutorial once, at
-            // attempt creation (security::generate_attempt_token()) — this is a read-only
-            // mirror, never re-derived client-side. tutorialSeenTypes tracks which piece types
-            // already got their one-time context balloon this session (not persisted — a
-            // reload simply re-shows any type not yet seen again, a harmless repeat, not a bug).
-            this.istutorial = !!gameConfig.istutorial;
+            // Demo match (§4.12 Fase 9): the server already decided isdemo once, at attempt
+            // creation (security::generate_attempt_token(), from the Lobby's "Jogar Demo"
+            // button) — this is a read-only mirror, never re-derived client-side.
+            // tutorialSeenTypes tracks which piece types already got their one-time context
+            // balloon this session (not persisted — a reload simply re-shows any type not yet
+            // seen again, a harmless repeat, not a bug).
+            this.isdemo = !!gameConfig.isdemo;
             this.tutorialSeenTypes = new Set();
             this.tutorialQuestionInstructionShown = false;
 
@@ -426,7 +427,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          *  per group, driven by combo size).
          */
         triggerTutorialBalloons(destroyedPieces, matchGroups) {
-            if (!this.istutorial || this.currentTurn !== 'player') {
+            if (!this.isdemo || this.currentTurn !== 'player') {
                 return;
             }
             for (const piece of destroyedPieces) {
@@ -442,7 +443,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         /**
          * Shows a one-time context balloon explaining a piece type's effect. A no-op for
          * every later match of the same type this session — callers (triggerTutorialBalloons())
-         * already guard on istutorial/currentTurn, this only adds the per-type "seen" check.
+         * already guard on isdemo/currentTurn, this only adds the per-type "seen" check.
          *
          * @param {number} type Piece type (0-6).
          */
@@ -890,6 +891,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 sesskey: M.cfg.sesskey,
                 difficulty: this.gameConfig.difficulty || 'normal',
             };
+            if (this.gameConfig.isdemo) {
+                // "Play Again" from a Demo's end screen starts another Demo, never a real
+                // attempt — the student explicitly asked for practice, not a scored try.
+                fields.isdemo = 1;
+            }
             Object.entries(fields).forEach(([name, value]) => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -1027,10 +1033,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         ? `<strong class="text-danger pp-bold">${ctx.strings.bosstrigger}</strong><br><br>${question.text}`
                         : question.text;
 
-                    // First-attempt tutorial (Fase 9): shown once ever this session, only for
-                    // the player's own question challenge — the boss's is auto-resolved with
-                    // no player interaction, so the instruction would have nothing to explain.
-                    if (trigger === 'player' && ctx.istutorial && !ctx.tutorialQuestionInstructionShown) {
+                    // Demo match (§4.12 Fase 9): shown once per session, only for the player's
+                    // own question challenge — the boss's is auto-resolved with no player
+                    // interaction, so the instruction would have nothing to explain.
+                    if (trigger === 'player' && ctx.isdemo && !ctx.tutorialQuestionInstructionShown) {
                         ctx.tutorialQuestionInstructionShown = true;
                         questionText += `<br><br><em>${ctx.strings.tutorialquestioninstruction}</em>`;
                     }

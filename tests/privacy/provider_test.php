@@ -156,7 +156,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     public function test_get_metadata_every_column_is_declared_or_documented(): void {
         global $DB;
 
-        $documentedexclusions = ['playerpuzzleid', 'token', 'timemodified', 'istutorial'];
+        $documentedexclusions = ['playerpuzzleid', 'token', 'timemodified', 'isdemo'];
 
         $collection = provider::get_metadata(new collection('mod_playerpuzzle'));
 

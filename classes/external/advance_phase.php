@@ -120,21 +120,24 @@ class advance_phase extends external_api {
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
 
+        if ((bool) $attempt->isdemo) {
+            // A Demo is always a one-shot fight reported to the client as gamemode 'single'
+            // (see game_page_service::build_game_config()) — combat.js's own gamemode gate
+            // means it never legitimately calls this endpoint. Refused outright rather than
+            // silently handled, so a forged request cannot use a zero-stakes Demo attempt to
+            // probe phase-advance behaviour.
+            throw new moodle_exception('demoattemptnoadvance', 'mod_playerpuzzle');
+        }
+
         $currentlevel = (int) $attempt->currentlevel;
         $currentphase = (int) $attempt->currentphase;
 
         // Sanity check: the client cannot simply claim victory — the reported damage
         // must genuinely clear the boss HP the server itself calculated for the phase
-        // being left, including this run's difficulty factor and the tutorial reduction
-        // (Level 1/Phase 1 of a first-ever attempt only), or advancing is refused.
-        $currentbosshp = combat::apply_tutorial_reduction(
-            combat::apply_difficulty(
-                combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase),
-                (string) $attempt->difficulty
-            ),
-            (bool) $attempt->istutorial,
-            $currentlevel,
-            $currentphase
+        // being left, including this run's difficulty factor, or advancing is refused.
+        $currentbosshp = combat::apply_difficulty(
+            combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase),
+            (string) $attempt->difficulty
         );
         if ($params['damage'] < $currentbosshp) {
             throw new moodle_exception('phasenotwon', 'mod_playerpuzzle');
@@ -240,14 +243,9 @@ class advance_phase extends external_api {
             'currentlevel' => $newlevel,
             'currentphase' => $newphase,
             'difficulty'   => $newdifficulty,
-            'bosshp'       => combat::apply_tutorial_reduction(
-                combat::apply_difficulty(
-                    combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $newlevel, $newphase),
-                    $newdifficulty
-                ),
-                (bool) $attempt->istutorial,
-                $newlevel,
-                $newphase
+            'bosshp'       => combat::apply_difficulty(
+                combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $newlevel, $newphase),
+                $newdifficulty
             ),
             'studenthp'    => combat::calculate_student_hp((int) $playerpuzzle->basestudenthp, $newlevel, $newphase),
             'coinsbanked'  => $coinsbanked,

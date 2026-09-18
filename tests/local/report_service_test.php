@@ -188,6 +188,28 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
+     * A finished Demo attempt (§4.12 Fase 9) never appears in the teacher report — it is a
+     * disposable practice fight, not a real submission.
+     *
+     * @return void
+     */
+    public function test_get_student_rows_excludes_demo_attempts(): void {
+        $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        $this->make_attempt($student, [
+            'status'       => 'won',
+            'timefinished' => time(),
+            'isdemo'       => 1,
+        ]);
+
+        $rows = report_service::get_student_rows($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertSame(0, $rows[0]['attemptsused']);
+        $this->assertFalse($rows[0]['hasgrade']);
+        $this->assertSame('-', $rows[0]['lastmatch']);
+    }
+
+    /**
      * A teacher (holder of the viewreport capability) is never listed as a student in
      * their own report, even if they happen to have attempts of their own.
      *
@@ -356,6 +378,22 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
+     * A finished Demo attempt's score (§4.12 Fase 9) is never counted in the class-wide
+     * score distribution — it fought a fixed, disposable HP, not a real result.
+     *
+     * @return void
+     */
+    public function test_get_score_distribution_ignores_demo_attempts(): void {
+        $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        $this->make_attempt($student, ['status' => 'won', 'score' => 99, 'timefinished' => time(), 'isdemo' => 1]);
+
+        $distribution = report_service::get_score_distribution($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertSame(0, array_sum(array_column($distribution, 'count')));
+    }
+
+    /**
      * Campaign mode: completion rate is the percentage of students who reached a
      * genuine 'won' status at least once.
      *
@@ -400,6 +438,23 @@ final class report_service_test extends \advanced_testcase {
         $this->assertSame(1, $completion['completed']);
         $this->assertSame(2, $completion['total']);
         $this->assertEqualsWithDelta(50.0, $completion['percent'], 0.01);
+    }
+
+    /**
+     * A student who has only ever won a Demo match (§4.12 Fase 9) is never counted as
+     * having completed the activity — a Demo win is not a real completion.
+     *
+     * @return void
+     */
+    public function test_get_completion_rate_ignores_demo_attempts(): void {
+        $demoonly = $this->getDataGenerator()->create_user();
+        $this->enrol_student($demoonly);
+        $this->make_attempt($demoonly, ['status' => 'won', 'timefinished' => time(), 'isdemo' => 1]);
+
+        $completion = report_service::get_completion_rate($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertSame(0, $completion['completed']);
+        $this->assertSame(1, $completion['total']);
     }
 
     /**

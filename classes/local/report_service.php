@@ -57,10 +57,13 @@ class report_service {
         }
 
         [$insql, $inparams] = $DB->get_in_or_equal(array_keys($students), SQL_PARAMS_NAMED, 'stu');
+        // Demo attempts are excluded: they are disposable practice fights with fixed HP, and
+        // must never appear in a teacher-facing report as if they were real submissions.
         $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.difficulty, a.status,
                        a.bosshp_remaining, a.questions_correct, a.questions_total, a.timefinished
                   FROM {playerpuzzle_attempts} a
                  WHERE a.playerpuzzleid = :instanceid
+                       AND a.isdemo = 0
                        AND a.userid $insql";
         $attempts = $DB->get_records_sql(
             $sql,
@@ -173,6 +176,7 @@ class report_service {
                           FROM {playerpuzzle_attempt_questions} aq
                           JOIN {playerpuzzle_attempts} a ON a.id = aq.attemptid
                          WHERE a.playerpuzzleid = :instanceid
+                               AND a.isdemo = 0
                       GROUP BY aq.questionid) stats
                   JOIN {playerpuzzle_attempt_questions} sample ON sample.id = stats.sampleid";
         $records = $DB->get_records_sql($sql, ['instanceid' => (int) $instance->id]);
@@ -229,7 +233,7 @@ class report_service {
         $scores = $DB->get_fieldset_select(
             'playerpuzzle_attempts',
             'score',
-            "playerpuzzleid = :instanceid AND status <> :inprogress AND userid $insql",
+            "playerpuzzleid = :instanceid AND status <> :inprogress AND isdemo = 0 AND userid $insql",
             array_merge(['instanceid' => (int) $instance->id, 'inprogress' => 'inprogress'], $inparams)
         );
 
@@ -295,7 +299,8 @@ class report_service {
             $completed = (int) $DB->count_records_sql(
                 "SELECT COUNT(DISTINCT userid)
                    FROM {playerpuzzle_attempts}
-                  WHERE playerpuzzleid = :instanceid AND status <> :inprogress AND userid $insql",
+                  WHERE playerpuzzleid = :instanceid AND status <> :inprogress AND isdemo = 0
+                        AND userid $insql",
                 $params
             );
         } else {
@@ -303,7 +308,8 @@ class report_service {
             $completed = (int) $DB->count_records_sql(
                 "SELECT COUNT(DISTINCT userid)
                    FROM {playerpuzzle_attempts}
-                  WHERE playerpuzzleid = :instanceid AND status = :won AND userid $insql",
+                  WHERE playerpuzzleid = :instanceid AND status = :won AND isdemo = 0
+                        AND userid $insql",
                 $params
             );
         }

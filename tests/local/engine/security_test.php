@@ -188,82 +188,97 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a user's genuinely first-ever attempt at an instance is flagged istutorial,
-     * both on the returned object and on the persisted row.
+     * Tests that generate_attempt_token() flags a Demo request, both on the persisted row
+     * and (via generate) never as a side effect of prior attempt history.
      *
      * @return void
      */
-    public function test_generate_attempt_token_flags_a_genuine_first_attempt_as_tutorial(): void {
-        global $DB;
-
-        $token = security::generate_attempt_token(1, 2);
-
-        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
-        $this->assertSame(1, (int) $attempt->istutorial);
-    }
-
-    /**
-     * Tests that a second attempt (after the first one finished) is never flagged
-     * istutorial again — "ausência de registros" means no attempt row at all, not just
-     * no in-progress one.
-     *
-     * @return void
-     */
-    public function test_generate_attempt_token_does_not_flag_a_second_attempt(): void {
-        global $DB;
-
-        $firsttoken = security::generate_attempt_token(1, 2);
-        security::validate_and_consume_token($firsttoken, 1, 2, 'lost');
-
-        $secondtoken = security::generate_attempt_token(1, 2);
-
-        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $secondtoken], '*', MUST_EXIST);
-        $this->assertSame(0, (int) $attempt->istutorial);
-    }
-
-    /**
-     * Tests that passing skiptutorial=true on a genuine first attempt suppresses the flag —
-     * the student explicitly opted out from the Lobby.
-     *
-     * @return void
-     */
-    public function test_generate_attempt_token_respects_skiptutorial(): void {
+    public function test_generate_attempt_token_flags_a_demo_request(): void {
         global $DB;
 
         $token = security::generate_attempt_token(1, 2, 'normal', 1, 1, true);
 
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
-        $this->assertSame(0, (int) $attempt->istutorial);
+        $this->assertSame(1, (int) $attempt->isdemo);
     }
 
     /**
-     * Tests that resume_or_create_attempt_token() surfaces istutorial for a brand new
-     * attempt, both when eligible and when skipped.
+     * Tests that a real (non-Demo) request never flags isdemo, regardless of prior attempt
+     * history — unlike the old istutorial mechanism, isdemo depends only on the caller's own
+     * request, never on "ausência de registros".
      *
      * @return void
      */
-    public function test_resume_or_create_surfaces_istutorial_for_a_new_attempt(): void {
-        $eligible = security::resume_or_create_attempt_token(1, 2);
-        $this->assertTrue($eligible->istutorial);
+    public function test_generate_attempt_token_does_not_flag_a_real_attempt(): void {
+        global $DB;
 
-        $skipped = security::resume_or_create_attempt_token(1, 3, 'normal', 10, true);
-        $this->assertFalse($skipped->istutorial);
+        $token = security::generate_attempt_token(1, 2);
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame(0, (int) $attempt->isdemo);
     }
 
     /**
-     * Tests that resuming an in-progress tutorial attempt keeps istutorial true, read from
-     * the persisted row rather than re-derived — by the time it is resumed, the row itself
-     * already exists, so re-deriving from "no attempt rows exist yet" would wrongly flip it
-     * to false.
+     * Tests that resume_or_create_attempt_token() surfaces isdemo for a brand new attempt,
+     * both for a real request and a Demo one.
      *
      * @return void
      */
-    public function test_resume_or_create_keeps_istutorial_true_on_resume(): void {
-        security::generate_attempt_token(1, 2);
+    public function test_resume_or_create_surfaces_isdemo_for_a_new_attempt(): void {
+        $real = security::resume_or_create_attempt_token(1, 2);
+        $this->assertFalse($real->isdemo);
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $demo = security::resume_or_create_attempt_token(1, 3, 'normal', 10, true);
+        $this->assertTrue($demo->isdemo);
+    }
 
-        $this->assertTrue($result->istutorial);
+    /**
+     * Tests that resuming an in-progress Demo attempt keeps isdemo true, read from the
+     * persisted row.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_keeps_isdemo_true_on_resume(): void {
+        security::generate_attempt_token(1, 2, 'normal', 1, 1, true);
+
+        $result = security::resume_or_create_attempt_token(1, 2, 'normal', 10, true);
+
+        $this->assertTrue($result->isdemo);
+    }
+
+    /**
+     * Tests that a Demo request never resumes a real in-progress attempt, and vice versa —
+     * the two are entirely separate resume namespaces, so a lingering one never intercepts
+     * the other.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_isdemo_is_a_separate_resume_namespace(): void {
+        $realtoken = security::resume_or_create_attempt_token(1, 2)->token;
+        $demoresult = security::resume_or_create_attempt_token(1, 2, 'normal', 10, true);
+        $this->assertNotSame($realtoken, $demoresult->token);
+        $this->assertTrue($demoresult->isdemo);
+
+        $realagain = security::resume_or_create_attempt_token(1, 2);
+        $this->assertFalse($realagain->isdemo);
+    }
+
+    /**
+     * Tests that a Demo attempt always starts at Level 1/Phase 1, ignoring any inherited
+     * resume position a real attempt might otherwise carry from a prior loss.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_demo_always_starts_at_level_one_phase_one(): void {
+        global $DB;
+
+        $realtoken = security::generate_attempt_token(1, 2, 'normal', 3, 5);
+        security::validate_and_consume_token($realtoken, 1, 2, 'lost');
+
+        $demo = security::resume_or_create_attempt_token(1, 2, 'normal', 10, true);
+
+        $this->assertSame(1, $demo->currentlevel);
+        $this->assertSame(1, $demo->currentphase);
     }
 
     /**
@@ -596,6 +611,23 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that determine_start_level() ignores a finished Demo attempt entirely, even
+     * when it is the most recent finished row — a Demo loss must never change where a
+     * student's real Campaign run resumes.
+     *
+     * @return void
+     */
+    public function test_determine_start_level_ignores_demo_attempts(): void {
+        $demotoken = security::generate_attempt_token(1, 2, 'normal', 1, 1, true);
+        security::validate_and_consume_token($demotoken, 1, 2, 'lost');
+
+        [$level, $phase] = security::determine_start_level(1, 2, 10);
+
+        $this->assertSame(1, $level);
+        $this->assertSame(1, $phase);
+    }
+
+    /**
      * Tests that has_inprogress_attempt() reflects a genuine in-progress row, is false
      * before one exists, and ignores other users/instances/final statuses.
      *
@@ -609,6 +641,18 @@ final class security_test extends \advanced_testcase {
 
         $this->assertFalse(security::has_inprogress_attempt(1, 3), 'Different user.');
         $this->assertFalse(security::has_inprogress_attempt(9, 2), 'Different instance.');
+    }
+
+    /**
+     * Tests that has_inprogress_attempt() ignores an in-progress Demo attempt — it must
+     * never be mistaken for a real attempt to resume.
+     *
+     * @return void
+     */
+    public function test_has_inprogress_attempt_ignores_demo_attempts(): void {
+        security::generate_attempt_token(1, 2, 'normal', 1, 1, true);
+
+        $this->assertFalse(security::has_inprogress_attempt(1, 2));
     }
 
     /**

@@ -80,7 +80,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'currentlevel',
             'currentphase',
             'difficulty',
-            'istutorial',
+            'isdemo',
             'bosshp_remaining',
             'questions_correct',
             'questions_total',

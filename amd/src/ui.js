@@ -23,7 +23,9 @@
 
 /* global Phaser */
 
-define(['jquery', 'core/ajax', 'mod_playerpuzzle/accessibility'], function($, Ajax, Accessibility) {
+define(
+    ['jquery', 'core/ajax', 'core/templates', 'mod_playerpuzzle/accessibility'],
+    function($, Ajax, Templates, Accessibility) {
     'use strict';
 
     // Font Awesome 6 Free (solid, weight 900) is bundled by Moodle core (theme_boost) and
@@ -406,7 +408,7 @@ define(['jquery', 'core/ajax', 'mod_playerpuzzle/accessibility'], function($, Aj
 
         /**
          * Shows a one-time tutorial context balloon: a rounded box with the given text,
-         * centered above the board, auto-fading after a few seconds (Fase 9 — first-attempt
+         * centered above the board, auto-fading after a few seconds (Fase 9 — Demo match
          * onboarding). Also announced via Accessibility.announce(), since the balloon itself
          * has no DOM/ARIA presence — same rationale as every other Canvas-only feedback in
          * this module.
@@ -457,7 +459,9 @@ define(['jquery', 'core/ajax', 'mod_playerpuzzle/accessibility'], function($, Aj
             this.tutorialBalloonLabel = label;
             this.tutorialBalloonBg = bg;
 
-            this.tutorialBalloonTimer = me.time.delayedCall(4500, () => {
+            // 8s (up from an initial 4.5s): live feedback on the Demo match found the
+            // shorter window too tight to read a full multi-line explanation before it faded.
+            this.tutorialBalloonTimer = me.time.delayedCall(8000, () => {
                 this.tutorialBalloonTimer = null;
                 me.tweens.add({
                     targets: [label, bg],
@@ -475,6 +479,77 @@ define(['jquery', 'core/ajax', 'mod_playerpuzzle/accessibility'], function($, Aj
                     }
                 });
             });
+        }
+
+        /**
+         * Shows the static Demo match walkthrough (§4.12 Fase 9): a short, paged dialog
+         * explaining the HP bars and the Música/Efeitos/Expandir buttons, shown every time a
+         * Demo starts (not just once) — combat/board input stays disabled (the caller sets
+         * scene.input.enabled = false before calling this) until the student steps through
+         * every page and dismisses it, at which point onDismiss() re-enables it.
+         *
+         * Mirrors combat.js's own dialog pattern (debrief/question modal): a native <dialog>
+         * rendered client-side, opened via showModal() — no Bootstrap modal involved, since
+         * nothing else in this plugin's gameplay screen uses one.
+         *
+         * @param {Function} onDismiss Called once the student closes the dialog.
+         * @return {Promise<void>}
+         */
+        async showDemoWalkthrough(onDismiss) {
+            const strings = this.strings;
+            const steps = [
+                {index: 0, title: strings.demostep_welcome_title, text: strings.demostep_welcome_text},
+                {index: 1, title: strings.demostep_hp_title, text: strings.demostep_hp_text},
+                {index: 2, title: strings.demostep_music_title, text: strings.demostep_music_text},
+                {index: 3, title: strings.demostep_sfx_title, text: strings.demostep_sfx_text},
+                {index: 4, title: strings.demostep_fullscreen_title, text: strings.demostep_fullscreen_text},
+            ];
+
+            const html = await Templates.render('mod_playerpuzzle/demo_walkthrough', {
+                title: strings.demowalkthrough_title,
+                nextlabel: strings.demowalkthrough_next,
+                startlabel: strings.demowalkthrough_start,
+                steps: steps,
+            });
+            const existing = document.getElementById('pp-demo-walkthrough-dialog');
+            if (existing) {
+                existing.remove();
+            }
+            $('#playerpuzzle-canvas-container').append(html);
+
+            const dialogEl = document.getElementById('pp-demo-walkthrough-dialog');
+            const stepEls = dialogEl.querySelectorAll('.pp-demo-walkthrough-step');
+            const progressEl = document.getElementById('pp-demo-walkthrough-progress');
+            const nextBtn = document.getElementById('pp-demo-walkthrough-next');
+            let current = 0;
+
+            const renderStep = () => {
+                stepEls.forEach(el => {
+                    el.hidden = parseInt(el.dataset.step, 10) !== current;
+                });
+                const progresstext = strings.demowalkthrough_progress
+                    .replace('{$a->current}', current + 1)
+                    .replace('{$a->total}', steps.length);
+                progressEl.textContent = progresstext;
+                nextBtn.textContent = current === steps.length - 1
+                    ? nextBtn.dataset.startlabel
+                    : nextBtn.dataset.nextlabel;
+            };
+            renderStep();
+
+            nextBtn.addEventListener('click', () => {
+                if (current < steps.length - 1) {
+                    current++;
+                    renderStep();
+                    return;
+                }
+                dialogEl.close();
+            });
+            dialogEl.addEventListener('close', () => {
+                dialogEl.remove();
+                onDismiss();
+            }, {once: true});
+            dialogEl.showModal();
         }
 
         /**

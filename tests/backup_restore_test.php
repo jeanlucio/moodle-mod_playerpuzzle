@@ -442,7 +442,7 @@ final class backup_restore_test extends \advanced_testcase {
             'currentlevel'      => 2,
             'currentphase'      => 7,
             'difficulty'        => 'hard',
-            'istutorial'        => 1,
+            'isdemo'            => 1,
             'questions_correct' => 4,
             'questions_total'   => 5,
             'coins_earned'      => 30,
@@ -474,7 +474,7 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertSame(2, (int) $newattempt->currentlevel);
         $this->assertSame(7, (int) $newattempt->currentphase);
         $this->assertSame('hard', $newattempt->difficulty);
-        $this->assertSame(1, (int) $newattempt->istutorial);
+        $this->assertSame(1, (int) $newattempt->isdemo);
         $this->assertSame('won', $newattempt->status);
         $this->assertEqualsWithDelta(91.5, (float) $newattempt->score, 0.001);
 

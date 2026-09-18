@@ -135,21 +135,17 @@ class save_progress extends external_api {
         // how far the student actually progressed (Single Match always carries currentlevel =
         // currentphase = 1, so the formula returns the base HP unchanged there). The same
         // difficulty factor game_page_service used to build the fight is applied here, so a
-        // Hard-mode loss is scored against the doubled boss HP it was really fighting. The
-        // tutorial reduction (Level 1/Phase 1 of a first-ever attempt only) is applied last,
-        // matching the reduced HP the client was actually shown for that fight.
-        $bosshp = combat::apply_tutorial_reduction(
-            combat::apply_difficulty(
-                combat::calculate_boss_hp(
-                    (int) $playerpuzzle->basebosshp,
-                    (int) $attempt->currentlevel,
-                    (int) $attempt->currentphase
-                ),
-                (string) $attempt->difficulty
+        // Hard-mode loss is scored against the doubled boss HP it was really fighting. A Demo
+        // attempt always fought the fixed combat::DEMO_HP instead, matching what the client
+        // was actually shown for that fight.
+        $isdemo = (bool) $attempt->isdemo;
+        $bosshp = $isdemo ? combat::DEMO_HP : combat::apply_difficulty(
+            combat::calculate_boss_hp(
+                (int) $playerpuzzle->basebosshp,
+                (int) $attempt->currentlevel,
+                (int) $attempt->currentphase
             ),
-            (bool) $attempt->istutorial,
-            (int) $attempt->currentlevel,
-            (int) $attempt->currentphase
+            (string) $attempt->difficulty
         );
         $safedamage = max(0, min($params['damage'], $bosshp));
         $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);
@@ -192,9 +188,11 @@ class save_progress extends external_api {
         $event->trigger();
 
         $coinsbanked = 0;
-        if ($isvictory) {
+        if ($isvictory && !$isdemo) {
             // Defeat/timeout discards the session's coins; only a win banks them, and only into
             // the item the teacher configured — PlayerPuzzle keeps no local currency of its own.
+            // A Demo win never banks anything (§4.12 Fase 9): it is a disposable practice fight,
+            // repeatable at will, and would otherwise let coins/XP be farmed without limit.
             $payable = coin_ledger::available($attempt);
             $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
             if ($blockinstanceid !== null) {
@@ -226,21 +224,27 @@ class save_progress extends external_api {
             }
         }
 
-        // The attempt just reached a final status either way (won or lost/timeout) — both
-        // outcomes are new information the gradebook needs: a win may be this student's
-        // best score yet, and even a loss finalizes a Single Match round grade_calculator
-        // must now count among their finished matches.
-        playerpuzzle_update_grades($playerpuzzle, (int) $USER->id);
+        if (!$isdemo) {
+            // The attempt just reached a final status either way (won or lost/timeout) — both
+            // outcomes are new information the gradebook needs: a win may be this student's
+            // best score yet, and even a loss finalizes a Single Match round grade_calculator
+            // must now count among their finished matches. A Demo attempt is excluded from
+            // playerpuzzle_update_grades()'s own query too (belt and suspenders), but skipping
+            // the call outright avoids a pointless recompute on every Demo play.
+            playerpuzzle_update_grades($playerpuzzle, (int) $USER->id);
 
-        // Automatic completion (the "require attempts"/"require wins" custom rules) is only
-        // recomputed and persisted when something explicitly asks for it — Moodle has no
-        // cron sweep for this, unlike grading. Trigger it here so the activity page's
-        // completion badge reflects a finished attempt immediately, the same way
-        // mod_choice/mod_playerwords call update_state() right after recording a response.
-        $course = get_course((int) $playerpuzzle->course);
-        $completioninfo = new completion_info($course);
-        if ($completioninfo->is_enabled($cm)) {
-            $completioninfo->update_state($cm, COMPLETION_COMPLETE, (int) $USER->id);
+            // Automatic completion (the "require attempts"/"require wins" custom rules) is only
+            // recomputed and persisted when something explicitly asks for it — Moodle has no
+            // cron sweep for this, unlike grading. Trigger it here so the activity page's
+            // completion badge reflects a finished attempt immediately, the same way
+            // mod_choice/mod_playerwords call update_state() right after recording a response.
+            // A Demo attempt must never satisfy completion — see custom_completion.php's own
+            // isdemo exclusion for why an unlimited free practice fight cannot count here.
+            $course = get_course((int) $playerpuzzle->course);
+            $completioninfo = new completion_info($course);
+            if ($completioninfo->is_enabled($cm)) {
+                $completioninfo->update_state($cm, COMPLETION_COMPLETE, (int) $USER->id);
+            }
         }
 
         return [

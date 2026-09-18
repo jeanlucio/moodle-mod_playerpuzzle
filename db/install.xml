@@ -59,7 +59,7 @@
         <FIELD NAME="currentlevel" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Level this attempt was played on (1-10)"/>
         <FIELD NAME="currentphase" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Phase this attempt was played on (1-10)"/>
         <FIELD NAME="difficulty" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="normal" SEQUENCE="false" COMMENT="Student-chosen difficulty for this run: easy, normal or hard. Locked once the attempt is in progress"/>
-        <FIELD NAME="istutorial" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether this was the user's first-ever attempt at this instance when created (onboarding boss HP reduction, Level 1 Phase 1 only). Decided once at creation, never recomputed on resume"/>
+        <FIELD NAME="isdemo" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether this is a disposable Demo attempt (Lobby's Jogar Demo button): fixed HP, never counted for grade/coins/completion/attempt-limit. Set once at creation from the request"/>
         <FIELD NAME="bosshp_remaining" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boss HP left when game ended"/>
         <FIELD NAME="questions_correct" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total questions answered correctly"/>
         <FIELD NAME="questions_total" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total questions prompted"/>

@@ -130,6 +130,8 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $this->assertSame(get_string('playgame', 'mod_playerpuzzle'), $data['playtext']);
         $this->assertStringContainsString('play.php', $data['playurl']);
+        $this->assertSame(get_string('playdemo', 'mod_playerpuzzle'), $data['playdemotext']);
+        $this->assertStringContainsString('play.php', $data['demourl']);
         $this->assertFalse($data['hasstats']);
         $this->assertArrayNotHasKey('coinstext', $data);
         $this->assertSame(get_string('lobby_ready', 'mod_playerpuzzle'), $data['readytext']);
@@ -238,36 +240,13 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the "Pular Tutorial" checkbox is offered when the student has never made
-     * any attempt at this instance — the same "ausência de registros" condition
-     * security::generate_attempt_token() re-derives independently server-side.
+     * Tests that the "Jogar Demo" button is always offered, regardless of prior attempt
+     * history — unlike the old one-shot tutorial checkbox, it is an on-demand action the
+     * student may use as many times as they like.
      *
      * @return void
      */
-    public function test_build_page_data_offers_skip_tutorial_with_no_prior_attempt(): void {
-        [$cm, $instance] = $this->make_cm_and_instance();
-
-        $data = lobby_page_service::build_page_data(
-            $cm,
-            $this->course,
-            $instance,
-            (int) $this->student->id,
-            \context_module::instance($cm->id)
-        );
-
-        $this->assertTrue($data['istutorialeligible']);
-        $this->assertSame(get_string('skiptutorial', 'mod_playerpuzzle'), $data['skiptutoriallabel']);
-    }
-
-    /**
-     * Tests that the "Pular Tutorial" checkbox is never offered once any attempt row
-     * exists for this student at this instance — including a finished one, not just an
-     * in-progress one — since the tutorial choice is only ever offered once, before the
-     * very first attempt is created.
-     *
-     * @return void
-     */
-    public function test_build_page_data_never_offers_skip_tutorial_after_any_attempt(): void {
+    public function test_build_page_data_always_offers_play_demo(): void {
         [$cm, $instance] = $this->make_cm_and_instance();
 
         $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
@@ -289,7 +268,40 @@ final class lobby_page_service_test extends \advanced_testcase {
             \context_module::instance($cm->id)
         );
 
-        $this->assertArrayNotHasKey('istutorialeligible', $data);
+        $this->assertSame(get_string('playdemo', 'mod_playerpuzzle'), $data['playdemotext']);
+        $this->assertStringContainsString('play.php', $data['demourl']);
+    }
+
+    /**
+     * Tests that a lingering in-progress Demo attempt is never mistaken for a real one to
+     * resume/report on the Lobby — no progress line, no locked difficulty, and the real
+     * Play form still offers the difficulty picker as if no attempt existed.
+     *
+     * @return void
+     */
+    public function test_build_page_data_ignores_an_inprogress_demo_attempt(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+
+        \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'normal',
+            1,
+            1,
+            true
+        );
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertArrayNotHasKey('progresstext', $data);
+        $this->assertArrayNotHasKey('difficultycurrent', $data);
+        $this->assertArrayHasKey('difficultychoices', $data);
     }
 
     /**

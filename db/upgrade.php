@@ -468,5 +468,25 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091803, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026091804) {
+        // Replace istutorial with isdemo: the automatic first-attempt tutorial gate is
+        // replaced by an on-demand, repeatable "Jogar Demo" button on the Lobby (Fase 9,
+        // redesigned after live feedback) — never counted for grade/coins/completion/
+        // attempt-limit, fixed HP on both sides.
+        $table = new xmldb_table('playerpuzzle_attempts');
+
+        $oldfield = new xmldb_field('istutorial');
+        if ($dbman->field_exists($table, $oldfield)) {
+            $dbman->drop_field($table, $oldfield);
+        }
+
+        $newfield = new xmldb_field('isdemo', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'difficulty');
+        if (!$dbman->field_exists($table, $newfield)) {
+            $dbman->add_field($table, $newfield);
+        }
+
+        upgrade_mod_savepoint(true, 2026091804, 'playerpuzzle');
+    }
+
     return true;
 }

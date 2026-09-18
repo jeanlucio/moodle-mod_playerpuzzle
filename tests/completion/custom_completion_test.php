@@ -63,15 +63,17 @@ final class custom_completion_test extends advanced_testcase {
      * @param int $instanceid Activity instance ID.
      * @param int $userid User ID.
      * @param string $status One of security::FINAL_STATUSES, or 'inprogress'.
+     * @param bool $isdemo Whether the row is a disposable Demo attempt (§4.12 Fase 9).
      * @return void
      */
-    private function make_attempt(int $instanceid, int $userid, string $status): void {
+    private function make_attempt(int $instanceid, int $userid, string $status, bool $isdemo = false): void {
         global $DB;
         $DB->insert_record('playerpuzzle_attempts', (object) [
             'playerpuzzleid' => $instanceid,
             'userid'         => $userid,
             'token'          => bin2hex(random_bytes(32)),
             'status'         => $status,
+            'isdemo'         => $isdemo ? 1 : 0,
             'timecreated'    => time(),
             'timefinished'   => $status === 'inprogress' ? 0 : time(),
         ]);
@@ -135,6 +137,26 @@ final class custom_completion_test extends advanced_testcase {
     }
 
     /**
+     * A finished Demo attempt (§4.12 Fase 9) never counts towards completionattempts — an
+     * unlimited, repeatable, zero-stakes practice fight cannot satisfy this rule on its own.
+     *
+     * @return void
+     */
+    public function test_get_state_attempts_ignores_demo_attempts(): void {
+        $this->resetAfterTest();
+
+        [$course, $cm] = $this->create_fixture(1);
+        $user = $this->getDataGenerator()->create_user();
+        $this->make_attempt($cm->id, $user->id, 'lost', true);
+        $this->make_attempt($cm->id, $user->id, 'won', true);
+
+        $cminfo = get_fast_modinfo($course)->get_cm($cm->cmid);
+        $completion = new custom_completion($cminfo, (int) $user->id);
+
+        $this->assertEquals(COMPLETION_INCOMPLETE, $completion->get_state('completionattempts'));
+    }
+
+    /**
      * completionwins is incomplete while the student has fewer wins than required, even with
      * plenty of finished (but lost) attempts.
      *
@@ -172,6 +194,25 @@ final class custom_completion_test extends advanced_testcase {
         $completion = new custom_completion($cminfo, (int) $user->id);
 
         $this->assertEquals(COMPLETION_COMPLETE, $completion->get_state('completionwins'));
+    }
+
+    /**
+     * A Demo attempt's win (§4.12 Fase 9) never counts towards completionwins — a Demo win
+     * is not a real win.
+     *
+     * @return void
+     */
+    public function test_get_state_wins_ignores_demo_attempts(): void {
+        $this->resetAfterTest();
+
+        [$course, $cm] = $this->create_fixture(0, 1);
+        $user = $this->getDataGenerator()->create_user();
+        $this->make_attempt($cm->id, $user->id, 'won', true);
+
+        $cminfo = get_fast_modinfo($course)->get_cm($cm->cmid);
+        $completion = new custom_completion($cminfo, (int) $user->id);
+
+        $this->assertEquals(COMPLETION_INCOMPLETE, $completion->get_state('completionwins'));
     }
 
     /**

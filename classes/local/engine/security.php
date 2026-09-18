@@ -55,10 +55,8 @@ class security {
      * @param int $currentlevel Level this attempt starts on (see resume_or_create_attempt_token()
      *  for why this is not always 1).
      * @param int $currentphase Phase this attempt starts on.
-     * @param bool $skiptutorial Whether the student opted out of the tutorial from the Lobby.
-     *  Only meaningful when this genuinely is the user's first-ever attempt at the instance —
-     *  a returning student passing true here is a harmless no-op, since istutorial would
-     *  already come out false for them regardless.
+     * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Jogar Demo"
+     *  button), never counted for grade/coins/completion/attempt-limit.
      * @return string The generated secure token.
      */
     public static function generate_attempt_token(
@@ -67,18 +65,9 @@ class security {
         string $difficulty = 'normal',
         int $currentlevel = 1,
         int $currentphase = 1,
-        bool $skiptutorial = false
+        bool $isdemo = false
     ): string {
         global $DB;
-
-        // Decided once, here, before the insert below creates the first row for this user/
-        // instance — never recomputed on resume (see resume_or_create_attempt_token()), since
-        // by the time a tutorial attempt is resumed a row already exists and would otherwise
-        // make this look like "not the first attempt" anymore.
-        $isfirstattempt = !$DB->record_exists('playerpuzzle_attempts', [
-            'playerpuzzleid' => $playerpuzzleid,
-            'userid'         => $userid,
-        ]);
 
         // Generate a secure 64-character hex token using PHP 7+ random_bytes.
         $token = bin2hex(random_bytes(32));
@@ -88,7 +77,7 @@ class security {
         $attempt->userid = $userid;
         $attempt->token = $token;
         $attempt->difficulty = self::clean_difficulty($difficulty);
-        $attempt->istutorial = ($isfirstattempt && !$skiptutorial) ? 1 : 0;
+        $attempt->isdemo = $isdemo ? 1 : 0;
         $attempt->status = 'inprogress';
         $attempt->currentlevel = $currentlevel;
         $attempt->currentphase = $currentphase;
@@ -106,10 +95,11 @@ class security {
     public const FINAL_STATUSES = ['won', 'lost', 'timeout', 'abandoned'];
 
     /**
-     * Whether the user already has an in-progress attempt on this instance — a play.php POST
-     * that finds one will resume it rather than create a new one (see
+     * Whether the user already has a real (non-Demo) in-progress attempt on this instance —
+     * a play.php POST that finds one will resume it rather than create a new one (see
      * resume_or_create_attempt_token()), which is not "a new try" for the retry-cost gate
-     * (game_page_service::check_retry_cost()) to charge for.
+     * (game_page_service::check_retry_cost()) to charge for. Demo attempts are excluded: they
+     * are never "a real attempt in progress" for this purpose.
      *
      * @param int $playerpuzzleid The instance ID.
      * @param int $userid The user ID.
@@ -122,6 +112,7 @@ class security {
             'playerpuzzleid' => $playerpuzzleid,
             'userid'         => $userid,
             'status'         => 'inprogress',
+            'isdemo'         => 0,
         ]);
     }
 
@@ -157,13 +148,14 @@ class security {
      * @param int $maxlevels The instance's configured level count, used to clamp an inherited
      *  level/phase down if the teacher has since reduced it below where the student had
      *  reached (Single Match always passes/keeps the default, since its attempts never
-     *  advance past Level 1, Phase 1 in the first place).
-     * @param bool $skiptutorial Whether the student opted out of the tutorial from the Lobby.
-     *  Only used when a brand new attempt is created; ignored when resuming, since the
-     *  attempt's own istutorial was already decided at its creation.
+     *  advance past Level 1, Phase 1 in the first place). Ignored for a Demo attempt, which
+     *  always starts at Level 1/Phase 1.
+     * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Jogar Demo"
+     *  button). A Demo request only ever resumes another in-progress Demo, never a real
+     *  attempt, and vice versa — the two are entirely separate resume namespaces.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned, ->coinsspent,
-     *  ->combatstate, ->istutorial, ->isnew (true when a brand new attempt row was just
+     *  ->combatstate, ->isdemo, ->isnew (true when a brand new attempt row was just
      *  created, so the caller can trigger a game_started event exactly once per attempt).
      */
     public static function resume_or_create_attempt_token(
@@ -171,13 +163,18 @@ class security {
         int $userid,
         string $difficulty = 'normal',
         int $maxlevels = 10,
-        bool $skiptutorial = false
+        bool $isdemo = false
     ): \stdClass {
         global $DB;
 
         $existing = $DB->get_records(
             'playerpuzzle_attempts',
-            ['playerpuzzleid' => $playerpuzzleid, 'userid' => $userid, 'status' => 'inprogress'],
+            [
+                'playerpuzzleid' => $playerpuzzleid,
+                'userid'         => $userid,
+                'status'         => 'inprogress',
+                'isdemo'         => $isdemo ? 1 : 0,
+            ],
             'timecreated DESC, id DESC',
             '*',
             0,
@@ -214,16 +211,25 @@ class security {
                 'bosscoinsearned' => (int) $attempt->boss_coins_earned,
                 'coinsspent' => (int) $attempt->coins_spent,
                 'combatstate' => $combatstate,
-                'istutorial' => (bool) $attempt->istutorial,
+                'isdemo' => (bool) $attempt->isdemo,
                 'isnew' => false,
             ];
         }
 
-        [$startlevel, $startphase] = self::determine_start_level(
-            $playerpuzzleid,
-            $userid,
-            max(1, $maxlevels)
-        );
+        if ($isdemo) {
+            // A Demo is always a fresh Level 1/Phase 1 fight — it never inherits a resume
+            // position from a prior loss, real or otherwise (determine_start_level() itself
+            // also excludes Demo rows from that calculation for real attempts, see its own
+            // docblock).
+            $startlevel = 1;
+            $startphase = 1;
+        } else {
+            [$startlevel, $startphase] = self::determine_start_level(
+                $playerpuzzleid,
+                $userid,
+                max(1, $maxlevels)
+            );
+        }
 
         $token = self::generate_attempt_token(
             $playerpuzzleid,
@@ -231,9 +237,9 @@ class security {
             $difficulty,
             $startlevel,
             $startphase,
-            $skiptutorial
+            $isdemo
         );
-        $newrow = $DB->get_record('playerpuzzle_attempts', ['token' => $token], 'id, istutorial', MUST_EXIST);
+        $newrow = $DB->get_record('playerpuzzle_attempts', ['token' => $token], 'id, isdemo', MUST_EXIST);
 
         return (object) [
             'attemptid' => (int) $newrow->id,
@@ -246,7 +252,7 @@ class security {
             'bosscoinsearned' => 0,
             'coinsspent' => 0,
             'combatstate' => null,
-            'istutorial' => (bool) $newrow->istutorial,
+            'isdemo' => (bool) $newrow->isdemo,
             'isnew' => true,
         ];
     }
@@ -260,6 +266,9 @@ class security {
      * 1/1. Deliberately looks at the single most recent finished attempt, not the most recent
      * 'lost' one — a student who lost once, retried, and this time won the whole campaign must
      * start the next attempt fresh, not jump back to that earlier loss.
+     *
+     * Only ever considers real (non-Demo) attempts: a Demo match is a disposable practice
+     * fight, and a Demo loss must never change where a student's real Campaign run resumes.
      *
      * @param int $playerpuzzleid The instance ID.
      * @param int $userid The user ID.
@@ -276,7 +285,7 @@ class security {
         // id, being a real auto-increment insertion order, breaks the tie deterministically.
         $recent = $DB->get_records_select(
             'playerpuzzle_attempts',
-            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress',
+            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0',
             ['ppid' => $playerpuzzleid, 'uid' => $userid, 'inprogress' => 'inprogress'],
             'timecreated DESC, id DESC',
             'id, status, currentlevel, currentphase',

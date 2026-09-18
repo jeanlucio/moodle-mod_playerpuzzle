@@ -261,9 +261,7 @@ final class buy_consumable_test extends \advanced_testcase {
         // / scaled bossdamage 10 * coingain 10 * Normal factor 1.0 = 50.
         $instance = $this->make_instance(['basebosshp' => 50]);
         $this->setUser($this->student);
-        // Last arg skips the Fase 9 tutorial's own Level 1/Phase 1 HP reduction, which would
-        // otherwise apply to this student's first-ever attempt and change the ceiling below.
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 1, true);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 1);
 
         $result = $this->call_buy_consumable($this->local_args($instance, $token, [
             'type'             => 'sword',
@@ -273,6 +271,66 @@ final class buy_consumable_test extends \advanced_testcase {
         $this->assertFalse($result['error']);
         // Reported 99999 clamped to the ceiling (50); sword costs 10, so newbalance = 40.
         $this->assertSame(40, $result['data']['newbalance']);
+    }
+
+    /**
+     * Tests that a Demo attempt's (§4.12 Fase 9) local-shop coin ceiling is always sized
+     * to the fixed combat::DEMO_HP, ignoring the instance's own configured basebosshp
+     * entirely — a Demo may still use the local shop, just never anchored to real numbers.
+     *
+     * @return void
+     */
+    public function test_demo_attempt_uses_the_fixed_demo_hp_ceiling(): void {
+        // Ceiling here is DEMO_HP (50) / scaled bossdamage 10 * coingain 10 * 1.0 = 50,
+        // regardless of the huge basebosshp configured below.
+        $instance = $this->make_instance(['basebosshp' => 100000]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'normal',
+            1,
+            1,
+            true
+        );
+
+        $result = $this->call_buy_consumable($this->local_args($instance, $token, [
+            'type'             => 'sword',
+            'coinsearnedsofar' => 99999,
+        ]));
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(40, $result['data']['newbalance']);
+    }
+
+    /**
+     * Tests that a Demo attempt (§4.12 Fase 9) may never spend the student's real
+     * PlayerHUD inventory, even when the instance has a real item configured for that
+     * consumable type — a Demo has no economic effect by design.
+     *
+     * @return void
+     */
+    public function test_demo_attempt_cannot_use_hud_source(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        $instance = $this->make_instance(['hud_sword_item' => $itemid]);
+        $this->setUser($this->student);
+        \block_playerhud\local\external_items::grant($biid, $itemid, (int) $this->student->id, 5, 'test', false);
+        $token = security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'normal',
+            1,
+            1,
+            true
+        );
+
+        $result = $this->call_buy_consumable($this->local_args($instance, $token, [
+            'type'   => 'sword',
+            'source' => 'hud',
+        ]));
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('consumablesourceunavailable', $result['exception']->errorcode);
     }
 
     /**

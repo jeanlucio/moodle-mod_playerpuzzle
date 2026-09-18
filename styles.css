@@ -516,18 +516,31 @@ body.path-mod-playerpuzzle .pp-lobby-difficulty-option input:checked + label {
     box-shadow: 0 4px 10px rgba(224, 168, 62, 0.4);
 }
 
-body.path-mod-playerpuzzle .pp-lobby-tutorial-skip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
+/**
+ * Secondary "Jogar Demo" action (§4.12 Fase 9) — a quieter outline style than the main
+ * Jogar button below, since it is an optional practice fight, not the primary action.
+ */
+body.path-mod-playerpuzzle .pp-lobby-playdemo {
     width: 100%;
-    font-size: 0.85rem;
-    color: #cfc6b0;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #e0a83e;
+    background: transparent;
+    border: 1px solid #8a611c;
+    border-radius: 0.85rem;
+    padding: 0.6rem 1.25rem;
+    margin-top: 0.6rem;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
 }
 
-body.path-mod-playerpuzzle .pp-lobby-tutorial-skip label {
-    cursor: pointer;
+body.path-mod-playerpuzzle .pp-lobby-playdemo:hover {
+    background-color: rgba(224, 168, 62, 0.12);
+}
+
+body.path-mod-playerpuzzle .pp-lobby-playdemo:focus-visible {
+    outline: 3px solid #ffd873;
+    outline-offset: 3px;
 }
 
 body.path-mod-playerpuzzle .pp-lobby-play {
@@ -609,6 +622,23 @@ body.path-mod-playerpuzzle .pp-debrief::backdrop {
 
 body.path-mod-playerpuzzle .pp-debrief-question {
     color: var(--gray-800, #343a40);
+}
+
+/**
+ * Demo match walkthrough (§4.12 Fase 9) — same dialog treatment as .pp-debrief, its own
+ * class since the two are never shown together and may need to diverge later.
+ */
+body.path-mod-playerpuzzle .pp-demo-walkthrough {
+    max-width: 480px;
+    width: calc(100% - 2rem);
+    padding: 1.25rem;
+    border: 2px solid var(--primary, #0d6efd);
+    border-radius: 0.5rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+}
+
+body.path-mod-playerpuzzle .pp-demo-walkthrough::backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
 }
 
 /**

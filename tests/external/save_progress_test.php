@@ -425,9 +425,7 @@ final class save_progress_test extends \advanced_testcase {
         $instance = $this->make_instance(['basebosshp' => 100]);
 
         $this->setUser($this->student);
-        // Last arg skips the Fase 9 tutorial's own Level 1/Phase 1 HP reduction, which would
-        // otherwise apply to this student's first-ever attempt and change the numbers below.
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard', 1, 1, true);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard', 1, 1);
 
         // Hard boss HP at Level 1, Phase 1 with basebosshp=100 is 200. 150 damage is a
         // 75% dent — the score, not a clamped-to-100 100%.
@@ -628,9 +626,7 @@ final class save_progress_test extends \advanced_testcase {
         $instance = $this->make_instance(['hud_coin_item' => $itemid, 'basebosshp' => 500]);
 
         $this->setUser($this->student);
-        // Last arg skips the Fase 9 tutorial's own Level 1/Phase 1 HP reduction, which would
-        // otherwise apply to this student's first-ever attempt and change the ceiling below.
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 1, true);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 1);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
@@ -643,6 +639,78 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertSame(500, $result['data']['coinsbanked']);
+    }
+
+    /**
+     * Tests that a victorious Demo attempt (§4.12 Fase 9) never banks coins, even with a
+     * PlayerHUD coin item configured and a genuine win reported — a Demo has no economic
+     * effect by design, since it is repeatable at will.
+     *
+     * @return void
+     */
+    public function test_demo_victory_never_banks_coins(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        $instance = $this->make_instance(['hud_coin_item' => $itemid, 'basebosshp' => 1000]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'normal',
+            1,
+            1,
+            true
+        );
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => \mod_playerpuzzle\local\engine\combat::DEMO_HP,
+            'coinsearnedsofar'     => 100,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(0, $result['data']['coinsbanked']);
+        $this->assertSame(0, hud_service::get_upgrade_level($biid, (int) $this->student->id, $itemid));
+    }
+
+    /**
+     * Tests that a finished Demo attempt never triggers a gradebook update — a repeatable,
+     * fixed-HP practice fight has no grade to contribute.
+     *
+     * @return void
+     */
+    public function test_demo_attempt_never_updates_the_gradebook(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['grade' => 100]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'normal',
+            1,
+            1,
+            true
+        );
+
+        $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => \mod_playerpuzzle\local\engine\combat::DEMO_HP,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $itemid = $DB->get_field('grade_items', 'id', [
+            'itemmodule'   => 'playerpuzzle',
+            'iteminstance' => $instance->id,
+        ]);
+        $this->assertSame(0, $DB->count_records('grade_grades', ['itemid' => $itemid, 'userid' => $this->student->id]));
     }
 
     /**

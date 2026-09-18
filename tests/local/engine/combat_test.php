@@ -194,32 +194,12 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
-     * Tests that a tutorial attempt's boss HP is reduced to exactly 25% at Level 1/Phase 1.
+     * Tests the fixed Demo match HP constant (§4.12 Fase 9) — a Demo always fights at this
+     * exact value, never derived from any instance config.
      *
      * @return void
      */
-    public function test_apply_tutorial_reduction_reduces_at_level_one_phase_one(): void {
-        $this->assertSame(250, combat::apply_tutorial_reduction(1000, true, 1, 1));
-    }
-
-    /**
-     * Tests that the reduction never applies past Level 1/Phase 1, even within the same
-     * tutorial attempt — Fase 8's own boss scaling formula (see
-     * test_calculate_boss_hp_matches_worked_examples()) takes back over from Phase 2 onward.
-     *
-     * @return void
-     */
-    public function test_apply_tutorial_reduction_never_applies_past_phase_one(): void {
-        $this->assertSame(1000, combat::apply_tutorial_reduction(1000, true, 1, 2));
-        $this->assertSame(1000, combat::apply_tutorial_reduction(1000, true, 2, 1));
-    }
-
-    /**
-     * Tests that a non-tutorial attempt is never reduced, even at Level 1/Phase 1.
-     *
-     * @return void
-     */
-    public function test_apply_tutorial_reduction_is_a_noop_when_not_tutorial(): void {
-        $this->assertSame(1000, combat::apply_tutorial_reduction(1000, false, 1, 1));
+    public function test_demo_hp_is_fixed_at_fifty(): void {
+        $this->assertSame(50, combat::DEMO_HP);
     }
 }

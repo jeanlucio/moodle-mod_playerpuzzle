@@ -48,20 +48,23 @@ class custom_completion extends activity_custom_completion {
         if ($rule === 'completionattempts') {
             // Any finished attempt counts, regardless of outcome — mirrors
             // grade_calculator's own "finished" filter (timefinished > 0 / status <>
-            // 'inprogress').
+            // 'inprogress'). Demo attempts are excluded: an unlimited, repeatable, zero-stakes
+            // practice fight must never satisfy a completion rule on its own.
             $count = $DB->count_records_select(
                 'playerpuzzle_attempts',
-                'playerpuzzleid = :pid AND userid = :uid AND status <> :inprogress',
+                'playerpuzzleid = :pid AND userid = :uid AND status <> :inprogress AND isdemo = 0',
                 ['pid' => $this->cm->instance, 'uid' => $this->userid, 'inprogress' => 'inprogress']
             );
         } else {
             // Status 'won' is only ever set on the attempt that finishes the whole
             // Campaign (the last phase of the last level) or a Single Match win — never a
-            // mid-Campaign phase win, which leaves the attempt 'inprogress'.
+            // mid-Campaign phase win, which leaves the attempt 'inprogress'. Demo attempts
+            // excluded, same rationale as the completionattempts branch above.
             $count = $DB->count_records('playerpuzzle_attempts', [
                 'playerpuzzleid' => $this->cm->instance,
                 'userid'         => $this->userid,
                 'status'         => 'won',
+                'isdemo'         => 0,
             ]);
         }
 

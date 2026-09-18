@@ -127,11 +127,7 @@ final class advance_phase_test extends \advanced_testcase {
      */
     private function put_attempt_at(int $instanceid, int $level, int $phase): string {
         global $DB;
-        // Skips the tutorial: this generic helper backs 19 call sites testing progression
-        // mechanics unrelated to the Fase 9 tutorial, several of which land on Level 1/Phase
-        // 1 — the tutorial's own boss-HP reduction there would otherwise silently change
-        // their expected numbers. Tests for the tutorial itself create their own attempt.
-        $token = security::generate_attempt_token($instanceid, (int) $this->student->id, 'normal', 1, 1, true);
+        $token = security::generate_attempt_token($instanceid, (int) $this->student->id, 'normal', 1, 1);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', $level, ['token' => $token]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', $phase, ['token' => $token]);
         return $token;
@@ -285,9 +281,7 @@ final class advance_phase_test extends \advanced_testcase {
 
         $instance = $this->make_instance(['basebosshp' => 100]);
         $this->setUser($this->student);
-        // Last arg skips the Fase 9 tutorial's own Level 1/Phase 1 HP reduction (see
-        // put_attempt_at()'s own docblock above for why).
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard', 1, 1, true);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard', 1, 1);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 1, ['token' => $token]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 1, ['token' => $token]);
 
@@ -606,6 +600,38 @@ final class advance_phase_test extends \advanced_testcase {
 
         $this->assertTrue($result['error']);
         $this->assertSame('invalidattempttoken', $result['exception']->errorcode);
+    }
+
+    /**
+     * Tests that a Demo attempt (§4.12 Fase 9) is rejected outright — combat.js never
+     * legitimately calls this endpoint for one (it is always a one-shot fight, reported to
+     * the client as gamemode 'single'), so a request against one is refused rather than
+     * silently handled.
+     *
+     * @return void
+     */
+    public function test_advance_phase_rejects_a_demo_attempt(): void {
+        $instance = $this->make_instance(['basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'normal',
+            1,
+            1,
+            true
+        );
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('demoattemptnoadvance', $result['exception']->errorcode);
     }
 
     /**

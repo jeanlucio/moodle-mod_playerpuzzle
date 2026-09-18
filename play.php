@@ -41,9 +41,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 require_sesskey();
 
+// The Lobby's "Jogar Demo" button (§4.12 Fase 9): a disposable, on-demand practice fight
+// with fixed HP, never counted for grade/coins/completion/attempt-limit — see
+// game_page_service::build_game_config()'s own $isdemo branch. The attempt-limit and
+// retry-cost gates below are for real progress only, so both are skipped for it entirely.
+$isdemo = optional_param('isdemo', 0, PARAM_BOOL);
+
 $returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
-\mod_playerpuzzle\local\game_page_service::check_attempt_limit($playerpuzzle, (int) $USER->id, $returnurl);
-\mod_playerpuzzle\local\game_page_service::check_retry_cost($playerpuzzle, (int) $USER->id, $returnurl);
+if (!$isdemo) {
+    \mod_playerpuzzle\local\game_page_service::check_attempt_limit($playerpuzzle, (int) $USER->id, $returnurl);
+    \mod_playerpuzzle\local\game_page_service::check_retry_cost($playerpuzzle, (int) $USER->id, $returnurl);
+}
 
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));
@@ -56,12 +64,6 @@ $ismobile = optional_param('mobile', 0, PARAM_INT) === 1;
 // resuming an in-progress Campaign run keeps that run's own locked difficulty. Coerced to
 // a known value inside security::clean_difficulty().
 $difficulty = optional_param('difficulty', PLAYERPUZZLE_DIFFICULTY_NORMAL, PARAM_ALPHA);
-
-// Only shown on the Lobby (and only meaningful) for a genuinely first-ever attempt at this
-// instance — build_game_config()/security::generate_attempt_token() re-derive that
-// independently server-side, so a stray/forged value here can never grant tutorial mode to
-// someone who does not otherwise qualify for it.
-$skiptutorial = optional_param('skiptutorial', 0, PARAM_BOOL);
 
 // Previously switched to a chromeless 'embedded' layout for mobile devices, opened in a new
 // tab by the Lobby's own form — removed per explicit user feedback (27/08/2026): the game now
@@ -79,7 +81,7 @@ $jsconfig = \mod_playerpuzzle\local\game_page_service::build_game_config(
     (int) $USER->id,
     $ismobile,
     $difficulty,
-    $skiptutorial
+    $isdemo
 );
 
 // Phaser itself is loaded dynamically from inside game_boot.js (mirrors

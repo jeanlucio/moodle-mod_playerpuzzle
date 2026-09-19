@@ -162,12 +162,27 @@ class report_service {
      * should show.
      *
      * @param stdClass $instance Activity instance record.
+     * @param stdClass $cm Course module record.
+     * @param context $context Module context.
+     * @param int $viewerid Current viewer's user id, for SEPARATEGROUPS scoping.
      * @param int $limit Maximum number of questions to return.
      * @return array Rows: {questiontext, errors, total, errorrate}, most missed first.
      */
-    public static function get_most_missed_questions(stdClass $instance, int $limit = 10): array {
+    public static function get_most_missed_questions(
+        stdClass $instance,
+        stdClass $cm,
+        context $context,
+        int $viewerid,
+        int $limit = 10
+    ): array {
         global $DB;
 
+        $students = self::get_student_pool($cm, $context, $viewerid);
+        if (empty($students)) {
+            return [];
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal(array_keys($students), SQL_PARAMS_NAMED, 'stu');
         $sql = "SELECT stats.questionid, stats.errors, stats.total, sample.questiontext
                   FROM (SELECT aq.questionid,
                                SUM(CASE WHEN aq.iscorrect = 0 THEN 1 ELSE 0 END) AS errors,
@@ -177,9 +192,13 @@ class report_service {
                           JOIN {playerpuzzle_attempts} a ON a.id = aq.attemptid
                          WHERE a.playerpuzzleid = :instanceid
                                AND a.isdemo = 0
+                               AND a.userid $insql
                       GROUP BY aq.questionid) stats
                   JOIN {playerpuzzle_attempt_questions} sample ON sample.id = stats.sampleid";
-        $records = $DB->get_records_sql($sql, ['instanceid' => (int) $instance->id]);
+        $records = $DB->get_records_sql(
+            $sql,
+            array_merge(['instanceid' => (int) $instance->id], $inparams)
+        );
 
         $rows = [];
         foreach ($records as $record) {

@@ -283,7 +283,7 @@ final class report_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_get_most_missed_questions_is_empty_without_questions(): void {
-        $rows = report_service::get_most_missed_questions($this->instance);
+        $rows = report_service::get_most_missed_questions($this->instance, $this->cm, $this->context, 0);
 
         $this->assertSame([], $rows);
     }
@@ -294,9 +294,8 @@ final class report_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_get_most_missed_questions_orders_by_error_rate_desc(): void {
-        global $DB;
-
         $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
         $attemptid = $this->make_attempt($student);
 
         // Question 1: 1 of 2 wrong (50%).
@@ -306,13 +305,67 @@ final class report_service_test extends \advanced_testcase {
         $this->log_question($attemptid, 2, 'Hard question', 0);
         $this->log_question($attemptid, 2, 'Hard question', 0);
 
-        $rows = report_service::get_most_missed_questions($this->instance);
+        $rows = report_service::get_most_missed_questions($this->instance, $this->cm, $this->context, 0);
 
         $this->assertCount(2, $rows);
         $this->assertSame('Hard question', $rows[0]['questiontext']);
         $this->assertEqualsWithDelta(100.0, $rows[0]['errorrate'], 0.01);
         $this->assertSame('Easy question', $rows[1]['questiontext']);
         $this->assertEqualsWithDelta(50.0, $rows[1]['errorrate'], 0.01);
+    }
+
+    /**
+     * With SEPARATEGROUPS, a viewer restricted to one group must never see error
+     * statistics aggregated over a question only the other group answered.
+     *
+     * @return void
+     */
+    public function test_get_most_missed_questions_separategroups_filters_by_group_membership(): void {
+        global $DB;
+
+        $DB->set_field('course_modules', 'groupmode', SEPARATEGROUPS, ['id' => $this->cm->id]);
+        $this->cm = get_coursemodule_from_instance(
+            'playerpuzzle',
+            $this->instance->id,
+            $this->course->id,
+            false,
+            MUST_EXIST
+        );
+
+        $groupa = $this->getDataGenerator()->create_group(['courseid' => $this->course->id]);
+        $groupb = $this->getDataGenerator()->create_group(['courseid' => $this->course->id]);
+
+        $viewer = $this->getDataGenerator()->create_user();
+        $samegroup = $this->getDataGenerator()->create_user();
+        $othergroup = $this->getDataGenerator()->create_user();
+
+        $this->enrol_student($viewer);
+        $this->enrol_student($samegroup);
+        $this->enrol_student($othergroup);
+
+        $this->getDataGenerator()->create_group_member(['groupid' => $groupa->id, 'userid' => $viewer->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $groupa->id, 'userid' => $samegroup->id]);
+        $this->getDataGenerator()->create_group_member(['groupid' => $groupb->id, 'userid' => $othergroup->id]);
+
+        // Group A only ever gets "Easy question" right; group B only ever answers
+        // "Hard question", and always wrong. A viewer scoped to group A must not see
+        // "Hard question" at all, since none of their own students ever answered it.
+        $attemptidsamegroup = $this->make_attempt($samegroup);
+        $this->log_question($attemptidsamegroup, 1, 'Easy question', 1);
+
+        $attemptidothergroup = $this->make_attempt($othergroup);
+        $this->log_question($attemptidothergroup, 2, 'Hard question', 0);
+
+        $rows = report_service::get_most_missed_questions(
+            $this->instance,
+            $this->cm,
+            $this->context,
+            (int) $viewer->id
+        );
+
+        $seentexts = array_column($rows, 'questiontext');
+        $this->assertContains('Easy question', $seentexts);
+        $this->assertNotContains('Hard question', $seentexts);
     }
 
     /**

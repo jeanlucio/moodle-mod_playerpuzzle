@@ -45,7 +45,7 @@ $PAGE->set_pagelayout('incourse');
 
 $viewerid = (int) $USER->id;
 $studentrows = report_service::get_student_rows($instance, $cm, $context, $viewerid);
-$missedquestions = report_service::get_most_missed_questions($instance);
+$missedquestions = report_service::get_most_missed_questions($instance, $cm, $context, $viewerid);
 $distribution = report_service::get_score_distribution($instance, $cm, $context, $viewerid);
 $completion = report_service::get_completion_rate($instance, $cm, $context, $viewerid);
 

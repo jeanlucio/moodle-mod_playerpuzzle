@@ -309,11 +309,81 @@ class security {
     }
 
     /**
+     * Seconds to wait for an attempt's lock before giving up. Short on purpose: every
+     * critical section guarded by this lock is a handful of DB writes plus (at most) one
+     * PlayerHUD call, so genuine contention resolves in milliseconds — a caller still
+     * waiting after this long is racing a replay, not a slow legitimate request, and
+     * should be rejected rather than left hanging.
+     */
+    private const LOCK_TIMEOUT_SECONDS = 5;
+
+    /**
+     * Runs a callback with exclusive access to one attempt's economy-affecting state,
+     * closing the TOCTOU window a bare get_record()-then-update_record() leaves open: two
+     * requests racing the same token (a double-click, or a captured request replayed in
+     * parallel) can otherwise both read status = 'inprogress' before either writes,
+     * letting both proceed to credit coins/items or advance a phase for what should be a
+     * single win. The outer lookup below is a cheap pre-filter (an already-consumed token
+     * never needs a lock at all); the re-fetch inside the lock is what actually matters,
+     * since only the request that wins the lock can still see 'inprogress' there — the
+     * loser's re-fetch finds the row already moved on and gets false, exactly like an
+     * ordinary invalid token.
+     *
+     * @param string $token The token provided by the client.
+     * @param int $playerpuzzleid The instance ID.
+     * @param int $userid The user ID.
+     * @param callable $callback Receives the locked, freshly re-fetched attempt row and
+     *  returns whatever the caller wants back.
+     * @return mixed|false The callback's return value, or false if no matching in-progress
+     *  attempt was found, or the lock could not be acquired in time.
+     */
+    private static function with_locked_inprogress_attempt(
+        string $token,
+        int $playerpuzzleid,
+        int $userid,
+        callable $callback
+    ) {
+        global $DB;
+
+        $params = [
+            'token' => $token,
+            'playerpuzzleid' => $playerpuzzleid,
+            'userid' => $userid,
+            'status' => 'inprogress',
+        ];
+
+        $candidate = $DB->get_record('playerpuzzle_attempts', $params);
+        if (!$candidate) {
+            return false;
+        }
+
+        $factory = \core\lock\lock_config::get_lock_factory('mod_playerpuzzle');
+        $lock = $factory->get_lock('attempt_' . $candidate->id, self::LOCK_TIMEOUT_SECONDS);
+        if (!$lock) {
+            // Another request is already mutating this same attempt; whatever it decides,
+            // this request loses the race and must not also apply its own effect.
+            return false;
+        }
+
+        try {
+            $attempt = $DB->get_record('playerpuzzle_attempts', $params);
+            if (!$attempt) {
+                return false;
+            }
+
+            return $callback($attempt);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
      * Validates and consumes a token to prevent replay attacks.
      *
      * Moves the attempt straight to its final status in the same update that consumes the
      * token, so a second request with the same token no longer matches status = 'inprogress'
-     * and is rejected.
+     * and is rejected. Wrapped in with_locked_inprogress_attempt() so two such requests
+     * arriving genuinely in parallel cannot both observe 'inprogress' and both succeed.
      *
      * @param string $token The token provided by the client.
      * @param int $playerpuzzleid The instance ID.
@@ -333,27 +403,42 @@ class security {
             throw new \coding_exception('Invalid final attempt status: ' . $finalstatus);
         }
 
-        $params = [
-            'token' => $token,
-            'playerpuzzleid' => $playerpuzzleid,
-            'userid' => $userid,
-            'status' => 'inprogress',
-        ];
+        return self::with_locked_inprogress_attempt(
+            $token,
+            $playerpuzzleid,
+            $userid,
+            function (\stdClass $attempt) use ($DB, $finalstatus): \stdClass {
+                $attempt->status = $finalstatus;
+                $attempt->timefinished = time();
+                $attempt->timemodified = $attempt->timefinished;
+                $DB->update_record('playerpuzzle_attempts', $attempt);
 
-        // Fetch the attempt safely using exact parameters.
-        $attempt = $DB->get_record('playerpuzzle_attempts', $params);
+                return $attempt;
+            }
+        );
+    }
 
-        if (!$attempt) {
-            // Token not found, already used, or mismatched user/instance. Cheat attempt detected!
-            return false;
-        }
-
-        // Consume the token so it cannot be used again (Anti-Replay).
-        $attempt->status = $finalstatus;
-        $attempt->timefinished = time();
-        $attempt->timemodified = $attempt->timefinished;
-        $DB->update_record('playerpuzzle_attempts', $attempt);
-
-        return $attempt;
+    /**
+     * Runs a callback with exclusive access to the in-progress attempt matching a token,
+     * without moving it to a final status — used by operations that mutate an attempt
+     * while it stays 'inprogress' (advancing a Campaign phase, buying a consumable).
+     * Same race-closing guarantee as validate_and_consume_token(), for callers that are
+     * not consuming the token into a final state.
+     *
+     * @param string $token The token provided by the client.
+     * @param int $playerpuzzleid The instance ID.
+     * @param int $userid The user ID.
+     * @param callable $callback Receives the locked, freshly re-fetched attempt row and
+     *  returns whatever the caller wants back.
+     * @return mixed|false The callback's return value, or false if no matching in-progress
+     *  attempt was found, or the lock could not be acquired in time.
+     */
+    public static function with_locked_attempt(
+        string $token,
+        int $playerpuzzleid,
+        int $userid,
+        callable $callback
+    ) {
+        return self::with_locked_inprogress_attempt($token, $playerpuzzleid, $userid, $callback);
     }
 }

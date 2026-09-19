@@ -33,6 +33,7 @@ use mod_playerpuzzle\local\attempt_consumables;
 use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\question_fetcher;
+use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
 use moodle_exception;
 
@@ -115,102 +116,123 @@ class buy_consumable extends external_api {
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
         $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $cm->instance], '*', MUST_EXIST);
 
-        $attempt = $DB->get_record('playerpuzzle_attempts', [
-            'token'          => $params['token'],
-            'playerpuzzleid' => (int) $playerpuzzle->id,
-            'userid'         => (int) $USER->id,
-            'status'         => 'inprogress',
-        ]);
-        if (!$attempt) {
+        // The whole purchase (limit/balance check through to debiting the ledger) runs
+        // inside the attempt's own lock: two purchases racing the same token must never
+        // both read the same "uses so far"/coin balance and both go through — see
+        // security::with_locked_attempt()'s own docblock.
+        $result = security::with_locked_attempt(
+            $params['token'],
+            (int) $playerpuzzle->id,
+            (int) $USER->id,
+            function (\stdClass $attempt) use ($DB, $USER, $context, $playerpuzzle, $params): array {
+                if (!in_array($params['type'], attempt_consumables::TYPES, true)) {
+                    throw new moodle_exception('consumabletypeinvalid', 'mod_playerpuzzle');
+                }
+                if (!in_array($params['source'], ['local', 'hud'], true)) {
+                    throw new moodle_exception('consumablesourceinvalid', 'mod_playerpuzzle');
+                }
+
+                if (
+                    attempt_consumables::get_uses((int) $attempt->id, $params['type'])
+                    >= (int) $playerpuzzle->maxconsumables
+                ) {
+                    throw new moodle_exception('consumablelimitreached', 'mod_playerpuzzle');
+                }
+
+                // Instance isolation, validated before any read of the hint itself: the
+                // question must belong to this instance, be approved, and actually have a
+                // hint — never trusted from the client, and checked before spending any
+                // coins on it.
+                $hinttext = '';
+                if ($params['type'] === 'hint') {
+                    $hinttext = question_fetcher::get_hint_text(
+                        $params['questionid'],
+                        (int) $playerpuzzle->id,
+                        $context
+                    );
+                    if ($hinttext === null) {
+                        throw new moodle_exception('hintnotavailable', 'mod_playerpuzzle');
+                    }
+                }
+
+                $isdemo = (bool) $attempt->isdemo;
+                if ($isdemo && $params['source'] === 'hud') {
+                    // A Demo attempt may still use the local (in-match coin) shop — that is
+                    // part of what it demonstrates — but never spend the student's real
+                    // PlayerHUD inventory: that would be a genuine economic effect from a
+                    // match meant to have none.
+                    throw new moodle_exception('consumablesourceunavailable', 'mod_playerpuzzle');
+                }
+
+                $difficulty = (string) $attempt->difficulty;
+                $level = (int) $attempt->currentlevel;
+                $phase = (int) $attempt->currentphase;
+
+                // The ceiling is a stable per-phase value (this phase's own full boss HP),
+                // not tied to damage dealt so far — a student who has not yet landed a
+                // Sword hit can still have genuinely earned coins from Coin/Shield/Magic
+                // matches, which happen independently on the board. See
+                // combat::coin_ceiling()'s own docblock for why. A Demo attempt always
+                // fought the fixed combat::DEMO_HP instead, matching what the client was
+                // shown.
+                $currentbosshp = $isdemo ? combat::DEMO_HP : combat::apply_difficulty(
+                    combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $level, $phase),
+                    $difficulty
+                );
+                $scaledbossdamage = combat::apply_difficulty(
+                    combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $level, $phase),
+                    $difficulty
+                );
+                $ceiling = combat::coin_ceiling(
+                    $currentbosshp,
+                    $scaledbossdamage,
+                    (int) $playerpuzzle->coingain,
+                    combat::difficulty_coin_factor($difficulty)
+                );
+                coin_ledger::sync($attempt, $params['coinsearnedsofar'], $params['bosscoinsearnedsofar'], $ceiling);
+
+                if ($params['source'] === 'local') {
+                    $price = combat::consumable_price($params['type']);
+                    if (coin_ledger::spendable($attempt) < $price) {
+                        throw new moodle_exception('insufficientcoins', 'mod_playerpuzzle');
+                    }
+                    $attempt->coins_spent = (int) $attempt->coins_spent + $price;
+                } else {
+                    if (!array_key_exists($params['type'], self::HUD_ITEM_FIELDS)) {
+                        throw new moodle_exception('consumablesourceunavailable', 'mod_playerpuzzle');
+                    }
+                    $itemfield = self::HUD_ITEM_FIELDS[$params['type']];
+                    $itemid = (int) $playerpuzzle->{$itemfield};
+                    $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
+                    if ($itemid <= 0 || $blockinstanceid === null) {
+                        throw new moodle_exception('consumablesourceunavailable', 'mod_playerpuzzle');
+                    }
+                    if (!hud_service::consume_item($blockinstanceid, (int) $USER->id, $itemid, 1)) {
+                        throw new moodle_exception('insufficienthudstock', 'mod_playerpuzzle');
+                    }
+                }
+
+                attempt_consumables::record_use((int) $attempt->id, $params['type']);
+                $attempt->timemodified = time();
+                $DB->update_record('playerpuzzle_attempts', $attempt);
+
+                return [
+                    'success'    => true,
+                    'newbalance' => coin_ledger::spendable($attempt),
+                    'apply'      => $params['type'],
+                    'hinttext'   => $hinttext,
+                ];
+            }
+        );
+
+        if ($result === false) {
+            // Token unknown, already rotated/consumed, or belongs to a different
+            // user/instance: a replay or forged submission, not a coding mistake. Also
+            // reached when a genuinely parallel purchase for the same attempt lost the race.
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
 
-        if (!in_array($params['type'], attempt_consumables::TYPES, true)) {
-            throw new moodle_exception('consumabletypeinvalid', 'mod_playerpuzzle');
-        }
-        if (!in_array($params['source'], ['local', 'hud'], true)) {
-            throw new moodle_exception('consumablesourceinvalid', 'mod_playerpuzzle');
-        }
-
-        if (attempt_consumables::get_uses((int) $attempt->id, $params['type']) >= (int) $playerpuzzle->maxconsumables) {
-            throw new moodle_exception('consumablelimitreached', 'mod_playerpuzzle');
-        }
-
-        // Instance isolation, validated before any read of the hint itself: the question
-        // must belong to this instance, be approved, and actually have a hint — never
-        // trusted from the client, and checked before spending any coins on it.
-        $hinttext = '';
-        if ($params['type'] === 'hint') {
-            $hinttext = question_fetcher::get_hint_text($params['questionid'], (int) $playerpuzzle->id, $context);
-            if ($hinttext === null) {
-                throw new moodle_exception('hintnotavailable', 'mod_playerpuzzle');
-            }
-        }
-
-        $isdemo = (bool) $attempt->isdemo;
-        if ($isdemo && $params['source'] === 'hud') {
-            // A Demo attempt may still use the local (in-match coin) shop — that is part of
-            // what it demonstrates — but never spend the student's real PlayerHUD inventory:
-            // that would be a genuine economic effect from a match meant to have none.
-            throw new moodle_exception('consumablesourceunavailable', 'mod_playerpuzzle');
-        }
-
-        $difficulty = (string) $attempt->difficulty;
-        $level = (int) $attempt->currentlevel;
-        $phase = (int) $attempt->currentphase;
-
-        // The ceiling is a stable per-phase value (this phase's own full boss HP), not tied
-        // to damage dealt so far — a student who has not yet landed a Sword hit can still have
-        // genuinely earned coins from Coin/Shield/Magic matches, which happen independently on
-        // the board. See combat::coin_ceiling()'s own docblock for why. A Demo attempt always
-        // fought the fixed combat::DEMO_HP instead, matching what the client was shown.
-        $currentbosshp = $isdemo ? combat::DEMO_HP : combat::apply_difficulty(
-            combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $level, $phase),
-            $difficulty
-        );
-        $scaledbossdamage = combat::apply_difficulty(
-            combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $level, $phase),
-            $difficulty
-        );
-        $ceiling = combat::coin_ceiling(
-            $currentbosshp,
-            $scaledbossdamage,
-            (int) $playerpuzzle->coingain,
-            combat::difficulty_coin_factor($difficulty)
-        );
-        coin_ledger::sync($attempt, $params['coinsearnedsofar'], $params['bosscoinsearnedsofar'], $ceiling);
-
-        if ($params['source'] === 'local') {
-            $price = combat::consumable_price($params['type']);
-            if (coin_ledger::spendable($attempt) < $price) {
-                throw new moodle_exception('insufficientcoins', 'mod_playerpuzzle');
-            }
-            $attempt->coins_spent = (int) $attempt->coins_spent + $price;
-        } else {
-            if (!array_key_exists($params['type'], self::HUD_ITEM_FIELDS)) {
-                throw new moodle_exception('consumablesourceunavailable', 'mod_playerpuzzle');
-            }
-            $itemfield = self::HUD_ITEM_FIELDS[$params['type']];
-            $itemid = (int) $playerpuzzle->{$itemfield};
-            $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
-            if ($itemid <= 0 || $blockinstanceid === null) {
-                throw new moodle_exception('consumablesourceunavailable', 'mod_playerpuzzle');
-            }
-            if (!hud_service::consume_item($blockinstanceid, (int) $USER->id, $itemid, 1)) {
-                throw new moodle_exception('insufficienthudstock', 'mod_playerpuzzle');
-            }
-        }
-
-        attempt_consumables::record_use((int) $attempt->id, $params['type']);
-        $attempt->timemodified = time();
-        $DB->update_record('playerpuzzle_attempts', $attempt);
-
-        return [
-            'success'    => true,
-            'newbalance' => coin_ledger::spendable($attempt),
-            'apply'      => $params['type'],
-            'hinttext'   => $hinttext,
-        ];
+        return $result;
     }
 
     /**

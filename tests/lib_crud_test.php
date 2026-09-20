@@ -26,6 +26,7 @@
 namespace mod_playerpuzzle;
 
 use mod_playerpuzzle\local\questions_repository;
+use mod_playerpuzzle\local\user_stock;
 
 /**
  * Tests for playerpuzzle_add_instance(), playerpuzzle_update_instance() and
@@ -233,6 +234,25 @@ final class lib_crud_test extends \advanced_testcase {
         $this->assertTrue($result);
         $this->assertSame(0, $DB->count_records('playerpuzzle_questions', ['playerpuzzleid' => $instance->id]));
         $this->assertSame(0, $DB->count_records('playerpuzzle_question_answers', ['questionid' => $questionid]));
+    }
+
+    /**
+     * Tests that deleting an instance also deletes its loadout stock — a table keyed by
+     * playerpuzzleid+userid, not tied to any attempt, so not covered by either test above.
+     *
+     * @return void
+     */
+    public function test_delete_instance_also_deletes_loadout_stock(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+
+        user_stock::credit(2, (int) $instance->id, 'potion', 3);
+
+        $result = playerpuzzle_delete_instance($instance->id);
+
+        $this->assertTrue($result);
+        $this->assertSame(0, user_stock::get_quantity(2, (int) $instance->id, 'potion'));
     }
 
     /**

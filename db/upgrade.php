@@ -502,5 +502,27 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026091805, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092001) {
+        // Add playerpuzzle_user_stock: consumable stock a user has bought for an instance's
+        // pre-match loadout, persistent across attempts — separate from
+        // playerpuzzle_attempt_consumables (which counts uses, not stock, and is scoped to a
+        // single attempt).
+        $table = new xmldb_table('playerpuzzle_user_stock');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('playerpuzzleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('consumabletype', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL);
+            $table->add_field('quantity', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+            $table->add_key('playerpuzzleid', XMLDB_KEY_FOREIGN, ['playerpuzzleid'], 'playerpuzzle', ['id']);
+            $table->add_index('userid-playerpuzzleid-type', XMLDB_INDEX_UNIQUE, ['userid', 'playerpuzzleid', 'consumabletype']);
+            $dbman->create_table($table);
+        }
+
+        upgrade_mod_savepoint(true, 2026092001, 'playerpuzzle');
+    }
+
     return true;
 }

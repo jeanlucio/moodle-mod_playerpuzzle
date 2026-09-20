@@ -543,6 +543,7 @@ final class backup_restore_test extends \advanced_testcase {
         ]);
         $this->make_question_log($attemptid);
         $this->make_consumable_use($attemptid);
+        \mod_playerpuzzle\local\user_stock::credit($user->id, (int) $instance->id, 'hint', 3);
 
         $newcourse = $this->backup_and_restore_into_new_course($course);
 
@@ -585,6 +586,11 @@ final class backup_restore_test extends \advanced_testcase {
         );
         $this->assertSame('potion', $newconsumable->consumabletype);
         $this->assertSame(2, (int) $newconsumable->timesused);
+
+        $this->assertSame(
+            3,
+            \mod_playerpuzzle\local\user_stock::get_quantity($user->id, (int) $newinstance->id, 'hint')
+        );
     }
 
     /**

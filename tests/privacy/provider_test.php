@@ -509,6 +509,94 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
+     * Tests that every real column of playerpuzzle_user_stock (minus the structural id,
+     * userid and playerpuzzleid) is declared in get_metadata(), asserted against the real
+     * schema so a future column silently added without a privacy decision fails this test.
+     *
+     * @return void
+     */
+    public function test_get_metadata_declares_only_type_and_quantity_for_user_stock(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('mod_playerpuzzle'));
+        $item = null;
+        foreach ($collection->get_collection() as $entry) {
+            if ($entry->get_name() === 'playerpuzzle_user_stock') {
+                $item = $entry;
+            }
+        }
+        $this->assertNotNull($item);
+        $declared = array_keys($item->get_privacy_fields());
+        $this->assertEqualsCanonicalizing(['consumabletype', 'quantity'], $declared);
+
+        $real = array_diff(array_keys($DB->get_columns('playerpuzzle_user_stock')), ['id', 'userid', 'playerpuzzleid']);
+        $this->assertEmpty(array_diff($real, $declared), 'Undeclared column in playerpuzzle_user_stock.');
+    }
+
+    /**
+     * Tests that loadout stock is exported and deleted for the owning user, without needing
+     * any attempt to exist — stock is keyed by userid+playerpuzzleid directly.
+     *
+     * @return void
+     */
+    public function test_user_stock_is_exported_and_deleted(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $user = $this->getDataGenerator()->create_user();
+        \mod_playerpuzzle\local\user_stock::credit($user->id, (int) $cm->id, 'hint', 4);
+
+        $context = \context_module::instance($cm->cmid);
+        provider::export_user_data(new approved_contextlist($user, 'mod_playerpuzzle', [$context->id]));
+        $data = writer::with_context($context)->get_data([
+            get_string('privacy:metadata:playerpuzzle_user_stock', 'mod_playerpuzzle'),
+        ]);
+        $this->assertCount(1, $data->stock);
+        $this->assertSame('hint', $data->stock[0]->consumabletype);
+        $this->assertSame(4, $data->stock[0]->quantity);
+
+        provider::delete_data_for_user(new approved_contextlist($user, 'mod_playerpuzzle', [$context->id]));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_user_stock', ['userid' => $user->id]));
+    }
+
+    /**
+     * Tests that get_contexts_for_userid finds a user who only has loadout stock, with no
+     * attempt at all — the independent stock query this method also runs.
+     *
+     * @return void
+     */
+    public function test_get_contexts_for_userid_finds_stock_only_user(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $user = $this->getDataGenerator()->create_user();
+        \mod_playerpuzzle\local\user_stock::credit($user->id, (int) $cm->id, 'potion', 1);
+
+        $contextlist = provider::get_contexts_for_userid($user->id);
+
+        $expected = \context_module::instance($cm->cmid)->id;
+        $this->assertContains((string) $expected, $contextlist->get_contextids());
+    }
+
+    /**
+     * Tests that get_users_in_context finds a user who only has loadout stock, with no
+     * attempt at all.
+     *
+     * @return void
+     */
+    public function test_get_users_in_context_finds_stock_only_user(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $user = $this->getDataGenerator()->create_user();
+        \mod_playerpuzzle\local\user_stock::credit($user->id, (int) $cm->id, 'potion', 1);
+
+        $userlist = new userlist(\context_module::instance($cm->cmid), 'mod_playerpuzzle');
+        provider::get_users_in_context($userlist);
+
+        $this->assertContains((int) $user->id, $userlist->get_userids());
+    }
+
+    /**
      * Tests that delete_data_for_users removes data only for the listed users.
      *
      * @return void
@@ -522,6 +610,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $userb = $this->getDataGenerator()->create_user();
         $this->make_attempt($usera->id, (int) $cm->id);
         $this->make_attempt($userb->id, (int) $cm->id);
+        \mod_playerpuzzle\local\user_stock::credit($usera->id, (int) $cm->id, 'potion', 1);
+        \mod_playerpuzzle\local\user_stock::credit($userb->id, (int) $cm->id, 'potion', 1);
 
         $context = \context_module::instance($cm->cmid);
         $approvedlist = new approved_userlist($context, 'mod_playerpuzzle', [$usera->id]);
@@ -529,6 +619,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $this->assertSame(0, $DB->count_records('playerpuzzle_attempts', ['userid' => $usera->id]));
         $this->assertSame(1, $DB->count_records('playerpuzzle_attempts', ['userid' => $userb->id]));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_user_stock', ['userid' => $usera->id]));
+        $this->assertSame(1, $DB->count_records('playerpuzzle_user_stock', ['userid' => $userb->id]));
     }
 
     /**
@@ -595,11 +687,15 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $user = $this->getDataGenerator()->create_user();
         $this->make_attempt($user->id, (int) $cmtarget->id);
         $this->make_attempt($user->id, (int) $cmother->id);
+        \mod_playerpuzzle\local\user_stock::credit($user->id, (int) $cmtarget->id, 'potion', 1);
+        \mod_playerpuzzle\local\user_stock::credit($user->id, (int) $cmother->id, 'potion', 1);
 
         provider::delete_data_for_all_users_in_context(\context_module::instance($cmtarget->cmid));
 
         $this->assertSame(0, $DB->count_records('playerpuzzle_attempts', ['playerpuzzleid' => (int) $cmtarget->id]));
         $this->assertSame(1, $DB->count_records('playerpuzzle_attempts', ['playerpuzzleid' => (int) $cmother->id]));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_user_stock', ['playerpuzzleid' => (int) $cmtarget->id]));
+        $this->assertSame(1, $DB->count_records('playerpuzzle_user_stock', ['playerpuzzleid' => (int) $cmother->id]));
     }
 
     /**

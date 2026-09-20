@@ -36,11 +36,12 @@ use mod_playerpuzzle\local\sound_preferences;
 /**
  * Privacy provider for mod_playerpuzzle.
  *
- * Personal data is stored only in playerpuzzle_attempts (userid, currentlevel, currentphase,
+ * Personal data is stored in playerpuzzle_attempts (userid, currentlevel, currentphase,
  * difficulty, bosshp_remaining, questions_correct, questions_total, score, status): one row
- * per attempt, tied to the specific activity instance the attempt was made in. PlayerPuzzle
- * keeps no currency data of its own — coins and consumable stock live in block_playerhud,
- * which declares its own personal data independently.
+ * per attempt, tied to the specific activity instance the attempt was made in; and in
+ * playerpuzzle_user_stock (consumable units a student currently owns for an instance's
+ * pre-match loadout). PlayerPuzzle keeps no currency data of its own — coins still live in
+ * block_playerhud, which declares that personal data independently.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -120,6 +121,14 @@ class provider implements
             'addedby' => 'privacy:metadata:pq:addedby',
         ], 'privacy:metadata:playerpuzzle_questions');
 
+        // Only id, userid and playerpuzzleid (structural FK, scoped by instance/user on every
+        // call) are excluded. Stock is the pre-match loadout a student bought — personal data
+        // about that student, not course content.
+        $collection->add_database_table('playerpuzzle_user_stock', [
+            'consumabletype' => 'privacy:metadata:us:consumabletype',
+            'quantity'       => 'privacy:metadata:us:quantity',
+        ], 'privacy:metadata:playerpuzzle_user_stock');
+
         $collection->add_user_preference(
             sound_preferences::preference_name('music'),
             'privacy:metadata:preference:music'
@@ -181,6 +190,24 @@ class provider implements
             'userid'       => $userid,
         ]);
 
+        // A user could in principle hold loadout stock for an instance without a matching
+        // attempts row (e.g. bought before ever finishing a fight — the ledger only
+        // guarantees the *first* match starts empty, not that stock and attempts always
+        // exist together afterwards), so this is queried independently rather than assumed
+        // to be covered by the attempts JOIN above.
+        $stocksql = "SELECT ctx.id
+                       FROM {playerpuzzle_user_stock} us
+                       JOIN {playerpuzzle} pp ON pp.id = us.playerpuzzleid
+                       JOIN {modules} m ON m.name = :activityname
+                       JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                       JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
+                      WHERE us.userid = :userid";
+        $contextlist->add_from_sql($stocksql, [
+            'activityname' => 'playerpuzzle',
+            'modlevel'     => CONTEXT_MODULE,
+            'userid'       => $userid,
+        ]);
+
         return $contextlist;
     }
 
@@ -206,6 +233,19 @@ class provider implements
                   JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
                  WHERE ctx.id = :contextid";
         $userlist->add_from_sql('userid', $sql, [
+            'activityname' => 'playerpuzzle',
+            'modlevel'     => CONTEXT_MODULE,
+            'contextid'    => $context->id,
+        ]);
+
+        $stocksql = "SELECT us.userid
+                       FROM {playerpuzzle_user_stock} us
+                       JOIN {playerpuzzle} pp ON pp.id = us.playerpuzzleid
+                       JOIN {modules} m ON m.name = :activityname
+                       JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                       JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
+                      WHERE ctx.id = :contextid";
+        $userlist->add_from_sql('userid', $stocksql, [
             'activityname' => 'playerpuzzle',
             'modlevel'     => CONTEXT_MODULE,
             'contextid'    => $context->id,
@@ -337,6 +377,32 @@ class provider implements
                 (object) ['consumables' => $consumables]
             );
         }
+
+        $stocksql = "SELECT us.consumabletype, us.quantity, ctx.id AS contextid
+                       FROM {playerpuzzle_user_stock} us
+                       JOIN {playerpuzzle} pp ON pp.id = us.playerpuzzleid
+                       JOIN {modules} m ON m.name = 'playerpuzzle'
+                       JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                       JOIN {context} ctx ON ctx.instanceid = cm.id
+                      WHERE ctx.id $insql
+                        AND us.userid = :userid";
+        $stockrecords = $DB->get_recordset_sql($stocksql, array_merge($inparams, ['userid' => $userid]));
+
+        $allstock = [];
+        foreach ($stockrecords as $row) {
+            $allstock[$row->contextid][] = (object) [
+                'consumabletype' => $row->consumabletype,
+                'quantity'       => (int) $row->quantity,
+            ];
+        }
+        $stockrecords->close();
+
+        foreach ($allstock as $contextid => $stock) {
+            writer::with_context($contexts[$contextid])->export_data(
+                [get_string('privacy:metadata:playerpuzzle_user_stock', 'mod_playerpuzzle')],
+                (object) ['stock' => $stock]
+            );
+        }
     }
 
     /**
@@ -359,6 +425,7 @@ class provider implements
         self::delete_logged_questions('playerpuzzleid = :ppid', ['ppid' => (int) $cm->instance]);
         self::delete_consumable_uses('playerpuzzleid = :ppid', ['ppid' => (int) $cm->instance]);
         $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $cm->instance]);
+        $DB->delete_records('playerpuzzle_user_stock', ['playerpuzzleid' => $cm->instance]);
     }
 
     /**
@@ -428,6 +495,7 @@ class provider implements
         self::delete_logged_questions($where, $params);
         self::delete_consumable_uses($where, $params);
         $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
+        $DB->delete_records_select('playerpuzzle_user_stock', $where, $params);
     }
 
     /**
@@ -459,5 +527,6 @@ class provider implements
         self::delete_logged_questions($where, $params);
         self::delete_consumable_uses($where, $params);
         $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
+        $DB->delete_records_select('playerpuzzle_user_stock', $where, $params);
     }
 }

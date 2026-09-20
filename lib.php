@@ -519,6 +519,7 @@ function playerpuzzle_delete_instance(int $id): bool {
         ['ppid' => $playerpuzzle->id]
     );
     $DB->delete_records('playerpuzzle_questions', ['playerpuzzleid' => $playerpuzzle->id]);
+    \mod_playerpuzzle\local\user_stock::delete_for_instance((int) $playerpuzzle->id);
     $DB->delete_records('playerpuzzle', ['id' => $playerpuzzle->id]);
     $DB->delete_records('event', ['modulename' => 'playerpuzzle', 'instance' => $playerpuzzle->id]);
 

@@ -58,6 +58,10 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
                 'playerpuzzle_attempt_consumable',
                 '/activity/playerpuzzle/attempts/attempt/consumables/consumable'
             );
+            $paths[] = new restore_path_element(
+                'playerpuzzle_stockitem',
+                '/activity/playerpuzzle/stockitems/stockitem'
+            );
         }
 
         // Wrap with the generic '/activity' path so the base class's process_activity()
@@ -281,6 +285,28 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         $data->attemptid = $this->get_new_parentid('playerpuzzle_attempt');
 
         $DB->insert_record('playerpuzzle_attempt_consumables', $data);
+    }
+
+    /**
+     * Restores a loadout stock row (only when userinfo is enabled). Skipped when the owning
+     * user was not part of this restore — same rule as process_playerpuzzle_attempt().
+     *
+     * @param array|object $data XML data for this element.
+     * @return void
+     */
+    public function process_playerpuzzle_stockitem(array|object $data): void {
+        global $DB;
+
+        $data = (object) $data;
+
+        $data->playerpuzzleid = $this->get_new_parentid('playerpuzzle');
+        $data->userid = $this->get_mappingid('user', $data->userid);
+
+        if (empty($data->userid)) {
+            return;
+        }
+
+        $DB->insert_record('playerpuzzle_user_stock', $data);
     }
 
     /**

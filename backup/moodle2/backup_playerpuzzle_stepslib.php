@@ -112,6 +112,15 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'timesused',
         ]);
 
+        // Loadout stock is keyed by userid+playerpuzzleid directly, not by attempt — a
+        // sibling of attempts under the root, not a child of it.
+        $stockitems = new backup_nested_element('stockitems');
+        $stockitem = new backup_nested_element('stockitem', ['id'], [
+            'userid',
+            'consumabletype',
+            'quantity',
+        ]);
+
         // PlayerPuzzle's own question bank belongs to the activity and is always backed
         // up — course content, not user data, same rule already applied to the words in
         // mod_playerwords. Named 'bankquestion'/'bankanswer' throughout (PHP variables, XML
@@ -158,6 +167,8 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             $questions->add_child($question);
             $attempt->add_child($consumables);
             $consumables->add_child($consumable);
+            $playerpuzzle->add_child($stockitems);
+            $stockitems->add_child($stockitem);
         }
 
         // Connect elements to database tables.
@@ -183,6 +194,10 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             $consumable->set_source_table(
                 'playerpuzzle_attempt_consumables',
                 ['attemptid' => backup::VAR_PARENTID]
+            );
+            $stockitem->set_source_table(
+                'playerpuzzle_user_stock',
+                ['playerpuzzleid' => backup::VAR_ACTIVITYID]
             );
         }
 
@@ -211,6 +226,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
 
         if ($userinfo) {
             $attempt->annotate_ids('user', 'userid');
+            $stockitem->annotate_ids('user', 'userid');
             // Questionid now points at this activity's own bank (see the Wave 1 revert to a
             // single question source) — never the real Moodle question bank, so it must be
             // resolved via the playerpuzzle_bankquestion mapping, not the generic 'question'

@@ -99,4 +99,27 @@ final class attempt_consumables_test extends \advanced_testcase {
         $this->assertSame(0, attempt_consumables::get_uses(5, 'sword'));
         $this->assertSame(1, attempt_consumables::get_uses(9, 'shield'));
     }
+
+    /**
+     * Tests that get_uses_by_type() returns one key per self::TYPES, 0 for a type never
+     * used, the real count for one that was, and never bleeds in uses from another attempt
+     * — the bulk counterpart to get_uses(), read in one query instead of one per type.
+     *
+     * @return void
+     */
+    public function test_get_uses_by_type_returns_all_types_scoped_to_the_attempt(): void {
+        $this->resetAfterTest();
+
+        attempt_consumables::record_use(5, 'potion');
+        attempt_consumables::record_use(5, 'potion');
+        attempt_consumables::record_use(5, 'sword');
+        attempt_consumables::record_use(9, 'shield');
+
+        $uses = attempt_consumables::get_uses_by_type(5);
+
+        $this->assertSame(
+            ['potion' => 2, 'shield' => 0, 'magic' => 0, 'sword' => 1, 'hint' => 0],
+            $uses
+        );
+    }
 }

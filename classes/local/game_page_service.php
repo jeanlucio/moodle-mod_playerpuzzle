@@ -236,10 +236,7 @@ class game_page_service {
             combat::difficulty_coin_factor($difficulty)
         );
 
-        $consumableuses = [];
-        foreach (attempt_consumables::TYPES as $type) {
-            $consumableuses[$type] = attempt_consumables::get_uses($attemptinfo->attemptid, $type);
-        }
+        $consumableuses = attempt_consumables::get_uses_by_type($attemptinfo->attemptid);
 
         // Whether a PlayerHUD item is configured for each type (never its stock quantity,
         // which the client cannot know without an extra round trip) — lets the client try

@@ -57,6 +57,34 @@ class attempt_consumables {
     }
 
     /**
+     * Returns how many times every consumable type has already been used this attempt, in one
+     * query — the bulk counterpart to get_uses(), for a caller that needs all of self::TYPES
+     * at once (game_page_service::build_game_config(), reporting the whole shop's state to the
+     * client on every play.php load) instead of looping get_uses() once per type.
+     *
+     * @param int $attemptid The attempt id.
+     * @return array Type => uses so far, one key per self::TYPES (0 for a type never used).
+     */
+    public static function get_uses_by_type(int $attemptid): array {
+        global $DB;
+
+        $uses = array_fill_keys(self::TYPES, 0);
+        $rows = $DB->get_records(
+            'playerpuzzle_attempt_consumables',
+            ['attemptid' => $attemptid],
+            '',
+            'consumabletype, timesused'
+        );
+        foreach ($rows as $row) {
+            if (array_key_exists($row->consumabletype, $uses)) {
+                $uses[$row->consumabletype] = (int) $row->timesused;
+            }
+        }
+
+        return $uses;
+    }
+
+    /**
      * Records one more use of a consumable type for an attempt, creating the row on first
      * use.
      *

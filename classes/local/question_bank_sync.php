@@ -128,12 +128,19 @@ class question_bank_sync {
             $existingmap[(int) $rec->sourceid] = $rec;
         }
 
+        [$multiplesingle, $answersbysourceid] = self::preload_source_answers($rows);
+
         $stats = (object) ['imported' => 0, 'updated' => 0, 'skipped' => 0, 'disabled' => 0];
         $seenentryids = [];
 
         foreach ($rows as $row) {
             $entryid = (int) $row->entryid;
-            $answers = self::load_answers((int) $row->questionid, $row->qtype);
+            $answers = self::load_answers(
+                (int) $row->questionid,
+                $row->qtype,
+                $multiplesingle,
+                $answersbysourceid
+            );
             if ($answers === null) {
                 $stats->skipped++;
                 continue;
@@ -182,7 +189,13 @@ class question_bank_sync {
                 $questionid
             );
 
-            $destanswers = questions_repository::get_question($questionid, $playerpuzzleid)->answers;
+            // A direct answers-only read, never questions_repository::get_question(): that
+            // helper also re-fetches the parent question row, which sync_from_category()
+            // already has in $row/$questionid — a wasted query repeated once per imported
+            // question.
+            $destanswers = array_values(
+                $DB->get_records('playerpuzzle_question_answers', ['questionid' => $questionid], 'sortorder ASC')
+            );
             foreach ($destanswers as $index => $destanswer) {
                 $sourceanswerid = $answers[$index]['sourceanswerid'] ?? null;
                 if ($sourceanswerid === null) {
@@ -270,9 +283,58 @@ class question_bank_sync {
     }
 
     /**
-     * Loads the answer rows for one bank question, in a shape ready for
-     * questions_repository. Returns null when the question must be skipped: a multichoice
-     * question configured to accept more than one correct answer
+     * Bulk-loads, for every source question being synced in this run, the data
+     * load_answers() would otherwise fetch one question at a time: each multichoice
+     * question's qtype_multichoice_options.single flag, and every question's answer rows.
+     * Importing a large category one query per question per table risked exceeding
+     * max_execution_time; this turns the whole category into two queries regardless of size.
+     *
+     * @param stdClass[] $rows Source question rows from sync_from_category()'s own query,
+     *  each with ->questionid and ->qtype.
+     * @return array{0: array<int, int>, 1: array<int, stdClass[]>} [multichoice questionid =>
+     *  single flag; questionid => answer rows in id order].
+     */
+    private static function preload_source_answers(array $rows): array {
+        global $DB;
+
+        if (empty($rows)) {
+            return [[], []];
+        }
+
+        $allids = array_map(fn(stdClass $row): int => (int) $row->questionid, $rows);
+        $multichoiceids = array_map(
+            fn(stdClass $row): int => (int) $row->questionid,
+            array_filter($rows, fn(stdClass $row): bool => $row->qtype === 'multichoice')
+        );
+
+        $multiplesingle = [];
+        if (!empty($multichoiceids)) {
+            $options = $DB->get_records_list(
+                'qtype_multichoice_options',
+                'questionid',
+                $multichoiceids,
+                '',
+                'questionid, single'
+            );
+            foreach ($options as $option) {
+                $multiplesingle[(int) $option->questionid] = (int) $option->single;
+            }
+        }
+
+        $answersbyquestionid = array_fill_keys($allids, []);
+        $answerrows = $DB->get_records_list('question_answers', 'question', $allids, 'question ASC, id ASC');
+        foreach ($answerrows as $answerrow) {
+            $answersbyquestionid[(int) $answerrow->question][] = $answerrow;
+        }
+
+        return [$multiplesingle, $answersbyquestionid];
+    }
+
+    /**
+     * Builds the answer list for one bank question, in a shape ready for
+     * questions_repository, from data preload_source_answers() already fetched for the whole
+     * category. Returns null when the question must be skipped: a multichoice question
+     * configured to accept more than one correct answer
      * (qtype_multichoice_options.single = 0) — the game only knows how to grade a single
      * correct choice — or a question with no answer rows at all.
      *
@@ -284,20 +346,24 @@ class question_bank_sync {
      *
      * @param int $questionid The bank question id.
      * @param string $qtype The question's qtype.
+     * @param array $multiplesingle Multichoice questionid => single flag, from
+     *  preload_source_answers().
+     * @param array $answersbyquestionid Questionid => answer rows, from
+     *  preload_source_answers().
      * @return array|null List of ['text' => string, 'format' => int, 'iscorrect' => bool,
      *  'sourceanswerid' => int].
      */
-    private static function load_answers(int $questionid, string $qtype): ?array {
-        global $DB;
-
-        if ($qtype === 'multichoice') {
-            $options = $DB->get_record('qtype_multichoice_options', ['questionid' => $questionid], 'single');
-            if ($options && (int) $options->single === 0) {
-                return null;
-            }
+    private static function load_answers(
+        int $questionid,
+        string $qtype,
+        array $multiplesingle,
+        array $answersbyquestionid
+    ): ?array {
+        if ($qtype === 'multichoice' && ($multiplesingle[$questionid] ?? 1) === 0) {
+            return null;
         }
 
-        $rows = $DB->get_records('question_answers', ['question' => $questionid], 'id ASC');
+        $rows = $answersbyquestionid[$questionid] ?? [];
         if (empty($rows)) {
             return null;
         }

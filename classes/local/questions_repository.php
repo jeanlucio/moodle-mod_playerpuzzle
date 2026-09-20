@@ -498,6 +498,13 @@ class questions_repository {
      * Deletes every given question (and its answers/file areas) belonging to the instance in
      * one pass — the bulk counterpart to delete_question() for "Delete selected".
      *
+     * Bulked deliberately instead of looping delete_question() per id: the loop form issued
+     * 2-3 DB queries per question (answer ids, delete answers, delete question), turning a
+     * teacher deleting hundreds of questions into as many round trips. This form issues a
+     * constant number of queries regardless of how many ids are deleted — one to resolve
+     * ownership, one to read answer ids (only when $context needs them for file purging),
+     * and one delete each for the answers/questions tables.
+     *
      * @param int[] $questionids Question ids to delete.
      * @param int $playerpuzzleid The instance every id must belong to.
      * @param context|null $context Module context, to purge each question's file areas.
@@ -517,9 +524,25 @@ class questions_repository {
             "id $insql AND playerpuzzleid = ?",
             $params
         );
-        foreach ($ownedids as $ownedid) {
-            self::delete_question((int) $ownedid, $context);
+        if (empty($ownedids)) {
+            return;
         }
+
+        [$qinsql, $qparams] = $DB->get_in_or_equal($ownedids, SQL_PARAMS_NAMED, 'qid');
+
+        if ($context !== null) {
+            $fs = get_file_storage();
+            $answerids = $DB->get_fieldset_select('playerpuzzle_question_answers', 'id', "questionid $qinsql", $qparams);
+            foreach ($answerids as $answerid) {
+                $fs->delete_area_files($context->id, 'mod_playerpuzzle', 'answertext', (int) $answerid);
+            }
+            foreach ($ownedids as $ownedid) {
+                $fs->delete_area_files($context->id, 'mod_playerpuzzle', 'questiontext', (int) $ownedid);
+            }
+        }
+
+        $DB->delete_records_select('playerpuzzle_question_answers', "questionid $qinsql", $qparams);
+        $DB->delete_records_select('playerpuzzle_questions', "id $qinsql", $qparams);
     }
 
     /**

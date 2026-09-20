@@ -798,4 +798,48 @@ final class questions_repository_test extends \advanced_testcase {
         $this->assertSame(0, $DB->count_records('playerpuzzle_question_answers', ['questionid' => $owned]));
         $this->assertNotNull(questions_repository::get_question($foreign, 9));
     }
+
+    /**
+     * Tests that delete_questions_bulk(), given a context, purges both each question's own
+     * questiontext file area and each of its answers' answertext file areas — the bulk
+     * rewrite reads answer ids and issues file purges directly instead of delegating to
+     * delete_question() per id, so this needs its own coverage separate from
+     * test_delete_question_purges_file_areas_when_context_given().
+     *
+     * @return void
+     */
+    public function test_delete_questions_bulk_purges_file_areas_when_context_given(): void {
+        $this->resetAfterTest();
+        $context = $this->make_real_context();
+        $fs = get_file_storage();
+
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Q',
+            '',
+            [
+                ['text' => 'A', 'iscorrect' => true],
+                ['text' => 'B', 'iscorrect' => false],
+            ],
+            42
+        );
+        $answerid = (int) questions_repository::get_question($questionid, 7)->answers[0]->id;
+
+        $fs->create_file_from_string([
+            'contextid' => $context->id, 'component' => 'mod_playerpuzzle', 'filearea' => 'questiontext',
+            'itemid' => $questionid, 'filepath' => '/', 'filename' => 'q.png',
+        ], 'q bytes');
+        $fs->create_file_from_string([
+            'contextid' => $context->id, 'component' => 'mod_playerpuzzle', 'filearea' => 'answertext',
+            'itemid' => $answerid, 'filepath' => '/', 'filename' => 'a.png',
+        ], 'a bytes');
+
+        questions_repository::delete_questions_bulk([$questionid], 7, $context);
+
+        $qfiles = $fs->get_area_files($context->id, 'mod_playerpuzzle', 'questiontext', $questionid, 'sortorder', false);
+        $afiles = $fs->get_area_files($context->id, 'mod_playerpuzzle', 'answertext', $answerid, 'sortorder', false);
+        $this->assertCount(0, $qfiles);
+        $this->assertCount(0, $afiles);
+    }
 }

@@ -667,4 +667,25 @@ final class security_test extends \advanced_testcase {
 
         $this->assertFalse(security::has_inprogress_attempt(1, 2));
     }
+
+    /**
+     * Tests that with_locked_user_stock() runs the callback and returns its value when the
+     * lock is free.
+     *
+     * Genuine lock contention (two requests racing the same user+instance) is not covered
+     * here on purpose: the site's postgres_lock_factory uses session-level advisory locks,
+     * which are reentrant within a single DB connection — the same connection acquiring
+     * "the same" lock twice in one PHPUnit test never actually blocks itself, so a
+     * contention test here would pass or fail on an artifact of the backend, not the real
+     * property. The same reasoning already applies to with_locked_attempt(); its own
+     * concurrency guarantee was verified with genuinely parallel HTTP requests against a
+     * live site instead.
+     *
+     * @return void
+     */
+    public function test_with_locked_user_stock_runs_callback(): void {
+        $result = security::with_locked_user_stock(5, 9, fn () => 'ran');
+
+        $this->assertSame('ran', $result);
+    }
 }

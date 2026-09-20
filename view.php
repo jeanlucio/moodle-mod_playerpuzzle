@@ -63,6 +63,8 @@ $templatedata = \mod_playerpuzzle\local\lobby_page_service::build_page_data(
     $context
 );
 
+$PAGE->requires->js_call_amd('mod_playerpuzzle/lobby_shop', 'init', [$cm->id]);
+
 echo $OUTPUT->render_from_template('mod_playerpuzzle/view_lobby', $templatedata);
 
 echo $OUTPUT->footer();

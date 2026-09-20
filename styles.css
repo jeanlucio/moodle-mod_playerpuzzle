@@ -433,6 +433,54 @@ body.path-mod-playerpuzzle .pp-lobby-chip svg {
     flex: none;
 }
 
+body.path-mod-playerpuzzle .pp-lobby-shop {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(205, 179, 122, 0.4);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-shop-title {
+    margin: 0 0 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: #cdb37a;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-shop-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-shop-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-shop-name {
+    flex: 1 1 auto;
+    text-align: start;
+    font-weight: 600;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-shop-owned {
+    font-variant-numeric: tabular-nums;
+    opacity: 0.85;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-shop-price {
+    margin-inline-start: 0.3rem;
+    font-variant-numeric: tabular-nums;
+}
+
 body.path-mod-playerpuzzle .pp-lobby-note {
     font-size: 0.9rem;
     line-height: 1.5;

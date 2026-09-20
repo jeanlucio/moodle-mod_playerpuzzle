@@ -134,6 +134,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertStringContainsString('play.php', $data['demourl']);
         $this->assertFalse($data['hasstats']);
         $this->assertArrayNotHasKey('coinstext', $data);
+        $this->assertFalse($data['hasshop']);
         $this->assertSame(get_string('lobby_ready', 'mod_playerpuzzle'), $data['readytext']);
         $this->assertStringContainsString('player', $data['heroimageurl']);
         $this->assertStringContainsString('panel_stone.webp', $data['panelstoneurl']);
@@ -141,12 +142,13 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that only the PlayerHUD items the teacher actually configured produce a
-     * stat line, and hasstats turns true once at least one does.
+     * Tests that the coin balance and the loadout shop both appear once hud_coin_item is
+     * configured — the shop needs a funding source to exist at all, so the two turn on
+     * together, not independently per consumable type as before.
      *
      * @return void
      */
-    public function test_build_page_data_shows_only_configured_hud_items(): void {
+    public function test_build_page_data_shows_coin_balance_and_shop_when_configured(): void {
         $this->skip_if_no_playerhud();
         [$biid, $coinitemid] = $this->make_hud_item('Gold Coin');
 
@@ -165,24 +167,23 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertTrue($data['hasstats']);
         $this->assertSame(get_string('lobby_coinbalance', 'mod_playerpuzzle', 42), $data['coinstext']);
         $this->assertSame(42, $data['coinvalue']);
-        $this->assertArrayNotHasKey('swordtext', $data);
-        $this->assertArrayNotHasKey('shieldtext', $data);
-        $this->assertArrayNotHasKey('potiontext', $data);
+        $this->assertTrue($data['hasshop']);
+        $this->assertCount(5, $data['shopitems']);
     }
 
     /**
-     * Tests that a configured consumable-stock item (Sword) shows the units the student
-     * currently holds, using the reframed "stock" label rather than the old "level" one.
+     * Tests that each shop item reports the student's real owned quantity (from
+     * user_stock, not any PlayerHUD item) and its fixed coin price.
      *
      * @return void
      */
     public function test_build_page_data_shows_consumable_stock(): void {
         $this->skip_if_no_playerhud();
-        [$biid, $sworditemid] = $this->make_hud_item('Sword Token');
+        [$biid, $coinitemid] = $this->make_hud_item('Gold Coin');
 
-        [$cm, $instance] = $this->make_cm_and_instance(['hud_sword_item' => $sworditemid]);
+        [$cm, $instance] = $this->make_cm_and_instance(['hud_coin_item' => $coinitemid]);
 
-        \block_playerhud\local\external_items::grant($biid, $sworditemid, (int) $this->student->id, 3, 'test', false);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, 'sword', 3);
 
         $data = lobby_page_service::build_page_data(
             $cm,
@@ -192,9 +193,41 @@ final class lobby_page_service_test extends \advanced_testcase {
             \context_module::instance($cm->id)
         );
 
-        $this->assertTrue($data['hasstats']);
-        $this->assertSame(get_string('lobby_swordstock', 'mod_playerpuzzle', 3), $data['swordtext']);
-        $this->assertSame(3, $data['swordvalue']);
+        $sworditem = null;
+        foreach ($data['shopitems'] as $item) {
+            if ($item['type'] === 'sword') {
+                $sworditem = $item;
+            }
+        }
+        $this->assertNotNull($sworditem);
+        $this->assertSame(3, $sworditem['quantity']);
+        $this->assertSame(get_string('lobby_stockowned', 'mod_playerpuzzle', 3), $sworditem['ownedtext']);
+        $this->assertSame(10, $sworditem['price']);
+    }
+
+    /**
+     * Tests that the shop never appears without a coin item configured, even when
+     * PlayerHUD itself is installed and available — there would be no funding source to
+     * spend from.
+     *
+     * @return void
+     */
+    public function test_build_page_data_no_shop_without_coin_item(): void {
+        $this->skip_if_no_playerhud();
+        $this->make_hud_item('Gold Coin');
+
+        [$cm, $instance] = $this->make_cm_and_instance();
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertFalse($data['hasshop']);
+        $this->assertArrayNotHasKey('shopitems', $data);
     }
 
     /**

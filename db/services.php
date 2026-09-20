@@ -65,6 +65,14 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_buy_stock' => [
+        'classname'    => 'mod_playerpuzzle\external\buy_stock',
+        'methodname'   => 'execute',
+        'description'  => 'Buys 1 unit of loadout stock for the Lobby shop, spending PlayerHUD coins.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
     'mod_playerpuzzle_save_combat_state' => [
         'classname'    => 'mod_playerpuzzle\external\save_combat_state',
         'methodname'   => 'execute',

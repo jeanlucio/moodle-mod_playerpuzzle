@@ -26,6 +26,7 @@ namespace mod_playerpuzzle\local;
 
 use context_module;
 use core_useragent;
+use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use moodle_url;
 use stdClass;
@@ -108,7 +109,8 @@ class lobby_page_service {
         );
         $attempt = reset($inprogress) ?: null;
 
-        $data += self::build_hud_stats_context((int) $course->id, $instance, $userid);
+        $data['cmid'] = $cm->id;
+        $data += self::build_shop_context((int) $course->id, $instance, $userid);
         $data += self::build_progress_context($instance, $attempt, $userid);
         $data += self::build_minquestions_context($instance);
         $data += self::build_difficulty_context($attempt);
@@ -117,47 +119,68 @@ class lobby_page_service {
     }
 
     /**
-     * Builds the PlayerHUD balances context: the coin balance, and the stock the student is
-     * carrying of each consumable that has a PlayerHUD item configured (Sword, Shield,
-     * Potion). Only the items the teacher actually configured are shown — an unconfigured
-     * item (id 0) has nothing meaningful to display. Each stat carries both a raw numeric
-     * value (the visible HUD chip, paired with an icon) and the full sentence (used as the
-     * chip's aria-label, so a screen reader still hears "Coins: 42" instead of a bare "42").
+     * Display label string keys per consumable type, in the same order the shop lists them.
+     */
+    private const SHOP_TYPE_LABELS = [
+        'potion' => 'shop_type_potion',
+        'shield' => 'shop_type_shield',
+        'magic'  => 'shop_type_magic',
+        'sword'  => 'shop_type_sword',
+        'hint'   => 'shop_type_hint',
+    ];
+
+    /**
+     * Builds the coin balance and the pre-match loadout shop context: for every consumable
+     * type, how many units the student currently owns (user_stock) and its coin price. The
+     * shop only appears when a coin item is actually configured — with none, there is no
+     * funding source, so nothing could ever be bought or owned.
+     *
+     * A single user_stock::get_all() call reads all five types' quantities in one query
+     * (rather than one lookup per type), the same bulk-read shape attempt_consumables::
+     * get_uses_by_type() already uses for the equivalent per-attempt count.
      *
      * @param int $courseid Course ID.
      * @param stdClass $instance Activity instance.
      * @param int $userid Current user ID.
      * @return array
      */
-    private static function build_hud_stats_context(int $courseid, stdClass $instance, int $userid): array {
+    private static function build_shop_context(int $courseid, stdClass $instance, int $userid): array {
         $data = [];
 
-        if (hud_service::is_available_for_course($courseid)) {
-            $blockinstanceid = hud_service::get_block_instance_id($courseid);
+        $blockinstanceid = hud_service::is_available_for_course($courseid)
+            ? hud_service::get_block_instance_id($courseid)
+            : null;
+        $coinitemid = (int) $instance->hud_coin_item;
+        $data['hasshop'] = $blockinstanceid !== null && $coinitemid > 0;
 
-            if ((int) $instance->hud_coin_item > 0) {
-                $balance = hud_service::get_upgrade_level($blockinstanceid, $userid, (int) $instance->hud_coin_item);
-                $data['coinvalue'] = $balance;
-                $data['coinstext'] = get_string('lobby_coinbalance', 'mod_playerpuzzle', $balance);
-            }
+        if ($data['hasshop']) {
+            $balance = hud_service::get_upgrade_level($blockinstanceid, $userid, $coinitemid);
+            $data['coinvalue'] = $balance;
+            $data['coinstext'] = get_string('lobby_coinbalance', 'mod_playerpuzzle', $balance);
 
-            $stockitems = [
-                'sword' => ['field' => 'hud_sword_item', 'string' => 'lobby_swordstock'],
-                'shield' => ['field' => 'hud_shield_item', 'string' => 'lobby_shieldstock'],
-                'potion' => ['field' => 'hud_potion_item', 'string' => 'lobby_potionstock'],
-            ];
-            foreach ($stockitems as $key => $meta) {
-                $itemid = (int) $instance->{$meta['field']};
-                if ($itemid > 0) {
-                    $stock = hud_service::get_upgrade_level($blockinstanceid, $userid, $itemid);
-                    $data[$key . 'value'] = $stock;
-                    $data[$key . 'text'] = get_string($meta['string'], 'mod_playerpuzzle', $stock);
-                }
+            $stock = user_stock::get_all($userid, (int) $instance->id);
+            $shopitems = [];
+            foreach (attempt_consumables::TYPES as $type) {
+                $label = get_string(self::SHOP_TYPE_LABELS[$type], 'mod_playerpuzzle');
+                $price = combat::consumable_price($type);
+                $shopitems[] = [
+                    'type'      => $type,
+                    'label'     => $label,
+                    'quantity'  => $stock[$type],
+                    'ownedtext' => get_string('lobby_stockowned', 'mod_playerpuzzle', $stock[$type]),
+                    'price'     => $price,
+                    'buylabel'  => get_string('lobby_buy', 'mod_playerpuzzle'),
+                    'arialabel' => get_string('lobby_buy_arialabel', 'mod_playerpuzzle', (object) [
+                        'label' => $label,
+                        'price' => $price,
+                    ]),
+                ];
             }
+            $data['shoptitle'] = get_string('lobby_shop_title', 'mod_playerpuzzle');
+            $data['shopitems'] = $shopitems;
         }
 
-        $data['hasstats'] = isset($data['coinstext']) || isset($data['swordtext'])
-            || isset($data['shieldtext']) || isset($data['potiontext']);
+        $data['hasstats'] = isset($data['coinstext']);
 
         return $data;
     }

@@ -50,9 +50,6 @@ class mod_playerpuzzle_generator extends testing_module_generator {
             'timelimit'           => 0,
             'maxattempts'         => 0,
             'hud_coin_item'       => 0,
-            'hud_sword_item'      => 0,
-            'hud_shield_item'     => 0,
-            'hud_potion_item'     => 0,
             'hud_retry_cost_item' => 0,
             'hud_retry_cost_qty'  => 1,
             'hud_win_grant_item'  => 0,
@@ -62,7 +59,6 @@ class mod_playerpuzzle_generator extends testing_module_generator {
             'grademethod'         => 1,
             'minquestions'        => 3,
             'considererrors'      => 0,
-            'maxconsumables'      => 1,
             'grade'               => 100,
             'gradepass'           => 0,
         ];

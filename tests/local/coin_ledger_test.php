@@ -37,7 +37,7 @@ final class coin_ledger_test extends \basic_testcase {
      * @return \stdClass
      */
     private function fresh_attempt(): \stdClass {
-        return (object) ['coins_earned' => 0, 'boss_coins_earned' => 0, 'coins_spent' => 0];
+        return (object) ['coins_earned' => 0, 'boss_coins_earned' => 0];
     }
 
     /**
@@ -87,54 +87,30 @@ final class coin_ledger_test extends \basic_testcase {
     }
 
     /**
-     * Tests available() nets the boss's share against the player's earned total, then
-     * subtracts what has already been spent, never going negative.
+     * Tests available() nets the boss's share against the player's earned total, never
+     * going negative.
      *
      * @return void
      */
-    public function test_available_nets_and_subtracts_spending(): void {
-        $attempt = (object) ['coins_earned' => 50, 'boss_coins_earned' => 20, 'coins_spent' => 10];
-        $this->assertSame(20, coin_ledger::available($attempt));
+    public function test_available_nets_the_boss_share(): void {
+        $attempt = (object) ['coins_earned' => 50, 'boss_coins_earned' => 20];
+        $this->assertSame(30, coin_ledger::available($attempt));
 
-        $attempt = (object) ['coins_earned' => 10, 'boss_coins_earned' => 30, 'coins_spent' => 0];
-        $this->assertSame(0, coin_ledger::available($attempt));
-
-        $attempt = (object) ['coins_earned' => 50, 'boss_coins_earned' => 0, 'coins_spent' => 999];
+        $attempt = (object) ['coins_earned' => 10, 'boss_coins_earned' => 30];
         $this->assertSame(0, coin_ledger::available($attempt));
     }
 
     /**
-     * Tests spendable() subtracts only what has already been spent, never the boss's own
-     * share — a boss that had simply matched some Coin pieces on its own turns must not
-     * silently block the student from spending coins the student had genuinely and
-     * separately earned. available() (netting the boss's share) is correct for the final
-     * phase/match payout; spendable() is the one meant for a mid-match purchase gate.
-     *
-     * @return void
-     */
-    public function test_spendable_ignores_the_boss_share(): void {
-        $attempt = (object) ['coins_earned' => 20, 'boss_coins_earned' => 10, 'coins_spent' => 0];
-        $this->assertSame(20, coin_ledger::spendable($attempt));
-
-        $attempt = (object) ['coins_earned' => 20, 'boss_coins_earned' => 999, 'coins_spent' => 10];
-        $this->assertSame(10, coin_ledger::spendable($attempt));
-
-        $attempt = (object) ['coins_earned' => 5, 'boss_coins_earned' => 0, 'coins_spent' => 999];
-        $this->assertSame(0, coin_ledger::spendable($attempt));
-    }
-
-    /**
-     * Tests reset() clears all three ledger columns to 0.
+     * Tests reset() clears both ledger columns to 0.
      *
      * @return void
      */
     public function test_reset_clears_the_ledger(): void {
-        $attempt = (object) ['coins_earned' => 50, 'boss_coins_earned' => 20, 'coins_spent' => 10];
+        $attempt = (object) ['coins_earned' => 50, 'boss_coins_earned' => 20];
 
         coin_ledger::reset($attempt);
 
         $this->assertSame(0, $attempt->coins_earned);
         $this->assertSame(0, $attempt->boss_coins_earned);
-        $this->assertSame(0, $attempt->coins_spent);
     }
 }

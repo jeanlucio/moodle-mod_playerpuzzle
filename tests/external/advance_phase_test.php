@@ -550,13 +550,12 @@ final class advance_phase_test extends \advanced_testcase {
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $result['data']['token']], '*', MUST_EXIST);
         $this->assertSame(0, (int) $attempt->coins_earned);
         $this->assertSame(0, (int) $attempt->boss_coins_earned);
-        $this->assertSame(0, (int) $attempt->coins_spent);
     }
 
     /**
-     * Tests that advancing a phase also clears the maxconsumables use count, the same
-     * per-phase window the coin ledger itself resets — a student who bought their one
-     * allowed Potion in phase 1 must be able to buy one again in phase 2, not stay locked
+     * Tests that advancing a phase also clears the per-type use count, the same per-phase
+     * window the coin ledger itself resets — a student who used up their one allowed
+     * Shield charge in phase 1 must be able to use one again in phase 2, not stay locked
      * out of that type for the rest of the Campaign attempt.
      *
      * @return void

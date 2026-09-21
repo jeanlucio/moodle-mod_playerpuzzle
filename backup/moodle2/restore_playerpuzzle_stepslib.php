@@ -141,9 +141,6 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         $data->questioncategory = (int) $this->get_mappingid('question_category', $data->questioncategory, 0);
 
         $data->hud_coin_item = $this->resolve_hud_item((int) ($data->hud_coin_item ?? 0));
-        $data->hud_sword_item = $this->resolve_hud_item((int) ($data->hud_sword_item ?? 0));
-        $data->hud_shield_item = $this->resolve_hud_item((int) ($data->hud_shield_item ?? 0));
-        $data->hud_potion_item = $this->resolve_hud_item((int) ($data->hud_potion_item ?? 0));
         $data->hud_retry_cost_item = $this->resolve_hud_item((int) ($data->hud_retry_cost_item ?? 0));
         $data->hud_win_grant_item = $this->resolve_hud_item((int) ($data->hud_win_grant_item ?? 0));
 

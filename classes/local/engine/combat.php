@@ -79,8 +79,9 @@ class combat {
     ];
 
     /**
-     * Fixed shop prices in local coins, per consumable type. Not teacher-configurable — only
-     * the per-attempt use limit (maxconsumables) is.
+     * Fixed loadout shop prices in PuzzleCoin, per consumable type. Not teacher-configurable
+     * — nor is the per-phase use limit (attempt_consumables::PHASE_LIMITS), which follows
+     * the mechanic itself rather than a setting.
      */
     private const CONSUMABLE_PRICES = ['potion' => 8, 'shield' => 10, 'magic' => 12, 'sword' => 10, 'hint' => 5];
 

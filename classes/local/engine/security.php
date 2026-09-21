@@ -154,7 +154,7 @@ class security {
      *  button). A Demo request only ever resumes another in-progress Demo, never a real
      *  attempt, and vice versa — the two are entirely separate resume namespaces.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
-     *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned, ->coinsspent,
+     *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned,
      *  ->combatstate, ->isdemo, ->isnew (true when a brand new attempt row was just
      *  created, so the caller can trigger a game_started event exactly once per attempt).
      */
@@ -208,7 +208,6 @@ class security {
                 'questionstotal' => (int) $attempt->questions_total,
                 'coinsearned' => (int) $attempt->coins_earned,
                 'bosscoinsearned' => (int) $attempt->boss_coins_earned,
-                'coinsspent' => (int) $attempt->coins_spent,
                 'combatstate' => $combatstate,
                 'isdemo' => (bool) $attempt->isdemo,
                 'isnew' => false,
@@ -249,7 +248,6 @@ class security {
             'questionstotal' => 0,
             'coinsearned' => 0,
             'bosscoinsearned' => 0,
-            'coinsspent' => 0,
             'combatstate' => null,
             'isdemo' => (bool) $newrow->isdemo,
             'isnew' => true,

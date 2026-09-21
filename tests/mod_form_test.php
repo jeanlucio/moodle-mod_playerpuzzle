@@ -241,8 +241,8 @@ final class mod_form_test extends \advanced_testcase {
         $mform = $this->build_form($instance, $cm);
 
         $this->assertFalse($mform->elementExists('hud_coin_item'));
-        $this->assertFalse($mform->elementExists('hud_sword_item'));
-        $this->assertFalse($mform->elementExists('hud_shield_item'));
+        $this->assertFalse($mform->elementExists('hud_retry_cost_item'));
+        $this->assertFalse($mform->elementExists('hud_win_grant_item'));
     }
 
     /**
@@ -262,8 +262,8 @@ final class mod_form_test extends \advanced_testcase {
         $mform = $this->build_form($instance, $cm);
 
         $this->assertTrue($mform->elementExists('hud_coin_item'));
-        $this->assertTrue($mform->elementExists('hud_sword_item'));
-        $this->assertTrue($mform->elementExists('hud_shield_item'));
+        $this->assertTrue($mform->elementExists('hud_retry_cost_item'));
+        $this->assertTrue($mform->elementExists('hud_win_grant_item'));
     }
 
     /**

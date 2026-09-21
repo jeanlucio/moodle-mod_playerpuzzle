@@ -524,5 +524,31 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092001, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092103) {
+        // Drop maxconsumables (replaced by attempt_consumables::PHASE_LIMITS, a fixed
+        // per-type limit rather than a single teacher-configurable number) and
+        // hud_sword_item/hud_shield_item/hud_potion_item (the per-type PlayerHUD stock
+        // items are retired in favour of PuzzleCoin, the plugin's own persistent balance).
+        // Safe to drop outright rather than deprecate: the plugin has not been published
+        // yet, so there is no real installation with a configured value to preserve.
+        $table = new xmldb_table('playerpuzzle');
+        foreach (['maxconsumables', 'hud_sword_item', 'hud_shield_item', 'hud_potion_item'] as $fieldname) {
+            $field = new xmldb_field($fieldname);
+            if ($dbman->field_exists($table, $field)) {
+                $dbman->drop_field($table, $field);
+            }
+        }
+
+        // Drop coins_spent: with buying moved entirely out of a match, nothing debits it
+        // any more, and coin_ledger::spendable() (the only reader) is retired alongside it.
+        $attemptstable = new xmldb_table('playerpuzzle_attempts');
+        $coinsspentfield = new xmldb_field('coins_spent');
+        if ($dbman->field_exists($attemptstable, $coinsspentfield)) {
+            $dbman->drop_field($attemptstable, $coinsspentfield);
+        }
+
+        upgrade_mod_savepoint(true, 2026092103, 'playerpuzzle');
+    }
+
     return true;
 }

@@ -68,8 +68,6 @@ final class lib_crud_test extends \advanced_testcase {
             'timelimit'        => 0,
             'maxattempts'      => 0,
             'hud_coin_item'    => 0,
-            'hud_sword_item'   => 0,
-            'hud_shield_item'  => 0,
             'grade'            => 100,
             'gradepass'        => 0,
         ];
@@ -111,8 +109,6 @@ final class lib_crud_test extends \advanced_testcase {
             'timelimit'        => 0,
             'maxattempts'      => 0,
             'hud_coin_item'    => 0,
-            'hud_sword_item'   => 0,
-            'hud_shield_item'  => 0,
             'grade'            => 100,
             'gradepass'        => null,
         ];

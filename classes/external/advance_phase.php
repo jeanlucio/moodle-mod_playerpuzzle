@@ -179,8 +179,8 @@ class advance_phase extends external_api {
                 // ceiling sized to this phase's own boss HP (a stable value, not tied to
                 // damage dealt — see combat::coin_ceiling()'s own docblock), bank whatever is
                 // available, then reset the ledger to 0 — the next phase starts its own clean
-                // window, since coins_earned/boss_coins_earned/coins_spent track only the
-                // phase currently being played, not the whole Campaign attempt.
+                // window, since coins_earned/boss_coins_earned track only the phase
+                // currently being played, not the whole Campaign attempt.
                 // attempt_consumables::reset_attempt() below clears the same window's
                 // per-type use count, for the same reason.
                 $scaledbossdamage = combat::apply_difficulty(

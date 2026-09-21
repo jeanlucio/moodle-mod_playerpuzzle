@@ -152,10 +152,10 @@ class save_progress extends external_api {
         $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);
         $attempt->score = round(($safedamage / max(1, $bosshp)) * 100, 5);
 
-        // Coin ledger: the amount actually banked below comes from coins_earned/boss_coins_earned/
-        // coins_spent, never from a raw client-reported gold total — the client's own report is
-        // only trusted up to a plausibility ceiling sized to this phase's own boss HP (a stable
-        // value, not tied to damage dealt — see combat::coin_ceiling()'s own docblock for why).
+        // Coin ledger: the amount actually banked below comes from coins_earned/boss_coins_earned,
+        // never from a raw client-reported gold total — the client's own report is only trusted
+        // up to a plausibility ceiling sized to this phase's own boss HP (a stable value, not
+        // tied to damage dealt — see combat::coin_ceiling()'s own docblock for why).
         $scaledbossdamage = combat::apply_difficulty(
             combat::calculate_boss_hp(
                 (int) $playerpuzzle->bossdamage,

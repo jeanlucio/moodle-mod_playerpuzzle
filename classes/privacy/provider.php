@@ -84,7 +84,6 @@ class provider implements
             'questions_total'   => 'privacy:metadata:questions_total',
             'coins_earned'      => 'privacy:metadata:coins_earned',
             'boss_coins_earned' => 'privacy:metadata:boss_coins_earned',
-            'coins_spent'       => 'privacy:metadata:coins_spent',
             'combatstate'       => 'privacy:metadata:combatstate',
             'score'             => 'privacy:metadata:score',
             'status'            => 'privacy:metadata:status',
@@ -277,7 +276,7 @@ class provider implements
 
         $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.difficulty, pa.bosshp_remaining,
                        pa.questions_correct, pa.questions_total, pa.coins_earned,
-                       pa.boss_coins_earned, pa.coins_spent, pa.combatstate, pa.score, pa.status,
+                       pa.boss_coins_earned, pa.combatstate, pa.score, pa.status,
                        pa.timecreated, pa.timefinished, ctx.id AS contextid
                   FROM {playerpuzzle_attempts} pa
                   JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
@@ -299,7 +298,6 @@ class provider implements
                 'questionstotal'   => $record->questions_total,
                 'coinsearned'      => $record->coins_earned,
                 'bosscoinsearned'  => $record->boss_coins_earned,
-                'coinsspent'       => $record->coins_spent,
                 'combatstate'      => $record->combatstate,
                 'score'            => $record->score,
                 'status'           => $record->status,

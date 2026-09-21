@@ -75,8 +75,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // Difficulty coin multiplier (Easy 0.5, Normal 1, Hard 3), applied to every coin
             // gained so the HUD, the history log and the end screen all match what the client
             // reports — the server independently re-derives the bankable amount from its own
-            // ledger (coins_earned/boss_coins_earned/coins_spent), capped by a damage-based
-            // ceiling, never trusting this value outright.
+            // ledger (coins_earned/boss_coins_earned), capped by a damage-based ceiling,
+            // never trusting this value outright.
             this.coinFactor = parseFloat(gameConfig.coinfactor) || 1;
             // Minimum-questions rule: the server is the only source of truth for how many
             // questions this attempt has answered (questionsTotal starts at whatever a resumed

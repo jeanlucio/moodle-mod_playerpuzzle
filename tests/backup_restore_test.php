@@ -523,7 +523,6 @@ final class backup_restore_test extends \advanced_testcase {
             'gradepass'          => 20,
             'completionattempts' => 3,
             'completionwins'     => 1,
-            'maxconsumables'     => 4,
         ]);
         $attemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
             'playerpuzzleid'    => $instance->id,
@@ -554,7 +553,6 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertEqualsWithDelta(20.0, (float) $newinstance->gradepass, 0.001);
         $this->assertSame(3, (int) $newinstance->completionattempts);
         $this->assertSame(1, (int) $newinstance->completionwins);
-        $this->assertSame(4, (int) $newinstance->maxconsumables);
 
         $newattempt = $DB->get_record(
             'playerpuzzle_attempts',

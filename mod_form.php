@@ -179,11 +179,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addHelpButton('maxattempts', 'maxattempts', 'mod_playerpuzzle');
         $mform->hideIf('maxattempts', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
 
-        $mform->addElement('text', 'maxconsumables', get_string('maxconsumables', 'mod_playerpuzzle'));
-        $mform->setType('maxconsumables', PARAM_INT);
-        $mform->setDefault('maxconsumables', 1);
-        $mform->addHelpButton('maxconsumables', 'maxconsumables', 'mod_playerpuzzle');
-
         $this->add_hud_elements($mform, (int) $COURSE->id);
 
         $this->standard_grading_coursemodule_elements();
@@ -192,11 +187,11 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
     }
 
     /**
-     * Adds the PlayerHUD integration section: which items stand in for coins, the sword
-     * upgrade level, and the shield upgrade level. Only rendered when a block_playerhud
-     * instance exists in this course. All three fields list the same set of items — PlayerHUD's
-     * own auto-generated PlayerCoin item shows up as an ordinary option here, like any other
-     * item the teacher could pick or create.
+     * Adds the PlayerHUD integration section: which item a student can transfer from into
+     * PuzzleCoin, plus the retry-cost and win-grant items. Only rendered when a
+     * block_playerhud instance exists in this course. All fields list the same set of
+     * items — PlayerHUD's own auto-generated PlayerCoin item shows up as an ordinary option
+     * here, like any other item the teacher could pick or create.
      *
      * @param MoodleQuickForm $mform The form being built.
      * @param int $courseid Current course ID.
@@ -224,36 +219,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('hud_coin_item', PARAM_INT);
         $mform->setDefault('hud_coin_item', 0);
         $mform->addHelpButton('hud_coin_item', 'hud_coin_item', 'mod_playerpuzzle');
-
-        $mform->addElement(
-            'select',
-            'hud_sword_item',
-            get_string('hud_sword_item', 'mod_playerpuzzle'),
-            $this->add_stale_hud_item_option($itemoptions, $blockinstanceid, 'hud_sword_item')
-        );
-        $mform->setType('hud_sword_item', PARAM_INT);
-        $mform->setDefault('hud_sword_item', 0);
-        $mform->addHelpButton('hud_sword_item', 'hud_sword_item', 'mod_playerpuzzle');
-
-        $mform->addElement(
-            'select',
-            'hud_shield_item',
-            get_string('hud_shield_item', 'mod_playerpuzzle'),
-            $this->add_stale_hud_item_option($itemoptions, $blockinstanceid, 'hud_shield_item')
-        );
-        $mform->setType('hud_shield_item', PARAM_INT);
-        $mform->setDefault('hud_shield_item', 0);
-        $mform->addHelpButton('hud_shield_item', 'hud_shield_item', 'mod_playerpuzzle');
-
-        $mform->addElement(
-            'select',
-            'hud_potion_item',
-            get_string('hud_potion_item', 'mod_playerpuzzle'),
-            $this->add_stale_hud_item_option($itemoptions, $blockinstanceid, 'hud_potion_item')
-        );
-        $mform->setType('hud_potion_item', PARAM_INT);
-        $mform->setDefault('hud_potion_item', 0);
-        $mform->addHelpButton('hud_potion_item', 'hud_potion_item', 'mod_playerpuzzle');
 
         $mform->addElement(
             'select',

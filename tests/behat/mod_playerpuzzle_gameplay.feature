@@ -29,7 +29,7 @@ Feature: PlayerPuzzle pre-match loadout shop
       | Dungeon Quiz | student1 | coin           | 20       |
     When I log in as "student1"
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
-    Then I should see "PuzzleCoin: 20"
+    Then I should see "20" in the "[data-role='coinvalue']" "css_element"
     And I should see "Loadout Shop"
     And I should see "Owned: 0" in the ".pp-lobby-shop-item[data-type='potion']" "css_element"
 
@@ -41,7 +41,7 @@ Feature: PlayerPuzzle pre-match loadout shop
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
     And I click on ".pp-lobby-shop-item[data-type='potion'] .pp-lobby-buy" "css_element"
     Then I should see "Owned: 1" in the ".pp-lobby-shop-item[data-type='potion']" "css_element"
-    And I should see "PuzzleCoin: 12"
+    And I should see "12" in the "[data-role='coinvalue']" "css_element"
 
   Scenario: Buying without enough PuzzleCoin shows an error instead of silently failing
     Given the following "mod_playerpuzzle > user stocks" exist:

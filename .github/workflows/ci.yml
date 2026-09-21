@@ -42,6 +42,7 @@ jobs:
       matrix:
         include:
           - {moodle-branch: 'MOODLE_502_STABLE', php: '8.3', database: 'pgsql', runchecks: 'all'}
+          - {moodle-branch: 'MOODLE_502_STABLE', php: '8.3', database: 'pgsql', runchecks: 'all', noplayerhud: 'true'}
           - {moodle-branch: 'MOODLE_502_STABLE', php: '8.4', database: 'mariadb'}
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.3', database: 'pgsql'}
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.2', database: 'mariadb'}
@@ -73,7 +74,11 @@ jobs:
           echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
 
       - name: Install moodle-plugin-ci
-        run: moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
+        run: |
+          if [ "${{ matrix.noplayerhud }}" != "true" ]; then
+            moodle-plugin-ci add-plugin jeanlucio/moodle-block_playerhud
+          fi
+          moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
         env:
           DB: ${{ matrix.database }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
@@ -115,9 +120,14 @@ jobs:
         if: ${{ !cancelled() }}
         run: moodle-plugin-ci phpunit --fail-on-warning
 
+      # No Behat scenario here adds the PlayerHUD block directly today, but the noplayerhud
+      # leg exists only to exercise PHPUnit's block_playerhud-absent fallback path
+      # (hud_service::is_installed()/is_available_for_course() returning false) — skipped
+      # here for consistency with mod_playerwords/mod_playercross, whose own Behat suites do
+      # need the block genuinely installed and would fail outright, not skip, on this leg.
       - name: Behat tests
         id: behat
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.noplayerhud != 'true' }}
         run: moodle-plugin-ci behat --profile chrome --scss-deprecations
 
       - name: Upload Behat Faildump

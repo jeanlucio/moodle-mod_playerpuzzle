@@ -48,6 +48,7 @@ Full disclosure:
 |-----------|---------|
 | Moodle    | 4.5 – 5.2 |
 | PHP       | 8.2+    |
+| PlayerHUD *(optional)* | v1.7.1+ |
 
 ### 🛠️ Installation & Configuration
 
@@ -117,6 +118,7 @@ Divulgação completa:
 |------------|--------|
 | Moodle     | 4.5 – 5.2 |
 | PHP        | 8.2+   |
+| PlayerHUD *(opcional)* | v1.7.1+ |
 
 ### 🛠️ Instalação e Configuração
 

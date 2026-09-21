@@ -142,6 +142,17 @@ final class hud_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that is_outdated reflects the definition it exists to check: PlayerHUD's
+     * always-present class exists but the item API class is_installed() checks does not.
+     *
+     * @return void
+     */
+    public function test_is_outdated_matches_definition(): void {
+        $expected = class_exists('\block_playerhud\game') && !hud_service::is_installed();
+        $this->assertSame($expected, hud_service::is_outdated());
+    }
+
+    /**
      * Tests that is_available_for_course is true once a block instance exists.
      *
      * @return void

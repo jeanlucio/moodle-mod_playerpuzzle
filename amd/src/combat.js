@@ -22,15 +22,9 @@
  */
 
 define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/config',
-        'mod_playerpuzzle/accessibility'],
-        function($, Ajax, Notification, Templates, Config, Accessibility) {
+        'mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/combat_rules'],
+        function($, Ajax, Notification, Templates, Config, Accessibility, CombatRules) {
     'use strict';
-
-    // Mirrors attempt_consumables::PHASE_LIMITS server-side — the server is still the
-    // source of truth (use_stock.php re-validates), this copy only drives the in-combat
-    // badges' enabled/disabled look without a round trip on every use. 'hint' has no fixed
-    // limit here — its own cap is however much stock the student bought, checked separately.
-    const PHASE_LIMITS = {shield: 1, magic: 1, potion: 3, sword: 3};
 
     // Maps a piece's numeric type (0-6, same indexing as board.js's own PIECE_NAME_KEYS) to
     // the lang string key holding its one-time tutorial balloon text.
@@ -229,7 +223,16 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const boardgrid = [];
             for (let row = 0; row < board.rows; row++) {
                 for (let col = 0; col < board.cols; col++) {
-                    boardgrid.push(board.grid[row][col].type);
+                    const piece = board.grid[row][col];
+                    if (!piece) {
+                        // Mid-cascade: a destroyed piece's cell is momentarily empty while
+                        // gravity/matches settle (a ~250-750ms window) — not a safe point to
+                        // checkpoint. _checkpointDirty is left true (never reset below), so
+                        // the next periodic tick or the final unload beacon retries once the
+                        // board has settled, instead of saving a board with a hole baked in.
+                        return;
+                    }
+                    boardgrid.push(piece.type);
                 }
             }
 
@@ -269,105 +272,45 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Combo-size multiplier for pieces whose effect scales with match size (Sword/Coin):
-         * 3 pieces = x1.0 (unchanged baseline), +0.5x per extra piece beyond 3 (4 = x1.5,
-         * 5 = x2.0, extrapolating linearly for any longer run).
+         * Resolves this turn's destroyed pieces/match groups via
+         * mod_playerpuzzle/engine/combat_rules::resolveMatchEffects() — the pure calculation
+         * of every HP/meter/mana/gold change this turn causes — then applies the result back
+         * onto this.* and handles everything that function deliberately never touches: sound,
+         * grid mutation, the destroy tween, the history log, and the tutorial balloon.
          *
-         * @param {number} size Number of pieces in the matched run.
-         * @returns {number} The combo multiplier.
+         * @param {Array} destroyedPieces Pieces destroyed this turn (real Phaser objects —
+         *  board.js still deals in those, only the calculation itself moved to pure logic).
+         * @param {Array} matchGroups Match groups this turn, {type, pieces} (pieces: real
+         *  Phaser objects; only their count is passed into the pure calculation).
+         * @return {{damage: number, question: boolean, trigger: string|null}}
          */
-        comboMultiplier(size) {
-            return 1 + (0.5 * Math.max(0, size - 3));
-        }
-
-        /**
-         * Resolves both poison meters: filling one arms 3 damage rounds against the opponent
-         * (ticked once per their own turn in passTurnToBoss()/passTurnToPlayer()) and resets
-         * subtracting 100, preserving any overshoot for the next fill — same overflow
-         * behaviour as the mana meters.
-         */
-        resolvePoisonMeters() {
-            if (this.playerPoisonMeter >= 100) {
-                this.playerPoisonMeter -= 100;
-                this.bossPoisonRounds += 3;
-            }
-            if (this.bossPoisonMeter >= 100) {
-                this.bossPoisonMeter -= 100;
-                this.playerPoisonRounds += 3;
-            }
-        }
-
-        /**
-         * Resolves both shield meters: filling one arms a single full block of the next hit
-         * *received by that same side* (self-defence, unlike the poison meters) and resets to
-         * 0 flat — no overflow preserved, since there is nothing to carry forward once the
-         * block is armed.
-         */
-        resolveShieldMeters() {
-            if (this.playerShieldMeter >= 100) {
-                this.playerShieldMeter = 0;
-                this.playerShieldReady = true;
-            }
-            if (this.bossShieldMeter >= 100) {
-                this.bossShieldMeter = 0;
-                this.bossShieldReady = true;
-            }
-        }
-
         processEffects(destroyedPieces, matchGroups) {
             const me = this.scene;
-            let questionTriggered = false;
-            let triggeredBy = null;
-            let damageDealt = 0;
-            let coinsGained = 0;
-            let healGained = 0;
-            let multiplierGained = 0;
-            let shieldGained = 0;
-            let poisonGained = 0;
-            let manaGained = 0;
-
             me.sfxMatch.play();
+
+            const result = CombatRules.resolveMatchEffects({
+                currentTurn: this.currentTurn,
+                destroyedTypes: destroyedPieces.map(piece => piece.type),
+                matchGroups: matchGroups.map(group => ({type: group.type, size: group.pieces.length})),
+                state: {
+                    currentPlayerHp: this.currentPlayerHp, maxPlayerHp: this.maxPlayerHp,
+                    currentHp: this.currentHp, maxBossHp: this.maxBossHp,
+                    playerMultiplier: this.playerMultiplier, bossMultiplier: this.bossMultiplier,
+                    playerShieldMeter: this.playerShieldMeter, playerShieldReady: this.playerShieldReady,
+                    bossShieldMeter: this.bossShieldMeter, bossShieldReady: this.bossShieldReady,
+                    playerPoisonMeter: this.playerPoisonMeter, playerPoisonRounds: this.playerPoisonRounds,
+                    bossPoisonMeter: this.bossPoisonMeter, bossPoisonRounds: this.bossPoisonRounds,
+                    playerMana: this.playerMana, bossMana: this.bossMana,
+                    playerGold: this.playerGold, bossGold: this.bossGold,
+                },
+                config: {baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor},
+            });
+            Object.assign(this, result.state);
 
             for (const piece of destroyedPieces) {
                 if (this.currentTurn === 'player') {
                     me.sfxHit.play();
-                    if (piece.type === 5) {
-                        const heal = this.baseDamage / 4;
-                        this.currentPlayerHp = Math.min(this.maxPlayerHp, this.currentPlayerHp + heal);
-                        healGained += heal;
-                    } else if (piece.type === 0) {
-                        this.playerMultiplier += 0.1;
-                        multiplierGained += 0.1;
-                    } else if (piece.type === 4) {
-                        this.playerShieldMeter += 10;
-                        shieldGained += 10;
-                    } else if (piece.type === 1) {
-                        this.playerPoisonMeter += 10;
-                        poisonGained += 10;
-                    } else if (piece.type === 2) {
-                        this.playerMana += 20;
-                        manaGained += 20;
-                    }
-                } else {
-                    if (piece.type === 2) {
-                        this.bossMana += 20;
-                        manaGained += 20;
-                    } else if (piece.type === 0) {
-                        this.bossMultiplier += 0.1;
-                        multiplierGained += 0.1;
-                    } else if (piece.type === 1) {
-                        this.bossPoisonMeter += 10;
-                        poisonGained += 10;
-                    } else if (piece.type === 4) {
-                        this.bossShieldMeter += 10;
-                        shieldGained += 10;
-                    } else if (piece.type === 5) {
-                        const heal = this.baseDamage / 4;
-                        this.currentHp = Math.min(this.maxBossHp, this.currentHp + heal);
-                        healGained += heal;
-                    }
                 }
-
                 me.board.grid[piece.row][piece.col] = null;
                 me.tweens.add({
                     targets: piece, scaleX: 0, scaleY: 0, duration: 200,
@@ -377,51 +320,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 });
             }
 
-            // Sword damage is computed per match group (not per piece) so combo size drives the
-            // multiplier directly: a 3-piece group always resolves to exactly baseDamage, matching
-            // the original flat-per-piece baseline.
-            for (const group of matchGroups) {
-                if (group.type === 3) {
-                    damageDealt += this.baseDamage * this.comboMultiplier(group.pieces.length);
-                }
-            }
-
-            // Coin reuses the same combo curve as Sword, over the separately configurable
-            // coinGain base. The boss's own Coin total never buys anything (it has no shop) —
-            // it exists purely to net against the student's balance in showEndScreen().
-            for (const group of matchGroups) {
-                if (group.type === 6) {
-                    const coins = this.coinGain * this.comboMultiplier(group.pieces.length) * this.coinFactor;
-                    coinsGained += coins;
-                    if (this.currentTurn === 'player') {
-                        this.playerGold += coins;
-                    } else {
-                        this.bossGold += coins;
-                    }
-                }
-            }
-
-            this.playerMultiplier = Math.round(this.playerMultiplier * 10) / 10;
-            this.bossMultiplier = Math.round(this.bossMultiplier * 10) / 10;
-            this.resolvePoisonMeters();
-            this.resolveShieldMeters();
             this.logTurnEffects(
-                damageDealt, coinsGained, healGained, multiplierGained, shieldGained, poisonGained, manaGained
+                result.damageDealt, result.coinsGained, result.healGained,
+                result.multiplierGained, result.shieldGained, result.poisonGained, result.manaGained
             );
-
-            if (this.playerMana >= 100) {
-                this.playerMana -= 100;
-                questionTriggered = true;
-                triggeredBy = 'player';
-            } else if (this.bossMana >= 100) {
-                this.bossMana -= 100;
-                questionTriggered = true;
-                triggeredBy = 'boss';
-            }
 
             this.triggerTutorialBalloons(destroyedPieces, matchGroups);
             this.updateUI();
-            return {damage: damageDealt, question: questionTriggered, trigger: triggeredBy};
+            return {damage: result.damageDealt, question: result.questionTriggered, trigger: result.triggeredBy};
         }
 
         /**
@@ -577,22 +483,22 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * @returns {number}
          */
         phaseLimit(type) {
-            return type in PHASE_LIMITS ? PHASE_LIMITS[type] : Infinity;
+            return CombatRules.phaseLimit(type);
         }
 
         applyDamageToBoss(amount) {
             const me = this.scene;
-            if (this.bossShieldReady) {
+            const result = CombatRules.resolveDamage(this.currentHp, this.bossShieldReady, amount);
+            this.currentHp = result.newHp;
+            if (result.shieldConsumed) {
                 this.bossShieldReady = false;
-                amount = 0;
                 me.ui.pushHistoryLog('boss', this.strings.historylogshieldblock);
             }
 
-            this.currentHp = Math.max(0, this.currentHp - amount);
             this.updateUI();
             Accessibility.announce(
                 this.strings.damagedealt
-                    .replace('{$a->damage}', Math.round(amount))
+                    .replace('{$a->damage}', Math.round(result.appliedAmount))
                     .replace('{$a->hp}', Math.round(this.currentHp))
             );
             me.ui.bossSprite.setTint(0xff0000);
@@ -603,17 +509,17 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
         applyDamageToPlayer(amount) {
             const me = this.scene;
-            if (this.playerShieldReady) {
+            const result = CombatRules.resolveDamage(this.currentPlayerHp, this.playerShieldReady, amount);
+            this.currentPlayerHp = result.newHp;
+            if (result.shieldConsumed) {
                 this.playerShieldReady = false;
-                amount = 0;
                 me.ui.pushHistoryLog('player', this.strings.historylogshieldblock);
             }
 
-            this.currentPlayerHp = Math.max(0, this.currentPlayerHp - amount);
             this.updateUI();
             Accessibility.announce(
                 this.strings.damagetaken
-                    .replace('{$a->damage}', Math.round(amount))
+                    .replace('{$a->damage}', Math.round(result.appliedAmount))
                     .replace('{$a->hp}', Math.round(this.currentPlayerHp))
             );
             // Mirrors applyDamageToBoss()'s own tint flash — replaces a screen shake found
@@ -630,9 +536,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.currentTurn = 'boss';
             me.input.enabled = false;
 
-            if (this.bossPoisonRounds > 0) {
-                this.currentHp = Math.max(0, this.currentHp - this.baseDamage);
-                this.bossPoisonRounds--;
+            const tick = CombatRules.resolvePoisonTick(this.currentHp, this.bossPoisonRounds, this.baseDamage);
+            if (tick.ticked) {
+                this.currentHp = tick.newHp;
+                this.bossPoisonRounds = tick.newPoisonRounds;
                 this.updateUI();
                 me.ui.bossSprite.setTint(0xff00ff);
                 me.ui.pushHistoryLog('boss', this.strings.historylogpoisontick.replace('{$a}', this.baseDamage));
@@ -675,9 +582,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const me = this.scene;
             this.currentTurn = 'player';
 
-            if (this.playerPoisonRounds > 0) {
-                this.currentPlayerHp = Math.max(0, this.currentPlayerHp - this.baseDamage);
-                this.playerPoisonRounds--;
+            const tick = CombatRules.resolvePoisonTick(this.currentPlayerHp, this.playerPoisonRounds, this.baseDamage);
+            if (tick.ticked) {
+                this.currentPlayerHp = tick.newHp;
+                this.playerPoisonRounds = tick.newPoisonRounds;
                 this.updateUI();
                 // Mirrors passTurnToBoss()'s own poison-tick tint, replacing a
                 // screen shake — see applyDamageToPlayer()'s own comment for why.
@@ -724,7 +632,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * @returns {boolean} True when the boss should revive instead of the match ending.
          */
         needsRevive() {
-            return this.minQuestions > 0 && this.questionsTotal < this.minQuestions;
+            return CombatRules.needsRevive(this.minQuestions, this.questionsTotal);
         }
 
         /**
@@ -733,7 +641,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * per match, since questionsTotal keeps advancing with every answer regardless.
          */
         reviveBoss() {
-            this.currentHp = Math.ceil(this.maxBossHp * 0.5);
+            this.currentHp = CombatRules.reviveHp(this.maxBossHp);
             this.updateUI();
             this.scene.ui.pushHistoryLog('boss', this.strings.historylogrevive);
             Accessibility.announce(this.strings.bossrevived);
@@ -829,25 +737,28 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          */
         applyConsumableEffect(type) {
             const me = this.scene;
+            // Reuses resolveShieldMeters()/resolvePoisonMeters()'s own overflow-preserving
+            // logic via resolveConsumableEffect() instead of setting shieldReady/rounds
+            // directly, so a purchase behaves identically to filling the ring by matching
+            // Shield/Grimoire pieces.
+            const result = CombatRules.resolveConsumableEffect(type, {
+                currentPlayerHp: this.currentPlayerHp, maxPlayerHp: this.maxPlayerHp,
+                playerShieldMeter: this.playerShieldMeter, playerShieldReady: this.playerShieldReady,
+                bossShieldMeter: this.bossShieldMeter, bossShieldReady: this.bossShieldReady,
+                playerPoisonMeter: this.playerPoisonMeter, playerPoisonRounds: this.playerPoisonRounds,
+                bossPoisonMeter: this.bossPoisonMeter, bossPoisonRounds: this.bossPoisonRounds,
+            }, {baseDamage: this.baseDamage});
+            Object.assign(this, result.state);
 
             if (type === 'potion') {
-                const heal = this.baseDamage * 1.25;
-                this.currentPlayerHp = Math.min(this.maxPlayerHp, this.currentPlayerHp + heal);
-                me.ui.pushHistoryLog('player', this.strings.historylogheal.replace('{$a}', Math.round(heal)));
+                me.ui.pushHistoryLog('player', this.strings.historylogheal.replace('{$a}', Math.round(result.healAmount)));
             } else if (type === 'shield') {
-                // Reuses resolveShieldMeters()'s own overflow-preserving logic instead of
-                // setting shieldReady directly, so a purchase behaves identically to filling
-                // the ring by matching Shield pieces.
-                this.playerShieldMeter += 100;
-                this.resolveShieldMeters();
                 me.ui.pushHistoryLog('player', this.strings.historylogshieldcharge.replace('{$a}', 100));
             } else if (type === 'magic') {
-                this.playerPoisonMeter += 100;
-                this.resolvePoisonMeters();
                 me.ui.pushHistoryLog('player', this.strings.historylogpoisoncharge.replace('{$a}', 100));
             } else if (type === 'sword') {
-                this.applyDamageToBoss(this.baseDamage);
-                me.ui.pushHistoryLog('player', this.strings.historylogattack.replace('{$a}', Math.round(this.baseDamage)));
+                this.applyDamageToBoss(result.damageAmount);
+                me.ui.pushHistoryLog('player', this.strings.historylogattack.replace('{$a}', Math.round(result.damageAmount)));
             }
 
             this.checkGameOver();
@@ -861,14 +772,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * @returns {boolean} True when a next phase or level exists to advance to.
          */
         hasNextPhase() {
-            const cfg = this.gameConfig;
-            if (cfg.gamemode !== 'campaign') {
-                return false;
-            }
-            const phase = parseInt(cfg.currentphase, 10) || 1;
-            const level = parseInt(cfg.currentlevel, 10) || 1;
-            const maxlevels = parseInt(cfg.maxlevels, 10) || 1;
-            return phase < 10 || level < maxlevels;
+            return CombatRules.hasNextPhase(this.gameConfig);
         }
 
         /**

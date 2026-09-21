@@ -34,6 +34,7 @@ use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\user_stock;
 use moodle_exception;
 
 /**
@@ -196,16 +197,10 @@ class advance_phase extends external_api {
 
                 $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
 
-                $coinsbanked = 0;
                 $payable = coin_ledger::available($attempt);
-                if ($payable > 0 && $blockinstanceid !== null) {
-                    $banked = hud_service::credit_coins(
-                        $blockinstanceid,
-                        (int) $USER->id,
-                        (int) $playerpuzzle->hud_coin_item,
-                        $payable
-                    );
-                    $coinsbanked = $banked ? $payable : 0;
+                $coinsbanked = $payable;
+                if ($payable > 0) {
+                    user_stock::credit((int) $USER->id, (int) $playerpuzzle->id, user_stock::CURRENCY_TYPE, $payable);
                 }
 
                 // Win-grant item, separate from the coin balance — granted on every phase win,
@@ -286,7 +281,7 @@ class advance_phase extends external_api {
             'difficulty'   => new external_value(PARAM_ALPHA, 'Difficulty the attempt now carries for the new phase'),
             'bosshp'       => new external_value(PARAM_INT, 'Scaled boss HP for the new phase'),
             'studenthp'    => new external_value(PARAM_INT, 'Scaled student HP for the new phase'),
-            'coinsbanked'  => new external_value(PARAM_INT, 'Coins banked into PlayerHUD for this phase'),
+            'coinsbanked'  => new external_value(PARAM_INT, 'PuzzleCoin banked for this phase'),
         ]);
     }
 }

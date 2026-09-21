@@ -14,8 +14,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Lobby loadout shop: buys 1 unit of a consumable type, updating the owned count and coin
- * balance already on the page instead of reloading it.
+ * Lobby loadout shop: buys 1 unit of a consumable type (spending PuzzleCoin) and transfers
+ * PlayerHUD coins into PuzzleCoin, updating the balances already on the page instead of
+ * reloading it.
  *
  * @module     mod_playerpuzzle/lobby_shop
  * @copyright  2026 Jean Lúcio
@@ -58,14 +59,14 @@ const buy = async(cmid, button) => {
         if (coinChipEl) {
             coinChipEl.setAttribute(
                 'aria-label',
-                await getString('lobby_coinbalance', 'mod_playerpuzzle', result.newcoinbalance)
+                await getString('lobby_puzzlecoinbalance', 'mod_playerpuzzle', result.newcoinbalance)
             );
         }
     } catch (error) {
-        // A rejected purchase (insufficient coins, unconfigured economy, a locked
-        // concurrent purchase) is an anticipated workflow outcome the server already
-        // explains via its own moodle_exception message, not an unexpected bug —
-        // Notification.alert() shows that message directly.
+        // A rejected purchase (insufficient coins, a locked concurrent purchase) is an
+        // anticipated workflow outcome the server already explains via its own
+        // moodle_exception message, not an unexpected bug — Notification.alert() shows
+        // that message directly.
         Notification.alert(await getString('lobby_shop_title', 'mod_playerpuzzle'), error.message);
     } finally {
         button.disabled = false;
@@ -73,15 +74,74 @@ const buy = async(cmid, button) => {
 };
 
 /**
- * Wires every "Buy" button in the Lobby shop.
+ * Converts the amount typed in the transfer input from PlayerHUD coins into PuzzleCoin, then
+ * updates both balance chips from the server's authoritative response.
+ *
+ * @param {number} cmid Course module id.
+ * @param {HTMLElement} button The clicked "Transfer" button.
+ * @return {Promise<void>}
+ */
+const transfer = async(cmid, button) => {
+    const widget = button.closest('.pp-lobby-transfer');
+    const amountInput = widget ? widget.querySelector('.pp-lobby-transfer-input') : null;
+    const amount = amountInput ? parseInt(amountInput.value, 10) : 0;
+
+    button.disabled = true;
+    try {
+        const result = await Ajax.call([{
+            methodname: 'mod_playerpuzzle_transfer_hud_coins',
+            args: {cmid, amount},
+        }])[0];
+
+        const hudValueEl = widget ? widget.querySelector('[data-role="hudcoinvalue"]') : null;
+        const hudChipEl = widget ? widget.querySelector('[data-role="hudcoinchip"]') : null;
+        if (hudValueEl) {
+            hudValueEl.textContent = result.newhudbalance;
+        }
+        if (hudChipEl) {
+            hudChipEl.setAttribute(
+                'aria-label',
+                await getString('lobby_hudcoinbalance', 'mod_playerpuzzle', result.newhudbalance)
+            );
+        }
+
+        const coinValueEl = document.querySelector('[data-role="coinvalue"]');
+        const coinChipEl = document.querySelector('[data-role="coinchip"]');
+        if (coinValueEl) {
+            coinValueEl.textContent = result.newpuzzlecoinbalance;
+        }
+        if (coinChipEl) {
+            coinChipEl.setAttribute(
+                'aria-label',
+                await getString('lobby_puzzlecoinbalance', 'mod_playerpuzzle', result.newpuzzlecoinbalance)
+            );
+        }
+    } catch (error) {
+        // A rejected transfer (invalid amount, insufficient PlayerHUD balance, a locked
+        // concurrent request) is an anticipated workflow outcome the server already
+        // explains via its own moodle_exception message.
+        Notification.alert(await getString('lobby_transfer_title', 'mod_playerpuzzle'), error.message);
+    } finally {
+        button.disabled = false;
+    }
+};
+
+/**
+ * Wires every "Buy" button and the "Transfer" button in the Lobby shop.
  *
  * @param {number} cmid Course module id.
  */
 export const init = (cmid) => {
     document.addEventListener('click', (event) => {
-        const button = event.target.closest('.pp-lobby-buy');
-        if (button) {
-            buy(cmid, button);
+        const buyButton = event.target.closest('.pp-lobby-buy');
+        if (buyButton) {
+            buy(cmid, buyButton);
+            return;
+        }
+
+        const transferButton = event.target.closest('.pp-lobby-transfer-btn');
+        if (transferButton) {
+            transfer(cmid, transferButton);
         }
     });
 };

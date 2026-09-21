@@ -112,8 +112,9 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the base Lobby fields (Play URL/text, sesskey) are always present, and
-     * hasstats is false without any PlayerHUD item configured.
+     * Tests that the base Lobby fields (Play URL/text, sesskey) are always present, and the
+     * loadout shop always appears — PuzzleCoin is PlayerPuzzle's own balance, so the shop
+     * needs no PlayerHUD configuration at all. The transfer widget, however, needs one.
      *
      * @return void
      */
@@ -132,9 +133,10 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertStringContainsString('play.php', $data['playurl']);
         $this->assertSame(get_string('playdemo', 'mod_playerpuzzle'), $data['playdemotext']);
         $this->assertStringContainsString('play.php', $data['demourl']);
-        $this->assertFalse($data['hasstats']);
-        $this->assertArrayNotHasKey('coinstext', $data);
-        $this->assertFalse($data['hasshop']);
+        $this->assertSame(get_string('lobby_puzzlecoinbalance', 'mod_playerpuzzle', 0), $data['coinstext']);
+        $this->assertSame(0, $data['coinvalue']);
+        $this->assertCount(5, $data['shopitems']);
+        $this->assertFalse($data['hastransfer']);
         $this->assertSame(get_string('lobby_ready', 'mod_playerpuzzle'), $data['readytext']);
         $this->assertStringContainsString('player', $data['heroimageurl']);
         $this->assertStringContainsString('panel_stone.webp', $data['panelstoneurl']);
@@ -142,19 +144,14 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the coin balance and the loadout shop both appear once hud_coin_item is
-     * configured — the shop needs a funding source to exist at all, so the two turn on
-     * together, not independently per consumable type as before.
+     * Tests that the PuzzleCoin balance reflects what the student actually holds — credited
+     * directly here, with no PlayerHUD involved, since PuzzleCoin is PlayerPuzzle's own.
      *
      * @return void
      */
-    public function test_build_page_data_shows_coin_balance_and_shop_when_configured(): void {
-        $this->skip_if_no_playerhud();
-        [$biid, $coinitemid] = $this->make_hud_item('Gold Coin');
-
-        [$cm, $instance] = $this->make_cm_and_instance(['hud_coin_item' => $coinitemid]);
-
-        \block_playerhud\local\external_items::grant($biid, $coinitemid, (int) $this->student->id, 42, 'test', false);
+    public function test_build_page_data_shows_puzzlecoin_balance(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+        user_stock::credit((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE, 42);
 
         $data = lobby_page_service::build_page_data(
             $cm,
@@ -164,24 +161,18 @@ final class lobby_page_service_test extends \advanced_testcase {
             \context_module::instance($cm->id)
         );
 
-        $this->assertTrue($data['hasstats']);
-        $this->assertSame(get_string('lobby_coinbalance', 'mod_playerpuzzle', 42), $data['coinstext']);
+        $this->assertSame(get_string('lobby_puzzlecoinbalance', 'mod_playerpuzzle', 42), $data['coinstext']);
         $this->assertSame(42, $data['coinvalue']);
-        $this->assertTrue($data['hasshop']);
-        $this->assertCount(5, $data['shopitems']);
     }
 
     /**
      * Tests that each shop item reports the student's real owned quantity (from
-     * user_stock, not any PlayerHUD item) and its fixed coin price.
+     * user_stock) and its fixed coin price.
      *
      * @return void
      */
     public function test_build_page_data_shows_consumable_stock(): void {
-        $this->skip_if_no_playerhud();
-        [$biid, $coinitemid] = $this->make_hud_item('Gold Coin');
-
-        [$cm, $instance] = $this->make_cm_and_instance(['hud_coin_item' => $coinitemid]);
+        [$cm, $instance] = $this->make_cm_and_instance();
 
         user_stock::credit((int) $this->student->id, (int) $instance->id, 'sword', 3);
 
@@ -206,15 +197,42 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the shop never appears without a coin item configured, even when
-     * PlayerHUD itself is installed and available — there would be no funding source to
-     * spend from.
+     * Tests that the transfer widget appears once hud_coin_item is configured, showing the
+     * student's real PlayerHUD balance.
      *
      * @return void
      */
-    public function test_build_page_data_no_shop_without_coin_item(): void {
+    public function test_build_page_data_shows_transfer_when_hud_coin_item_configured(): void {
         $this->skip_if_no_playerhud();
-        $this->make_hud_item('Gold Coin');
+        [$biid, $coinitemid] = $this->make_hud_item('PlayerCoin');
+
+        [$cm, $instance] = $this->make_cm_and_instance(['hud_coin_item' => $coinitemid]);
+
+        \block_playerhud\local\external_items::grant($biid, $coinitemid, (int) $this->student->id, 15, 'test', false);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertTrue($data['hastransfer']);
+        $this->assertSame(15, $data['hudcoinvalue']);
+        $this->assertSame(get_string('lobby_hudcoinbalance', 'mod_playerpuzzle', 15), $data['hudcoinstext']);
+    }
+
+    /**
+     * Tests that the transfer widget never appears without a coin item configured, even
+     * when PlayerHUD itself is installed and available — there would be nothing to
+     * transfer from. The shop itself is unaffected.
+     *
+     * @return void
+     */
+    public function test_build_page_data_no_transfer_without_coin_item(): void {
+        $this->skip_if_no_playerhud();
+        $this->make_hud_item('PlayerCoin');
 
         [$cm, $instance] = $this->make_cm_and_instance();
 
@@ -226,8 +244,9 @@ final class lobby_page_service_test extends \advanced_testcase {
             \context_module::instance($cm->id)
         );
 
-        $this->assertFalse($data['hasshop']);
-        $this->assertArrayNotHasKey('shopitems', $data);
+        $this->assertFalse($data['hastransfer']);
+        $this->assertArrayNotHasKey('hudcoinvalue', $data);
+        $this->assertCount(5, $data['shopitems']);
     }
 
     /**

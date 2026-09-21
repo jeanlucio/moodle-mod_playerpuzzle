@@ -25,10 +25,8 @@
 
 namespace mod_playerpuzzle\external;
 
-use context_course;
 use context_module;
 use core_external\external_api;
-use mod_playerpuzzle\local\hud_service;
 use mod_playerpuzzle\local\user_stock;
 
 /**
@@ -66,60 +64,6 @@ final class buy_stock_test extends \advanced_testcase {
     }
 
     /**
-     * Inserts a block_playerhud block instance and one item in the course, returning
-     * both IDs.
-     *
-     * @return array{0: int, 1: int} [$blockinstanceid, $itemid]
-     */
-    private function make_hud_item(): array {
-        global $DB;
-
-        if (!$DB->get_manager()->table_exists('block_playerhud_items')) {
-            $this->markTestSkipped('block_playerhud not installed.');
-        }
-
-        $ctx = context_course::instance($this->course->id);
-        $biid = $DB->insert_record('block_instances', (object) [
-            'blockname'         => 'playerhud',
-            'parentcontextid'   => $ctx->id,
-            'showinsubcontexts' => 0,
-            'pagetypepattern'   => 'course-view-*',
-            'subpagepattern'    => null,
-            'defaultregion'     => 'side-pre',
-            'defaultweight'     => 0,
-            'configdata'        => base64_encode(serialize(new \stdClass())),
-            'timecreated'       => time(),
-            'timemodified'      => time(),
-        ]);
-        $itemid = $DB->insert_record('block_playerhud_items', (object) [
-            'blockinstanceid' => $biid,
-            'name'            => 'Coin',
-            'xp'              => 0,
-            'image'           => '',
-            'description'     => '',
-            'enabled'         => 1,
-            'secret'          => 0,
-            'timecreated'     => time(),
-            'timemodified'    => time(),
-        ]);
-
-        return [$biid, $itemid];
-    }
-
-    /**
-     * Grants $qty units of a PlayerHUD item to a user.
-     *
-     * @param int $blockinstanceid Block instance ID.
-     * @param int $itemid Item ID.
-     * @param int $userid User ID.
-     * @param int $qty Quantity to grant.
-     * @return void
-     */
-    private function grant_hud_item(int $blockinstanceid, int $itemid, int $userid, int $qty): void {
-        \block_playerhud\local\external_items::grant($blockinstanceid, $itemid, $userid, $qty, 'test', false);
-    }
-
-    /**
      * Calls the mod_playerpuzzle_buy_stock web service through the real dispatch path.
      *
      * @param array $args Web service arguments.
@@ -131,16 +75,16 @@ final class buy_stock_test extends \advanced_testcase {
     }
 
     /**
-     * Tests a successful purchase: debits the configured coin item at the right price,
-     * credits 1 unit of loadout stock, and returns the new owned quantity.
+     * Tests a successful purchase: debits PuzzleCoin at the right price, credits 1 unit of
+     * loadout stock, and returns the new owned quantity. No PlayerHUD involved at all —
+     * PuzzleCoin is PlayerPuzzle's own balance, credited directly for this test's setup.
      *
      * @return void
      */
     public function test_buy_stock_success(): void {
-        [$biid, $coinitemid] = $this->make_hud_item();
-        $instance = $this->make_instance(['hud_coin_item' => $coinitemid]);
+        $instance = $this->make_instance();
         $this->setUser($this->student);
-        $this->grant_hud_item($biid, $coinitemid, (int) $this->student->id, 20);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE, 20);
 
         $result = $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'potion']);
 
@@ -148,9 +92,30 @@ final class buy_stock_test extends \advanced_testcase {
         $this->assertTrue($result['data']['success']);
         $this->assertSame(1, $result['data']['newquantity']);
         $this->assertSame(1, user_stock::get_quantity((int) $this->student->id, (int) $instance->id, 'potion'));
-        // Potion costs 8; 20 - 8 = 12 left in the coin item.
+        // Potion costs 8; 20 - 8 = 12 left in PuzzleCoin.
         $this->assertSame(12, $result['data']['newcoinbalance']);
-        $this->assertSame(12, hud_service::get_upgrade_level($biid, (int) $this->student->id, $coinitemid));
+        $this->assertSame(
+            12,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
+    }
+
+    /**
+     * Tests that a purchase works with no PlayerHUD installed/configured at all — the
+     * regression this correction closes.
+     *
+     * @return void
+     */
+    public function test_buy_stock_works_without_playerhud(): void {
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE, 8);
+
+        $result = $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'potion']);
+
+        $this->assertFalse($result['error']);
+        $this->assertTrue($result['data']['success']);
+        $this->assertSame(0, $result['data']['newcoinbalance']);
     }
 
     /**
@@ -159,10 +124,9 @@ final class buy_stock_test extends \advanced_testcase {
      * @return void
      */
     public function test_buy_stock_accumulates_on_repeat_purchase(): void {
-        [$biid, $coinitemid] = $this->make_hud_item();
-        $instance = $this->make_instance(['hud_coin_item' => $coinitemid]);
+        $instance = $this->make_instance();
         $this->setUser($this->student);
-        $this->grant_hud_item($biid, $coinitemid, (int) $this->student->id, 100);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE, 100);
 
         $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'hint']);
         $second = $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'hint']);
@@ -172,39 +136,41 @@ final class buy_stock_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a purchase beyond the available coin balance is rejected without
-     * crediting any stock or debiting the coin item.
+     * Tests that a purchase beyond the available PuzzleCoin balance is rejected without
+     * crediting any stock or debiting anything.
      *
      * @return void
      */
     public function test_buy_stock_rejects_insufficient_coins(): void {
-        [$biid, $coinitemid] = $this->make_hud_item();
-        $instance = $this->make_instance(['hud_coin_item' => $coinitemid]);
+        $instance = $this->make_instance();
         $this->setUser($this->student);
-        $this->grant_hud_item($biid, $coinitemid, (int) $this->student->id, 5);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE, 5);
 
         $result = $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'magic']);
 
         $this->assertTrue($result['error']);
         $this->assertSame('insufficientcoins', $result['exception']->errorcode);
         $this->assertSame(0, user_stock::get_quantity((int) $this->student->id, (int) $instance->id, 'magic'));
-        $this->assertSame(5, hud_service::get_upgrade_level($biid, (int) $this->student->id, $coinitemid));
+        $this->assertSame(
+            5,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
     }
 
     /**
-     * Tests that a purchase is rejected when the instance has no coin item configured at
-     * all — there is no funding source to spend from.
+     * Tests that a purchase with no PuzzleCoin at all (never played, never transferred) is
+     * rejected the same way as any other insufficient balance.
      *
      * @return void
      */
-    public function test_buy_stock_rejects_when_hud_economy_unconfigured(): void {
+    public function test_buy_stock_rejects_when_no_puzzlecoin_ever_earned(): void {
         $instance = $this->make_instance();
         $this->setUser($this->student);
 
         $result = $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'potion']);
 
         $this->assertTrue($result['error']);
-        $this->assertSame('hudeconomyunavailable', $result['exception']->errorcode);
+        $this->assertSame('insufficientcoins', $result['exception']->errorcode);
     }
 
     /**
@@ -213,8 +179,7 @@ final class buy_stock_test extends \advanced_testcase {
      * @return void
      */
     public function test_buy_stock_rejects_invalid_type(): void {
-        [$biid, $coinitemid] = $this->make_hud_item();
-        $instance = $this->make_instance(['hud_coin_item' => $coinitemid]);
+        $instance = $this->make_instance();
         $this->setUser($this->student);
 
         $result = $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'bogus']);
@@ -230,12 +195,11 @@ final class buy_stock_test extends \advanced_testcase {
      * @return void
      */
     public function test_buy_stock_is_isolated_by_instance_and_user(): void {
-        [$biid, $coinitemid] = $this->make_hud_item();
-        $instance = $this->make_instance(['hud_coin_item' => $coinitemid]);
-        $otherinstance = $this->make_instance(['hud_coin_item' => $coinitemid]);
+        $instance = $this->make_instance();
+        $otherinstance = $this->make_instance();
         $otherstudent = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->enrol_user($otherstudent->id, $this->course->id, 'student');
-        $this->grant_hud_item($biid, $coinitemid, (int) $this->student->id, 100);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE, 100);
 
         $this->setUser($this->student);
         $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'sword']);
@@ -251,8 +215,7 @@ final class buy_stock_test extends \advanced_testcase {
      * @return void
      */
     public function test_requires_view_capability(): void {
-        [$biid, $coinitemid] = $this->make_hud_item();
-        $instance = $this->make_instance(['hud_coin_item' => $coinitemid]);
+        $instance = $this->make_instance();
         $modcontext = context_module::instance($instance->cmid);
 
         $prohibitedrole = $this->getDataGenerator()->create_role();

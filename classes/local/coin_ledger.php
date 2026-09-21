@@ -65,7 +65,7 @@ class coin_ledger {
      * The final reward this window pays out: gross earned, minus the boss's own share,
      * minus whatever has already been spent on consumables. Never negative. Used only for
      * the actual payout at the end of a phase/match (save_progress.php/advance_phase.php,
-     * crediting hud_coin_item) — never to gate a purchase mid-match, which is what
+     * crediting PuzzleCoin) — never to gate a purchase mid-match, which is what
      * spendable() below is for.
      *
      * @param stdClass $attempt The attempt row.

@@ -37,6 +37,15 @@ namespace mod_playerpuzzle\local;
  */
 class user_stock {
     /**
+     * The consumabletype value reserved for a user's PuzzleCoin balance — the currency that
+     * funds the loadout shop, never itself a purchasable item. Lives in this same table
+     * (same credit()/debit()/get_quantity(), same lock) rather than a dedicated table, since
+     * the shape (one quantity per user+instance+type) already fits a currency balance as well
+     * as it fits consumable stock.
+     */
+    public const CURRENCY_TYPE = 'coin';
+
+    /**
      * Returns how many units of a consumable type the user currently owns for an instance.
      *
      * @param int $userid User ID.

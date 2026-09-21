@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * External function to buy one unit of loadout stock, before a match starts.
+ * External function to convert PlayerHUD coins into PuzzleCoin.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -29,19 +29,18 @@ use core_external\external_api;
 use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
-use mod_playerpuzzle\local\attempt_consumables;
-use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\hud_service;
 use mod_playerpuzzle\local\user_stock;
 use moodle_exception;
 
 /**
- * Buys 1 unit of a consumable type for the Lobby loadout, spending PuzzleCoin — the
- * PlayerPuzzle's own balance, always available regardless of PlayerHUD. PlayerHUD coins
- * never fund a purchase directly; they only reach PuzzleCoin through a separate, explicit
- * transfer (transfer_hud_coins.php).
+ * Converts a student-chosen amount of the instance's configured PlayerHUD coin item into
+ * PuzzleCoin, 1:1. This is the only way PlayerHUD coins reach PuzzleCoin — PlayerPuzzle
+ * itself never credits hud_coin_item automatically; a student who wants to bring in coins
+ * earned elsewhere in the PlayerHUD economy does so explicitly, choosing how much.
  */
-class buy_stock extends external_api {
+class transfer_hud_coins extends external_api {
     /**
      * Returns the parameter definitions.
      *
@@ -49,24 +48,24 @@ class buy_stock extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module ID'),
-            'type' => new external_value(PARAM_ALPHA, 'Consumable type: potion, shield, magic, sword or hint'),
+            'cmid'   => new external_value(PARAM_INT, 'Course module ID'),
+            'amount' => new external_value(PARAM_INT, 'Units to convert from the PlayerHUD coin item'),
         ]);
     }
 
     /**
-     * Buys 1 unit of loadout stock.
+     * Converts PlayerHUD coins into PuzzleCoin.
      *
      * @param int $cmid Course module ID.
-     * @param string $type Consumable type.
-     * @return array Result with success and newquantity.
+     * @param int $amount Units to convert.
+     * @return array Result with success and the two updated balances.
      */
-    public static function execute(int $cmid, string $type): array {
+    public static function execute(int $cmid, int $amount): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
-            'cmid' => $cmid,
-            'type' => $type,
+            'cmid'   => $cmid,
+            'amount' => $amount,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -76,50 +75,54 @@ class buy_stock extends external_api {
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
         $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $cm->instance], '*', MUST_EXIST);
 
-        if (!in_array($params['type'], attempt_consumables::TYPES, true)) {
-            throw new moodle_exception('consumabletypeinvalid', 'mod_playerpuzzle');
+        if ($params['amount'] <= 0) {
+            throw new moodle_exception('invalidtransferamount', 'mod_playerpuzzle');
         }
 
-        // Locked by user+instance, not by an attempt token: a purchase happens before any
-        // match starts, so there is no in-progress attempt to lock on — see
+        // Locked by user+instance, not by an attempt token — the transfer, like the loadout
+        // purchase it feeds, happens outside any match. See
         // security::with_locked_user_stock()'s own docblock.
         $result = security::with_locked_user_stock(
             (int) $USER->id,
             (int) $playerpuzzle->id,
             function () use ($USER, $playerpuzzle, $params): array {
-                $price = combat::consumable_price($params['type']);
-                $debited = user_stock::debit(
+                $itemid = (int) $playerpuzzle->hud_coin_item;
+                $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
+                if ($itemid <= 0 || $blockinstanceid === null) {
+                    throw new moodle_exception('hudeconomyunavailable', 'mod_playerpuzzle');
+                }
+
+                if (!hud_service::consume_item($blockinstanceid, (int) $USER->id, $itemid, $params['amount'])) {
+                    throw new moodle_exception('insufficienthudstock', 'mod_playerpuzzle');
+                }
+
+                user_stock::credit(
                     (int) $USER->id,
                     (int) $playerpuzzle->id,
                     user_stock::CURRENCY_TYPE,
-                    $price
+                    $params['amount']
                 );
-                if (!$debited) {
-                    throw new moodle_exception('insufficientcoins', 'mod_playerpuzzle');
-                }
-
-                user_stock::credit((int) $USER->id, (int) $playerpuzzle->id, $params['type'], 1);
 
                 return [
-                    'success'        => true,
-                    'newquantity'    => user_stock::get_quantity(
-                        (int) $USER->id,
-                        (int) $playerpuzzle->id,
-                        $params['type']
-                    ),
-                    'newcoinbalance' => user_stock::get_quantity(
+                    'success'             => true,
+                    'newpuzzlecoinbalance' => user_stock::get_quantity(
                         (int) $USER->id,
                         (int) $playerpuzzle->id,
                         user_stock::CURRENCY_TYPE
+                    ),
+                    'newhudbalance'       => hud_service::get_upgrade_level(
+                        $blockinstanceid,
+                        (int) $USER->id,
+                        $itemid
                     ),
                 ];
             }
         );
 
         if ($result === false) {
-            // Another purchase for the same user/instance is already mutating the coin
-            // balance and stock right now — a genuinely parallel double-click/second tab,
-            // not a coding mistake.
+            // Another transfer or purchase for the same user/instance is already mutating
+            // these balances right now — a genuinely parallel double-click/second tab, not a
+            // coding mistake.
             throw new moodle_exception('stockpurchaselocked', 'mod_playerpuzzle');
         }
 
@@ -133,9 +136,9 @@ class buy_stock extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'success'        => new external_value(PARAM_BOOL, 'Whether the purchase succeeded'),
-            'newquantity'    => new external_value(PARAM_INT, 'Units owned of this type after the purchase'),
-            'newcoinbalance' => new external_value(PARAM_INT, 'PuzzleCoin balance remaining after the purchase'),
+            'success'              => new external_value(PARAM_BOOL, 'Whether the transfer succeeded'),
+            'newpuzzlecoinbalance' => new external_value(PARAM_INT, 'PuzzleCoin balance after the transfer'),
+            'newhudbalance'        => new external_value(PARAM_INT, 'PlayerHUD coin item balance after the transfer'),
         ]);
     }
 }

@@ -130,10 +130,12 @@ class lobby_page_service {
     ];
 
     /**
-     * Builds the coin balance and the pre-match loadout shop context: for every consumable
-     * type, how many units the student currently owns (user_stock) and its coin price. The
-     * shop only appears when a coin item is actually configured — with none, there is no
-     * funding source, so nothing could ever be bought or owned.
+     * Builds the PuzzleCoin balance, the pre-match loadout shop, and (when a PlayerHUD coin
+     * item is configured) the transfer widget that converts PlayerHUD coins into PuzzleCoin.
+     *
+     * The shop itself always appears — PuzzleCoin is PlayerPuzzle's own balance, credited by
+     * playing regardless of whether PlayerHUD is installed. PlayerHUD only ever adds a way to
+     * top PuzzleCoin up, never a way to spend directly.
      *
      * A single user_stock::get_all() call reads all five types' quantities in one query
      * (rather than one lookup per type), the same bulk-read shape attempt_consumables::
@@ -146,41 +148,47 @@ class lobby_page_service {
      */
     private static function build_shop_context(int $courseid, stdClass $instance, int $userid): array {
         $data = [];
+        $playerpuzzleid = (int) $instance->id;
+
+        $puzzlecoinbalance = user_stock::get_quantity($userid, $playerpuzzleid, user_stock::CURRENCY_TYPE);
+        $data['coinvalue'] = $puzzlecoinbalance;
+        $data['coinstext'] = get_string('lobby_puzzlecoinbalance', 'mod_playerpuzzle', $puzzlecoinbalance);
+
+        $stock = user_stock::get_all($userid, $playerpuzzleid);
+        $shopitems = [];
+        foreach (attempt_consumables::TYPES as $type) {
+            $label = get_string(self::SHOP_TYPE_LABELS[$type], 'mod_playerpuzzle');
+            $price = combat::consumable_price($type);
+            $shopitems[] = [
+                'type'      => $type,
+                'label'     => $label,
+                'quantity'  => $stock[$type],
+                'ownedtext' => get_string('lobby_stockowned', 'mod_playerpuzzle', $stock[$type]),
+                'price'     => $price,
+                'buylabel'  => get_string('lobby_buy', 'mod_playerpuzzle'),
+                'arialabel' => get_string('lobby_buy_arialabel', 'mod_playerpuzzle', (object) [
+                    'label' => $label,
+                    'price' => $price,
+                ]),
+            ];
+        }
+        $data['shoptitle'] = get_string('lobby_shop_title', 'mod_playerpuzzle');
+        $data['shopitems'] = $shopitems;
 
         $blockinstanceid = hud_service::is_available_for_course($courseid)
             ? hud_service::get_block_instance_id($courseid)
             : null;
         $coinitemid = (int) $instance->hud_coin_item;
-        $data['hasshop'] = $blockinstanceid !== null && $coinitemid > 0;
+        $data['hastransfer'] = $blockinstanceid !== null && $coinitemid > 0;
 
-        if ($data['hasshop']) {
-            $balance = hud_service::get_upgrade_level($blockinstanceid, $userid, $coinitemid);
-            $data['coinvalue'] = $balance;
-            $data['coinstext'] = get_string('lobby_coinbalance', 'mod_playerpuzzle', $balance);
-
-            $stock = user_stock::get_all($userid, (int) $instance->id);
-            $shopitems = [];
-            foreach (attempt_consumables::TYPES as $type) {
-                $label = get_string(self::SHOP_TYPE_LABELS[$type], 'mod_playerpuzzle');
-                $price = combat::consumable_price($type);
-                $shopitems[] = [
-                    'type'      => $type,
-                    'label'     => $label,
-                    'quantity'  => $stock[$type],
-                    'ownedtext' => get_string('lobby_stockowned', 'mod_playerpuzzle', $stock[$type]),
-                    'price'     => $price,
-                    'buylabel'  => get_string('lobby_buy', 'mod_playerpuzzle'),
-                    'arialabel' => get_string('lobby_buy_arialabel', 'mod_playerpuzzle', (object) [
-                        'label' => $label,
-                        'price' => $price,
-                    ]),
-                ];
-            }
-            $data['shoptitle'] = get_string('lobby_shop_title', 'mod_playerpuzzle');
-            $data['shopitems'] = $shopitems;
+        if ($data['hastransfer']) {
+            $hudbalance = hud_service::get_upgrade_level($blockinstanceid, $userid, $coinitemid);
+            $data['hudcoinvalue'] = $hudbalance;
+            $data['hudcoinstext'] = get_string('lobby_hudcoinbalance', 'mod_playerpuzzle', $hudbalance);
+            $data['transfertitle'] = get_string('lobby_transfer_title', 'mod_playerpuzzle');
+            $data['transferbuttonlabel'] = get_string('lobby_transfer_button', 'mod_playerpuzzle');
+            $data['transferamountlabel'] = get_string('lobby_transfer_amount_label', 'mod_playerpuzzle');
         }
-
-        $data['hasstats'] = isset($data['coinstext']);
 
         return $data;
     }

@@ -29,15 +29,19 @@
         "panelstoneurl": "https://example.com/moodle/mod/playerpuzzle/pix/panel_stone.webp",
         "scrollbannerurl": "https://example.com/moodle/mod/playerpuzzle/pix/scroll_banner.webp",
         "cmid": 1,
-        "hasstats": true,
         "coinvalue": 42,
-        "coinstext": "Coins: 42",
-        "hasshop": true,
+        "coinstext": "PuzzleCoin: 42",
         "shoptitle": "Loadout Shop",
         "shopitems": [
             {"type": "potion", "label": "Potion", "quantity": 2, "ownedtext": "Owned: 2", "price": 8, "buylabel": "Buy", "arialabel": "Buy Potion for 8 coins"},
             {"type": "shield", "label": "Shield", "quantity": 0, "ownedtext": "Owned: 0", "price": 10, "buylabel": "Buy", "arialabel": "Buy Shield for 10 coins"}
         ],
+        "hastransfer": true,
+        "transfertitle": "Transfer from PlayerHUD",
+        "hudcoinvalue": 15,
+        "hudcoinstext": "PlayerHUD: 15",
+        "transferamountlabel": "Amount",
+        "transferbuttonlabel": "Transfer",
         "progresstext": "Current progress: Level 2, Phase 5",
         "minquestionstext": "This match requires answering at least 3 question(s).",
         "difficultylabel": "Choose your difficulty",
@@ -76,9 +80,7 @@
                 </h2>
             </div>
 
-            {{#hasstats}}
             <div class="pp-lobby-stats">
-                {{#coinstext}}
                 <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
@@ -86,11 +88,8 @@
                     </svg>
                     <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
                 </span>
-                {{/coinstext}}
             </div>
-            {{/hasstats}}
 
-            {{#hasshop}}
             <div class="pp-lobby-shop" data-cmid="{{cmid}}">
                 <h3 class="pp-lobby-shop-title">{{shoptitle}}</h3>
                 <ul class="pp-lobby-shop-list">
@@ -111,7 +110,31 @@
                     {{/shopitems}}
                 </ul>
             </div>
-            {{/hasshop}}
+
+            {{#hastransfer}}
+            <div class="pp-lobby-transfer" data-cmid="{{cmid}}">
+                <h3 class="pp-lobby-transfer-title">{{transfertitle}}</h3>
+                <span class="pp-lobby-chip" data-role="hudcoinchip" aria-label="{{hudcoinstext}}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" fill="#8ea7c9" stroke="#3f5670" stroke-width="1.5"/>
+                        <circle cx="12" cy="12" r="5.4" fill="none" stroke="#3f5670" stroke-width="1.2"/>
+                    </svg>
+                    <span data-role="hudcoinvalue" aria-hidden="true">{{hudcoinvalue}}</span>
+                </span>
+                <label for="pp-lobby-transfer-amount" class="pp-lobby-transfer-label">{{transferamountlabel}}</label>
+                <input
+                    type="number"
+                    id="pp-lobby-transfer-amount"
+                    class="pp-lobby-transfer-input"
+                    min="1"
+                    step="1"
+                    value="1"
+                >
+                <button type="button" class="btn btn-sm btn-outline-secondary pp-lobby-transfer-btn">
+                    {{transferbuttonlabel}}
+                </button>
+            </div>
+            {{/hastransfer}}
 
             <form method="post" action="{{{playurl}}}">
                 <input type="hidden" name="sesskey" value="{{sesskey}}">

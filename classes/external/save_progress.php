@@ -36,6 +36,7 @@ use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\user_stock;
 use moodle_exception;
 
 /**
@@ -189,21 +190,15 @@ class save_progress extends external_api {
 
         $coinsbanked = 0;
         if ($isvictory && !$isdemo) {
-            // Defeat/timeout discards the session's coins; only a win banks them, and only into
-            // the item the teacher configured — PlayerPuzzle keeps no local currency of its own.
-            // A Demo win never banks anything: it is a disposable practice fight,
-            // repeatable at will, and would otherwise let coins/XP be farmed without limit.
+            // Defeat/timeout discards the session's coins; only a win banks them. A Demo win
+            // never banks anything: it is a disposable practice fight, repeatable at will, and
+            // would otherwise let coins/XP be farmed without limit.
             $payable = coin_ledger::available($attempt);
+            user_stock::credit((int) $USER->id, (int) $playerpuzzle->id, user_stock::CURRENCY_TYPE, $payable);
+            $coinsbanked = $payable;
+
             $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
             if ($blockinstanceid !== null) {
-                $banked = hud_service::credit_coins(
-                    $blockinstanceid,
-                    (int) $USER->id,
-                    (int) $playerpuzzle->hud_coin_item,
-                    $payable
-                );
-                $coinsbanked = $banked ? $payable : 0;
-
                 // Win-grant item, separate from the coin balance. XP is withheld when the
                 // attempt limit relevant to this instance's own game mode is Unlimited (0) —
                 // the same anti-farming rule mod_playerwords already applies to its own
@@ -268,7 +263,7 @@ class save_progress extends external_api {
         return new external_single_structure([
             'status'      => new external_value(PARAM_ALPHA, 'Success status'),
             'message'     => new external_value(PARAM_TEXT, 'Feedback message for the player'),
-            'coinsbanked' => new external_value(PARAM_INT, 'Coins banked into PlayerHUD this session'),
+            'coinsbanked' => new external_value(PARAM_INT, 'PuzzleCoin banked this session'),
             'questionlog' => new external_multiple_structure(
                 new external_single_structure([
                     'questiontext'  => new external_value(PARAM_RAW, 'Question text'),

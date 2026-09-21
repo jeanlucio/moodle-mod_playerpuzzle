@@ -30,6 +30,7 @@ use context_module;
 use core_external\external_api;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\user_stock;
 
 /**
  * Tests for the mod_playerpuzzle_save_progress web service.
@@ -127,12 +128,14 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a victory credits the configured coin item, from the coin ledger's own
-     * available balance rather than a raw client-reported gold total.
+     * Tests that a victory credits PuzzleCoin, from the coin ledger's own available balance
+     * rather than a raw client-reported gold total — and never auto-credits the configured
+     * PlayerHUD coin item, even though one is configured: PlayerHUD coins only ever reach
+     * PuzzleCoin through an explicit, student-initiated transfer.
      *
      * @return void
      */
-    public function test_victory_credits_configured_coin_item(): void {
+    public function test_victory_credits_puzzlecoin(): void {
         [$biid, $itemid] = $this->make_hud_item();
         $instance = $this->make_instance(['hud_coin_item' => $itemid]);
 
@@ -150,7 +153,41 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertSame(42, $result['data']['coinsbanked']);
-        $this->assertSame(42, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+        $this->assertSame(
+            42,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
+        $this->assertSame(0, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+    }
+
+    /**
+     * Tests that a victory credits PuzzleCoin even without PlayerHUD configured at all — the
+     * regression this correction closes: before it, buying (and, before Fase 10, banking too)
+     * required PlayerHUD, leaving a course without the block unable to ever use consumables.
+     *
+     * @return void
+     */
+    public function test_victory_credits_puzzlecoin_without_playerhud(): void {
+        $instance = $this->make_instance();
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 42,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(42, $result['data']['coinsbanked']);
+        $this->assertSame(
+            42,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
     }
 
     /**
@@ -674,6 +711,10 @@ final class save_progress_test extends \advanced_testcase {
         $this->assertFalse($result['error']);
         $this->assertSame(0, $result['data']['coinsbanked']);
         $this->assertSame(0, hud_service::get_upgrade_level($biid, (int) $this->student->id, $itemid));
+        $this->assertSame(
+            0,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
     }
 
     /**

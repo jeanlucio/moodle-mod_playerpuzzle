@@ -68,7 +68,15 @@ $functions = [
     'mod_playerpuzzle_buy_stock' => [
         'classname'    => 'mod_playerpuzzle\external\buy_stock',
         'methodname'   => 'execute',
-        'description'  => 'Buys 1 unit of loadout stock for the Lobby shop, spending PlayerHUD coins.',
+        'description'  => 'Buys 1 unit of loadout stock for the Lobby shop, spending PuzzleCoin.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
+    'mod_playerpuzzle_transfer_hud_coins' => [
+        'classname'    => 'mod_playerpuzzle\external\transfer_hud_coins',
+        'methodname'   => 'execute',
+        'description'  => 'Converts PlayerHUD coins into PuzzleCoin, by a student-chosen amount.',
         'type'         => 'write',
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',

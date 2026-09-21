@@ -31,6 +31,7 @@ use core_external\external_api;
 use mod_playerpuzzle\local\attempt_consumables;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\user_stock;
 
 /**
  * Tests for the mod_playerpuzzle_advance_phase web service.
@@ -424,13 +425,13 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that advancing a phase credits the configured coin item, from the coin
-     * ledger's own available balance — the same banking the final save_progress victory
-     * itself performs.
+     * Tests that advancing a phase credits PuzzleCoin, from the coin ledger's own available
+     * balance — the same banking the final save_progress victory itself performs — and never
+     * auto-credits the configured PlayerHUD coin item, even though one is configured.
      *
      * @return void
      */
-    public function test_advance_phase_credits_configured_coin_item(): void {
+    public function test_advance_phase_credits_puzzlecoin(): void {
         [$biid, $itemid] = $this->make_hud_item();
         $instance = $this->make_instance(['basebosshp' => 100, 'hud_coin_item' => $itemid]);
         $this->setUser($this->student);
@@ -446,7 +447,38 @@ final class advance_phase_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertSame(42, $result['data']['coinsbanked']);
-        $this->assertSame(42, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+        $this->assertSame(
+            42,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
+        $this->assertSame(0, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+    }
+
+    /**
+     * Tests that advancing a phase credits PuzzleCoin even without PlayerHUD configured at
+     * all — same regression coverage as save_progress's own equivalent test.
+     *
+     * @return void
+     */
+    public function test_advance_phase_credits_puzzlecoin_without_playerhud(): void {
+        $instance = $this->make_instance(['basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 42,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(42, $result['data']['coinsbanked']);
+        $this->assertSame(
+            42,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
     }
 
     /**

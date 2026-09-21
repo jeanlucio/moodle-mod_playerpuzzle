@@ -116,6 +116,20 @@ jobs:
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
         run: moodle-plugin-ci grunt --max-lint-warnings 0
 
+      - name: Setup Node.js
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # These extract the deterministic match-3/combat math into UMD modules under
+      # amd/src/engine/ so it can be exercised headless, without a Moodle/Phaser runtime.
+      # See amd/src/engine/board_rules.js and amd/src/engine/combat_rules.js.
+      - name: JS unit tests
+        if: ${{ !cancelled() && matrix.runchecks == 'all' }}
+        working-directory: plugin
+        run: node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js
+
       - name: PHPUnit tests
         if: ${{ !cancelled() }}
         run: moodle-plugin-ci phpunit --fail-on-warning

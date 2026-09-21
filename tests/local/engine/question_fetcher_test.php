@@ -337,8 +337,8 @@ final class question_fetcher_test extends \advanced_testcase {
 
     /**
      * Tests that get_single_question() flags whether a question has a hint, without ever
-     * carrying the hint text itself — the text is only sent after a paid buy_consumable
-     * call authorizes it (Blind JSON: nothing the client has not paid for).
+     * carrying the hint text itself — the text is only sent after a use_stock call
+     * authorizes it (Blind JSON: nothing the client has not spent stock on).
      *
      * @return void
      */

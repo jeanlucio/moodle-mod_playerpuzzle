@@ -57,10 +57,10 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
-    'mod_playerpuzzle_buy_consumable' => [
-        'classname'    => 'mod_playerpuzzle\external\buy_consumable',
+    'mod_playerpuzzle_use_stock' => [
+        'classname'    => 'mod_playerpuzzle\external\use_stock',
         'methodname'   => 'execute',
-        'description'  => 'Authorizes the purchase of a combat consumable.',
+        'description'  => 'Uses 1 unit of an already-owned consumable type during a match.',
         'type'         => 'write',
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',

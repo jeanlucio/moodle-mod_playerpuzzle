@@ -472,9 +472,9 @@ final class game_page_service_test extends \advanced_testcase {
 
     /**
      * Tests that build_game_config() reports the same coin ceiling
-     * buy_consumable.php/save_progress.php independently recompute server-side — the client
-     * needs this to keep its own shop-badge/coin display from showing a balance the server
-     * would never honour (see combat.js::availableCoinBalance()'s own docblock).
+     * save_progress.php/advance_phase.php independently recompute server-side — the client
+     * needs this to keep its own coin display from showing a balance the server would never
+     * honour (see combat.js::clampedPlayerGold()'s own docblock).
      *
      * @return void
      */
@@ -503,7 +503,7 @@ final class game_page_service_test extends \advanced_testcase {
     /**
      * Tests that a Demo attempt's coin ceiling is anchored to the fixed
      * combat::DEMO_HP, not the instance's own (possibly much larger) basebosshp — matching
-     * buy_consumable.php's own isdemo branch.
+     * save_progress.php/advance_phase.php's own isdemo branch.
      *
      * @return void
      */
@@ -634,21 +634,23 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that hudconfigured reflects which PlayerHUD items are actually set, and that
-     * Quick Magic is always false — it has no PlayerHUD item at all.
+     * Tests that consumablestock reports the units of each type actually owned (bought
+     * pre-match in the Lobby), in one bulk read for all five types.
      *
      * @return void
      */
-    public function test_build_game_config_reports_hudconfigured(): void {
-        [$cm, $instance] = $this->make_cm_and_instance(['hud_potion_item' => 5, 'hud_shield_item' => 0]);
+    public function test_build_game_config_reports_consumablestock(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
         $context = \context_module::instance($cm->id);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, 'potion', 3);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, 'hint', 1);
 
         $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
 
-        $this->assertTrue($config['hudconfigured']['potion']);
-        $this->assertFalse($config['hudconfigured']['shield']);
-        $this->assertFalse($config['hudconfigured']['magic']);
-        $this->assertFalse($config['hudconfigured']['sword']);
+        $this->assertSame(
+            ['potion' => 3, 'shield' => 0, 'magic' => 0, 'sword' => 0, 'hint' => 1],
+            $config['consumablestock']
+        );
     }
 
     /**

@@ -26,10 +26,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         function($, Ajax, Notification, Templates, Config, Accessibility) {
     'use strict';
 
-    // Mirrors combat::CONSUMABLE_PRICES server-side — the server is still the source of
-    // truth (buy_consumable re-validates), this copy only drives the shop badges/afford
-    // check without a round trip on every coin change.
-    const CONSUMABLE_PRICES = {potion: 8, shield: 10, magic: 12, sword: 10, hint: 5};
+    // Mirrors attempt_consumables::PHASE_LIMITS server-side — the server is still the
+    // source of truth (use_stock.php re-validates), this copy only drives the in-combat
+    // badges' enabled/disabled look without a round trip on every use. 'hint' has no fixed
+    // limit here — its own cap is however much stock the student bought, checked separately.
+    const PHASE_LIMITS = {shield: 1, magic: 1, potion: 3, sword: 3};
 
     // Maps a piece's numeric type (0-6, same indexing as board.js's own PIECE_NAME_KEYS) to
     // the lang string key holding its one-time tutorial balloon text.
@@ -83,14 +84,19 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // validate_answer.php's own count) — the client never counts on its own.
             this.minQuestions = parseInt(gameConfig.minquestions, 10) || 0;
             this.questionsTotal = parseInt(gameConfig.questionstotal, 10) || 0;
-            // Consumable shop: uses/spend carried forward from the current phase/match's own
-            // ledger window (see coin_ledger.php), same pattern as questionsTotal above.
-            this.maxConsumables = parseInt(gameConfig.maxconsumables, 10) || 1;
+            // Consumables: uses carried forward from the current phase/match's own use-count
+            // window (see attempt_consumables.php), same pattern as questionsTotal above.
+            // Stock is bought pre-match in the Lobby, never during a match — this is a
+            // read-only mirror of what the student owned when the page loaded, corrected by
+            // the server's own response after every use_stock call.
             this.consumableUses = Object.assign(
                 {potion: 0, shield: 0, magic: 0, sword: 0, hint: 0},
                 gameConfig.consumableuses || {}
             );
-            this.coinsSpent = parseInt(gameConfig.coinsspent, 10) || 0;
+            this.consumableStock = Object.assign(
+                {potion: 0, shield: 0, magic: 0, sword: 0, hint: 0},
+                gameConfig.consumablestock || {}
+            );
             this.currentTurn = 'player';
 
             // Demo match: the server already decided isdemo once, at attempt
@@ -107,10 +113,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // Campaign attempt resuming a phase already partway through) must not forget coins
             // already earned this window.
             this.playerGold = parseInt(gameConfig.coinsearnedsofar, 10) || 0;
-            // Mirrors combat::coin_ceiling() — see availableCoinBalance()'s own docblock for
-            // why this must clamp the displayed/spendable balance, not just playerGold's own
-            // unbounded growth from board matches. Falls back to no ceiling at all (rather
-            // than 0, which would block every purchase) if the value is ever missing/invalid.
+            // Mirrors combat::coin_ceiling() — see clampedPlayerGold()'s own docblock for
+            // why the displayed total must clamp to this, not grow unbounded from board
+            // matches alone. Falls back to no ceiling at all (rather than 0, which would
+            // zero out the display) if the value is ever missing/invalid.
             const parsedceiling = parseInt(gameConfig.coinceiling, 10);
             this.coinCeiling = Number.isFinite(parsedceiling) ? parsedceiling : Infinity;
             this.playerShieldMeter = 0;
@@ -521,7 +527,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 this.currentPlayerHp, this.maxPlayerHp,
                 this.playerPoisonMeter, this.playerPoisonRounds,
                 this.playerShieldMeter, this.playerShieldReady,
-                this.playerMana, this.availableCoinBalance(), this.playerMultiplier
+                this.playerMana, this.clampedPlayerGold(), this.playerMultiplier
             );
             this.scene.ui.updateBossBar(
                 this.currentHp, this.maxBossHp,
@@ -534,56 +540,44 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Coins actually spendable right now: the player's own gross earnings (clamped to
-         * this phase/match's coin ceiling), minus whatever has already been spent this
-         * window — mirrors coin_ledger::spendable() server-side (the actual authority; this
-         * only drives the shop badges' enabled/disabled look and the HUD coin display,
-         * buy_consumable.php re-validates for real). Deliberately does not net the boss's own
-         * coin gains against this, unlike showEndScreen()'s final netGold — the boss racking
-         * up its own coins by matching Coin pieces on its own turns was silently blocking the
-         * player from spending coins they had genuinely and separately earned. Netting against
-         * the boss's share is a final-reward concept, not a mid-match spending-power one — see
-         * coin_ledger::spendable()'s own docblock.
-         *
-         * Clamping to coinCeiling here is mandatory, not cosmetic: without it, playerGold
-         * keeps growing unbounded from board matches alone, and the badges/HUD would show
-         * (and let the student attempt to spend) a balance the server was never going to
-         * honour — surfacing as a confusing "insufficient coins" error on a purchase that
-         * looked perfectly affordable on screen. The Demo mode's small fixed HP gives it a
-         * proportionally small ceiling, easy to exceed in a single sitting, but the same gap
-         * existed in every game mode.
+         * The player's own gross earnings this window, clamped to this phase/match's coin
+         * ceiling — mirrors the same clamp coin_ledger::sync() applies server-side (the
+         * actual authority; this only drives the HUD coin display). Clamping here is
+         * mandatory, not cosmetic: without it, playerGold keeps growing unbounded from board
+         * matches alone, and the HUD would show a number the server was never going to
+         * honour at payout.
          *
          * @returns {number}
          */
-        availableCoinBalance() {
-            const earned = Math.min(Math.round(this.playerGold), this.coinCeiling);
-            return Math.max(0, earned - this.coinsSpent);
+        clampedPlayerGold() {
+            return Math.min(Math.round(this.playerGold), this.coinCeiling);
         }
 
         /**
          * The final reward this window would pay out right now: gross earnings minus the
-         * boss's own share, both clamped to the same coin ceiling as availableCoinBalance() —
+         * boss's own share, both clamped to the same coin ceiling as clampedPlayerGold() —
          * mirrors coin_ledger::available() server-side (the actual authority for the real
          * payout; this only drives the end-of-match/phase-complete screens' own preview).
-         * Never subtracts coinsSpent, unlike availableCoinBalance(): what has already been
-         * spent on consumables is gone either way, not part of "what would be banked".
          *
          * @returns {number}
          */
         netCoinBalance() {
-            const earned = Math.min(Math.round(this.playerGold), this.coinCeiling);
+            const earned = this.clampedPlayerGold();
             const bossearned = Math.min(Math.round(this.bossGold), this.coinCeiling);
             return Math.max(0, earned - bossearned);
         }
 
         /**
-         * Fixed shop price for a consumable type, mirroring combat::consumable_price().
+         * Fixed maximum uses per phase/match for a consumable type, mirroring
+         * attempt_consumables::PHASE_LIMITS. A type absent from that mirror (only 'hint') has
+         * no fixed limit, so this returns Infinity — its real cap is owned stock instead,
+         * checked separately.
          *
          * @param {string} type Consumable type.
          * @returns {number}
          */
-        consumablePrice(type) {
-            return CONSUMABLE_PRICES[type] || 0;
+        phaseLimit(type) {
+            return type in PHASE_LIMITS ? PHASE_LIMITS[type] : Infinity;
         }
 
         applyDamageToBoss(amount) {
@@ -746,17 +740,16 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Buys a consumable, clicked from its shop badge (ui.js::createPurchaseBadge()).
-         * Tries PlayerHUD stock first when one is configured for this type, falling back to
-         * local coins if the student turns out to have none. Shield alone gets a client-side
-         * "already armed" guard — there is nothing to gain from buying a second charge before
-         * the first is spent, so it is worth skipping the round trip entirely for it; Quick
-         * Magic has no such guard, matching its board-piece twin (the Grimoire never blocks
-         * overfilling either).
+         * Uses a consumable, clicked from its use badge (ui.js::createPurchaseBadge()).
+         * There is no purchase here — stock was already bought pre-match in the Lobby; this
+         * only spends it. Shield alone gets a client-side "already armed" guard — there is
+         * nothing to gain from using a second charge before the first is spent, so it is
+         * worth skipping the round trip entirely for it; Quick Magic has no such guard,
+         * matching its board-piece twin (the Grimoire never blocks overfilling either).
          *
          * @param {string} type One of 'potion', 'shield', 'magic', 'sword'.
          */
-        buyConsumable(type) {
+        useConsumable(type) {
             const badge = this.scene.ui.purchaseBadges && this.scene.ui.purchaseBadges[type];
             if (badge && badge.disabled) {
                 return;
@@ -765,83 +758,59 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 return;
             }
 
-            const hudFirst = !!(this.gameConfig.hudconfigured && this.gameConfig.hudconfigured[type]);
-            this.requestPurchase(type, hudFirst ? 'hud' : 'local');
+            this.requestUse(type);
         }
 
         /**
-         * Calls mod_playerpuzzle_buy_consumable with the given source. A source=hud attempt
-         * that reports insufficient stock retries once with source=local automatically —
-         * from the student's perspective this is still a single click, not two failures.
+         * Calls mod_playerpuzzle_use_stock for a non-hint type, applying the consumable's
+         * effect once the server confirms the use.
          *
          * @param {string} type Consumable type.
-         * @param {string} source 'local' or 'hud'.
          */
-        requestPurchase(type, source) {
-            const me = this.scene;
-
+        requestUse(type) {
             Ajax.call([{
-                methodname: 'mod_playerpuzzle_buy_consumable',
+                methodname: 'mod_playerpuzzle_use_stock',
                 args: {
                     cmid: this.gameConfig.cmid,
                     token: this.gameConfig.token,
                     type,
-                    source,
-                    coinsearnedsofar: Math.round(this.playerGold),
-                    bosscoinsearnedsofar: Math.round(this.bossGold),
                 },
             }])[0].done(res => {
                 if (!res.success) {
                     return;
                 }
-                if (source === 'local') {
-                    const price = this.consumablePrice(type);
-                    this.coinsSpent += price;
-                    me.ui.showCoinFloat(price);
-                }
+                this.consumableStock[type] = res.newquantity;
                 this.consumableUses[type] = (this.consumableUses[type] || 0) + 1;
                 this.applyConsumableEffect(type);
                 this.updateUI();
             }).fail(error => {
-                if (source === 'hud' && error && error.errorcode === 'insufficienthudstock') {
-                    this.requestPurchase(type, 'local');
-                    return;
-                }
                 Notification.alert(this.strings.shoperror, (error && error.message) || this.strings.shoperror);
             });
         }
 
         /**
-         * Buys the Question Hint consumable for the question currently open in the modal and
-         * reveals its text once the server authorizes the purchase. Kept separate from
-         * requestPurchase() rather than folded into it: Hint has no PlayerHUD funding source
-         * (always 'local', same as Quick Magic), needs the extra questionid argument, and its
-         * "effect" is revealing text in the modal rather than a combat-state change, so nothing
-         * about its success path fits applyConsumableEffect()'s switch.
+         * Uses the Question Hint consumable for the question currently open in the modal and
+         * reveals its text once the server confirms the use. Kept separate from requestUse()
+         * rather than folded into it: Hint needs the extra questionid argument, and its
+         * "effect" is revealing text in the modal rather than a combat-state change, so
+         * nothing about its success path fits applyConsumableEffect()'s switch.
          *
          * @param {number} questionid The question currently open in the modal.
          */
         requestHint(questionid) {
-            const me = this.scene;
-
             Ajax.call([{
-                methodname: 'mod_playerpuzzle_buy_consumable',
+                methodname: 'mod_playerpuzzle_use_stock',
                 args: {
                     cmid: this.gameConfig.cmid,
                     token: this.gameConfig.token,
                     type: 'hint',
-                    source: 'local',
                     questionid,
-                    coinsearnedsofar: Math.round(this.playerGold),
-                    bosscoinsearnedsofar: Math.round(this.bossGold),
                 },
             }])[0].done(res => {
                 if (!res.success) {
                     return;
                 }
-                const price = this.consumablePrice('hint');
-                this.coinsSpent += price;
-                me.ui.showCoinFloat(price);
+                this.consumableStock.hint = res.newquantity;
                 this.consumableUses.hint = (this.consumableUses.hint || 0) + 1;
                 $('#playerpuzzle-hint-text').text(res.hinttext).show();
                 $('#playerpuzzle-btn-hint').hide().prop('disabled', true).off('click');
@@ -852,9 +821,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Applies a purchased consumable's in-combat effect. Only ever called after the
-         * server has authorized the purchase (buy_consumable's {success: true}) — the
-         * effect itself is entirely client-side, same as every other board-piece effect.
+         * Applies a consumable's in-combat effect. Only ever called after the server has
+         * confirmed the use (use_stock's {success: true}) — the effect itself is entirely
+         * client-side, same as every other board-piece effect.
          *
          * @param {string} type Consumable type.
          */
@@ -1119,9 +1088,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 .prop('disabled', true).show();
 
                             if (question.hashint) {
-                                const hintPrice = ctx.consumablePrice('hint');
+                                const hintStock = ctx.consumableStock.hint || 0;
+                                const hintDisabled = !ctx.isdemo && hintStock <= 0;
                                 $('#playerpuzzle-btn-hint')
-                                    .text(ctx.strings.hintbutton.replace('{$a}', hintPrice))
+                                    .text(ctx.strings.hintbutton.replace('{$a}', ctx.isdemo ? '∞' : hintStock))
+                                    .prop('disabled', hintDisabled)
                                     .show()
                                     .on('click', () => ctx.requestHint(question.id));
                             }

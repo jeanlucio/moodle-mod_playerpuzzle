@@ -122,4 +122,41 @@ final class attempt_consumables_test extends \advanced_testcase {
             $uses
         );
     }
+
+    /**
+     * Tests that a type with no fixed limit (recharge-on-a-meter types have 1, no-meter
+     * types have 3) reports the limit reached exactly at, never before, its own count.
+     *
+     * @return void
+     */
+    public function test_phase_limit_reached_respects_each_types_own_fixed_limit(): void {
+        $this->resetAfterTest();
+
+        $this->assertFalse(attempt_consumables::phase_limit_reached(5, 'shield'));
+        attempt_consumables::record_use(5, 'shield');
+        $this->assertTrue(attempt_consumables::phase_limit_reached(5, 'shield'));
+
+        $this->assertFalse(attempt_consumables::phase_limit_reached(5, 'potion'));
+        attempt_consumables::record_use(5, 'potion');
+        attempt_consumables::record_use(5, 'potion');
+        $this->assertFalse(attempt_consumables::phase_limit_reached(5, 'potion'));
+        attempt_consumables::record_use(5, 'potion');
+        $this->assertTrue(attempt_consumables::phase_limit_reached(5, 'potion'));
+    }
+
+    /**
+     * Tests that hint has no fixed phase limit at all — its real cap is owned stock,
+     * checked elsewhere.
+     *
+     * @return void
+     */
+    public function test_phase_limit_reached_is_always_false_for_hint(): void {
+        $this->resetAfterTest();
+
+        for ($i = 0; $i < 50; $i++) {
+            attempt_consumables::record_use(5, 'hint');
+        }
+
+        $this->assertFalse(attempt_consumables::phase_limit_reached(5, 'hint'));
+    }
 }

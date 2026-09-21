@@ -148,7 +148,7 @@ class question_fetcher {
      * Returns the formatted hint text for a question, validating it belongs to the given
      * instance before reading it — never by isolated PK. Returns null both when the question
      * does not belong to the instance and when it has no hint, so the caller cannot tell the
-     * two apart from the return value alone (buy_consumable.php raises its own error either
+     * two apart from the return value alone (use_stock.php raises its own error either
      * way, without leaking which case it was).
      *
      * @param int $questionid The question ID.
@@ -278,8 +278,8 @@ class question_fetcher {
                 ),
                 'options' => $options,
                 // Whether a hint exists, not its text — the text itself is only ever sent
-                // after buy_consumable(type=hint) authorizes the purchase (Blind JSON: the
-                // client learns nothing it has not paid for).
+                // after use_stock(type=hint) authorizes the use (Blind JSON: the client
+                // learns nothing it has not spent stock on).
                 'hashint' => $q->hint !== null && trim($q->hint) !== '',
             ];
         }

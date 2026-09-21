@@ -220,14 +220,12 @@ class game_page_service {
             );
         }
 
-        // Mirrors combat::coin_ceiling(), the same plausibility ceiling buy_consumable.php/
-        // save_progress.php/advance_phase.php independently recompute server-side on every
-        // call. Sent to the client purely so its own shop-badge enable/disable state and coin
-        // display can match that ceiling — without it, the client's own playerGold tracker
-        // grows unbounded from board matches and can show (and let the student attempt to
-        // spend) a balance the server was never going to honour, surfacing as a confusing
-        // "insufficient coins" error on a click that looked perfectly affordable. Recomputed
-        // fresh on every play.php load (including the reload after a Campaign phase advances),
+        // Mirrors combat::coin_ceiling(), the same plausibility ceiling save_progress.php/
+        // advance_phase.php independently recompute server-side on every call. Sent to the
+        // client purely so its own coin display can match that ceiling — without it, the
+        // client's own playerGold tracker grows unbounded from board matches and shows a
+        // number the server was never going to honour at payout. Recomputed fresh on every
+        // play.php load (including the reload after a Campaign phase advances),
         // so it always matches the phase actually being played.
         $coinceiling = combat::coin_ceiling(
             $bosshp,
@@ -238,16 +236,11 @@ class game_page_service {
 
         $consumableuses = attempt_consumables::get_uses_by_type($attemptinfo->attemptid);
 
-        // Whether a PlayerHUD item is configured for each type (never its stock quantity,
-        // which the client cannot know without an extra round trip) — lets the client try
-        // source=hud first only where it could possibly succeed, falling back to source=local
-        // otherwise. Quick Magic has no PlayerHUD item at all, so it is always false.
-        $hudconfigured = [
-            'potion' => (int) $instance->hud_potion_item > 0,
-            'shield' => (int) $instance->hud_shield_item > 0,
-            'magic'  => false,
-            'sword'  => (int) $instance->hud_sword_item > 0,
-        ];
+        // Units of each type currently owned (bought pre-match in the Lobby) — lets the
+        // in-combat badges show and gate on real ownership from the moment the page loads,
+        // without needing a failed use_stock call first. A single bulk read for all five
+        // types, same shape as get_uses_by_type() just above.
+        $consumablestock = user_stock::get_all($userid, (int) $instance->id);
 
         $spriteurls = [];
         for ($i = 0; $i < 7; $i++) {
@@ -276,20 +269,18 @@ class game_page_service {
             // updated on every validate_answer call.
             'minquestions'         => (int) $instance->minquestions,
             'questionstotal'       => $attemptinfo->questionstotal,
-            // Coin ledger and consumable-use counts already on the attempt (0 for a fresh one,
-            // whatever the current phase/match carries for a resumed one) — lets the shop badges
-            // render their correct state on load, without needing a failed purchase first.
+            // Coin ledger counts already on the attempt (0 for a fresh one, whatever the
+            // current phase/match carries for a resumed one) — lets the coin display render
+            // its correct state on load.
             'coinsearnedsofar'     => $attemptinfo->coinsearned,
             'bosscoinsearnedsofar' => $attemptinfo->bosscoinsearned,
-            'coinsspent'           => $attemptinfo->coinsspent,
             // Snapshot of the board/HP/meters/turn left by a checkpoint (null for a phase
             // that never got one, or that was just started/advanced) — lets board.js/
             // combat.js resume the fight in place instead of always starting the phase
             // fresh.
             'combatstate'          => $attemptinfo->combatstate,
-            'maxconsumables'       => (int) $instance->maxconsumables,
             'consumableuses'       => $consumableuses,
-            'hudconfigured'        => $hudconfigured,
+            'consumablestock'      => $consumablestock,
             // Coin multiplier the client applies to its own gold display so the end screen
             // matches what the server will actually bank (Easy 0.5x, Hard 3x). The client
             // still sends the raw, unmultiplied gold; the server re-applies this factor.

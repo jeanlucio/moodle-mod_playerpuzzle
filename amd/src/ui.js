@@ -130,10 +130,10 @@ define(
                 // (1x boss damage).
                 me.add.image(L.potionX, L.potionY, 'item5')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
-                this.createPurchaseBadge(L.potionX, L.potionY, '8', 'potion');
+                this.createPurchaseBadge(L.potionX, L.potionY, 'potion');
                 me.add.image(L.swordX, L.swordY, 'item3')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
-                this.createPurchaseBadge(L.swordX, L.swordY, '10', 'sword');
+                this.createPurchaseBadge(L.swordX, L.swordY, 'sword');
 
                 // Coin/Star: passive quantity readouts, not buttons — sit beside the history
                 // block (smaller icon than the consumable row), out of the action area.
@@ -156,8 +156,8 @@ define(
                 // Purchase badges for the two consumables unified with their own board piece
                 // (Shield, Quick Magic/Grimoire). Not shown for the boss (no shop) or the mana
                 // Orb ring (not a purchasable consumable).
-                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12', 'magic');
-                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10', 'shield');
+                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, 'magic');
+                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, 'shield');
 
                 this.playerLogLines = this.createHistoryLog(L.playerUiX);
                 this.bossLogLines = this.createHistoryLog(L.bossUiX);
@@ -187,7 +187,7 @@ define(
                 this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0');
                 me.add.image(L.potionX, L.potionY, 'item5')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
-                this.createPurchaseBadge(L.potionX, L.potionY, '8', 'potion', L.badgeScale);
+                this.createPurchaseBadge(L.potionX, L.potionY, 'potion', L.badgeScale);
                 this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
                 this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
 
@@ -198,8 +198,8 @@ define(
                 // compensate for. Not shown for the boss (no shop) or the mana Orb ring. Sword
                 // has no mobile badge yet — the mobile layout has no Sword icon in its resource
                 // row (see game_boot.js's mobile L object), a pre-existing gap not yet closed.
-                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, '12', 'magic', L.badgeScale);
-                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, '10', 'shield', L.badgeScale);
+                this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, 'magic', L.badgeScale);
+                this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, 'shield', L.badgeScale);
 
                 this.setupHistoryButtonMobile();
             }
@@ -289,12 +289,14 @@ define(
         }
 
         /**
-         * The clickable purchase badge for a consumable type — Shield and Quick Magic (both
-         * unified with their own board piece), plus Potion and Sword, so every purchasable
-         * consumable shares one price convention and one click target. Overlaps the target
-         * icon's own bottom-right corner. A transparent Phaser zone is the actual interactive
-         * hit area (drawing directly on the graphics/image objects instead would mean giving
-         * each one its own hit area and keeping them all in sync).
+         * The clickable use badge for a consumable type — Shield and Quick Magic (both
+         * unified with their own board piece), plus Potion and Sword, so every consumable
+         * shares one click target. Shows how many units are currently owned (bought
+         * pre-match in the Lobby), not a price — there is no purchase during a match
+         * anymore. Overlaps the target icon's own bottom-right corner. A transparent Phaser
+         * zone is the actual interactive hit area (drawing directly on the graphics/image
+         * objects instead would mean giving each one its own hit area and keeping them all
+         * in sync).
          *
          * Sized at 46x34 logical units at scale 1 (desktop's default, every call site below
          * except the mobile branch of setupStaticUI) — with the game embed capped at 960px,
@@ -311,11 +313,10 @@ define(
          *
          * @param {number} iconX Target icon's center X (ring or resource chip).
          * @param {number} iconY Target icon's center Y.
-         * @param {string} price Price text, e.g. "10".
          * @param {string} type Consumable type: 'potion', 'shield', 'magic' or 'sword'.
          * @param {number} scale Size multiplier off the 46x34/20px-offset desktop baseline.
          */
-        createPurchaseBadge(iconX, iconY, price, type, scale = 1) {
+        createPurchaseBadge(iconX, iconY, type, scale = 1) {
             const me = this.scene;
             const w = 46 * scale;
             const h = 34 * scale;
@@ -329,10 +330,10 @@ define(
                 .lineStyle(2, 0x9c6b2e, 1)
                 .strokeRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6 * scale)
                 .setDepth(5);
-            const icon = me.add.image(cx - (10 * scale), cy, 'item6')
-                .setDisplaySize(16 * scale, 16 * scale).setDepth(6);
-            const label = me.add.text(cx + (4 * scale), cy, price, {
-                fontSize: `${Math.round(15 * scale)}px`,
+            // Set once boot's first updateUI()/updateConsumableBadges() call runs — this
+            // placeholder never stays on screen.
+            const label = me.add.text(cx, cy, '0', {
+                fontSize: `${Math.round(16 * scale)}px`,
                 fill: '#ffffaa',
                 fontStyle: 'bold'
             }).setOrigin(0.5).setDepth(6);
@@ -340,9 +341,9 @@ define(
             const hitzone = me.add.zone(cx, cy, w, h).setOrigin(0.5).setDepth(7)
                 .setInteractive({useHandCursor: true});
             hitzone.on('pointerup', () => {
-                this.guardAgainstDoubleTap(`buy-${type}`, () => {
+                this.guardAgainstDoubleTap(`use-${type}`, () => {
                     if (me.combat) {
-                        me.combat.buyConsumable(type);
+                        me.combat.useConsumable(type);
                     }
                 });
             });
@@ -350,16 +351,18 @@ define(
             if (!this.purchaseBadges) {
                 this.purchaseBadges = {};
             }
-            this.purchaseBadges[type] = {parts: [bg, icon, label], disabled: false};
+            this.purchaseBadges[type] = {parts: [bg, label], label, disabled: false};
         }
 
         /**
-         * Refreshes every shop badge's enabled/disabled look: opacity drops and the click
-         * stops doing anything once the per-attempt use limit is reached, or the student can
-         * afford it through neither local coins nor (where configured) PlayerHUD stock. A
-         * full text/aria-label reason for screen-reader users depends on an accessible HTML
-         * parallel layer, which does not exist yet for in-combat controls — this only covers
-         * the visual/functional half of the decision for now.
+         * Refreshes every use badge's displayed quantity and enabled/disabled look: opacity
+         * drops and the click stops doing anything once the fixed per-phase use limit is
+         * reached, or the student owns none of that type. A Demo attempt never runs out —
+         * it never touches the real stock table (see use_stock.php's own docblock), so its
+         * badges show "∞" and are gated by the phase limit alone. A full text/aria-label
+         * reason for screen-reader users depends on an accessible HTML parallel layer,
+         * which does not exist yet for in-combat controls — this only covers the
+         * visual/functional half of the decision for now.
          */
         updateConsumableBadges() {
             const combat = this.scene.combat;
@@ -367,40 +370,16 @@ define(
                 return;
             }
 
-            const available = combat.availableCoinBalance();
-            const hudconfigured = this.gameConfig.hudconfigured || {};
-
             Object.keys(this.purchaseBadges).forEach(type => {
                 const badge = this.purchaseBadges[type];
-                const limitReached = (combat.consumableUses[type] || 0) >= combat.maxConsumables;
-                const affordableLocally = available >= combat.consumablePrice(type);
-                const disabled = limitReached || (!affordableLocally && !hudconfigured[type]);
+                const owned = combat.consumableStock[type] || 0;
+                const limitReached = (combat.consumableUses[type] || 0) >= combat.phaseLimit(type);
+                const outOfStock = !combat.isdemo && owned <= 0;
+                const disabled = limitReached || outOfStock;
 
                 badge.disabled = disabled;
+                badge.label.setText(combat.isdemo ? '∞' : String(owned));
                 badge.parts.forEach(part => part.setAlpha(disabled ? 0.4 : 1));
-            });
-        }
-
-        /**
-         * Floats a "-N" coin-cost readout up and away from the Coin indicator, then destroys
-         * itself — the only feedback a successful local-coin purchase gives (decision v7.35).
-         *
-         * @param {number} amount Coins spent.
-         */
-        showCoinFloat(amount) {
-            const L = this.L;
-            const text = this.scene.add.text(L.goldX, L.goldY, `-${amount}`, {
-                fontSize: '16px',
-                fill: '#ffcc00',
-                fontStyle: 'bold'
-            }).setOrigin(0.5).setDepth(15);
-
-            this.scene.tweens.add({
-                targets: text,
-                y: L.goldY - 30,
-                alpha: 0,
-                duration: 900,
-                onComplete: () => text.destroy()
             });
         }
 

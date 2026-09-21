@@ -182,7 +182,7 @@ class advance_phase extends external_api {
                 // window, since coins_earned/boss_coins_earned/coins_spent track only the
                 // phase currently being played, not the whole Campaign attempt.
                 // attempt_consumables::reset_attempt() below clears the same window's
-                // maxconsumables count, for the same reason.
+                // per-type use count, for the same reason.
                 $scaledbossdamage = combat::apply_difficulty(
                     combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $currentlevel, $currentphase),
                     (string) $attempt->difficulty

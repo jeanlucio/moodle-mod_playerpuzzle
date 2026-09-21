@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Per-attempt consumable use counting, for the maxconsumables limit.
+ * Per-attempt consumable use counting, for the fixed per-phase use limit.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -25,17 +25,43 @@
 namespace mod_playerpuzzle\local;
 
 /**
- * Counts consumable uses per attempt, one row per type actually used. The limit counts
- * uses regardless of source — bringing PlayerHUD stock into a match never raises the
- * per-attempt cap a teacher configured.
+ * Counts consumable uses per attempt, one row per type actually used, checked against the
+ * fixed per-phase limit each type carries (PHASE_LIMITS below).
  */
 class attempt_consumables {
     /**
-     * Valid consumable types. 'hint' (Question Hint) shares this same per-attempt use-limit
-     * table with the other four, even though it is bought from inside the question modal
-     * rather than the side-panel shop.
+     * Valid consumable types. 'hint' shares this same per-attempt use-counting table with
+     * the other four, even though it has no fixed phase limit of its own — see
+     * PHASE_LIMITS below.
      */
     public const TYPES = ['potion', 'shield', 'magic', 'sword', 'hint'];
+
+    /**
+     * Fixed maximum uses per phase/match, by type — not a teacher-configurable setting,
+     * since the split follows the mechanic itself: Shield and Quick Magic recharge on their
+     * own during a match (filling a meter from board pieces), so buying more than one charge
+     * ahead of time has no purpose; Potion and Sword have no meter of their own, so a
+     * student may want several banked. A type absent here (only 'hint') has no fixed
+     * limit — its real cap is however much stock the student bought, checked separately.
+     */
+    private const PHASE_LIMITS = ['shield' => 1, 'magic' => 1, 'potion' => 3, 'sword' => 3];
+
+    /**
+     * Whether a consumable type has already hit its fixed per-phase/match use limit for this
+     * attempt. Always false for a type with no fixed limit (currently only 'hint') — its use
+     * is bounded by owned stock instead, checked by the caller separately.
+     *
+     * @param int $attemptid The attempt id.
+     * @param string $type One of self::TYPES.
+     * @return bool
+     */
+    public static function phase_limit_reached(int $attemptid, string $type): bool {
+        if (!array_key_exists($type, self::PHASE_LIMITS)) {
+            return false;
+        }
+
+        return self::get_uses($attemptid, $type) >= self::PHASE_LIMITS[$type];
+    }
 
     /**
      * Returns how many times a consumable type has already been used this attempt.
@@ -115,9 +141,9 @@ class attempt_consumables {
 
     /**
      * Clears every recorded use for an attempt, once its phase's shop window has closed.
-     * Called by advance_phase alongside coin_ledger::reset() — maxconsumables limits
-     * purchases per phase, not for the whole Campaign attempt, so the count must start
-     * clean at the same point the coin ledger itself does.
+     * Called by advance_phase alongside coin_ledger::reset() — the fixed use limit applies
+     * per phase, not for the whole Campaign attempt, so the count must start clean at the
+     * same point the coin ledger itself does.
      *
      * @param int $attemptid The attempt id.
      * @return void

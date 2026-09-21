@@ -71,4 +71,21 @@ class mod_playerpuzzle_generator extends testing_module_generator {
 
         return parent::create_instance($record, $options);
     }
+
+    /**
+     * Credits a user's loadout stock (or PuzzleCoin balance, via consumabletype = 'coin')
+     * for a playerpuzzle instance, without going through the buy_stock/save_progress web
+     * services. Backs the "mod_playerpuzzle > user stocks" Behat generator step.
+     *
+     * @param array $record Fields: playerpuzzleid, userid, consumabletype, quantity.
+     * @return void
+     */
+    public function create_user_stock(array $record): void {
+        \mod_playerpuzzle\local\user_stock::credit(
+            (int) $record['userid'],
+            (int) $record['playerpuzzleid'],
+            (string) $record['consumabletype'],
+            (int) $record['quantity']
+        );
+    }
 }

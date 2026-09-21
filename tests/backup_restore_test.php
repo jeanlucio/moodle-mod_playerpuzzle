@@ -592,6 +592,61 @@ final class backup_restore_test extends \advanced_testcase {
     }
 
     /**
+     * Tests a full course backup/restore round-trip with a real pre-match loadout purchase
+     * in the middle: the student buys stock through the actual mod_playerpuzzle_buy_stock
+     * web service (debiting PuzzleCoin, crediting the purchased type), not by crediting
+     * playerpuzzle_user_stock directly. Both the purchased consumable and the PuzzleCoin
+     * balance left over live in the same table under the reserved 'coin' consumabletype —
+     * this is the only test that exercises that reserved value surviving backup/restore,
+     * since every other stock-related test only ever credits an ordinary consumable type.
+     *
+     * @return void
+     */
+    public function test_backup_restore_preserves_a_loadout_shop_purchase(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id, $course->id, false, MUST_EXIST);
+
+        $this->setUser($user);
+        \mod_playerpuzzle\local\user_stock::credit(
+            (int) $user->id,
+            (int) $instance->id,
+            \mod_playerpuzzle\local\user_stock::CURRENCY_TYPE,
+            20
+        );
+        $_POST['sesskey'] = sesskey();
+        $result = \core_external\external_api::call_external_function(
+            'mod_playerpuzzle_buy_stock',
+            ['cmid' => $cm->id, 'type' => 'potion']
+        );
+        $this->assertFalse($result['error']);
+        // Potion costs 8; 20 - 8 = 12 PuzzleCoin left over to carry through the backup.
+        $this->assertSame(12, $result['data']['newcoinbalance']);
+
+        $this->setAdminUser();
+        $newcourse = $this->backup_and_restore_into_new_course($course);
+
+        $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+        $this->assertSame(
+            1,
+            \mod_playerpuzzle\local\user_stock::get_quantity($user->id, (int) $newinstance->id, 'potion')
+        );
+        $this->assertSame(
+            12,
+            \mod_playerpuzzle\local\user_stock::get_quantity(
+                $user->id,
+                (int) $newinstance->id,
+                \mod_playerpuzzle\local\user_stock::CURRENCY_TYPE
+            )
+        );
+    }
+
+    /**
      * Skips the current test when block_playerhud is not installed.
      *
      * @return void

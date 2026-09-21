@@ -23,7 +23,7 @@
 
 /* global Phaser */
 
-define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
+define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules'], function(Accessibility, BoardRules) {
     'use strict';
 
     // Maps a piece's numeric type (0-6) to the lang string key holding its accessible
@@ -141,13 +141,12 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
             // the moment the board loads).
             const combatstate = me.combat && me.combat.gameConfig.combatstate;
             const savedgrid = combatstate ? combatstate.boardgrid : null;
+            const types = BoardRules.generateGrid(this.rows, this.cols, savedgrid, Math.random);
 
             for (let row = 0; row < this.rows; row++) {
                 this.grid[row] = [];
                 for (let col = 0; col < this.cols; col++) {
-                    const randomType = savedgrid
-                        ? savedgrid[(row * this.cols) + col]
-                        : this.pickTypeAvoidingMatch(row, col);
+                    const randomType = types[row][col];
 
                     const x = this.offsetX + (col * this.pieceSize);
                     const y = this.offsetY + (row * this.pieceSize);
@@ -166,31 +165,23 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
         }
 
         /**
-         * Picks a random piece type for a freshly-generated cell (never used when resuming a
-         * checkpointed board), re-rolling until it does not complete a 3-in-a-row with the
-         * two cells already placed above it or to its left.
+         * Builds a plain rows x cols array of piece types from the current Phaser grid — the
+         * shape every mod_playerpuzzle/engine/board_rules function expects, since it never
+         * touches Phaser objects. A destroyed-but-not-yet-refilled cell (null in this.grid
+         * mid-cascade) stays null in the extracted grid too.
          *
-         * @param {number} row Row being filled.
-         * @param {number} col Column being filled.
-         * @return {number} A piece type, 0-6.
+         * @return {Array} The extracted types grid.
          */
-        pickTypeAvoidingMatch(row, col) {
-            let randomType, hasMatch;
-            do {
-                randomType = Math.floor(Math.random() * 7);
-                hasMatch = false;
-
-                if (row >= 2 && this.grid[row - 1][col].type === randomType &&
-                    this.grid[row - 2][col].type === randomType) {
-                    hasMatch = true;
+        extractTypesGrid() {
+            const types = [];
+            for (let row = 0; row < this.rows; row++) {
+                types[row] = [];
+                for (let col = 0; col < this.cols; col++) {
+                    const piece = this.grid[row][col];
+                    types[row][col] = piece ? piece.type : null;
                 }
-                if (col >= 2 && this.grid[row][col - 1].type === randomType &&
-                    this.grid[row][col - 2].type === randomType) {
-                    hasMatch = true;
-                }
-            } while (hasMatch);
-
-            return randomType;
+            }
+            return types;
         }
 
         /**
@@ -475,8 +466,10 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
             const tempRow = piece1.row;
             const tempCol = piece1.col;
 
-            this.grid[piece1.row][piece1.col] = piece2;
-            this.grid[piece2.row][piece2.col] = piece1;
+            // A plain array-position swap works the same whether the grid holds piece types
+            // (mod_playerpuzzle/engine/board_rules' own tests) or the real Phaser objects it
+            // holds here — swapInGrid() never inspects what it is moving.
+            BoardRules.swapInGrid(this.grid, piece1.row, piece1.col, piece2.row, piece2.col);
 
             piece1.row = piece2.row;
             piece1.col = piece2.col;
@@ -505,139 +498,20 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
         }
 
         /**
-         * Registers one detected run as a match group, adding its pieces to the flat,
-         * deduplicated destroy list too. Shared by checkHorizontal()/checkVertical() to keep
-         * both scans within the project's max block-nesting depth.
+         * Runs both match scans against the current board, returning the same {toDestroy,
+         * matchGroups} shape checkMatches() and shuffle()'s own retry condition both need.
+         * Coordinates only (as mod_playerpuzzle/engine/board_rules always returns) — mapping
+         * a coordinate back to the real Phaser piece it names is the caller's job.
          *
-         * @param {Array} pieces Pieces belonging to this run, in order.
-         * @param {Array} toDestroy Flat, deduplicated list of pieces to destroy (mutated in place).
-         * @param {Array} matchGroups List of {type, pieces} match groups (mutated in place).
+         * @return {{toDestroy: Array, matchGroups: Array}}
          */
-        registerRun(pieces, toDestroy, matchGroups) {
-            for (const piece of pieces) {
-                if (toDestroy.indexOf(piece) === -1) {
-                    toDestroy.push(piece);
-                }
-            }
-            matchGroups.push({type: pieces[0].type, pieces});
-        }
-
-        /**
-         * Scans every row for contiguous same-type runs of 3+ pieces, each pushed as its own
-         * match group (with the exact run length) alongside the flat, deduplicated destroy list
-         * — combo-size-aware effects (Sword/Coin) read group sizes; every other piece effect
-         * still reads the flat list exactly as before this refactor.
-         *
-         * @param {Array} toDestroy Flat, deduplicated list of pieces to destroy (mutated in place).
-         * @param {Array} matchGroups List of {type, pieces} match groups (mutated in place).
-         */
-        checkHorizontal(toDestroy, matchGroups) {
-            for (let r = 0; r < this.rows; r++) {
-                let c = 0;
-                while (c < this.cols) {
-                    const p = this.grid[r][c];
-                    if (!p) {
-                        c++;
-                        continue;
-                    }
-                    let runEnd = c;
-                    while (runEnd + 1 < this.cols && this.grid[r][runEnd + 1] &&
-                            this.grid[r][runEnd + 1].type === p.type) {
-                        runEnd++;
-                    }
-                    if (runEnd - c + 1 >= 3) {
-                        const pieces = [];
-                        for (let i = c; i <= runEnd; i++) {
-                            pieces.push(this.grid[r][i]);
-                        }
-                        this.registerRun(pieces, toDestroy, matchGroups);
-                    }
-                    c = runEnd + 1;
-                }
-            }
-        }
-
-        /**
-         * Same as checkHorizontal(), scanning columns instead of rows.
-         *
-         * @param {Array} toDestroy Flat, deduplicated list of pieces to destroy (mutated in place).
-         * @param {Array} matchGroups List of {type, pieces} match groups (mutated in place).
-         */
-        checkVertical(toDestroy, matchGroups) {
-            for (let c = 0; c < this.cols; c++) {
-                let r = 0;
-                while (r < this.rows) {
-                    const p = this.grid[r][c];
-                    if (!p) {
-                        r++;
-                        continue;
-                    }
-                    let runEnd = r;
-                    while (runEnd + 1 < this.rows && this.grid[runEnd + 1][c] &&
-                            this.grid[runEnd + 1][c].type === p.type) {
-                        runEnd++;
-                    }
-                    if (runEnd - r + 1 >= 3) {
-                        const pieces = [];
-                        for (let i = r; i <= runEnd; i++) {
-                            pieces.push(this.grid[i][c]);
-                        }
-                        this.registerRun(pieces, toDestroy, matchGroups);
-                    }
-                    r = runEnd + 1;
-                }
-            }
-        }
-
-        /**
-         * Checks whether the piece at the given cell is part of a match, optionally
-         * restricted to a single piece type (used by findMove() to hunt for a specific
-         * type of match, e.g. the boss prioritising damage-dealing pieces).
-         *
-         * @param {number} rowP Row index.
-         * @param {number} colP Column index.
-         * @param {number|null} onlyType When set, only counts as a match if the piece type equals this value.
-         * @returns {boolean} Whether a match of at least 3 exists at this cell.
-         */
-        isMatchAt(rowP, colP, onlyType = null) {
-            const p = this.grid[rowP][colP];
-            if (!p) {
-                return false;
-            }
-
-            const {type} = p;
-            if (onlyType !== null && type !== onlyType) {
-                return false;
-            }
-
-            let countH = 1;
-            let countV = 1;
-            let tr, tc;
-
-            tc = colP - 1;
-            while (tc >= 0 && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
-                countH++; tc--;
-            }
-
-            tc = colP + 1;
-            while (tc < this.cols && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
-                countH++; tc++;
-            }
-            if (countH >= 3) {
-                return true;
-            }
-
-            tr = rowP - 1;
-            while (tr >= 0 && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
-                countV++; tr--;
-            }
-
-            tr = rowP + 1;
-            while (tr < this.rows && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
-                countV++; tr++;
-            }
-
-            return countV >= 3;
+        findMatches() {
+            const types = this.extractTypesGrid();
+            const toDestroy = [];
+            const matchGroups = [];
+            BoardRules.checkHorizontal(types, this.rows, this.cols, toDestroy, matchGroups);
+            BoardRules.checkVertical(types, this.rows, this.cols, toDestroy, matchGroups);
+            return {toDestroy, matchGroups};
         }
 
         /**
@@ -647,118 +521,16 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
          * @returns {{p1: object, p2: object}|null} The two pieces to swap, or null when none exist.
          */
         findMove(onlyType = null) {
-            for (let r = 0; r < this.rows; r++) {
-                for (let c = 0; c < this.cols; c++) {
-                    let temp;
-                    if (c < this.cols - 1) {
-                        temp = this.grid[r][c].type;
-                        this.grid[r][c].type = this.grid[r][c + 1].type;
-                        this.grid[r][c + 1].type = temp;
-                        const matchR = this.isMatchAt(r, c, onlyType) || this.isMatchAt(r, c + 1, onlyType);
-
-                        temp = this.grid[r][c].type;
-                        this.grid[r][c].type = this.grid[r][c + 1].type;
-                        this.grid[r][c + 1].type = temp;
-
-                        if (matchR) {
-                            return {p1: this.grid[r][c], p2: this.grid[r][c + 1]};
-                        }
-                    }
-                    if (r < this.rows - 1) {
-                        temp = this.grid[r][c].type;
-                        this.grid[r][c].type = this.grid[r + 1][c].type;
-                        this.grid[r + 1][c].type = temp;
-                        const matchD = this.isMatchAt(r, c, onlyType) || this.isMatchAt(r + 1, c, onlyType);
-
-                        temp = this.grid[r][c].type;
-                        this.grid[r][c].type = this.grid[r + 1][c].type;
-                        this.grid[r + 1][c].type = temp;
-
-                        if (matchD) {
-                            return {p1: this.grid[r][c], p2: this.grid[r + 1][c]};
-                        }
-                    }
-                }
+            const types = this.extractTypesGrid();
+            const move = BoardRules.findMove(types, this.rows, this.cols, onlyType);
+            if (!move) {
+                return null;
             }
-            return null;
+            return {p1: this.grid[move.r1][move.c1], p2: this.grid[move.r2][move.c2]};
         }
 
         hasAvailableMove() {
             return this.findMove() !== null;
-        }
-
-        /**
-         * Computes the length of the match line (horizontal or vertical) passing through the
-         * given cell, for whichever piece type currently sits there. Same counting approach as
-         * isMatchAt(), but returns the actual run length instead of a boolean, so evaluateSwap()
-         * can report which piece type a candidate swap would match.
-         *
-         * @param {number} rowP Row index.
-         * @param {number} colP Column index.
-         * @returns {number} Length of the run at this cell, or 0 when no match exists.
-         */
-        matchRunLengthAt(rowP, colP) {
-            const p = this.grid[rowP][colP];
-            if (!p) {
-                return 0;
-            }
-
-            const {type} = p;
-            let countH = 1;
-            let tc = colP - 1;
-            while (tc >= 0 && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
-                countH++; tc--;
-            }
-            tc = colP + 1;
-            while (tc < this.cols && this.grid[rowP][tc] && this.grid[rowP][tc].type === type) {
-                countH++; tc++;
-            }
-            if (countH >= 3) {
-                return countH;
-            }
-
-            let countV = 1;
-            let tr = rowP - 1;
-            while (tr >= 0 && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
-                countV++; tr--;
-            }
-            tr = rowP + 1;
-            while (tr < this.rows && this.grid[tr][colP] && this.grid[tr][colP].type === type) {
-                countV++; tr++;
-            }
-            return countV >= 3 ? countV : 0;
-        }
-
-        /**
-         * Swaps two cells in-place, checks whether either resulting cell matches, then reverts
-         * — the same temporary-mutate-and-revert pattern as findMove(), kept as separate code
-         * to avoid touching that already-tested core logic. Used only for the accessible
-         * turn-start announcement (announceTurnStart()), which needs the matched piece type,
-         * not just whether a match exists.
-         *
-         * @param {number} r1 Row of the first cell.
-         * @param {number} c1 Column of the first cell.
-         * @param {number} r2 Row of the second cell.
-         * @param {number} c2 Column of the second cell.
-         * @returns {number|null} The piece type that would match, or null when this swap has no effect.
-         */
-        evaluateSwap(r1, c1, r2, c2) {
-            const temp = this.grid[r1][c1].type;
-            this.grid[r1][c1].type = this.grid[r2][c2].type;
-            this.grid[r2][c2].type = temp;
-
-            let matchedType = null;
-            if (this.matchRunLengthAt(r1, c1) >= 3) {
-                matchedType = this.grid[r1][c1].type;
-            } else if (this.matchRunLengthAt(r2, c2) >= 3) {
-                matchedType = this.grid[r2][c2].type;
-            }
-
-            const revert = this.grid[r1][c1].type;
-            this.grid[r1][c1].type = this.grid[r2][c2].type;
-            this.grid[r2][c2].type = revert;
-
-            return matchedType;
         }
 
         /**
@@ -771,17 +543,18 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
          * @returns {Array} Each found move's coordinates and matched piece type.
          */
         findAllMoves(limit = 9) {
+            const types = this.extractTypesGrid();
             const moves = [];
             for (let r = 0; r < this.rows && moves.length < limit; r++) {
                 for (let c = 0; c < this.cols && moves.length < limit; c++) {
                     if (c < this.cols - 1) {
-                        const type = this.evaluateSwap(r, c, r, c + 1);
+                        const type = BoardRules.evaluateSwap(types, this.rows, this.cols, r, c, r, c + 1);
                         if (type !== null) {
                             moves.push({r1: r, c1: c, r2: r, c2: c + 1, type});
                         }
                     }
                     if (moves.length < limit && r < this.rows - 1) {
-                        const type = this.evaluateSwap(r, c, r + 1, c);
+                        const type = BoardRules.evaluateSwap(types, this.rows, this.cols, r, c, r + 1, c);
                         if (type !== null) {
                             moves.push({r1: r, c1: c, r2: r + 1, c2: c, type});
                         }
@@ -878,12 +651,7 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
                 }
             }
 
-            const hasInitialMatch = () => {
-                const toDestroy = [];
-                this.checkHorizontal(toDestroy, []);
-                this.checkVertical(toDestroy, []);
-                return toDestroy.length > 0;
-            };
+            const hasInitialMatch = () => this.findMatches().toDestroy.length > 0;
 
             do {
                 Phaser.Utils.Array.Shuffle(types);
@@ -923,56 +691,43 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
 
         applyGravity() {
             const me = this.scene;
-            let col, row, r, falling, piece, x, yStart, yEnd, randomType;
 
-            for (col = 0; col < this.cols; col++) {
-                for (row = this.rows - 1; row >= 0; row--) {
-                    if (this.grid[row][col] !== null) {
-                        continue;
-                    }
+            // Runs directly on the real Phaser grid, not an extracted types grid: the
+            // "fall" pass only ever moves existing references and checks null, never
+            // compares piece identity/type, so it works unchanged on real objects. The
+            // "spawn" pass writes a raw type number into each newly-emptied cell as a
+            // placeholder — replaced with the real Phaser image in the loop right below,
+            // before anything else reads this.grid again.
+            const result = BoardRules.applyGravityToGrid(this.grid, this.rows, this.cols, Math.random);
 
-                    for (r = row - 1; r >= 0; r--) {
-                        if (this.grid[r][col] !== null) {
-                            falling = this.grid[r][col];
-                            this.grid[row][col] = falling;
-                            this.grid[r][col] = null;
-                            falling.row = row;
-                            me.tweens.add({
-                                targets: falling,
-                                y: this.offsetY + (row * this.pieceSize),
-                                duration: 250, ease: 'Quad.easeIn'
-                            });
-                            break;
-                        }
-                    }
-                }
+            for (const {toRow, col} of result.fell) {
+                const falling = this.grid[toRow][col];
+                falling.row = toRow;
+                me.tweens.add({
+                    targets: falling,
+                    y: this.offsetY + (toRow * this.pieceSize),
+                    duration: 250, ease: 'Quad.easeIn'
+                });
             }
 
-            for (col = 0; col < this.cols; col++) {
-                for (row = 0; row < this.rows; row++) {
-                    if (this.grid[row][col] !== null) {
-                        continue;
-                    }
+            for (const {row, col, type} of result.spawned) {
+                const x = this.offsetX + (col * this.pieceSize);
+                const yStart = this.offsetY - (this.pieceSize * (this.rows - row));
+                const yEnd = this.offsetY + (row * this.pieceSize);
 
-                    randomType = Math.floor(Math.random() * 7);
-                    x = this.offsetX + (col * this.pieceSize);
-                    yStart = this.offsetY - (this.pieceSize * (this.rows - row));
-                    yEnd = this.offsetY + (row * this.pieceSize);
+                const piece = me.add.image(x, yStart, `item${type}`);
+                piece.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
+                piece.type = type;
+                piece.row = row;
+                piece.col = col;
 
-                    piece = me.add.image(x, yStart, `item${randomType}`);
-                    piece.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
-                    piece.type = randomType;
-                    piece.row = row;
-                    piece.col = col;
+                piece.setInteractive();
+                piece.on('pointerdown', this.startSwipe.bind(this, piece));
 
-                    piece.setInteractive();
-                    piece.on('pointerdown', this.startSwipe.bind(this, piece));
-
-                    this.grid[row][col] = piece;
-                    me.tweens.add({
-                        targets: piece, y: yEnd, duration: 400, ease: 'Bounce.easeOut'
-                    });
-                }
+                this.grid[row][col] = piece;
+                me.tweens.add({
+                    targets: piece, y: yEnd, duration: 400, ease: 'Bounce.easeOut'
+                });
             }
 
             me.time.delayedCall(500, this.checkMatches, [], this);
@@ -980,12 +735,8 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
 
         checkMatches() {
             const me = this.scene;
-            const toDestroy = [];
-            const matchGroups = [];
-
             this.syncAccessibleGrid();
-            this.checkHorizontal(toDestroy, matchGroups);
-            this.checkVertical(toDestroy, matchGroups);
+            const {toDestroy, matchGroups} = this.findMatches();
 
             if (toDestroy.length === 0) {
                 if (this.lastSwap !== null) {
@@ -1016,7 +767,17 @@ define(['mod_playerpuzzle/accessibility'], function(Accessibility) {
 
             this.lastSwap = null;
 
-            const effects = me.combat.processEffects(toDestroy, matchGroups);
+            // Combat.js still works with real Phaser pieces (it destroys them, tweens them,
+            // reads .row/.col off them) — mapping findMatches()'s coordinates back to the
+            // pieces they name here keeps that contract unchanged. Combat's own turn to move
+            // off Phaser objects is a later phase of this same refactor, not this one.
+            const destroyedPieces = toDestroy.map(cell => this.grid[cell.row][cell.col]);
+            const pieceMatchGroups = matchGroups.map(group => ({
+                type: group.type,
+                pieces: group.cells.map(cell => this.grid[cell.row][cell.col]),
+            }));
+
+            const effects = me.combat.processEffects(destroyedPieces, pieceMatchGroups);
             const damage = effects.damage;
 
             if (damage > 0) {

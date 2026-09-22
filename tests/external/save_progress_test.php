@@ -30,6 +30,7 @@ use context_module;
 use core_external\external_api;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\move_log;
 use mod_playerpuzzle\local\user_stock;
 
 /**
@@ -849,6 +850,58 @@ final class save_progress_test extends \advanced_testcase {
         $completioninfo = new \completion_info($course);
         $data = $completioninfo->get_data($cm, false, (int) $this->student->id);
         $this->assertEquals(COMPLETION_COMPLETE, $data->completionstate);
+    }
+
+    /**
+     * Tests the anti-cheat replay end to end, through the real web service: a known seed and
+     * a known recorded event log, re-simulated server-side, drive what gets persisted and
+     * banked — never the client's own wildly inflated claim. The seed/move pair is the same
+     * one tests/local/engine/replay_test.php locks in as always deriving damage 10, playergold
+     * 15, bossgold 0 (a single Sword-match kill of a 10 HP boss, with an incidental Coin match
+     * in the same cascade) — see that test's own docblock for where those numbers come from.
+     * The banked amount here is 10, not 15: with basebosshp/bossdamage/coingain all equal to
+     * 10, combat::coin_ceiling() itself works out to exactly 10 (a structural property of this
+     * specific 1:1 configuration, not a replay bug) — the ceiling clamp still applies to a
+     * replay-derived value exactly as it always applied to a claimed one. What this test
+     * actually proves is that the derived truth (10/10), not the forged claim (99999/99999),
+     * is what reaches both the persisted attempt row and the banked total; the case where a
+     * replay-derived value differs from an inflated-but-still-plausible claim (i.e. one the
+     * old ceiling-only check would itself have accepted) is covered directly, with a
+     * deliberately generous ceiling, by replay_credit_test.php.
+     *
+     * @return void
+     */
+    public function test_replay_credits_the_derived_value_not_an_inflated_claim(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 10, 'bossdamage' => 10, 'coingain' => 10]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'rngseed', 2, ['token' => $token]);
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'movelog',
+            move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            ['token' => $token]
+        );
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            // A forged claim of far more damage/gold than the recorded seed+move actually
+            // produced — the replay's own derived truth must win, not this claim.
+            'damage'               => 99999,
+            'coinsearnedsofar'     => 99999,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(10, $result['data']['coinsbanked']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame(0, (int) $attempt->bosshp_remaining);
+        $this->assertEqualsWithDelta(100.0, (float) $attempt->score, 0.001);
     }
 
     /**

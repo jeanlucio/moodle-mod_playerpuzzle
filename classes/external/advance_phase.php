@@ -34,6 +34,7 @@ use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\replay_credit;
 use mod_playerpuzzle\local\user_stock;
 use moodle_exception;
 
@@ -118,7 +119,7 @@ class advance_phase extends external_api {
             $params['token'],
             (int) $playerpuzzle->id,
             (int) $USER->id,
-            function (\stdClass $attempt) use ($DB, $USER, $playerpuzzle, $params): array {
+            function (\stdClass $attempt) use ($DB, $USER, $playerpuzzle, $params, $context): array {
                 if ((bool) $attempt->isdemo) {
                     // A Demo is always a one-shot fight reported to the client as gamemode
                     // 'single' (see game_page_service::build_game_config()) — combat.js's own
@@ -138,7 +139,24 @@ class advance_phase extends external_api {
                     combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase),
                     (string) $attempt->difficulty
                 );
-                if ($params['damage'] < $currentbosshp) {
+
+                // Server-side replay: when the recorded seed/event log for this phase
+                // re-simulates to a conclusive result, that value drives both the win check
+                // right below and the coin sync further down, instead of the client's own
+                // claim (never Demo, never a phase whose engine version has since changed —
+                // see replay::derive()'s own docblock). When it cannot, this returns the
+                // claimed values completely unchanged, and every check below still applies
+                // exactly as before.
+                $resolved = replay_credit::resolve(
+                    $attempt,
+                    $playerpuzzle,
+                    $context,
+                    $params['damage'],
+                    $params['coinsearnedsofar'],
+                    $params['bosscoinsearnedsofar']
+                );
+
+                if ($resolved['damage'] < $currentbosshp) {
                     throw new moodle_exception('phasenotwon', 'mod_playerpuzzle');
                 }
 
@@ -193,7 +211,7 @@ class advance_phase extends external_api {
                     (int) $playerpuzzle->coingain,
                     combat::difficulty_coin_factor((string) $attempt->difficulty)
                 );
-                coin_ledger::sync($attempt, $params['coinsearnedsofar'], $params['bosscoinsearnedsofar'], $ceiling);
+                coin_ledger::sync($attempt, $resolved['playergold'], $resolved['bossgold'], $ceiling);
 
                 $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
 

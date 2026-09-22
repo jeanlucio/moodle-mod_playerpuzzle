@@ -159,17 +159,20 @@ class combat_engine {
      * Resolves one side taking damage: a ready shield blocks the hit entirely instead of
      * reducing HP.
      *
-     * @param int $hp Current HP of the side being hit.
+     * @param float $hp Current HP of the side being hit — a float, not an int: repeated
+     *  fractional damage/heal amounts (a Potion's baseDamage / 4, a crit's baseDamage * 3 *
+     *  a multiplier ending in a tenth) accumulate across a whole phase without ever being
+     *  rounded back to a whole number mid-match, exactly like the JS side's untyped number.
      * @param bool $shieldready Whether that side's shield is currently armed.
      * @param float $amount Damage amount before the shield check.
      * @return array ['newHp' => float, 'shieldConsumed' => bool, 'appliedAmount' => float]
      */
-    public static function resolve_damage(int $hp, bool $shieldready, float $amount): array {
+    public static function resolve_damage(float $hp, bool $shieldready, float $amount): array {
         $appliedamount = $amount;
         $shieldconsumed = false;
         if ($shieldready) {
             $shieldconsumed = true;
-            $appliedamount = 0;
+            $appliedamount = 0.0;
         }
         return [
             'newHp' => max(0, $hp - $appliedamount),
@@ -181,12 +184,13 @@ class combat_engine {
     /**
      * Resolves one side's poison tick at the start of their turn.
      *
-     * @param int $hp Current HP of the side ticking.
+     * @param float $hp Current HP of the side ticking — see resolve_damage() for why this is
+     *  a float, not an int.
      * @param int $poisonrounds Rounds of poison damage still armed for that side.
      * @param float $tickdamage Damage dealt by a single tick (baseDamage).
      * @return array ['newHp' => float, 'newPoisonRounds' => int, 'ticked' => bool]
      */
-    public static function resolve_poison_tick(int $hp, int $poisonrounds, float $tickdamage): array {
+    public static function resolve_poison_tick(float $hp, int $poisonrounds, float $tickdamage): array {
         if ($poisonrounds <= 0) {
             return ['newHp' => $hp, 'newPoisonRounds' => $poisonrounds, 'ticked' => false];
         }

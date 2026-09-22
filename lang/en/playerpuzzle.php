@@ -121,6 +121,7 @@ $string['error_correctoptionempty'] = 'The option marked as correct cannot be em
 $string['error_hud_cost_qty'] = 'The quantity must be at least 1 when an item is configured.';
 $string['event_game_completed'] = 'Game completed';
 $string['event_game_started'] = 'Game started';
+$string['event_replay_diverged'] = 'Server replay diverged from client report';
 $string['gamemode'] = 'Game mode';
 $string['gamemode_campaign'] = 'Campaign';
 $string['gamemode_help'] = 'Campaign: the instance is a full game with levels and phases, HP scaling automatically as the student progresses. Single Match: the instance is one self-contained, repeatable match with no levels or phases.';

@@ -121,6 +121,7 @@ $string['error_correctoptionempty'] = 'A opção marcada como correta não pode 
 $string['error_hud_cost_qty'] = 'A quantidade precisa ser pelo menos 1 quando um item está configurado.';
 $string['event_game_completed'] = 'Jogo concluído';
 $string['event_game_started'] = 'Jogo iniciado';
+$string['event_replay_diverged'] = 'Replay do servidor divergiu do relatado pelo cliente';
 $string['gamemode'] = 'Modo de jogo';
 $string['gamemode_campaign'] = 'Campanha';
 $string['gamemode_help'] = 'Campanha: a instância é um jogo completo com níveis e fases, com o HP escalando automaticamente conforme o estudante avança. Partida Única: a instância é uma única partida autocontida e repetível, sem níveis nem fases.';

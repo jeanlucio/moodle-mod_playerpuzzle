@@ -36,6 +36,7 @@ use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\replay_credit;
 use mod_playerpuzzle\local\user_stock;
 use moodle_exception;
 
@@ -148,7 +149,21 @@ class save_progress extends external_api {
             ),
             (string) $attempt->difficulty
         );
-        $safedamage = max(0, min($params['damage'], $bosshp));
+        // Server-side replay: when the recorded seed/event log for this phase re-simulates
+        // to a conclusive result, that value is used below instead of the client's own claim
+        // (never Demo, never a phase whose engine version has since changed — see
+        // replay::derive()'s own docblock). When it cannot, this returns the claimed values
+        // completely unchanged, and every clamp below still applies exactly as before.
+        $resolved = replay_credit::resolve(
+            $attempt,
+            $playerpuzzle,
+            $context,
+            $params['damage'],
+            $params['coinsearnedsofar'],
+            $params['bosscoinsearnedsofar']
+        );
+
+        $safedamage = max(0, min($resolved['damage'], $bosshp));
         $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);
         $attempt->score = round(($safedamage / max(1, $bosshp)) * 100, 5);
 
@@ -170,7 +185,7 @@ class save_progress extends external_api {
             (int) $playerpuzzle->coingain,
             combat::difficulty_coin_factor((string) $attempt->difficulty)
         );
-        coin_ledger::sync($attempt, $params['coinsearnedsofar'], $params['bosscoinsearnedsofar'], $ceiling);
+        coin_ledger::sync($attempt, $resolved['playergold'], $resolved['bossgold'], $ceiling);
         // The attempt just reached a final status — no fight left to resume.
         $attempt->combatstate = null;
         $DB->update_record('playerpuzzle_attempts', $attempt);

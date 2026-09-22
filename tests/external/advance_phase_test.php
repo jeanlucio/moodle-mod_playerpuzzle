@@ -31,6 +31,7 @@ use core_external\external_api;
 use mod_playerpuzzle\local\attempt_consumables;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\move_log;
 use mod_playerpuzzle\local\user_stock;
 
 /**
@@ -808,5 +809,44 @@ final class advance_phase_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertSame(100, $result['data']['coinsbanked']);
+    }
+
+    /**
+     * Tests the anti-cheat replay end to end, through the real web service: a known seed and
+     * a known recorded event log, re-simulated server-side, drive the win check and the
+     * banked total — never the client's own wildly inflated claim. Same seed/move pair as
+     * save_progress_test.php's own equivalent test — see that test's docblock for exactly
+     * where the numbers (damage 10, playergold 15, then clamped to 10 by this exact 1:1
+     * basebosshp/bossdamage/coingain configuration's own coin ceiling) come from.
+     *
+     * @return void
+     */
+    public function test_replay_credits_the_derived_value_not_an_inflated_claim(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 10, 'bossdamage' => 10, 'coingain' => 10]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $DB->set_field('playerpuzzle_attempts', 'rngseed', 2, ['token' => $token]);
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'movelog',
+            move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            ['token' => $token]
+        );
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            // A forged claim of far more damage/gold than the recorded seed+move actually
+            // produced — the replay's own derived truth must win, not this claim.
+            'damage'               => 99999,
+            'coinsearnedsofar'     => 99999,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(2, $result['data']['currentphase']);
+        $this->assertSame(10, $result['data']['coinsbanked']);
     }
 }

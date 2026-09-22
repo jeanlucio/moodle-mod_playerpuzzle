@@ -184,7 +184,7 @@ final class combat_engine_test extends \advanced_testcase {
      */
     public function test_resolve_damage_blocks_and_consumes_shield(): void {
         $result = combat_engine::resolve_damage(100, true, 30);
-        $this->assertSame(['newHp' => 100, 'shieldConsumed' => true, 'appliedAmount' => 0], $result);
+        $this->assertSame(['newHp' => 100.0, 'shieldConsumed' => true, 'appliedAmount' => 0.0], $result);
     }
 
     /**
@@ -204,7 +204,7 @@ final class combat_engine_test extends \advanced_testcase {
      */
     public function test_resolve_poison_tick_no_op_without_rounds(): void {
         $result = combat_engine::resolve_poison_tick(100, 0, 10);
-        $this->assertSame(['newHp' => 100, 'newPoisonRounds' => 0, 'ticked' => false], $result);
+        $this->assertSame(['newHp' => 100.0, 'newPoisonRounds' => 0, 'ticked' => false], $result);
     }
 
     /**

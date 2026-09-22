@@ -25,6 +25,7 @@
 
 namespace mod_playerpuzzle\local\engine;
 
+use mod_playerpuzzle\local\attempt_consumables;
 use mod_playerpuzzle\local\move_log;
 
 /**
@@ -94,6 +95,24 @@ class replay {
             return null;
         }
 
+        if (self::used_a_combat_affecting_consumable($attempt->id)) {
+            // A used Potion/Shield/Magic/Sword changes HP/shield/poison state at a moment
+            // this class has no way to place in the sequence — unlike a board match or a
+            // question, a consumable's use is never recorded in the event log at all (it is
+            // already independently authoritative through use_stock.php, so verifying it was
+            // never the point), but its *effect* still needs to be reflected in the
+            // simulated state for HP tracking to mean anything. Without that, the
+            // simulation's own belief about the fight can diverge from what really
+            // happened — a shield the real player armed via a purchased charge blocks a hit
+            // here it never knew was coming, and the "player defeated" terminal state can
+            // trigger long before the real match's true outcome, badly under-deriving the
+            // damage a genuinely finished, genuinely won phase actually dealt. Skipping
+            // verification whenever any of the four combat-affecting types were used this
+            // phase is the safe, conservative choice until a future revision teaches the
+            // event log about them too.
+            return null;
+        }
+
         try {
             return self::simulate($attempt, $playerpuzzle);
         } catch (\Throwable $e) {
@@ -103,6 +122,23 @@ class replay {
             );
             return null;
         }
+    }
+
+    /**
+     * Whether any of the four consumable types whose effect changes combat state (Potion,
+     * Shield, Magic, Sword — everything except Hint, which only reveals text) was used
+     * during this phase/match window.
+     *
+     * @param int $attemptid The attempt id.
+     * @return bool
+     */
+    private static function used_a_combat_affecting_consumable(int $attemptid): bool {
+        foreach (['potion', 'shield', 'magic', 'sword'] as $type) {
+            if (attempt_consumables::get_uses($attemptid, $type) > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

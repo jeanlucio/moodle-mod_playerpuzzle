@@ -146,6 +146,65 @@ final class replay_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a used combat-affecting consumable (Shield here — arms a block the
+     * simulation has no way to know happened) skips verification entirely for the whole
+     * phase, even though the exact same seed/log otherwise resolves to a clean, conclusive
+     * win — same fixture as test_derive_resolves_a_real_single_move_win() above, the only
+     * difference being a recorded Shield use. A used Potion/Magic/Sword must skip it the
+     * same way; Shield alone is exercised here since the mechanism (a lookup keyed only by
+     * type) does not depend on which of the four it is.
+     *
+     * @return void
+     */
+    public function test_derive_returns_null_when_a_combat_consumable_was_used(): void {
+        global $DB;
+
+        $attempt = $this->make_attempt([
+            'id' => 99,
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            'frozenbasebosshp' => 10,
+            'frozenbossdamage' => 10,
+            'frozencoingain' => 10,
+        ]);
+        $DB->insert_record('playerpuzzle_attempt_consumables', (object) [
+            'attemptid' => 99,
+            'consumabletype' => 'shield',
+            'timesused' => 1,
+        ]);
+
+        $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle()));
+    }
+
+    /**
+     * Tests that a used Hint — the one consumable type with no combat effect of its own — does
+     * not, on its own, skip verification.
+     *
+     * @return void
+     */
+    public function test_derive_still_verifies_when_only_hint_was_used(): void {
+        global $DB;
+
+        $attempt = $this->make_attempt([
+            'id' => 98,
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            'frozenbasebosshp' => 10,
+            'frozenbossdamage' => 10,
+            'frozencoingain' => 10,
+        ]);
+        $DB->insert_record('playerpuzzle_attempt_consumables', (object) [
+            'attemptid' => 98,
+            'consumabletype' => 'hint',
+            'timesused' => 3,
+        ]);
+
+        $result = replay::derive($attempt, $this->make_playerpuzzle());
+
+        $this->assertSame(['damage' => 10, 'playergold' => 15, 'bossgold' => 0], $result);
+    }
+
+    /**
      * Tests that a mana-crossing match with no corresponding 'question' event in the log is
      * treated as a gap, never as a lower derived value: seed 56's first move (any available
      * one) triggers a player question five cascade rounds in, but this log only records the

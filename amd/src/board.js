@@ -21,8 +21,6 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/* global Phaser */
-
 define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules'], function(Accessibility, BoardRules) {
     'use strict';
 
@@ -644,26 +642,20 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
                 align: 'center', fontStyle: 'bold', padding: {x: 20, y: 20}
             }).setOrigin(0.5).setDepth(100);
 
-            const types = [];
+            // Retries entirely on a plain types grid (never touching the real Phaser pieces
+            // until a valid arrangement is found) — the pure retry loop itself moved to
+            // engine/board_rules.js::shuffleUntilValid(), ready for a future server-side replay
+            // to reproduce the exact same accept/reject sequence against the same rng draws.
+            // Math.random() here (not yet a seeded PRNG) keeps behaviour identical to before.
+            const types = this.extractTypesGrid();
+            BoardRules.shuffleUntilValid(types, this.rows, this.cols, Math.random);
+
             for (let r = 0; r < this.rows; r++) {
                 for (let c = 0; c < this.cols; c++) {
-                    types.push(this.grid[r][c].type);
+                    this.grid[r][c].type = types[r][c];
+                    this.grid[r][c].setTexture(`item${types[r][c]}`);
                 }
             }
-
-            const hasInitialMatch = () => this.findMatches().toDestroy.length > 0;
-
-            do {
-                Phaser.Utils.Array.Shuffle(types);
-                let idx = 0;
-                for (let r2 = 0; r2 < this.rows; r2++) {
-                    for (let c2 = 0; c2 < this.cols; c2++) {
-                        this.grid[r2][c2].type = types[idx];
-                        this.grid[r2][c2].setTexture(`item${types[idx]}`);
-                        idx++;
-                    }
-                }
-            } while (!this.hasAvailableMove() || hasInitialMatch());
 
             this.syncAccessibleGrid();
 

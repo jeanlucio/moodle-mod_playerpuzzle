@@ -248,3 +248,59 @@ test('applyGravityToGrid spawns new pieces using the injected rng, never Math.ra
     assert.equal(grid[0][0], 6);
     assert.equal(result.spawned[0].type, 6);
 });
+
+test('hasAnyMatch is true when a run of 3+ exists anywhere, false otherwise', () => {
+    const withMatch = buildGrid(1, 4, null, {'0,0': 2, '0,1': 2, '0,2': 2, '0,3': 5});
+    const withoutMatch = buildGrid(1, 4, null, {'0,0': 2, '0,1': 2, '0,2': 5, '0,3': 2});
+    assert.equal(boardRules.hasAnyMatch(withMatch, 1, 4), true);
+    assert.equal(boardRules.hasAnyMatch(withoutMatch, 1, 4), false);
+});
+
+test('shuffleGrid produces the documented Fisher-Yates result for a known rng sequence', () => {
+    // Locks in the exact algorithm/scan direction as a regression guard: a server-side port
+    // must reproduce this bit for bit, or a replay consuming the same rng draws would land on
+    // a different arrangement despite agreeing on every individual draw.
+    const grid = [[0, 1], [2, 3]];
+    const sequence = [0.9, 0.1, 0.5];
+    let i = 0;
+    boardRules.shuffleGrid(grid, 2, 2, () => sequence[i++]);
+    assert.deepEqual(grid, [[2, 1], [0, 3]]);
+});
+
+test('shuffleGrid redistributes the existing types, never invents or drops one', () => {
+    const grid = buildGrid(2, 3, null, {
+        '0,0': 5, '0,1': 5, '0,2': 1,
+        '1,0': 2, '1,1': 3, '1,2': 4,
+    });
+    const before = [5, 5, 1, 2, 3, 4].sort();
+    boardRules.shuffleGrid(grid, 2, 3, sequenceRng([0.9, 0.2, 0.7, 0.4, 0.1]));
+    const after = [].concat(...grid).sort();
+    assert.deepEqual(after, before);
+});
+
+test('shuffleUntilValid retries a shuffle that lands on an existing match', () => {
+    // The first 5 rng draws (a 6-cell row needs 5 Fisher-Yates swaps) are rigged to force the
+    // very first shuffleGrid() attempt back onto [0,0,0,1,2,3] — a match on its own, and
+    // therefore rejected. A real pseudo-random generator (same LCG technique as
+    // generateGrid's own "never an initial match" test above) takes over from the 6th draw
+    // onward, guaranteeing the retry loop eventually finds a valid arrangement instead of
+    // this test picking one specific expected result by hand.
+    const forcedInvalidFirstAttempt = [0.99, 0.99, 0.99, 0.99, 0.99];
+    let seed = 7;
+    let draws = 0;
+    const rng = () => {
+        draws++;
+        if (draws <= forcedInvalidFirstAttempt.length) {
+            return forcedInvalidFirstAttempt[draws - 1];
+        }
+        seed = (seed * 1103515245 + 12345) % 0x7fffffff;
+        return Math.abs(seed) / 0x7fffffff;
+    };
+
+    const grid = [[0, 0, 0, 1, 2, 3]];
+    boardRules.shuffleUntilValid(grid, 1, 6, rng);
+
+    assert.ok(draws > forcedInvalidFirstAttempt.length, 'must have retried past the forced invalid attempt');
+    assert.equal(boardRules.hasAvailableMove(grid, 1, 6), true);
+    assert.equal(boardRules.hasAnyMatch(grid, 1, 6), false);
+});

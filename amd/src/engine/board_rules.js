@@ -311,6 +311,87 @@
         }
 
         /**
+         * Whether any match already exists anywhere on the grid, regardless of type or
+         * orientation — used to reject a shuffle result that happens to land on a match
+         * (shuffleUntilValid()) the same way generateGrid()'s own cell-by-cell placement
+         * avoids one from ever forming in the first place.
+         *
+         * @param {Array} grid The board grid.
+         * @param {number} rows Board row count.
+         * @param {number} cols Board column count.
+         * @return {boolean}
+         */
+        function hasAnyMatch(grid, rows, cols) {
+            const toDestroy = [];
+            const matchGroups = [];
+            checkHorizontal(grid, rows, cols, toDestroy, matchGroups);
+            checkVertical(grid, rows, cols, toDestroy, matchGroups);
+            return toDestroy.length > 0;
+        }
+
+        /**
+         * Fisher-Yates shuffle of every cell's type across the whole grid, in place — a
+         * position-only shuffle (existing types are redistributed, none are re-rolled), unlike
+         * generateGrid()'s per-cell random pick. Scans right to left, swapping each cell with a
+         * uniformly-chosen earlier-or-equal one; this exact direction/convention must match
+         * whatever a server-side port of this logic uses, or a replay consuming the same rng
+         * sequence would land on a different arrangement despite agreeing on every draw.
+         *
+         * @param {Array} grid The board grid (mutated in place).
+         * @param {number} rows Board row count.
+         * @param {number} cols Board column count.
+         * @param {Function} rng Returns a float in [0, 1) — see pickTypeAvoidingMatch().
+         * @return {void}
+         */
+        function shuffleGrid(grid, rows, cols, rng) {
+            const flat = [];
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    flat.push(grid[row][col]);
+                }
+            }
+
+            for (let i = flat.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                const temp = flat[i];
+                flat[i] = flat[j];
+                flat[j] = temp;
+            }
+
+            let idx = 0;
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    grid[row][col] = flat[idx];
+                    idx++;
+                }
+            }
+        }
+
+        /**
+         * Re-shuffles the grid (in place) until the result both has at least one available move
+         * and contains no match on its own — the same two conditions board.js's own shuffle()
+         * always checked, now expressed as a pure retry loop instead of one entangled with
+         * texture updates and tween timing.
+         *
+         * Consumes a variable number of rng draws per call (each failed attempt re-consumes a
+         * fresh shuffle's worth) — the same kind of state-dependent consumption
+         * pickTypeAvoidingMatch() already has, and for the same reason: a PHP replay must retry
+         * with the identical acceptance test, or it will not consume rng draws in the same
+         * count and everything after diverges.
+         *
+         * @param {Array} grid The board grid (mutated in place).
+         * @param {number} rows Board row count.
+         * @param {number} cols Board column count.
+         * @param {Function} rng Returns a float in [0, 1) — see pickTypeAvoidingMatch().
+         * @return {void}
+         */
+        function shuffleUntilValid(grid, rows, cols, rng) {
+            do {
+                shuffleGrid(grid, rows, cols, rng);
+            } while (!hasAvailableMove(grid, rows, cols) || hasAnyMatch(grid, rows, cols));
+        }
+
+        /**
          * Computes the length of the match line (horizontal or vertical) passing through the
          * given cell, for whichever piece type currently sits there. Same counting approach as
          * isMatchAt(), but returns the actual run length instead of a boolean, so evaluateSwap()
@@ -445,6 +526,9 @@
             isMatchAt,
             findMove,
             hasAvailableMove,
+            hasAnyMatch,
+            shuffleGrid,
+            shuffleUntilValid,
             matchRunLengthAt,
             evaluateSwap,
             applyGravityToGrid,

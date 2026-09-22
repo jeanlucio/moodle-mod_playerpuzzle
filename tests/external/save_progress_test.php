@@ -161,9 +161,9 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a victory credits PuzzleCoin even without PlayerHUD configured at all — the
-     * regression this correction closes: before it, buying (and, before Fase 10, banking too)
-     * required PlayerHUD, leaving a course without the block unable to ever use consumables.
+     * Tests that a victory credits PuzzleCoin even without PlayerHUD configured at all —
+     * buying and banking consumables must work purely on the plugin's own currency, never
+     * requiring PlayerHUD, so a course without the block can still use consumables.
      *
      * @return void
      */

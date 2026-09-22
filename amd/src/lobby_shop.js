@@ -127,7 +127,24 @@ const transfer = async(cmid, button) => {
 };
 
 /**
- * Wires every "Buy" button and the "Transfer" button in the Lobby shop.
+ * Persists the spoken-narration preference, fire-and-forget — mirrors ui.js's own
+ * saveSoundPreference() for the in-game Music/Sound Effects badges: the checkbox has
+ * already changed state by the time this runs, so nothing in the UI waits on the round
+ * trip, and a failure (network blip) is silently ignored — worst case, the preference
+ * simply does not survive a reload.
+ *
+ * @param {number} cmid Course module id.
+ * @param {boolean} enabled New state.
+ */
+const saveSpeechPreference = (cmid, enabled) => {
+    Ajax.call([{
+        methodname: 'mod_playerpuzzle_set_sound_preference',
+        args: {cmid, type: 'speech', enabled},
+    }]);
+};
+
+/**
+ * Wires every "Buy" button, the "Transfer" button, and the narration checkbox in the Lobby.
  *
  * @param {number} cmid Course module id.
  */
@@ -142,6 +159,12 @@ export const init = (cmid) => {
         const transferButton = event.target.closest('.pp-lobby-transfer-btn');
         if (transferButton) {
             transfer(cmid, transferButton);
+        }
+    });
+
+    document.addEventListener('change', (event) => {
+        if (event.target.id === 'pp-lobby-speech') {
+            saveSpeechPreference(cmid, event.target.checked);
         }
     });
 };

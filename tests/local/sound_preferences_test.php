@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for the Music/Sound Effects sound preferences service.
+ * Unit tests for the Music/Sound Effects/narration preferences service.
  *
  * @package    mod_playerpuzzle
  * @category   test
@@ -38,8 +38,8 @@ final class sound_preferences_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that both channels default to enabled for a user who never touched either
-     * preference — matches the in-game default before this preference existed.
+     * Tests that Music/Sound Effects default to enabled for a user who never touched
+     * either preference — matches the in-game default before this preference existed.
      *
      * @return void
      */
@@ -48,6 +48,19 @@ final class sound_preferences_test extends \advanced_testcase {
 
         $this->assertTrue(sound_preferences::is_enabled('music', (int) $user->id));
         $this->assertTrue(sound_preferences::is_enabled('sfx', (int) $user->id));
+    }
+
+    /**
+     * Tests that narration defaults to disabled — it speaks over the game through the
+     * browser's speech synthesis, so a student must opt in deliberately, unlike Music/
+     * Sound Effects which default on.
+     *
+     * @return void
+     */
+    public function test_speech_defaults_to_disabled(): void {
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->assertFalse(sound_preferences::is_enabled('speech', (int) $user->id));
     }
 
     /**
@@ -104,5 +117,24 @@ final class sound_preferences_test extends \advanced_testcase {
     public function test_preference_name_is_prefixed(): void {
         $this->assertSame('mod_playerpuzzle_music', sound_preferences::preference_name('music'));
         $this->assertSame('mod_playerpuzzle_sfx', sound_preferences::preference_name('sfx'));
+        $this->assertSame('mod_playerpuzzle_speech', sound_preferences::preference_name('speech'));
+    }
+
+    /**
+     * Tests that turning narration on for one user never affects Music/Sound Effects, nor
+     * another user's own narration preference.
+     *
+     * @return void
+     */
+    public function test_speech_is_independent_of_other_channels_and_users(): void {
+        $usera = $this->getDataGenerator()->create_user();
+        $userb = $this->getDataGenerator()->create_user();
+
+        sound_preferences::set_enabled('speech', true, (int) $usera->id);
+
+        $this->assertTrue(sound_preferences::is_enabled('speech', (int) $usera->id));
+        $this->assertTrue(sound_preferences::is_enabled('music', (int) $usera->id));
+        $this->assertTrue(sound_preferences::is_enabled('sfx', (int) $usera->id));
+        $this->assertFalse(sound_preferences::is_enabled('speech', (int) $userb->id));
     }
 }

@@ -52,6 +52,8 @@
             {"value": "hard", "label": "Hard", "checked": false}
         ],
         "difficultycurrent": "",
+        "speechenabled": false,
+        "speechlabel": "Speak game announcements aloud",
         "demourl": "/mod/playerpuzzle/play.php?id=1&isdemo=1",
         "playdemotext": "Play Demo",
         "canmanagequestions": true,
@@ -135,6 +137,16 @@
                 </button>
             </div>
             {{/hastransfer}}
+
+            <div class="form-check pp-lobby-speech">
+                <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="pp-lobby-speech"
+                    {{#speechenabled}}checked{{/speechenabled}}
+                >
+                <label class="form-check-label" for="pp-lobby-speech">{{speechlabel}}</label>
+            </div>
 
             <form method="post" action="{{{playurl}}}">
                 <input type="hidden" name="sesskey" value="{{sesskey}}">

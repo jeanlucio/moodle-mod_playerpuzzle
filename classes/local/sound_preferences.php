@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Service tracking the per-user Music/Sound Effects toggle preferences.
+ * Service tracking the per-user Music/Sound Effects/narration toggle preferences.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -25,20 +25,30 @@
 namespace mod_playerpuzzle\local;
 
 /**
- * Reads and writes the two independent sound-channel preferences (Music/Sound Effects).
+ * Reads and writes the three independent audio preferences: Music, Sound Effects, and
+ * spoken narration of the accessibility announcements the game already writes to its
+ * screen-reader live region.
  *
- * Kept as two separate user_preferences rows rather than one combined value: the HUD
- * already ships two independently clickable badges (mirrors mod_playerland's own
+ * Kept as separate user_preferences rows rather than one combined value: the HUD ships
+ * independently clickable Music/Effects badges (mirrors mod_playerland's own
  * intro_service pattern — a single user_preferences row per concern, no dedicated table),
  * and a shared preference would force them to always move together, changing behaviour
- * that already exists today (each button mutes only its own channel).
+ * that already exists today (each control only ever affects its own channel).
  */
 class sound_preferences {
     /** @var string[] Valid channels. */
-    public const TYPES = ['music', 'sfx'];
+    public const TYPES = ['music', 'sfx', 'speech'];
 
-    /** @var string Prefix shared by both preference names, and by db/uninstall.php's cleanup. */
+    /** @var string Prefix shared by every preference name, and by db/uninstall.php's cleanup. */
     private const PREFERENCE_PREFIX = 'mod_playerpuzzle_';
+
+    /**
+     * Default state per channel when a user has never touched it. Music/Sound Effects
+     * default on, matching the in-game default before this preference existed; narration
+     * defaults off — it speaks over the game through the browser's speech synthesis, so
+     * turning it on should always be a deliberate choice, never a surprise on first load.
+     */
+    private const DEFAULTS = ['music' => true, 'sfx' => true, 'speech' => false];
 
     /**
      * Name of the underlying user preference for a channel, exposed for the privacy
@@ -52,15 +62,16 @@ class sound_preferences {
     }
 
     /**
-     * Whether the given channel is enabled for the given user. Defaults to enabled,
-     * matching the in-game default before this preference existed.
+     * Whether the given channel is enabled for the given user, falling back to that
+     * channel's own default (see self::DEFAULTS) when never explicitly set.
      *
      * @param string $type One of self::TYPES.
      * @param int $userid User id.
      * @return bool
      */
     public static function is_enabled(string $type, int $userid): bool {
-        return (bool) get_user_preferences(self::preference_name($type), true, $userid);
+        $default = self::DEFAULTS[$type] ?? true;
+        return (bool) get_user_preferences(self::preference_name($type), $default, $userid);
     }
 
     /**

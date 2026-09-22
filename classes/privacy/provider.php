@@ -136,15 +136,20 @@ class provider implements
             sound_preferences::preference_name('sfx'),
             'privacy:metadata:preference:sfx'
         );
+        $collection->add_user_preference(
+            sound_preferences::preference_name('speech'),
+            'privacy:metadata:preference:speech'
+        );
 
         return $collection;
     }
 
     /**
-     * Exports the Music/Sound Effects preferences for the given user, when either has ever been
-     * set — get_user_preferences() with no default (null) is the only way to distinguish
-     * "never toggled" from "toggled back to the default enabled state", the same
-     * distinction has_seen_intro()-style boolean preferences do not need to make.
+     * Exports the Music/Sound Effects/narration preferences for the given user, for
+     * whichever ones have ever been set — get_user_preferences() with no default (null) is
+     * the only way to distinguish "never toggled" from "toggled back to that channel's own
+     * default", the same distinction has_seen_intro()-style boolean preferences do not need
+     * to make.
      *
      * @param int $userid The user id.
      * @return void

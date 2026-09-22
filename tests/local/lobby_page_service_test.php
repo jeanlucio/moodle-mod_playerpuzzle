@@ -144,6 +144,37 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the narration checkbox reflects the student's own preference (never a
+     * site setting), defaulting to off and flipping once the student turns it on.
+     *
+     * @return void
+     */
+    public function test_build_page_data_shows_speech_preference(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            $context
+        );
+        $this->assertFalse($data['speechenabled']);
+        $this->assertSame(get_string('lobby_speech_label', 'mod_playerpuzzle'), $data['speechlabel']);
+
+        sound_preferences::set_enabled('speech', true, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            $context
+        );
+        $this->assertTrue($data['speechenabled']);
+    }
+
+    /**
      * Tests that the PuzzleCoin balance reflects what the student actually holds — credited
      * directly here, with no PlayerHUD involved, since PuzzleCoin is PlayerPuzzle's own.
      *

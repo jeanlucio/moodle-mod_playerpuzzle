@@ -114,8 +114,25 @@ class lobby_page_service {
         $data += self::build_progress_context($instance, $attempt, $userid);
         $data += self::build_minquestions_context($instance);
         $data += self::build_difficulty_context($attempt);
+        $data += self::build_speech_context($userid);
 
         return $data;
+    }
+
+    /**
+     * Builds the spoken-narration toggle context: a per-student preference (see
+     * sound_preferences), not a site setting — whether to hear game announcements read
+     * aloud is the student's own call, so it is offered right here rather than gated
+     * behind an admin having enabled it first.
+     *
+     * @param int $userid Current user ID.
+     * @return array
+     */
+    private static function build_speech_context(int $userid): array {
+        return [
+            'speechenabled' => sound_preferences::is_enabled('speech', $userid),
+            'speechlabel'   => get_string('lobby_speech_label', 'mod_playerpuzzle'),
+        ];
     }
 
     /**

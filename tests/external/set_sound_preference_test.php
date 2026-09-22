@@ -110,6 +110,28 @@ final class set_sound_preference_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the narration channel can be saved through the same endpoint as
+     * Music/Sound Effects, defaulting to disabled until explicitly turned on.
+     *
+     * @return void
+     */
+    public function test_speech_channel_can_be_saved(): void {
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+
+        $this->assertFalse(sound_preferences::is_enabled('speech', (int) $this->student->id));
+
+        $result = $this->call_set_sound_preference([
+            'cmid'    => $instance->cmid,
+            'type'    => 'speech',
+            'enabled' => true,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertTrue(sound_preferences::is_enabled('speech', (int) $this->student->id));
+    }
+
+    /**
      * Tests that an invalid sound channel is rejected.
      *
      * @return void

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * External function to persist a Music/Sound Effects toggle as a user preference.
+ * External function to persist a Music/Sound Effects/narration toggle as a user preference.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -33,7 +33,8 @@ use mod_playerpuzzle\local\sound_preferences;
 use moodle_exception;
 
 /**
- * Saves whether the Music or Sound Effects channel is enabled for the current user.
+ * Saves whether the Music, Sound Effects, or spoken-narration channel is enabled for the
+ * current user.
  *
  * The preference itself is site-wide, not scoped to this instance (a student who mutes
  * music in one PlayerPuzzle activity should not hear it start again in another) — cmid is
@@ -49,7 +50,7 @@ class set_sound_preference extends external_api {
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'cmid'    => new external_value(PARAM_INT, 'Course module ID'),
-            'type'    => new external_value(PARAM_ALPHA, 'Sound channel: music or sfx'),
+            'type'    => new external_value(PARAM_ALPHA, 'Audio channel: music, sfx or speech'),
             'enabled' => new external_value(PARAM_BOOL, 'Whether the channel should be enabled'),
         ]);
     }
@@ -58,7 +59,7 @@ class set_sound_preference extends external_api {
      * Saves the given channel's preference for the current user.
      *
      * @param int $cmid Course module ID.
-     * @param string $type Sound channel: 'music' or 'sfx'.
+     * @param string $type Audio channel: 'music', 'sfx' or 'speech'.
      * @param bool $enabled Whether the channel should be enabled.
      * @return array Result with success.
      */

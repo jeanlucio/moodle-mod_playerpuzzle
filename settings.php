@@ -18,9 +18,11 @@
  * Plugin administration settings.
  *
  * PlayerHUD integration is automatic via hud_service::is_installed(), detected per instance
- * in mod_form.php — no site-level configuration for it here. The only real setting is the
- * opt-in speech narration toggle; the PlayerHUD headings below are informational notices,
- * not settings.
+ * in mod_form.php — no site-level configuration for it here. The speech narration toggle is
+ * a per-student preference set from the activity's own Lobby (sound_preferences::TYPES,
+ * 'speech'), not a site setting: whether to hear game announcements spoken aloud is the
+ * student's own call, not something an admin should have to enable first. The PlayerHUD
+ * headings below are informational notices, not settings — this file has no real setting.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -30,13 +32,6 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($ADMIN->fulltree) {
-    $settings->add(new admin_setting_configcheckbox(
-        'mod_playerpuzzle/enablespeech',
-        get_string('enablespeech', 'mod_playerpuzzle'),
-        get_string('enablespeech_desc', 'mod_playerpuzzle'),
-        0
-    ));
-
     if (\mod_playerpuzzle\local\hud_service::is_outdated()) {
         $settings->add(new admin_setting_heading(
             'mod_playerpuzzle/hudoutdated',

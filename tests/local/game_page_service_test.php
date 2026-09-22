@@ -654,6 +654,25 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that enablespeech reflects the current user's own narration preference — a
+     * per-student choice (sound_preferences), not a site setting — defaulting to false
+     * and flipping once the student turns it on.
+     *
+     * @return void
+     */
+    public function test_build_game_config_reports_speech_preference(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+        $this->assertFalse($config['enablespeech']);
+
+        sound_preferences::set_enabled('speech', true, (int) $this->student->id);
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+        $this->assertTrue($config['enablespeech']);
+    }
+
+    /**
      * Tests that a fresh attempt's config carries no combat checkpoint.
      *
      * @return void

@@ -93,7 +93,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Tests that get_metadata declares both sound-channel user preferences.
+     * Tests that get_metadata declares all three audio user preferences.
      *
      * @return void
      */
@@ -104,6 +104,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         $this->assertContains(sound_preferences::preference_name('music'), $keys);
         $this->assertContains(sound_preferences::preference_name('sfx'), $keys);
+        $this->assertContains(sound_preferences::preference_name('speech'), $keys);
     }
 
     /**

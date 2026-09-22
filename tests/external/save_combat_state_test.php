@@ -106,7 +106,7 @@ final class save_combat_state_test extends \advanced_testcase {
             'bossmultiplier'     => 1.0,
             'currentturn'        => 'player',
             'moveseq'            => 1,
-            'movelog'            => [['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
+            'movelog'            => [['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
         ], $overrides);
     }
 
@@ -258,11 +258,11 @@ final class save_combat_state_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the move log is persisted alongside the board/HP snapshot.
+     * Tests that the event log is persisted alongside the board/HP snapshot.
      *
      * @return void
      */
-    public function test_saves_the_move_log(): void {
+    public function test_saves_the_event_log(): void {
         global $DB;
 
         $instance = $this->make_instance();
@@ -272,23 +272,24 @@ final class save_combat_state_test extends \advanced_testcase {
 
         $result = $this->call_save_combat_state($this->valid_args($instance, $token, [
             'moveseq' => 1,
-            'movelog' => [['r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4]],
+            'movelog' => [['type' => 'move', 'r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4]],
         ]));
 
         $this->assertFalse($result['error']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
         $this->assertSame(1, (int) $attempt->moveseq);
-        $this->assertSame([['r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4]], move_log::decode($attempt->movelog));
+        $this->assertSame(
+            [['type' => 'move', 'r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4]],
+            move_log::decode($attempt->movelog)
+        );
     }
 
     /**
-     * Tests that a resend (a sequence number no greater than what is already stored) is
-     * idempotent: the rest of the checkpoint still applies, but the move log is left
-     * exactly as it was, rather than being duplicated or overwritten with a stale resend.
+     * Tests that a question-resolution event is persisted just like a move event.
      *
      * @return void
      */
-    public function test_a_resent_sequence_number_does_not_duplicate_the_move_log(): void {
+    public function test_saves_a_question_event(): void {
         global $DB;
 
         $instance = $this->make_instance();
@@ -298,7 +299,34 @@ final class save_combat_state_test extends \advanced_testcase {
 
         $this->call_save_combat_state($this->valid_args($instance, $token, [
             'moveseq' => 1,
-            'movelog' => [['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
+            'movelog' => [['type' => 'question', 'side' => 'boss', 'correct' => false]],
+        ]));
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
+        $this->assertSame(
+            [['type' => 'question', 'side' => 'boss', 'correct' => false]],
+            move_log::decode($attempt->movelog)
+        );
+    }
+
+    /**
+     * Tests that a resend (a sequence number no greater than what is already stored) is
+     * idempotent: the rest of the checkpoint still applies, but the event log is left
+     * exactly as it was, rather than being duplicated or overwritten with a stale resend.
+     *
+     * @return void
+     */
+    public function test_a_resent_sequence_number_does_not_duplicate_the_event_log(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $this->call_save_combat_state($this->valid_args($instance, $token, [
+            'moveseq' => 1,
+            'movelog' => [['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
         ]));
 
         // A resend of the same seq 1, this time (incorrectly, if it were not idempotent)
@@ -306,24 +334,30 @@ final class save_combat_state_test extends \advanced_testcase {
         $result = $this->call_save_combat_state($this->valid_args($instance, $token, [
             'currentplayerhp' => 77,
             'moveseq'         => 1,
-            'movelog'         => [['r1' => 5, 'c1' => 5, 'r2' => 5, 'c2' => 6]],
+            'movelog'         => [['type' => 'move', 'r1' => 5, 'c1' => 5, 'r2' => 5, 'c2' => 6]],
         ]));
 
         $this->assertFalse($result['error']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
         $this->assertSame(1, (int) $attempt->moveseq);
-        $this->assertSame([['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]], move_log::decode($attempt->movelog));
+        $this->assertSame(
+            [['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
+            move_log::decode($attempt->movelog)
+        );
         // The rest of the checkpoint (HP/meters) is applied normally even on a resend.
         $stored = combat_state::decode($attempt->combatstate);
         $this->assertSame(77, $stored['currentplayerhp']);
     }
 
     /**
-     * Tests that a genuinely new (higher) sequence number replaces the stored move log.
+     * Tests that a genuinely new (higher) sequence number appends onto the stored event log
+     * rather than replacing it — the log is cumulative for the whole phase, so a replay can
+     * walk it from the phase's own starting board forward regardless of how many checkpoints
+     * happened in between.
      *
      * @return void
      */
-    public function test_a_higher_sequence_number_replaces_the_move_log(): void {
+    public function test_a_higher_sequence_number_appends_onto_the_event_log(): void {
         global $DB;
 
         $instance = $this->make_instance();
@@ -333,30 +367,40 @@ final class save_combat_state_test extends \advanced_testcase {
 
         $this->call_save_combat_state($this->valid_args($instance, $token, [
             'moveseq' => 1,
-            'movelog' => [['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
+            'movelog' => [['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
         ]));
         $this->call_save_combat_state($this->valid_args($instance, $token, [
             'moveseq' => 2,
-            'movelog' => [['r1' => 3, 'c1' => 3, 'r2' => 3, 'c2' => 4]],
+            'movelog' => [['type' => 'move', 'r1' => 3, 'c1' => 3, 'r2' => 3, 'c2' => 4]],
         ]));
 
         $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
         $this->assertSame(2, (int) $attempt->moveseq);
-        $this->assertSame([['r1' => 3, 'c1' => 3, 'r2' => 3, 'c2' => 4]], move_log::decode($attempt->movelog));
+        $this->assertSame(
+            [
+                ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1],
+                ['type' => 'move', 'r1' => 3, 'c1' => 3, 'r2' => 3, 'c2' => 4],
+            ],
+            move_log::decode($attempt->movelog)
+        );
     }
 
     /**
-     * Tests that a move log past the per-checkpoint size cap is rejected outright, never
+     * Tests that a batch past the per-checkpoint size cap is rejected outright, never
      * silently truncated.
      *
      * @return void
      */
-    public function test_rejects_a_move_log_over_the_size_cap(): void {
+    public function test_rejects_a_batch_over_the_per_checkpoint_size_cap(): void {
         $instance = $this->make_instance();
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
-        $toolong = array_fill(0, move_log::MAX_MOVES_PER_CHECKPOINT + 1, ['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]);
+        $toolong = array_fill(
+            0,
+            move_log::MAX_EVENTS_PER_CHECKPOINT + 1,
+            ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]
+        );
         $result = $this->call_save_combat_state($this->valid_args($instance, $token, [
             'moveseq' => 1,
             'movelog' => $toolong,
@@ -367,21 +411,57 @@ final class save_combat_state_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a move log entry with a coordinate outside the board's bounds is rejected.
+     * Tests that a move event with a coordinate outside the board's bounds is rejected.
      *
      * @return void
      */
-    public function test_rejects_a_move_log_coordinate_out_of_bounds(): void {
+    public function test_rejects_a_move_coordinate_out_of_bounds(): void {
         $instance = $this->make_instance();
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
         $result = $this->call_save_combat_state($this->valid_args($instance, $token, [
             'moveseq' => 1,
-            'movelog' => [['r1' => 0, 'c1' => 0, 'r2' => 8, 'c2' => 1]],
+            'movelog' => [['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 8, 'c2' => 1]],
         ]));
 
         $this->assertTrue($result['error']);
         $this->assertSame('invalidcombatstate', $result['exception']->errorcode);
+    }
+
+    /**
+     * Tests that a checkpoint whose cumulative total would exceed the whole-phase event
+     * budget is rejected outright, rather than silently truncating the already-stored log.
+     *
+     * @return void
+     */
+    public function test_rejects_a_checkpoint_that_would_exceed_the_phase_budget(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        // Pre-fill the stored log to exactly the whole-phase cap, bypassing the web service
+        // (which would itself reject a single batch this large) — this simulates the state
+        // after many prior, individually-valid checkpoints have already accumulated it there.
+        $atcap = array_fill(
+            0,
+            move_log::MAX_EVENTS_PER_PHASE,
+            ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]
+        );
+        $DB->set_field('playerpuzzle_attempts', 'movelog', move_log::encode($atcap), ['id' => $attemptid]);
+
+        $result = $this->call_save_combat_state($this->valid_args($instance, $token, [
+            'moveseq' => 1,
+            'movelog' => [['type' => 'move', 'r1' => 1, 'c1' => 1, 'r2' => 1, 'c2' => 2]],
+        ]));
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('invalidcombatstate', $result['exception']->errorcode);
+        // The already-stored log must be left exactly as it was, not truncated or touched.
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
+        $this->assertCount(move_log::MAX_EVENTS_PER_PHASE, move_log::decode($attempt->movelog));
     }
 }

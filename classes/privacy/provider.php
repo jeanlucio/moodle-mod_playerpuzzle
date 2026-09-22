@@ -72,9 +72,10 @@ class provider implements
      * frozencoingain are anti-cheat replay plumbing (a PRNG seed, a sequence counter, the
      * plugin version and instance config frozen at the start of the phase) — technical
      * state the server needs to verify a match, carrying no information about the user
-     * themselves, the same category as currentquestionid. movelog (the actual board swaps
-     * made) is different: it is a record of the student's own gameplay actions, so — unlike
-     * its sibling fields above — it IS declared below, the same category as combatstate.
+     * themselves, the same category as currentquestionid. movelog (the ordered log of board
+     * swaps and question resolutions for the current phase) is different: it is a record of
+     * the student's own gameplay actions, so — unlike its sibling fields above — it IS
+     * declared below, the same category as combatstate.
      *
      * @param collection $collection The initialised collection to add items to.
      * @return collection A listing of user data stored through this system.

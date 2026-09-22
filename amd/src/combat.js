@@ -145,10 +145,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             // Seeded PRNG driving board generation/gravity/shuffle (board.js reads this via
             // this.rng, replacing what used to be plain Math.random calls) — deterministic
-            // for a given seed, so a server-side replay of the recorded move log can
+            // for a given seed, so a server-side replay of the recorded event log can
             // reproduce the same board states. moveSeq/pendingMoveLog track what has been
-            // recorded locally but not yet confirmed saved; sendCheckpoint() only clears the
-            // buffer once the server actually accepts it.
+            // recorded locally but not yet confirmed saved (board swaps and resolved
+            // questions alike — see recordMove()/recordQuestionEvent()); sendCheckpoint()
+            // only clears the buffer once the server actually accepts it.
             this.rng = Prng.create(parseInt(gameConfig.rngseed, 10) || 0);
             this.moveSeq = parseInt(gameConfig.moveseq, 10) || 0;
             this.pendingMoveLog = [];
@@ -158,7 +159,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Records a player-made board swap into the pending move log, for the next
+         * Records a player-made board swap into the pending event log, for the next
          * checkpoint to send. Never called for the boss's own moves (executeBossTurn()'s
          * swap is a deterministic scan with no RNG involved, so the server can always
          * recompute it independently — see board.js::checkMatches()'s own call site for
@@ -171,7 +172,28 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * @param {number} c2 Column of the second swapped cell.
          */
         recordMove(r1, c1, r2, c2) {
-            this.pendingMoveLog.push({r1, c1, r2, c2});
+            this.pendingMoveLog.push({type: 'move', r1, c1, r2, c2});
+        }
+
+        /**
+         * Records a resolved mana-triggered question into the pending event log, alongside
+         * board swaps, so a future server-side replay knows exactly where in the turn
+         * sequence its HP/damage effect (a crit hit for a correct answer, self-damage for a
+         * wrong one) belongs — something board_engine/combat_engine cannot recompute from the
+         * board alone. The correct/incorrect outcome itself is already authoritative from
+         * validate_answer.php; this only marks where it happened.
+         *
+         * Deliberately called only from a successful validate_answer response, never from an
+         * AJAX failure's local-only fallback: when the request itself never reached the
+         * server, there is nothing server-verified to record, and a fabricated entry here
+         * would claim an event that never actually happened. A gap left by that omission is
+         * exactly the kind a future replay's own fail-safe policy is meant to tolerate.
+         *
+         * @param {string} side 'player' or 'boss' — who answered.
+         * @param {boolean} correct Whether the answer was correct.
+         */
+        recordQuestionEvent(side, correct) {
+            this.pendingMoveLog.push({type: 'question', side, correct});
         }
 
         /**
@@ -1163,6 +1185,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                             );
                                         }
                                     }
+                                    ctx.recordQuestionEvent('player', !!res.correct);
                                     applyResult(!!res.correct, res.correctanswerid || null);
                                 }).fail(() => {
                                     applyResult(false, null);
@@ -1236,6 +1259,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     forwhom: 'boss',
                                 },
                             }])[0].done(res => {
+                                ctx.recordQuestionEvent('boss', !!res.correct);
                                 renderBossResult(!!res.correct, res.pickedanswerid || null);
                             }).fail(() => {
                                 renderBossResult(false, null);

@@ -37,9 +37,10 @@ use moodle_exception;
 /**
  * Persists a snapshot of the current phase's fight (board grid, HP, meters, turn) so a
  * reload can resume it in place instead of always restarting the phase with full HP and a
- * fresh board — and, alongside it, the board swaps made since the last accepted checkpoint,
- * for a future server-side replay to verify the match instead of trusting the client's own
- * reported totals.
+ * fresh board — and, alongside it, the combat events (board swaps and question resolutions)
+ * recorded since the last accepted checkpoint, appended onto the phase's own cumulative event
+ * log for a future server-side replay to verify the match instead of trusting the client's
+ * own reported totals.
  *
  * Called from two client-side triggers, never per board move: a periodic checkpoint (only
  * when something changed and the tab is visible) and once more on page unload/backgrounding
@@ -47,7 +48,7 @@ use moodle_exception;
  * rules here — it only feeds the client's own reconstruction of its board/HUD; a win/loss
  * claim is still independently checked by save_progress/advance_phase from the server's own
  * boss HP formula, so a forged snapshot cannot buy an easier fight or a false victory. The
- * move log is validated for shape/size only here too — the future replay is what actually
+ * event log is validated for shape/size only here too — the future replay is what actually
  * checks it means anything.
  */
 class save_combat_state extends external_api {
@@ -79,15 +80,26 @@ class save_combat_state extends external_api {
             'bossmana'           => new external_value(PARAM_INT, 'Boss Mana meter, 0-100'),
             'bossmultiplier'     => new external_value(PARAM_FLOAT, 'Boss Star multiplier'),
             'currentturn'        => new external_value(PARAM_ALPHA, 'Whose turn is next: player or boss'),
-            'moveseq'            => new external_value(PARAM_INT, 'Monotonic sequence number of this move-log batch'),
+            'moveseq'            => new external_value(PARAM_INT, 'Monotonic sequence number of this event-log batch'),
             'movelog'            => new external_multiple_structure(
                 new external_single_structure([
-                    'r1' => new external_value(PARAM_INT, 'Row of the first swapped cell'),
-                    'c1' => new external_value(PARAM_INT, 'Column of the first swapped cell'),
-                    'r2' => new external_value(PARAM_INT, 'Row of the second swapped cell'),
-                    'c2' => new external_value(PARAM_INT, 'Column of the second swapped cell'),
+                    'type'    => new external_value(PARAM_ALPHA, "Event type: 'move' or 'question'"),
+                    'r1'      => new external_value(PARAM_INT, 'Row of the first swapped cell (move only)', VALUE_OPTIONAL),
+                    'c1'      => new external_value(PARAM_INT, 'Column of the first swapped cell (move only)', VALUE_OPTIONAL),
+                    'r2'      => new external_value(PARAM_INT, 'Row of the second swapped cell (move only)', VALUE_OPTIONAL),
+                    'c2'      => new external_value(PARAM_INT, 'Column of the second swapped cell (move only)', VALUE_OPTIONAL),
+                    'side'    => new external_value(
+                        PARAM_ALPHA,
+                        "Who answered: 'player' or 'boss' (question only)",
+                        VALUE_OPTIONAL
+                    ),
+                    'correct' => new external_value(
+                        PARAM_BOOL,
+                        'Whether the question was answered correctly (question only)',
+                        VALUE_OPTIONAL
+                    ),
                 ]),
-                'Board swaps since the last accepted checkpoint, in order'
+                'Combat events (board swaps and question resolutions) since the last accepted checkpoint, in order'
             ),
         ]);
     }
@@ -113,8 +125,8 @@ class save_combat_state extends external_api {
      * @param int $bossmana Boss Mana meter.
      * @param float $bossmultiplier Boss Star multiplier.
      * @param string $currentturn Whose turn is next.
-     * @param int $moveseq Monotonic sequence number of this move-log batch.
-     * @param array $movelog Board swaps since the last accepted checkpoint, in order.
+     * @param int $moveseq Monotonic sequence number of this event-log batch.
+     * @param array $movelog Combat events since the last accepted checkpoint, in order.
      * @return array Result with success.
      */
     public static function execute(
@@ -198,11 +210,19 @@ class save_combat_state extends external_api {
         // A sequence number no greater than what is already stored is a resend (the network
         // retried, or sendBeacon fired after an earlier awaited call already landed) — the
         // rest of the checkpoint above is applied as usual (idempotent by nature, since it is
-        // always a whole-state overwrite), but the move log itself is left untouched rather
-        // than risk double-recording moves already accepted.
+        // always a whole-state overwrite), but the event log itself is left untouched rather
+        // than risk double-recording events already accepted.
         if ($params['moveseq'] > (int) $attempt->moveseq) {
+            $existingevents = move_log::decode($attempt->movelog);
+            if (!move_log::is_within_phase_budget(count($existingevents), count($params['movelog']))) {
+                throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
+            }
             $attempt->moveseq = $params['moveseq'];
-            $attempt->movelog = move_log::encode($params['movelog']);
+            // Appended onto the phase's own cumulative log, never overwritten — a replay needs
+            // the whole phase's event history, not just this checkpoint's own batch, so it can
+            // walk forward from the phase's starting board regardless of how many checkpoints
+            // (or reloads) happened in between.
+            $attempt->movelog = move_log::encode(move_log::append($existingevents, $params['movelog']));
         }
 
         $attempt->timemodified = time();

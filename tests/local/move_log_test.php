@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Unit tests for the move-log encode/decode/validate helper.
+ * Unit tests for the combat-event log encode/decode/validate/append helper.
  *
  * @package    mod_playerpuzzle
  * @category   test
@@ -38,84 +38,195 @@ final class move_log_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a normal, in-bounds move log is valid.
+     * Tests that a normal, in-bounds batch of move events is valid.
      *
      * @return void
      */
-    public function test_is_valid_accepts_a_normal_move_log(): void {
-        $movelog = [
-            ['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1],
-            ['r1' => 7, 'c1' => 7, 'r2' => 6, 'c2' => 7],
+    public function test_is_valid_accepts_a_normal_batch_of_moves(): void {
+        $events = [
+            ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1],
+            ['type' => 'move', 'r1' => 7, 'c1' => 7, 'r2' => 6, 'c2' => 7],
         ];
 
-        $this->assertTrue(move_log::is_valid($movelog));
+        $this->assertTrue(move_log::is_valid($events));
     }
 
     /**
-     * Tests that an empty move log is valid — a checkpoint with nothing new to report.
+     * Tests that a question event is valid for both sides.
      *
      * @return void
      */
-    public function test_is_valid_accepts_an_empty_move_log(): void {
+    public function test_is_valid_accepts_a_question_event_for_either_side(): void {
+        $this->assertTrue(move_log::is_valid([['type' => 'question', 'side' => 'player', 'correct' => true]]));
+        $this->assertTrue(move_log::is_valid([['type' => 'question', 'side' => 'boss', 'correct' => false]]));
+    }
+
+    /**
+     * Tests that a batch mixing move and question events, in order, is valid — the whole
+     * point of sharing one log is to preserve their relative turn order.
+     *
+     * @return void
+     */
+    public function test_is_valid_accepts_a_mixed_batch(): void {
+        $events = [
+            ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1],
+            ['type' => 'question', 'side' => 'player', 'correct' => true],
+            ['type' => 'move', 'r1' => 3, 'c1' => 3, 'r2' => 3, 'c2' => 4],
+        ];
+
+        $this->assertTrue(move_log::is_valid($events));
+    }
+
+    /**
+     * Tests that an empty batch is valid — a checkpoint with nothing new to report.
+     *
+     * @return void
+     */
+    public function test_is_valid_accepts_an_empty_batch(): void {
         $this->assertTrue(move_log::is_valid([]));
     }
 
     /**
-     * Tests that a move log over the per-checkpoint size cap is rejected.
+     * Tests that an event with an unknown type is rejected.
+     *
+     * @return void
+     */
+    public function test_is_valid_rejects_an_unknown_type(): void {
+        $this->assertFalse(move_log::is_valid([['type' => 'consumable', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]]));
+    }
+
+    /**
+     * Tests that an event missing its type entirely is rejected.
+     *
+     * @return void
+     */
+    public function test_is_valid_rejects_an_event_without_a_type(): void {
+        $this->assertFalse(move_log::is_valid([['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]]));
+    }
+
+    /**
+     * Tests that a batch over the per-checkpoint size cap is rejected.
      *
      * @return void
      */
     public function test_is_valid_rejects_over_the_size_cap(): void {
-        $movelog = array_fill(0, move_log::MAX_MOVES_PER_CHECKPOINT + 1, ['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]);
+        $events = array_fill(
+            0,
+            move_log::MAX_EVENTS_PER_CHECKPOINT + 1,
+            ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]
+        );
 
-        $this->assertFalse(move_log::is_valid($movelog));
+        $this->assertFalse(move_log::is_valid($events));
     }
 
     /**
-     * Tests that a move log exactly at the size cap is still accepted — the cap rejects
-     * what is over it, not what is at it.
+     * Tests that a batch exactly at the size cap is still accepted — the cap rejects what is
+     * over it, not what is at it.
      *
      * @return void
      */
     public function test_is_valid_accepts_exactly_the_size_cap(): void {
-        $movelog = array_fill(0, move_log::MAX_MOVES_PER_CHECKPOINT, ['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]);
+        $events = array_fill(
+            0,
+            move_log::MAX_EVENTS_PER_CHECKPOINT,
+            ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]
+        );
 
-        $this->assertTrue(move_log::is_valid($movelog));
+        $this->assertTrue(move_log::is_valid($events));
     }
 
     /**
-     * Tests that a negative coordinate is rejected.
+     * Tests that a negative coordinate on a move event is rejected.
      *
      * @return void
      */
     public function test_is_valid_rejects_a_negative_coordinate(): void {
-        $this->assertFalse(move_log::is_valid([['r1' => -1, 'c1' => 0, 'r2' => 0, 'c2' => 1]]));
+        $this->assertFalse(move_log::is_valid([['type' => 'move', 'r1' => -1, 'c1' => 0, 'r2' => 0, 'c2' => 1]]));
     }
 
     /**
-     * Tests that a coordinate at or beyond the board's own dimension is rejected — the
-     * board is 8x8, so valid rows/columns are 0-7.
+     * Tests that a coordinate at or beyond the board's own dimension is rejected — the board
+     * is 8x8, so valid rows/columns are 0-7.
      *
      * @return void
      */
     public function test_is_valid_rejects_a_coordinate_at_or_past_the_board_edge(): void {
-        $this->assertFalse(move_log::is_valid([['r1' => 0, 'c1' => 0, 'r2' => 8, 'c2' => 0]]));
-        $this->assertTrue(move_log::is_valid([['r1' => 0, 'c1' => 0, 'r2' => 7, 'c2' => 0]]));
+        $this->assertFalse(move_log::is_valid([['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 8, 'c2' => 0]]));
+        $this->assertTrue(move_log::is_valid([['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 7, 'c2' => 0]]));
     }
 
     /**
-     * Tests that encode()/decode() round-trip a move log verbatim.
+     * Tests that a move event missing a coordinate is rejected.
+     *
+     * @return void
+     */
+    public function test_is_valid_rejects_a_move_missing_a_coordinate(): void {
+        $this->assertFalse(move_log::is_valid([['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0]]));
+    }
+
+    /**
+     * Tests that a question event with an invalid side is rejected.
+     *
+     * @return void
+     */
+    public function test_is_valid_rejects_a_question_with_an_invalid_side(): void {
+        $this->assertFalse(move_log::is_valid([['type' => 'question', 'side' => 'referee', 'correct' => true]]));
+    }
+
+    /**
+     * Tests that a question event missing 'correct' is rejected.
+     *
+     * @return void
+     */
+    public function test_is_valid_rejects_a_question_missing_correct(): void {
+        $this->assertFalse(move_log::is_valid([['type' => 'question', 'side' => 'player']]));
+    }
+
+    /**
+     * Tests that appending preserves order and simply concatenates.
+     *
+     * @return void
+     */
+    public function test_append_preserves_order(): void {
+        $existing = [['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]];
+        $incoming = [['type' => 'question', 'side' => 'player', 'correct' => true]];
+
+        $this->assertSame(
+            [
+                ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1],
+                ['type' => 'question', 'side' => 'player', 'correct' => true],
+            ],
+            move_log::append($existing, $incoming)
+        );
+    }
+
+    /**
+     * Tests that the whole-phase budget accepts a total at or under the cap and rejects one
+     * over it.
+     *
+     * @return void
+     */
+    public function test_is_within_phase_budget(): void {
+        $this->assertTrue(move_log::is_within_phase_budget(move_log::MAX_EVENTS_PER_PHASE - 1, 1));
+        $this->assertFalse(move_log::is_within_phase_budget(move_log::MAX_EVENTS_PER_PHASE, 1));
+    }
+
+    /**
+     * Tests that encode()/decode() round-trip a batch of events verbatim.
      *
      * @return void
      */
     public function test_encode_decode_round_trip(): void {
-        $movelog = [['r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4]];
+        $events = [
+            ['type' => 'move', 'r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4],
+            ['type' => 'question', 'side' => 'boss', 'correct' => false],
+        ];
 
-        $this->assertSame($movelog, move_log::decode(move_log::encode($movelog)));
+        $this->assertSame($events, move_log::decode(move_log::encode($events)));
     }
 
     /**
-     * Tests that encoding an empty move log stores null rather than an empty JSON array —
+     * Tests that encoding an empty batch stores null rather than an empty JSON array —
      * "nothing pending" and "an empty list" should read the same way from the column.
      *
      * @return void

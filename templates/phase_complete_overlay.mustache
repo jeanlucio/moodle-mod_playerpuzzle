@@ -26,6 +26,7 @@
         "msg": "Phase complete!",
         "coinscollected": "Coins collected:",
         "playergold": 150,
+        "btnreview": "Review questions",
         "btncontinue": "Continue",
         "btnexitgame": "Exit game",
         "difficultylabel": "Difficulty for the next phase",
@@ -52,6 +53,9 @@
         </div>
         <p id="pp-phase-status" class="text-light small">&nbsp;</p>
         <div class="pp-gameover-buttons">
+            <button id="btn-pp-review-phase" hidden class="btn btn-outline-light btn-lg shadow">
+                {{btnreview}}
+            </button>
             <button id="btn-pp-continue-phase" class="btn btn-primary btn-lg shadow">
                 {{btncontinue}}
             </button>

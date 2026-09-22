@@ -57,6 +57,14 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_get_phase_questionlog' => [
+        'classname'    => 'mod_playerpuzzle\external\get_phase_questionlog',
+        'methodname'   => 'execute',
+        'description'  => 'Reads back the questions answered so far in the current phase.',
+        'type'         => 'read',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
     'mod_playerpuzzle_use_stock' => [
         'classname'    => 'mod_playerpuzzle\external\use_stock',
         'methodname'   => 'execute',

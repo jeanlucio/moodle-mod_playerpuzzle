@@ -849,6 +849,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 msg: strings.phasecompletetitle,
                 coinscollected: strings.coinscollected,
                 playergold: netGold,
+                btnreview: strings.debriefreview,
                 btncontinue: strings.btncontinue,
                 btnexitgame: strings.btnexitgame,
                 difficultylabel: strings.phasedifficulty,
@@ -864,6 +865,20 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // drawer toggle) while choosing the next phase's difficulty.
             document.getElementById('playerpuzzle-phasecomplete').showModal();
 
+            // Read-only lookup, deliberately independent of advance_phase: that call mutates
+            // the attempt (rotates the token, moves to the next phase) the instant it
+            // succeeds, leaving no safe window to review before the page reloads. This can be
+            // called the moment the overlay opens, with no such time pressure.
+            Ajax.call([{
+                methodname: 'mod_playerpuzzle_get_phase_questionlog',
+                args: {cmid: this.gameConfig.cmid, token: this.gameConfig.token},
+            }])[0].done(res => {
+                if (res.questionlog && res.questionlog.length > 0) {
+                    $('#btn-pp-review-phase').prop('hidden', false)
+                        .off('click').on('click', () => this.showDebrief(res.questionlog));
+                }
+            });
+
             // Both buttons must go through advance_phase before doing anything else: the win
             // is only durable once this call lands (there is no separate "record the win" step
             // like showEndScreen's save_progress). Exiting without it left the attempt parked
@@ -872,7 +887,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const performAdvance = (onSuccess) => {
                 $('#pp-phase-status').removeClass('text-success text-danger').addClass('text-muted')
                     .text(strings.advancingphase);
-                $('#btn-pp-continue-phase, #btn-pp-exit-phase, #pp-phase-difficulty').prop('disabled', true);
+                $('#btn-pp-continue-phase, #btn-pp-exit-phase, #btn-pp-review-phase, #pp-phase-difficulty')
+                    .prop('disabled', true);
 
                 Ajax.call([{
                     methodname: 'mod_playerpuzzle_advance_phase',
@@ -887,7 +903,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 }])[0].done(onSuccess).fail(() => {
                     $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
                         .text(strings.phaseadvanceerror);
-                    $('#btn-pp-continue-phase, #btn-pp-exit-phase, #pp-phase-difficulty').prop('disabled', false);
+                    $('#btn-pp-continue-phase, #btn-pp-exit-phase, #btn-pp-review-phase, #pp-phase-difficulty')
+                        .prop('disabled', false);
                 });
             };
 

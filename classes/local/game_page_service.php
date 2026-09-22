@@ -304,6 +304,12 @@ class game_page_service {
             'spriteurls'           => $spriteurls,
             'mobile'               => $ismobile,
             'viewurl'              => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
+            // Seeds the client's deterministic PRNG (engine/prng.js), replacing Math.random
+            // for board generation/gravity/shuffle — reset every new attempt/phase (see
+            // security::seed_replay_state()), so a future server-side replay of this phase's
+            // recorded moves reaches the same board states the client did.
+            'rngseed'              => $attemptinfo->rngseed,
+            'moveseq'              => $attemptinfo->moveseq,
             'enablespeech'         => sound_preferences::is_enabled('speech', $userid),
             'musicenabled'         => sound_preferences::is_enabled('music', $userid),
             'sfxenabled'           => sound_preferences::is_enabled('sfx', $userid),

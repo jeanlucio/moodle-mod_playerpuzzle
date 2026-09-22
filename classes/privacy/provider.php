@@ -68,7 +68,13 @@ class provider implements
      * currentquestionid is transient server state (which question is currently open for
      * this attempt), always 0 outside of a live in-progress fight and carrying no narrative
      * value to a personal-data export — the same category as isdemo, not personal data
-     * about the user.
+     * about the user. rngseed/moveseq/engineversion/frozenbasebosshp/frozenbossdamage/
+     * frozencoingain are anti-cheat replay plumbing (a PRNG seed, a sequence counter, the
+     * plugin version and instance config frozen at the start of the phase) — technical
+     * state the server needs to verify a match, carrying no information about the user
+     * themselves, the same category as currentquestionid. movelog (the actual board swaps
+     * made) is different: it is a record of the student's own gameplay actions, so — unlike
+     * its sibling fields above — it IS declared below, the same category as combatstate.
      *
      * @param collection $collection The initialised collection to add items to.
      * @return collection A listing of user data stored through this system.
@@ -85,6 +91,7 @@ class provider implements
             'coins_earned'      => 'privacy:metadata:coins_earned',
             'boss_coins_earned' => 'privacy:metadata:boss_coins_earned',
             'combatstate'       => 'privacy:metadata:combatstate',
+            'movelog'           => 'privacy:metadata:movelog',
             'score'             => 'privacy:metadata:score',
             'status'            => 'privacy:metadata:status',
             'timecreated'       => 'privacy:metadata:timecreated',
@@ -281,7 +288,7 @@ class provider implements
 
         $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.difficulty, pa.bosshp_remaining,
                        pa.questions_correct, pa.questions_total, pa.coins_earned,
-                       pa.boss_coins_earned, pa.combatstate, pa.score, pa.status,
+                       pa.boss_coins_earned, pa.combatstate, pa.movelog, pa.score, pa.status,
                        pa.timecreated, pa.timefinished, ctx.id AS contextid
                   FROM {playerpuzzle_attempts} pa
                   JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
@@ -304,6 +311,7 @@ class provider implements
                 'coinsearned'      => $record->coins_earned,
                 'bosscoinsearned'  => $record->boss_coins_earned,
                 'combatstate'      => $record->combatstate,
+                'movelog'          => $record->movelog,
                 'score'            => $record->score,
                 'status'           => $record->status,
                 'timecreated'      => transform::datetime($record->timecreated),

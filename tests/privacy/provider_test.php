@@ -147,7 +147,11 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
      * Kept in sync by hand with the doc comment on provider.php::get_metadata():
      * playerpuzzleid is a structural foreign key never itself exported; token is an
      * opaque anti-replay value with no personal information; timemodified always
-     * mirrors timecreated or timefinished, both already declared. Asserted against
+     * mirrors timecreated or timefinished, both already declared; rngseed/moveseq/
+     * engineversion/frozenbasebosshp/frozenbossdamage/frozencoingain are anti-cheat
+     * replay plumbing, not personal data (movelog, the actual gameplay actions, IS
+     * declared — see the doc comment for why it is treated differently from its
+     * siblings). Asserted against
      * the real schema via $DB->get_columns() rather than a fixed key list, so a
      * future column silently added to install.xml without a privacy decision fails
      * this test instead of just going undeclared by omission.
@@ -157,7 +161,10 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     public function test_get_metadata_every_column_is_declared_or_documented(): void {
         global $DB;
 
-        $documentedexclusions = ['playerpuzzleid', 'token', 'timemodified', 'isdemo', 'currentquestionid'];
+        $documentedexclusions = [
+            'playerpuzzleid', 'token', 'timemodified', 'isdemo', 'currentquestionid',
+            'rngseed', 'moveseq', 'engineversion', 'frozenbasebosshp', 'frozenbossdamage', 'frozencoingain',
+        ];
 
         $collection = provider::get_metadata(new collection('mod_playerpuzzle'));
 
@@ -336,6 +343,37 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         ]);
         $this->assertNotEmpty($data->attempts);
         $this->assertSame(80.0, (float) $data->attempts[0]->score);
+    }
+
+    /**
+     * Tests that export_user_data carries the move log too — unlike its sibling
+     * anti-cheat replay fields (rngseed, moveseq, engineversion, frozen config), movelog
+     * is a record of the student's own gameplay actions, declared alongside combatstate.
+     *
+     * @return void
+     */
+    public function test_export_user_data_carries_the_move_log(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $user = $this->getDataGenerator()->create_user();
+        $attemptid = $this->make_attempt($user->id, (int) $cm->id);
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'movelog',
+            '[{"r1":0,"c1":0,"r2":0,"c2":1}]',
+            ['id' => $attemptid]
+        );
+
+        $context = \context_module::instance($cm->cmid);
+        $contextlist = new approved_contextlist($user, 'mod_playerpuzzle', [$context->id]);
+        provider::export_user_data($contextlist);
+
+        $data = writer::with_context($context)->get_data([
+            get_string('privacy:metadata:playerpuzzle_attempts', 'mod_playerpuzzle'),
+        ]);
+        $this->assertSame('[{"r1":0,"c1":0,"r2":0,"c2":1}]', $data->attempts[0]->movelog);
     }
 
     /**

@@ -139,7 +139,7 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
             // the moment the board loads).
             const combatstate = me.combat && me.combat.gameConfig.combatstate;
             const savedgrid = combatstate ? combatstate.boardgrid : null;
-            const types = BoardRules.generateGrid(this.rows, this.cols, savedgrid, Math.random);
+            const types = BoardRules.generateGrid(this.rows, this.cols, savedgrid, me.combat.rng);
 
             for (let row = 0; row < this.rows; row++) {
                 this.grid[row] = [];
@@ -644,11 +644,10 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
 
             // Retries entirely on a plain types grid (never touching the real Phaser pieces
             // until a valid arrangement is found) — the pure retry loop itself moved to
-            // engine/board_rules.js::shuffleUntilValid(), ready for a future server-side replay
-            // to reproduce the exact same accept/reject sequence against the same rng draws.
-            // Math.random() here (not yet a seeded PRNG) keeps behaviour identical to before.
+            // engine/board_rules.js::shuffleUntilValid(), which a future server-side replay
+            // reproduces against the same rng draws to arrive at the same arrangement.
             const types = this.extractTypesGrid();
-            BoardRules.shuffleUntilValid(types, this.rows, this.cols, Math.random);
+            BoardRules.shuffleUntilValid(types, this.rows, this.cols, me.combat.rng);
 
             for (let r = 0; r < this.rows; r++) {
                 for (let c = 0; c < this.cols; c++) {
@@ -690,7 +689,7 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
             // "spawn" pass writes a raw type number into each newly-emptied cell as a
             // placeholder — replaced with the real Phaser image in the loop right below,
             // before anything else reads this.grid again.
-            const result = BoardRules.applyGravityToGrid(this.grid, this.rows, this.cols, Math.random);
+            const result = BoardRules.applyGravityToGrid(this.grid, this.rows, this.cols, me.combat.rng);
 
             for (const {toRow, col} of result.fell) {
                 const falling = this.grid[toRow][col];
@@ -757,6 +756,19 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
                 return;
             }
 
+            // A real, confirmed player swap — record it before clearing lastSwap, so a
+            // future server-side replay can reproduce this same match. The boss's own
+            // moves are never recorded: executeBossTurn() is a deterministic scan the
+            // server can always recompute independently, with no RNG involved. Reading the
+            // two pieces' current (post-swap) row/col here still names the same two cells
+            // that were exchanged either way — swapping (A,B) and swapping (B,A) mean the
+            // same operation to engine/board_rules.js::swapInGrid().
+            if (this.lastSwap !== null && me.combat.currentTurn === 'player') {
+                me.combat.recordMove(
+                    this.lastSwap.p1.row, this.lastSwap.p1.col,
+                    this.lastSwap.p2.row, this.lastSwap.p2.col
+                );
+            }
             this.lastSwap = null;
 
             // Combat.js still works with real Phaser pieces (it destroys them, tweens them,

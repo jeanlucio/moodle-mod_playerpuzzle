@@ -224,6 +224,10 @@ class advance_phase extends external_api {
                 // The saved board/HP/meters snapshot belongs to the phase just finished — the
                 // next phase always starts with a fresh board and full HP.
                 $attempt->combatstate = null;
+                // The PRNG seed/move log/frozen config belong to the phase just finished too —
+                // see security::seed_replay_state()'s own docblock for why a seed must never
+                // survive across phases.
+                security::seed_replay_state($attempt, $playerpuzzle);
 
                 $newtoken = bin2hex(random_bytes(32));
                 $attempt->token = $newtoken;

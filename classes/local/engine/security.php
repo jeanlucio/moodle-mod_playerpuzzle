@@ -84,9 +84,42 @@ class security {
         $attempt->timecreated = time();
         $attempt->timemodified = $attempt->timecreated;
 
+        $playerpuzzle = $DB->get_record(
+            'playerpuzzle',
+            ['id' => $playerpuzzleid],
+            'basebosshp, bossdamage, coingain',
+            MUST_EXIST
+        );
+        self::seed_replay_state($attempt, $playerpuzzle);
+
         $DB->insert_record('playerpuzzle_attempts', $attempt);
 
         return $token;
+    }
+
+    /**
+     * Generates a fresh PRNG seed and resets the move-log/frozen-config fields on an
+     * attempt object, for the deterministic server-side replay a future phase of this
+     * project adds. Called once per phase — a brand new attempt (generate_attempt_token())
+     * or every phase advance (advance_phase.php) — so both reset exactly the same fields
+     * the same way; the seed must never survive across phases, since each phase generates
+     * its own board from scratch and reusing a seed would make every phase's board
+     * identical.
+     *
+     * @param \stdClass $attempt Attempt object to populate (mutated in place, not yet saved).
+     * @param \stdClass $playerpuzzle The instance record — basebosshp/bossdamage/coingain
+     *  are read from it and frozen for this phase, so a later teacher edit mid-match cannot
+     *  desync a replay of an already-played phase.
+     * @return void
+     */
+    public static function seed_replay_state(\stdClass $attempt, \stdClass $playerpuzzle): void {
+        $attempt->rngseed = random_int(0, 2147483647);
+        $attempt->moveseq = 0;
+        $attempt->movelog = null;
+        $attempt->engineversion = (int) get_config('mod_playerpuzzle', 'version');
+        $attempt->frozenbasebosshp = (int) $playerpuzzle->basebosshp;
+        $attempt->frozenbossdamage = (int) $playerpuzzle->bossdamage;
+        $attempt->frozencoingain = (int) $playerpuzzle->coingain;
     }
 
     /**
@@ -155,8 +188,9 @@ class security {
      *  attempt, and vice versa — the two are entirely separate resume namespaces.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned,
-     *  ->combatstate, ->isdemo, ->isnew (true when a brand new attempt row was just
-     *  created, so the caller can trigger a game_started event exactly once per attempt).
+     *  ->combatstate, ->rngseed, ->moveseq, ->isdemo, ->isnew (true when a brand new
+     *  attempt row was just created, so the caller can trigger a game_started event
+     *  exactly once per attempt).
      */
     public static function resume_or_create_attempt_token(
         int $playerpuzzleid,
@@ -209,6 +243,8 @@ class security {
                 'coinsearned' => (int) $attempt->coins_earned,
                 'bosscoinsearned' => (int) $attempt->boss_coins_earned,
                 'combatstate' => $combatstate,
+                'rngseed' => (int) $attempt->rngseed,
+                'moveseq' => (int) $attempt->moveseq,
                 'isdemo' => (bool) $attempt->isdemo,
                 'isnew' => false,
             ];
@@ -237,7 +273,12 @@ class security {
             $startphase,
             $isdemo
         );
-        $newrow = $DB->get_record('playerpuzzle_attempts', ['token' => $token], 'id, isdemo', MUST_EXIST);
+        $newrow = $DB->get_record(
+            'playerpuzzle_attempts',
+            ['token' => $token],
+            'id, isdemo, rngseed, moveseq',
+            MUST_EXIST
+        );
 
         return (object) [
             'attemptid' => (int) $newrow->id,
@@ -249,6 +290,8 @@ class security {
             'coinsearned' => 0,
             'bosscoinsearned' => 0,
             'combatstate' => null,
+            'rngseed' => (int) $newrow->rngseed,
+            'moveseq' => (int) $newrow->moveseq,
             'isdemo' => (bool) $newrow->isdemo,
             'isnew' => true,
         ];

@@ -31,10 +31,23 @@ namespace mod_playerpuzzle\local\engine;
  * @covers \mod_playerpuzzle\local\engine\security
  */
 final class security_test extends \advanced_testcase {
+    /** @var int A real playerpuzzle instance id — generate_attempt_token() reads its
+     *  basebosshp/bossdamage/coingain to freeze them onto the attempt. */
+    private int $playerpuzzleid;
+
+    /** @var int A second, distinct instance id, for the tests that check isolation between
+     *  instances rather than exercising anything about a specific one's own configuration. */
+    private int $otherplayerpuzzleid;
+
     #[\Override]
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $this->playerpuzzleid = (int) $generator->create_instance(['course' => $course->id])->id;
+        $this->otherplayerpuzzleid = (int) $generator->create_instance(['course' => $course->id])->id;
     }
 
     /**
@@ -46,14 +59,14 @@ final class security_test extends \advanced_testcase {
     public function test_generate_attempt_token_creates_inprogress_attempt(): void {
         global $DB;
 
-        $token = security::generate_attempt_token(1, 2);
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(64, strlen($token));
         $this->assertSame(1, preg_match('/^[0-9a-f]{64}$/', $token));
 
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
         $this->assertSame('inprogress', $attempt->status);
-        $this->assertSame(1, (int) $attempt->playerpuzzleid);
+        $this->assertSame($this->playerpuzzleid, (int) $attempt->playerpuzzleid);
         $this->assertSame(2, (int) $attempt->userid);
     }
 
@@ -63,10 +76,120 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_generate_attempt_token_is_unique(): void {
-        $tokena = security::generate_attempt_token(1, 2);
-        $tokenb = security::generate_attempt_token(1, 2);
+        $tokena = security::generate_attempt_token($this->playerpuzzleid, 2);
+        $tokenb = security::generate_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertNotSame($tokena, $tokenb);
+    }
+
+    /**
+     * Tests that a freshly generated attempt gets the anti-cheat replay state seeded: a
+     * PRNG seed within the documented range, a clean move-log slate, the running plugin
+     * version, and the instance's own basebosshp/bossdamage/coingain frozen onto the row.
+     *
+     * @return void
+     */
+    public function test_generate_attempt_token_seeds_replay_state(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance([
+            'course'      => $course->id,
+            'basebosshp'  => 321,
+            'bossdamage'  => 12,
+            'coingain'    => 34,
+        ]);
+
+        $token = security::generate_attempt_token((int) $instance->id, 2);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+
+        $this->assertGreaterThanOrEqual(0, (int) $attempt->rngseed);
+        $this->assertLessThanOrEqual(2147483647, (int) $attempt->rngseed);
+        $this->assertSame(0, (int) $attempt->moveseq);
+        $this->assertNull($attempt->movelog);
+        $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), (int) $attempt->engineversion);
+        $this->assertSame(321, (int) $attempt->frozenbasebosshp);
+        $this->assertSame(12, (int) $attempt->frozenbossdamage);
+        $this->assertSame(34, (int) $attempt->frozencoingain);
+    }
+
+    /**
+     * Tests that two attempts generated back to back do not share a seed — not a
+     * mathematical guarantee (random_int() could coincidentally repeat), but a collision
+     * across two draws from a range of over two billion values is astronomically unlikely,
+     * making this a reliable regression guard against an accidentally hardcoded seed.
+     *
+     * @return void
+     */
+    public function test_generate_attempt_token_seeds_are_not_hardcoded(): void {
+        global $DB;
+
+        $tokena = security::generate_attempt_token($this->playerpuzzleid, 2);
+        $tokenb = security::generate_attempt_token($this->playerpuzzleid, 2);
+
+        $seeda = (int) $DB->get_field('playerpuzzle_attempts', 'rngseed', ['token' => $tokena]);
+        $seedb = (int) $DB->get_field('playerpuzzle_attempts', 'rngseed', ['token' => $tokenb]);
+
+        $this->assertNotSame($seeda, $seedb);
+    }
+
+    /**
+     * Tests seed_replay_state() directly: it always overwrites the seed/log/version/frozen
+     * fields, regardless of whatever the attempt object already carried — the point of
+     * calling it again at a phase advance is to discard the previous phase's values, not
+     * merge with them.
+     *
+     * @return void
+     */
+    public function test_seed_replay_state_overwrites_every_field(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance([
+            'course'     => $course->id,
+            'basebosshp' => 55,
+            'bossdamage' => 6,
+            'coingain'   => 7,
+        ]);
+
+        $attempt = (object) [
+            'rngseed' => 999999999,
+            'moveseq' => 42,
+            'movelog' => '[{"r1":0,"c1":0,"r2":0,"c2":1}]',
+            'engineversion' => 1,
+            'frozenbasebosshp' => 1,
+            'frozenbossdamage' => 1,
+            'frozencoingain' => 1,
+        ];
+
+        security::seed_replay_state($attempt, $instance);
+
+        $this->assertNotSame(999999999, $attempt->rngseed);
+        $this->assertSame(0, $attempt->moveseq);
+        $this->assertNull($attempt->movelog);
+        $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), $attempt->engineversion);
+        $this->assertSame(55, $attempt->frozenbasebosshp);
+        $this->assertSame(6, $attempt->frozenbossdamage);
+        $this->assertSame(7, $attempt->frozencoingain);
+    }
+
+    /**
+     * Tests that resume_or_create_attempt_token() surfaces rngseed/moveseq for both a
+     * brand new attempt and one it resumes, matching what is actually stored.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_surfaces_rngseed_and_moveseq(): void {
+        global $DB;
+
+        $created = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
+        $stored = $DB->get_record('playerpuzzle_attempts', ['token' => $created->token], '*', MUST_EXIST);
+        $this->assertSame((int) $stored->rngseed, $created->rngseed);
+        $this->assertSame((int) $stored->moveseq, $created->moveseq);
+
+        $resumed = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
+        $this->assertSame($created->rngseed, $resumed->rngseed);
+        $this->assertSame($created->moveseq, $resumed->moveseq);
     }
 
     /**
@@ -77,9 +200,9 @@ final class security_test extends \advanced_testcase {
     public function test_validate_and_consume_token_happy_path(): void {
         global $DB;
 
-        $token = security::generate_attempt_token(1, 2);
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2);
 
-        $attempt = security::validate_and_consume_token($token, 1, 2, 'won');
+        $attempt = security::validate_and_consume_token($token, $this->playerpuzzleid, 2, 'won');
 
         $this->assertNotFalse($attempt);
         $this->assertSame('won', $attempt->status);
@@ -96,10 +219,10 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_validate_and_consume_token_rejects_replay(): void {
-        $token = security::generate_attempt_token(1, 2);
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2);
 
-        $first = security::validate_and_consume_token($token, 1, 2, 'won');
-        $second = security::validate_and_consume_token($token, 1, 2, 'won');
+        $first = security::validate_and_consume_token($token, $this->playerpuzzleid, 2, 'won');
+        $second = security::validate_and_consume_token($token, $this->playerpuzzleid, 2, 'won');
 
         $this->assertNotFalse($first);
         $this->assertFalse($second);
@@ -112,9 +235,9 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_validate_and_consume_token_rejects_wrong_user(): void {
-        $token = security::generate_attempt_token(1, 2);
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2);
 
-        $result = security::validate_and_consume_token($token, 1, 999, 'won');
+        $result = security::validate_and_consume_token($token, $this->playerpuzzleid, 999, 'won');
 
         $this->assertFalse($result);
     }
@@ -126,9 +249,9 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_validate_and_consume_token_rejects_wrong_instance(): void {
-        $token = security::generate_attempt_token(1, 2);
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2);
 
-        $result = security::validate_and_consume_token($token, 999, 2, 'won');
+        $result = security::validate_and_consume_token($token, $this->otherplayerpuzzleid, 2, 'won');
 
         $this->assertFalse($result);
     }
@@ -151,10 +274,10 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_validate_and_consume_token_rejects_invalid_status(): void {
-        $token = security::generate_attempt_token(1, 2);
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2);
 
         $this->expectException(\coding_exception::class);
-        security::validate_and_consume_token($token, 1, 2, 'finished');
+        security::validate_and_consume_token($token, $this->playerpuzzleid, 2, 'finished');
     }
 
     /**
@@ -164,8 +287,8 @@ final class security_test extends \advanced_testcase {
      */
     public function test_all_final_statuses_are_accepted(): void {
         foreach (security::FINAL_STATUSES as $status) {
-            $token = security::generate_attempt_token(1, 2);
-            $attempt = security::validate_and_consume_token($token, 1, 2, $status);
+            $token = security::generate_attempt_token($this->playerpuzzleid, 2);
+            $attempt = security::validate_and_consume_token($token, $this->playerpuzzleid, 2, $status);
             $this->assertSame($status, $attempt->status);
         }
     }
@@ -179,7 +302,7 @@ final class security_test extends \advanced_testcase {
     public function test_resume_or_create_creates_fresh_attempt_when_none_inprogress(): void {
         global $DB;
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(1, $result->currentlevel);
         $this->assertSame(1, $result->currentphase);
@@ -196,7 +319,7 @@ final class security_test extends \advanced_testcase {
     public function test_generate_attempt_token_flags_a_demo_request(): void {
         global $DB;
 
-        $token = security::generate_attempt_token(1, 2, 'normal', 1, 1, true);
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2, 'normal', 1, 1, true);
 
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
         $this->assertSame(1, (int) $attempt->isdemo);
@@ -212,7 +335,7 @@ final class security_test extends \advanced_testcase {
     public function test_generate_attempt_token_does_not_flag_a_real_attempt(): void {
         global $DB;
 
-        $token = security::generate_attempt_token(1, 2);
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2);
 
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
         $this->assertSame(0, (int) $attempt->isdemo);
@@ -225,10 +348,10 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_surfaces_isdemo_for_a_new_attempt(): void {
-        $real = security::resume_or_create_attempt_token(1, 2);
+        $real = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
         $this->assertFalse($real->isdemo);
 
-        $demo = security::resume_or_create_attempt_token(1, 3, 'normal', 10, true);
+        $demo = security::resume_or_create_attempt_token($this->playerpuzzleid, 3, 'normal', 10, true);
         $this->assertTrue($demo->isdemo);
     }
 
@@ -239,9 +362,9 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_keeps_isdemo_true_on_resume(): void {
-        security::generate_attempt_token(1, 2, 'normal', 1, 1, true);
+        security::generate_attempt_token($this->playerpuzzleid, 2, 'normal', 1, 1, true);
 
-        $result = security::resume_or_create_attempt_token(1, 2, 'normal', 10, true);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true);
 
         $this->assertTrue($result->isdemo);
     }
@@ -254,12 +377,12 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_isdemo_is_a_separate_resume_namespace(): void {
-        $realtoken = security::resume_or_create_attempt_token(1, 2)->token;
-        $demoresult = security::resume_or_create_attempt_token(1, 2, 'normal', 10, true);
+        $realtoken = security::resume_or_create_attempt_token($this->playerpuzzleid, 2)->token;
+        $demoresult = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true);
         $this->assertNotSame($realtoken, $demoresult->token);
         $this->assertTrue($demoresult->isdemo);
 
-        $realagain = security::resume_or_create_attempt_token(1, 2);
+        $realagain = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
         $this->assertFalse($realagain->isdemo);
     }
 
@@ -272,10 +395,10 @@ final class security_test extends \advanced_testcase {
     public function test_resume_or_create_demo_always_starts_at_level_one_phase_one(): void {
         global $DB;
 
-        $realtoken = security::generate_attempt_token(1, 2, 'normal', 3, 5);
-        security::validate_and_consume_token($realtoken, 1, 2, 'lost');
+        $realtoken = security::generate_attempt_token($this->playerpuzzleid, 2, 'normal', 3, 5);
+        security::validate_and_consume_token($realtoken, $this->playerpuzzleid, 2, 'lost');
 
-        $demo = security::resume_or_create_attempt_token(1, 2, 'normal', 10, true);
+        $demo = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true);
 
         $this->assertSame(1, $demo->currentlevel);
         $this->assertSame(1, $demo->currentphase);
@@ -291,11 +414,11 @@ final class security_test extends \advanced_testcase {
     public function test_resume_or_create_preserves_level_and_phase(): void {
         global $DB;
 
-        $firsttoken = security::generate_attempt_token(1, 2);
+        $firsttoken = security::generate_attempt_token($this->playerpuzzleid, 2);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 3, ['token' => $firsttoken]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 7, ['token' => $firsttoken]);
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(3, $result->currentlevel);
         $this->assertSame(7, $result->currentphase);
@@ -309,12 +432,12 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_rotates_the_token(): void {
-        $oldtoken = security::generate_attempt_token(1, 2);
+        $oldtoken = security::generate_attempt_token($this->playerpuzzleid, 2);
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertNotSame($oldtoken, $result->token);
-        $this->assertFalse(security::validate_and_consume_token($oldtoken, 1, 2, 'won'));
+        $this->assertFalse(security::validate_and_consume_token($oldtoken, $this->playerpuzzleid, 2, 'won'));
     }
 
     /**
@@ -326,12 +449,15 @@ final class security_test extends \advanced_testcase {
     public function test_resume_or_create_does_not_insert_a_new_row(): void {
         global $DB;
 
-        $firsttoken = security::generate_attempt_token(1, 2);
+        $firsttoken = security::generate_attempt_token($this->playerpuzzleid, 2);
         $originalid = $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $firsttoken]);
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
-        $this->assertSame(1, $DB->count_records('playerpuzzle_attempts', ['playerpuzzleid' => 1, 'userid' => 2]));
+        $this->assertSame(
+            1,
+            $DB->count_records('playerpuzzle_attempts', ['playerpuzzleid' => $this->playerpuzzleid, 'userid' => 2])
+        );
         $resumedid = $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $result->token]);
         $this->assertSame((int) $originalid, (int) $resumedid);
     }
@@ -344,10 +470,10 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_ignores_other_instance_and_user(): void {
-        security::generate_attempt_token(999, 2);
-        security::generate_attempt_token(1, 999);
+        security::generate_attempt_token($this->otherplayerpuzzleid, 2);
+        security::generate_attempt_token($this->playerpuzzleid, 999);
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(1, $result->currentlevel);
         $this->assertSame(1, $result->currentphase);
@@ -364,14 +490,14 @@ final class security_test extends \advanced_testcase {
     public function test_resume_or_create_picks_most_recent_when_multiple_stale_rows_exist(): void {
         global $DB;
 
-        $oldtoken = security::generate_attempt_token(1, 2);
+        $oldtoken = security::generate_attempt_token($this->playerpuzzleid, 2);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 1, ['token' => $oldtoken]);
         $DB->set_field('playerpuzzle_attempts', 'timecreated', time() - 100, ['token' => $oldtoken]);
 
-        $newtoken = security::generate_attempt_token(1, 2);
+        $newtoken = security::generate_attempt_token($this->playerpuzzleid, 2);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 4, ['token' => $newtoken]);
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(4, $result->currentlevel);
     }
@@ -397,10 +523,10 @@ final class security_test extends \advanced_testcase {
     public function test_generate_attempt_token_stores_difficulty(): void {
         global $DB;
 
-        $token = security::generate_attempt_token(1, 2, 'hard');
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2, 'hard');
         $this->assertSame('hard', $DB->get_field('playerpuzzle_attempts', 'difficulty', ['token' => $token]));
 
-        $token = security::generate_attempt_token(1, 2, 'bogus');
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2, 'bogus');
         $this->assertSame('normal', $DB->get_field('playerpuzzle_attempts', 'difficulty', ['token' => $token]));
     }
 
@@ -413,10 +539,10 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_keeps_attempt_difficulty_on_resume(): void {
-        $fresh = security::resume_or_create_attempt_token(1, 2, 'hard');
+        $fresh = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'hard');
         $this->assertSame('hard', $fresh->difficulty);
 
-        $resumed = security::resume_or_create_attempt_token(1, 2, 'easy');
+        $resumed = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'easy');
         $this->assertSame('hard', $resumed->difficulty);
     }
 
@@ -426,7 +552,7 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_starts_questionstotal_at_zero(): void {
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(0, $result->questionstotal);
     }
@@ -441,10 +567,10 @@ final class security_test extends \advanced_testcase {
     public function test_resume_or_create_carries_forward_questionstotal(): void {
         global $DB;
 
-        $firsttoken = security::generate_attempt_token(1, 2);
+        $firsttoken = security::generate_attempt_token($this->playerpuzzleid, 2);
         $DB->set_field('playerpuzzle_attempts', 'questions_total', 5, ['token' => $firsttoken]);
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(5, $result->questionstotal);
     }
@@ -456,7 +582,7 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_starts_combatstate_at_null(): void {
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertNull($result->combatstate);
     }
@@ -470,7 +596,7 @@ final class security_test extends \advanced_testcase {
     public function test_resume_or_create_decodes_a_saved_combatstate(): void {
         global $DB;
 
-        $firsttoken = security::generate_attempt_token(1, 2);
+        $firsttoken = security::generate_attempt_token($this->playerpuzzleid, 2);
         $DB->set_field(
             'playerpuzzle_attempts',
             'combatstate',
@@ -478,7 +604,7 @@ final class security_test extends \advanced_testcase {
             ['token' => $firsttoken]
         );
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame([1, 2, 3], $result->combatstate['boardgrid']);
         $this->assertSame('boss', $result->combatstate['currentturn']);
@@ -496,7 +622,7 @@ final class security_test extends \advanced_testcase {
     public function test_resume_or_create_discards_a_checkpoint_with_dead_boss(): void {
         global $DB;
 
-        $token = security::generate_attempt_token(1, 2);
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2);
         $DB->set_field(
             'playerpuzzle_attempts',
             'combatstate',
@@ -504,7 +630,7 @@ final class security_test extends \advanced_testcase {
             ['token' => $token]
         );
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertNull($result->combatstate);
     }
@@ -518,13 +644,13 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_resumes_level_and_phase_after_a_loss(): void {
-        $lost = security::generate_attempt_token(1, 2);
+        $lost = security::generate_attempt_token($this->playerpuzzleid, 2);
         global $DB;
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 3, ['token' => $lost]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 7, ['token' => $lost]);
-        security::validate_and_consume_token($lost, 1, 2, 'lost');
+        security::validate_and_consume_token($lost, $this->playerpuzzleid, 2, 'lost');
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertTrue($result->isnew);
         $this->assertSame(3, $result->currentlevel);
@@ -538,13 +664,13 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_starts_fresh_after_winning_the_campaign(): void {
-        $won = security::generate_attempt_token(1, 2);
+        $won = security::generate_attempt_token($this->playerpuzzleid, 2);
         global $DB;
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 10, ['token' => $won]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 10, ['token' => $won]);
-        security::validate_and_consume_token($won, 1, 2, 'won');
+        security::validate_and_consume_token($won, $this->playerpuzzleid, 2, 'won');
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(1, $result->currentlevel);
         $this->assertSame(1, $result->currentphase);
@@ -560,17 +686,17 @@ final class security_test extends \advanced_testcase {
     public function test_resume_or_create_ignores_an_older_loss_after_a_later_win(): void {
         global $DB;
 
-        $lost = security::generate_attempt_token(1, 2);
+        $lost = security::generate_attempt_token($this->playerpuzzleid, 2);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 3, ['token' => $lost]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 7, ['token' => $lost]);
-        security::validate_and_consume_token($lost, 1, 2, 'lost');
+        security::validate_and_consume_token($lost, $this->playerpuzzleid, 2, 'lost');
 
-        $won = security::generate_attempt_token(1, 2);
+        $won = security::generate_attempt_token($this->playerpuzzleid, 2);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 10, ['token' => $won]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 10, ['token' => $won]);
-        security::validate_and_consume_token($won, 1, 2, 'won');
+        security::validate_and_consume_token($won, $this->playerpuzzleid, 2, 'won');
 
-        $result = security::resume_or_create_attempt_token(1, 2);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(1, $result->currentlevel);
         $this->assertSame(1, $result->currentphase);
@@ -584,13 +710,13 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_resume_or_create_clamps_inherited_level_to_reduced_maxlevels(): void {
-        $lost = security::generate_attempt_token(1, 2);
+        $lost = security::generate_attempt_token($this->playerpuzzleid, 2);
         global $DB;
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 8, ['token' => $lost]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 4, ['token' => $lost]);
-        security::validate_and_consume_token($lost, 1, 2, 'lost');
+        security::validate_and_consume_token($lost, $this->playerpuzzleid, 2, 'lost');
 
-        $result = security::resume_or_create_attempt_token(1, 2, 'normal', 5);
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 5);
 
         $this->assertSame(5, $result->currentlevel);
         $this->assertSame(1, $result->currentphase);
@@ -618,8 +744,8 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_determine_start_level_ignores_demo_attempts(): void {
-        $demotoken = security::generate_attempt_token(1, 2, 'normal', 1, 1, true);
-        security::validate_and_consume_token($demotoken, 1, 2, 'lost');
+        $demotoken = security::generate_attempt_token($this->playerpuzzleid, 2, 'normal', 1, 1, true);
+        security::validate_and_consume_token($demotoken, $this->playerpuzzleid, 2, 'lost');
 
         [$level, $phase] = security::determine_start_level(1, 2, 10);
 
@@ -634,13 +760,13 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_has_inprogress_attempt(): void {
-        $this->assertFalse(security::has_inprogress_attempt(1, 2));
+        $this->assertFalse(security::has_inprogress_attempt($this->playerpuzzleid, 2));
 
-        security::generate_attempt_token(1, 2);
-        $this->assertTrue(security::has_inprogress_attempt(1, 2));
+        security::generate_attempt_token($this->playerpuzzleid, 2);
+        $this->assertTrue(security::has_inprogress_attempt($this->playerpuzzleid, 2));
 
-        $this->assertFalse(security::has_inprogress_attempt(1, 3), 'Different user.');
-        $this->assertFalse(security::has_inprogress_attempt(9, 2), 'Different instance.');
+        $this->assertFalse(security::has_inprogress_attempt($this->playerpuzzleid, 3), 'Different user.');
+        $this->assertFalse(security::has_inprogress_attempt($this->otherplayerpuzzleid, 2), 'Different instance.');
     }
 
     /**
@@ -650,9 +776,9 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_has_inprogress_attempt_ignores_demo_attempts(): void {
-        security::generate_attempt_token(1, 2, 'normal', 1, 1, true);
+        security::generate_attempt_token($this->playerpuzzleid, 2, 'normal', 1, 1, true);
 
-        $this->assertFalse(security::has_inprogress_attempt(1, 2));
+        $this->assertFalse(security::has_inprogress_attempt($this->playerpuzzleid, 2));
     }
 
     /**
@@ -662,10 +788,10 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_has_inprogress_attempt_ignores_final_statuses(): void {
-        $token = security::generate_attempt_token(1, 2);
-        security::validate_and_consume_token($token, 1, 2, 'won');
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2);
+        security::validate_and_consume_token($token, $this->playerpuzzleid, 2, 'won');
 
-        $this->assertFalse(security::has_inprogress_attempt(1, 2));
+        $this->assertFalse(security::has_inprogress_attempt($this->playerpuzzleid, 2));
     }
 
     /**

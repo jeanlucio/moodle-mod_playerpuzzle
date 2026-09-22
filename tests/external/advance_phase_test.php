@@ -613,6 +613,50 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that advancing a phase re-seeds the anti-cheat replay state (a new PRNG seed,
+     * a clean move-log slate, the frozen instance config) — the seed must never survive
+     * into the next phase, or every phase's board would come out identical (they all call
+     * generateGrid() fresh from the same seed otherwise).
+     *
+     * @return void
+     */
+    public function test_advance_phase_reseeds_replay_state(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100, 'bossdamage' => 15, 'coingain' => 20]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $oldseed = (int) $attempt->rngseed;
+
+        $DB->set_field('playerpuzzle_attempts', 'moveseq', 7, ['id' => $attempt->id]);
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'movelog',
+            '[{"r1":0,"c1":0,"r2":0,"c2":1}]',
+            ['id' => $attempt->id]
+        );
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+        $this->assertFalse($result['error']);
+
+        $updated = $DB->get_record('playerpuzzle_attempts', ['id' => $attempt->id], '*', MUST_EXIST);
+        $this->assertNotSame($oldseed, (int) $updated->rngseed);
+        $this->assertSame(0, (int) $updated->moveseq);
+        $this->assertNull($updated->movelog);
+        $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), (int) $updated->engineversion);
+        $this->assertSame(100, (int) $updated->frozenbasebosshp);
+        $this->assertSame(15, (int) $updated->frozenbossdamage);
+        $this->assertSame(20, (int) $updated->frozencoingain);
+    }
+
+    /**
      * Tests that an unknown/forged token is rejected with the dedicated exception.
      *
      * @return void

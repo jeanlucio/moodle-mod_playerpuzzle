@@ -31,19 +31,24 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\combat_state;
+use mod_playerpuzzle\local\move_log;
 use moodle_exception;
 
 /**
  * Persists a snapshot of the current phase's fight (board grid, HP, meters, turn) so a
  * reload can resume it in place instead of always restarting the phase with full HP and a
- * fresh board.
+ * fresh board — and, alongside it, the board swaps made since the last accepted checkpoint,
+ * for a future server-side replay to verify the match instead of trusting the client's own
+ * reported totals.
  *
  * Called from two client-side triggers, never per board move: a periodic checkpoint (only
  * when something changed and the tab is visible) and once more on page unload/backgrounding
- * via navigator.sendBeacon(). The snapshot is never validated against combat rules here — it
- * only feeds the client's own reconstruction of its board/HUD; a win/loss claim is still
- * independently checked by save_progress/advance_phase from the server's own boss HP
- * formula, so a forged snapshot cannot buy an easier fight or a false victory.
+ * via navigator.sendBeacon(). The board/HP/meters snapshot is never validated against combat
+ * rules here — it only feeds the client's own reconstruction of its board/HUD; a win/loss
+ * claim is still independently checked by save_progress/advance_phase from the server's own
+ * boss HP formula, so a forged snapshot cannot buy an easier fight or a false victory. The
+ * move log is validated for shape/size only here too — the future replay is what actually
+ * checks it means anything.
  */
 class save_combat_state extends external_api {
     /**
@@ -74,6 +79,16 @@ class save_combat_state extends external_api {
             'bossmana'           => new external_value(PARAM_INT, 'Boss Mana meter, 0-100'),
             'bossmultiplier'     => new external_value(PARAM_FLOAT, 'Boss Star multiplier'),
             'currentturn'        => new external_value(PARAM_ALPHA, 'Whose turn is next: player or boss'),
+            'moveseq'            => new external_value(PARAM_INT, 'Monotonic sequence number of this move-log batch'),
+            'movelog'            => new external_multiple_structure(
+                new external_single_structure([
+                    'r1' => new external_value(PARAM_INT, 'Row of the first swapped cell'),
+                    'c1' => new external_value(PARAM_INT, 'Column of the first swapped cell'),
+                    'r2' => new external_value(PARAM_INT, 'Row of the second swapped cell'),
+                    'c2' => new external_value(PARAM_INT, 'Column of the second swapped cell'),
+                ]),
+                'Board swaps since the last accepted checkpoint, in order'
+            ),
         ]);
     }
 
@@ -98,6 +113,8 @@ class save_combat_state extends external_api {
      * @param int $bossmana Boss Mana meter.
      * @param float $bossmultiplier Boss Star multiplier.
      * @param string $currentturn Whose turn is next.
+     * @param int $moveseq Monotonic sequence number of this move-log batch.
+     * @param array $movelog Board swaps since the last accepted checkpoint, in order.
      * @return array Result with success.
      */
     public static function execute(
@@ -118,7 +135,9 @@ class save_combat_state extends external_api {
         int $bosspoisonrounds,
         int $bossmana,
         float $bossmultiplier,
-        string $currentturn
+        string $currentturn,
+        int $moveseq,
+        array $movelog
     ): array {
         global $DB, $USER;
 
@@ -141,6 +160,8 @@ class save_combat_state extends external_api {
             'bossmana'           => $bossmana,
             'bossmultiplier'     => $bossmultiplier,
             'currentturn'        => $currentturn,
+            'moveseq'            => $moveseq,
+            'movelog'            => $movelog,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -151,6 +172,9 @@ class save_combat_state extends external_api {
             throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
         }
         if (!in_array($params['currentturn'], ['player', 'boss'], true)) {
+            throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
+        }
+        if (!move_log::is_valid($params['movelog'])) {
             throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
         }
 
@@ -167,9 +191,20 @@ class save_combat_state extends external_api {
         }
 
         $meters = $params;
-        unset($meters['cmid'], $meters['token'], $meters['boardgrid']);
+        unset($meters['cmid'], $meters['token'], $meters['boardgrid'], $meters['moveseq'], $meters['movelog']);
 
         $attempt->combatstate = combat_state::encode($params['boardgrid'], $meters);
+
+        // A sequence number no greater than what is already stored is a resend (the network
+        // retried, or sendBeacon fired after an earlier awaited call already landed) — the
+        // rest of the checkpoint above is applied as usual (idempotent by nature, since it is
+        // always a whole-state overwrite), but the move log itself is left untouched rather
+        // than risk double-recording moves already accepted.
+        if ($params['moveseq'] > (int) $attempt->moveseq) {
+            $attempt->moveseq = $params['moveseq'];
+            $attempt->movelog = move_log::encode($params['movelog']);
+        }
+
         $attempt->timemodified = time();
         $DB->update_record('playerpuzzle_attempts', $attempt);
 

@@ -29,6 +29,7 @@ use context_module;
 use core_external\external_api;
 use mod_playerpuzzle\local\combat_state;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\move_log;
 
 /**
  * Tests for the mod_playerpuzzle_save_combat_state web service.
@@ -104,6 +105,8 @@ final class save_combat_state_test extends \advanced_testcase {
             'bossmana'           => 10,
             'bossmultiplier'     => 1.0,
             'currentturn'        => 'player',
+            'moveseq'            => 1,
+            'movelog'            => [['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
         ], $overrides);
     }
 
@@ -248,7 +251,137 @@ final class save_combat_state_test extends \advanced_testcase {
             $args['bosspoisonrounds'],
             $args['bossmana'],
             $args['bossmultiplier'],
-            $args['currentturn']
+            $args['currentturn'],
+            $args['moveseq'],
+            $args['movelog']
         );
+    }
+
+    /**
+     * Tests that the move log is persisted alongside the board/HP snapshot.
+     *
+     * @return void
+     */
+    public function test_saves_the_move_log(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $result = $this->call_save_combat_state($this->valid_args($instance, $token, [
+            'moveseq' => 1,
+            'movelog' => [['r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4]],
+        ]));
+
+        $this->assertFalse($result['error']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
+        $this->assertSame(1, (int) $attempt->moveseq);
+        $this->assertSame([['r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4]], move_log::decode($attempt->movelog));
+    }
+
+    /**
+     * Tests that a resend (a sequence number no greater than what is already stored) is
+     * idempotent: the rest of the checkpoint still applies, but the move log is left
+     * exactly as it was, rather than being duplicated or overwritten with a stale resend.
+     *
+     * @return void
+     */
+    public function test_a_resent_sequence_number_does_not_duplicate_the_move_log(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $this->call_save_combat_state($this->valid_args($instance, $token, [
+            'moveseq' => 1,
+            'movelog' => [['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
+        ]));
+
+        // A resend of the same seq 1, this time (incorrectly, if it were not idempotent)
+        // carrying a second move — must not be appended, since seq 1 was already accepted.
+        $result = $this->call_save_combat_state($this->valid_args($instance, $token, [
+            'currentplayerhp' => 77,
+            'moveseq'         => 1,
+            'movelog'         => [['r1' => 5, 'c1' => 5, 'r2' => 5, 'c2' => 6]],
+        ]));
+
+        $this->assertFalse($result['error']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
+        $this->assertSame(1, (int) $attempt->moveseq);
+        $this->assertSame([['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]], move_log::decode($attempt->movelog));
+        // The rest of the checkpoint (HP/meters) is applied normally even on a resend.
+        $stored = combat_state::decode($attempt->combatstate);
+        $this->assertSame(77, $stored['currentplayerhp']);
+    }
+
+    /**
+     * Tests that a genuinely new (higher) sequence number replaces the stored move log.
+     *
+     * @return void
+     */
+    public function test_a_higher_sequence_number_replaces_the_move_log(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+
+        $this->call_save_combat_state($this->valid_args($instance, $token, [
+            'moveseq' => 1,
+            'movelog' => [['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]],
+        ]));
+        $this->call_save_combat_state($this->valid_args($instance, $token, [
+            'moveseq' => 2,
+            'movelog' => [['r1' => 3, 'c1' => 3, 'r2' => 3, 'c2' => 4]],
+        ]));
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
+        $this->assertSame(2, (int) $attempt->moveseq);
+        $this->assertSame([['r1' => 3, 'c1' => 3, 'r2' => 3, 'c2' => 4]], move_log::decode($attempt->movelog));
+    }
+
+    /**
+     * Tests that a move log past the per-checkpoint size cap is rejected outright, never
+     * silently truncated.
+     *
+     * @return void
+     */
+    public function test_rejects_a_move_log_over_the_size_cap(): void {
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $toolong = array_fill(0, move_log::MAX_MOVES_PER_CHECKPOINT + 1, ['r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]);
+        $result = $this->call_save_combat_state($this->valid_args($instance, $token, [
+            'moveseq' => 1,
+            'movelog' => $toolong,
+        ]));
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('invalidcombatstate', $result['exception']->errorcode);
+    }
+
+    /**
+     * Tests that a move log entry with a coordinate outside the board's bounds is rejected.
+     *
+     * @return void
+     */
+    public function test_rejects_a_move_log_coordinate_out_of_bounds(): void {
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_combat_state($this->valid_args($instance, $token, [
+            'moveseq' => 1,
+            'movelog' => [['r1' => 0, 'c1' => 0, 'r2' => 8, 'c2' => 1]],
+        ]));
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('invalidcombatstate', $result['exception']->errorcode);
     }
 }

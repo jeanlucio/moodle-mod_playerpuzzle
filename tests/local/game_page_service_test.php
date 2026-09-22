@@ -687,6 +687,31 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the config carries the attempt's own rngseed/moveseq — the values that
+     * seed the client's deterministic PRNG (engine/prng.js) and that sendCheckpoint()
+     * continues incrementing from, rather than the client ever inventing its own.
+     *
+     * @return void
+     */
+    public function test_build_game_config_reports_rngseed_and_moveseq(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id
+        );
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+
+        $this->assertSame((int) $attempt->rngseed, $config['rngseed']);
+        $this->assertSame((int) $attempt->moveseq, $config['moveseq']);
+    }
+
+    /**
      * Tests that resuming an attempt with a saved checkpoint passes it through decoded, for
      * board.js/combat.js to rebuild the fight in progress.
      *

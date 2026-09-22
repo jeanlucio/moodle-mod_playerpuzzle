@@ -537,6 +537,13 @@ final class backup_restore_test extends \advanced_testcase {
             'coins_earned'      => 30,
             'status'            => 'won',
             'score'             => 91.5,
+            'rngseed'           => 123456789,
+            'moveseq'           => 3,
+            'movelog'           => '[{"r1":0,"c1":0,"r2":0,"c2":1}]',
+            'engineversion'     => 2026092202,
+            'frozenbasebosshp'  => 111,
+            'frozenbossdamage'  => 22,
+            'frozencoingain'    => 33,
             'timecreated'       => time(),
             'timefinished'      => time(),
         ]);
@@ -566,6 +573,13 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertSame(1, (int) $newattempt->isdemo);
         $this->assertSame('won', $newattempt->status);
         $this->assertEqualsWithDelta(91.5, (float) $newattempt->score, 0.001);
+        $this->assertSame(123456789, (int) $newattempt->rngseed);
+        $this->assertSame(3, (int) $newattempt->moveseq);
+        $this->assertSame('[{"r1":0,"c1":0,"r2":0,"c2":1}]', $newattempt->movelog);
+        $this->assertSame(2026092202, (int) $newattempt->engineversion);
+        $this->assertSame(111, (int) $newattempt->frozenbasebosshp);
+        $this->assertSame(22, (int) $newattempt->frozenbossdamage);
+        $this->assertSame(33, (int) $newattempt->frozencoingain);
 
         $newquestion = $DB->get_record(
             'playerpuzzle_attempt_questions',

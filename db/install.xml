@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260921" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260922" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -63,6 +63,13 @@
         <FIELD NAME="boss_coins_earned" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Same ledger, boss side; nets against coins_earned at payout"/>
         <FIELD NAME="combatstate" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON snapshot of the in-progress board/combat, for resuming after a reload; null = no fight in progress for the current phase"/>
         <FIELD NAME="currentquestionid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Question drawn server-side and currently open for this attempt (0 = none); the client never chooses which question is in play"/>
+        <FIELD NAME="rngseed" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Seed for the current phase's deterministic PRNG (mulberry32), reset on every new attempt/phase; drives the client's board generation/gravity/shuffle so a server-side replay can reproduce them"/>
+        <FIELD NAME="moveseq" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Monotonic sequence number of the last accepted move-log checkpoint, for idempotent resend handling; reset alongside rngseed"/>
+        <FIELD NAME="movelog" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of board swaps ({r1,c1,r2,c2}) since the last accepted checkpoint, for server-side replay; null = none pending"/>
+        <FIELD NAME="engineversion" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="mod_playerpuzzle plugin version running when this phase's seed/move log were captured; a mismatch at replay time means skip verification, never punish"/>
+        <FIELD NAME="frozenbasebosshp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Instance basebosshp snapshotted at the start of this phase, so a later teacher edit never desyncs a replay of an already-played phase"/>
+        <FIELD NAME="frozenbossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Instance bossdamage snapshotted at the start of this phase, same reasoning as frozenbasebosshp"/>
+        <FIELD NAME="frozencoingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Instance coingain snapshotted at the start of this phase, same reasoning as frozenbasebosshp"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" DECIMALS="5" SEQUENCE="false" COMMENT="Final calculated grade"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="inprogress" SEQUENCE="false" COMMENT="Status: inprogress, won, lost, timeout, abandoned"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>

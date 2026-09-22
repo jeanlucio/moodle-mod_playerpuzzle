@@ -550,5 +550,52 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092103, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092202) {
+        // Add the deterministic-replay fields: a PRNG seed and move log (for a future
+        // server-side re-simulation to verify a match instead of trusting the client's own
+        // reported totals), plus the engine version and instance config frozen at the time
+        // they were captured (so a later plugin upgrade or teacher edit mid-match cannot
+        // desync a replay of an already-played phase). All reset on every new attempt/phase,
+        // same lifecycle as combatstate.
+        $table = new xmldb_table('playerpuzzle_attempts');
+
+        $field = new xmldb_field('rngseed', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'currentquestionid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('moveseq', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'rngseed');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('movelog', XMLDB_TYPE_TEXT, null, null, null, null, null, 'moveseq');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('engineversion', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'movelog');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('frozenbasebosshp', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'engineversion');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('frozenbossdamage', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'frozenbasebosshp');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('frozencoingain', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'frozenbossdamage');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026092202, 'playerpuzzle');
+    }
+
     return true;
 }

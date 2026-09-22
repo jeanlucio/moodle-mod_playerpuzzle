@@ -280,6 +280,7 @@ $string['privacy:metadata:combatstate'] = 'A snapshot of the in-progress board a
 $string['privacy:metadata:currentlevel'] = 'The level the user was playing when this attempt was recorded.';
 $string['privacy:metadata:currentphase'] = 'The phase the user was playing when this attempt was recorded.';
 $string['privacy:metadata:difficulty'] = 'The difficulty the student chose for this attempt: easy, normal or hard.';
+$string['privacy:metadata:movelog'] = 'The board swaps made since the last checkpoint of the current phase, kept only for a server-side replay to verify the match.';
 $string['privacy:metadata:playerpuzzle_attempt_consumables'] = 'Stores how many times each consumable type was used during an attempt.';
 $string['privacy:metadata:playerpuzzle_attempt_questions'] = 'Stores each question a student answered during an attempt, with their answer and the correct one.';
 $string['privacy:metadata:playerpuzzle_attempts'] = 'Stores each attempt a student makes at a PlayerPuzzle activity, including progress and outcome.';

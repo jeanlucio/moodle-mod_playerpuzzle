@@ -22,8 +22,8 @@
  */
 
 define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/config',
-        'mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/combat_rules'],
-        function($, Ajax, Notification, Templates, Config, Accessibility, CombatRules) {
+        'mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/combat_rules', 'mod_playerpuzzle/engine/prng'],
+        function($, Ajax, Notification, Templates, Config, Accessibility, CombatRules, Prng) {
     'use strict';
 
     // Maps a piece's numeric type (0-6, same indexing as board.js's own PIECE_NAME_KEYS) to
@@ -143,8 +143,35 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // case every side simply starts at full HP as already set up above.
             this.hydrateFromCheckpoint(gameConfig.combatstate);
 
+            // Seeded PRNG driving board generation/gravity/shuffle (board.js reads this via
+            // this.rng, replacing what used to be plain Math.random calls) — deterministic
+            // for a given seed, so a server-side replay of the recorded move log can
+            // reproduce the same board states. moveSeq/pendingMoveLog track what has been
+            // recorded locally but not yet confirmed saved; sendCheckpoint() only clears the
+            // buffer once the server actually accepts it.
+            this.rng = Prng.create(parseInt(gameConfig.rngseed, 10) || 0);
+            this.moveSeq = parseInt(gameConfig.moveseq, 10) || 0;
+            this.pendingMoveLog = [];
+
             this._checkpointDirty = false;
             this.startCheckpointing();
+        }
+
+        /**
+         * Records a player-made board swap into the pending move log, for the next
+         * checkpoint to send. Never called for the boss's own moves (executeBossTurn()'s
+         * swap is a deterministic scan with no RNG involved, so the server can always
+         * recompute it independently — see board.js::checkMatches()'s own call site for
+         * where the player-only guard lives) or for a swap that was reverted for producing
+         * no match (a no-op the board never actually changed because of).
+         *
+         * @param {number} r1 Row of the first swapped cell.
+         * @param {number} c1 Column of the first swapped cell.
+         * @param {number} r2 Row of the second swapped cell.
+         * @param {number} c2 Column of the second swapped cell.
+         */
+        recordMove(r1, c1, r2, c2) {
+            this.pendingMoveLog.push({r1, c1, r2, c2});
         }
 
         /**
@@ -236,6 +263,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 }
             }
 
+            // Only bump the sequence number (and send a movelog at all) when something is
+            // actually pending — a resend of the same seq with an empty movelog would
+            // otherwise look identical to "nothing new happened" server-side, but sending the
+            // ALREADY-confirmed seq again is exactly the idempotent no-op that is meant to be.
+            const hasPendingMoves = this.pendingMoveLog.length > 0;
+            const sendingSeq = hasPendingMoves ? this.moveSeq + 1 : this.moveSeq;
+            const sendingMoveLog = this.pendingMoveLog;
+
             const args = {
                 cmid: this.gameConfig.cmid,
                 token: this.gameConfig.token,
@@ -255,18 +290,32 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 bossmana: Math.round(this.bossMana),
                 bossmultiplier: this.bossMultiplier,
                 currentturn: this.currentTurn,
+                moveseq: sendingSeq,
+                movelog: sendingMoveLog,
             };
 
             this._checkpointDirty = false;
 
             if (useBeacon) {
+                // Fire and forget, same as the rest of this checkpoint — there is no "next
+                // tick" left to retry from once the page is gone, so the buffer is cleared
+                // optimistically rather than left to leak into a session that no longer exists.
                 sendCheckpointBeacon(args);
+                this.moveSeq = sendingSeq;
+                this.pendingMoveLog = [];
                 return;
             }
 
-            Ajax.call([{methodname: 'mod_playerpuzzle_save_combat_state', args}])[0].fail(() => {
+            Ajax.call([{methodname: 'mod_playerpuzzle_save_combat_state', args}])[0].done(() => {
+                this.moveSeq = sendingSeq;
+                // Only remove the moves that were actually just sent — new ones may already
+                // have been recorded (a player kept playing while this call was in flight).
+                this.pendingMoveLog = this.pendingMoveLog.slice(sendingMoveLog.length);
+            }).fail(() => {
                 // A missed periodic checkpoint is not user-visible and not worth retrying —
                 // the next tick (or the final beacon on exit) tries again with fresher state.
+                // moveSeq/pendingMoveLog are deliberately left untouched, so that retry resends
+                // this exact batch (plus anything recorded meanwhile) under the same target seq.
                 this._checkpointDirty = true;
             });
         }

@@ -280,6 +280,7 @@ $string['privacy:metadata:combatstate'] = 'Um retrato do tabuleiro e do combate 
 $string['privacy:metadata:currentlevel'] = 'O nível que o usuário estava jogando quando esta tentativa foi registrada.';
 $string['privacy:metadata:currentphase'] = 'A fase que o usuário estava jogando quando esta tentativa foi registrada.';
 $string['privacy:metadata:difficulty'] = 'A dificuldade que o estudante escolheu para esta tentativa: fácil, normal ou difícil.';
+$string['privacy:metadata:movelog'] = 'As trocas de peças feitas desde o último checkpoint da fase atual, guardadas só para uma verificação futura no servidor confirmar a partida.';
 $string['privacy:metadata:playerpuzzle_attempt_consumables'] = 'Armazena quantas vezes cada tipo de consumível foi usado numa tentativa.';
 $string['privacy:metadata:playerpuzzle_attempt_questions'] = 'Armazena cada pergunta que o estudante respondeu numa tentativa, com a resposta dele e a correta.';
 $string['privacy:metadata:playerpuzzle_attempts'] = 'Armazena cada tentativa de um estudante numa atividade PlayerPuzzle, incluindo progresso e resultado.';

@@ -260,7 +260,11 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
         handleGridKeydown(event) {
             if (event.key === ' ') {
                 event.preventDefault();
-                this.announceTurnStart();
+                // Same gate as executeAnnouncedMove(): outside the player's own turn the move
+                // list is not actionable, and reading "your turn" there would be a lie.
+                if (this.scene.combat.currentTurn === 'player' && this.scene.input.enabled) {
+                    this.announceTurnStart();
+                }
                 return;
             }
 

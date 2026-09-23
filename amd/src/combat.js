@@ -545,6 +545,19 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
+         * Total damage dealt to the boss this phase, as the integer save_progress/advance_phase
+         * accept. HP itself stays fractional (multipliers, crits), so this rounds the remaining
+         * HP exactly the way replay::result() does server-side — a raw difference would be
+         * rejected by PARAM_INT, and any other rounding would disagree with the replay-derived
+         * value on an honest match.
+         *
+         * @returns {number}
+         */
+        damageDealt() {
+            return this.maxBossHp - Math.max(0, Math.round(this.currentHp));
+        }
+
+        /**
          * Fixed maximum uses per phase/match for a consumable type, mirroring
          * attempt_consumables::PHASE_LIMITS. A type absent from that mirror (only 'hint') has
          * no fixed limit, so this returns Infinity — its real cap is owned stock instead,
@@ -966,7 +979,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     args: {
                         cmid: this.gameConfig.cmid,
                         token: this.gameConfig.token,
-                        damage: this.maxBossHp - this.currentHp,
+                        damage: this.damageDealt(),
                         coinsearnedsofar: Math.round(this.playerGold),
                         bosscoinsearnedsofar: Math.round(this.bossGold),
                         difficulty: $('#pp-phase-difficulty').val() || 'normal',
@@ -1325,7 +1338,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     cmid: this.gameConfig.cmid,
                     token: this.gameConfig.token,
                     victory: victory ? 1 : 0,
-                    damage: this.maxBossHp - this.currentHp,
+                    damage: this.damageDealt(),
                     coinsearnedsofar: Math.round(this.playerGold),
                     bosscoinsearnedsofar: Math.round(this.bossGold),
                 },

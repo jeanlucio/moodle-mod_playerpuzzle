@@ -341,7 +341,8 @@ class replay {
      * @param int $questionstotal Running lifetime question count (mutated in place as
      *  'question' events are consumed).
      * @return int|null The advanced event index, or null when the cascade could not be
-     *  resolved (a missing/mismatched question event, or the round cap was exceeded).
+     *  resolved (the swap itself matched nothing, a missing/mismatched question event, or
+     *  the round cap was exceeded).
      */
     private static function resolve_cascade(
         array &$grid,
@@ -360,7 +361,11 @@ class replay {
             board_engine::check_horizontal($grid, self::ROWS, self::COLS, $todestroy, $matchgroups);
             board_engine::check_vertical($grid, self::ROWS, self::COLS, $todestroy, $matchgroups);
             if (count($todestroy) === 0) {
-                return $eventindex;
+                // A swap that matches nothing is never a real move: the live client swaps it
+                // back and never records it, and the boss only ever picks a matching swap. On
+                // round 0 it therefore proves this simulated board has diverged from the one
+                // actually played, and every value derived from here on would be fiction.
+                return $round === 0 ? null : $eventindex;
             }
 
             $destroyedtypes = [];

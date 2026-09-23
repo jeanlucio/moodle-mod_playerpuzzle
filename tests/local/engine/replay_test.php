@@ -261,17 +261,37 @@ final class replay_test extends \advanced_testcase {
      * @return void
      */
     public function test_derive_returns_null_on_malformed_move_coordinates(): void {
-        // A move referencing the same cell twice is a no-op swap that still needs a real
-        // match to have been recorded — since the recorded log always corresponds to a swap
-        // board.js confirmed produced one, a self-swap here can never match the actual seed's
-        // board, so the simulation's own event bookkeeping (expecting further moves/questions
-        // that were never really produced) will not resolve to a real terminal state.
+        // A move referencing the same cell twice is a no-op swap, so it can never produce the
+        // match every recorded move must have produced on the live board.
         $attempt = $this->make_attempt([
             'rngseed' => 2,
             'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 0]]),
         ]);
 
         $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle()));
+    }
+
+    /**
+     * Tests that a recorded swap matching nothing on the simulated board stops the replay,
+     * instead of being applied and simulated past. The live client never records such a swap,
+     * so it proves the simulated board is not the one really played (a reload desync, a
+     * tampered log). Without this check, this exact log (an impossible first swap on seed 2's
+     * board, then a real one) resolved to a clean, conclusive "win" — a derived value
+     * describing a match that never happened.
+     *
+     * @return void
+     */
+    public function test_derive_returns_null_when_a_recorded_swap_matches_nothing(): void {
+        $attempt = $this->make_attempt([
+            'rngseed' => 2,
+            'movelog' => move_log::encode([
+                ['type' => 'move', 'r1' => 0, 'c1' => 2, 'r2' => 0, 'c2' => 3],
+                ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 2, 'c2' => 2],
+            ]),
+            'frozenbasebosshp' => 10,
+        ]);
+
+        $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle(['basestudenthp' => 100])));
     }
 
     /**

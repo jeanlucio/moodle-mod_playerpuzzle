@@ -279,4 +279,43 @@ final class transfer_hud_coins_test extends \advanced_testcase {
         $this->expectException(\core\exception\require_login_exception::class);
         transfer_hud_coins::execute($instance->cmid, 10);
     }
+
+    /**
+     * Opens the course to guest access and logs in as the guest account, as a visitor to
+     * such a course would be.
+     *
+     * @return void
+     */
+    private function log_in_as_course_guest(): void {
+        global $DB;
+
+        $plugin = enrol_get_plugin('guest');
+        $instance = $DB->get_record('enrol', ['courseid' => $this->course->id, 'enrol' => 'guest']);
+        if ($instance) {
+            $plugin->update_status($instance, ENROL_INSTANCE_ENABLED);
+        } else {
+            $plugin->add_instance($this->course, ['status' => ENROL_INSTANCE_ENABLED]);
+        }
+        $this->setGuestUser();
+    }
+
+    /**
+     * Tests that the guest account cannot transfer PlayerHUD coins into PuzzleCoin, for the
+     * same reason it cannot buy.
+     *
+     * @return void
+     */
+    public function test_transfer_rejects_the_guest_account(): void {
+        global $DB;
+
+        // No PlayerHUD item needed: the guest is turned away before the transfer looks at one.
+        $instance = $this->make_instance();
+        $this->log_in_as_course_guest();
+
+        $result = $this->call_transfer(['cmid' => $instance->cmid, 'amount' => 1]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('guestdemoonly', $result['exception']->errorcode);
+        $this->assertFalse($DB->record_exists('playerpuzzle_user_stock', ['userid' => guest_user()->id]));
+    }
 }

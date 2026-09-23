@@ -138,6 +138,7 @@ $string['grademethod_first'] = 'Primeira tentativa';
 $string['grademethod_help'] = 'Define como a nota final é calculada a partir das tentativas de partida do estudante (só no modo Partida Única): <ul><li><strong>Nota mais alta:</strong> a melhor pontuação entre todas as tentativas.</li><li><strong>Nota média:</strong> a média apenas das tentativas de fato realizadas.</li><li><strong>Primeira tentativa:</strong> a pontuação apenas da primeira tentativa.</li><li><strong>Última tentativa:</strong> a pontuação apenas da tentativa mais recente.</li><li><strong>Média sobre todas as partidas obrigatórias:</strong> a soma das pontuações das tentativas dividida pelo máximo de partidas configurado, de modo que qualquer partida não tentada conta como zero. Exige que o máximo de partidas não esteja definido como Ilimitado.</li></ul>';
 $string['grademethod_highest'] = 'Nota mais alta';
 $string['grademethod_last'] = 'Última tentativa';
+$string['guestdemoonly'] = 'Visitantes só podem jogar a Demo. Acesse com a sua própria conta para jogar valendo.';
 $string['hint'] = 'Dica';
 $string['hint_help'] = 'Opcional. Aparece pro estudante que comprar o consumível Dica da Questão enquanto esta pergunta estiver aberta.';
 $string['hintbutton'] = '💡 Dica ({$a} restantes)';

@@ -37,6 +37,23 @@ use stdClass;
  */
 class game_page_service {
     /**
+     * Keeps the guest account to the Demo. Every guest-access visitor of a course shares the
+     * one guest user record, so a real attempt, its coins and its grade could never be told
+     * apart between them; the Demo already counts for none of that. Same stance
+     * mod_playerwords takes by letting guests play a round that persists nothing.
+     *
+     * @param bool $isdemo Whether the requested fight is the Demo.
+     * @param moodle_url $returnurl Where the error page links back to.
+     * @return void
+     * @throws moodle_exception When the guest account asks for a real attempt.
+     */
+    public static function check_guest_demo_only(bool $isdemo, moodle_url $returnurl): void {
+        if (!$isdemo && isguestuser()) {
+            throw new moodle_exception('guestdemoonly', 'mod_playerpuzzle', $returnurl);
+        }
+    }
+
+    /**
      * Checks the attempt limit for the instance's own game mode, throwing when it has
      * already been reached. Campaign counts finished attempts against `maxattempts`
      * (failures/restarts across the whole campaign); Single Match counts finished

@@ -100,6 +100,11 @@
                     </h2>
                 </div>
 
+                {{#isguest}}
+                <p class="pp-lobby-note">{{guestdemoonlytext}}</p>
+                {{/isguest}}
+
+                {{^isguest}}
                 <div class="pp-lobby-stats">
                     <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -155,6 +160,7 @@
                     </button>
                 </div>
                 {{/hastransfer}}
+                {{/isguest}}
 
                 <div class="form-check pp-lobby-speech">
                     <input
@@ -166,6 +172,7 @@
                     <label class="form-check-label" for="pp-lobby-speech">{{speechlabel}}</label>
                 </div>
 
+                {{^isguest}}
                 <form method="post" action="{{{playurl}}}">
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
 
@@ -192,6 +199,7 @@
 
                     <button type="submit" class="pp-lobby-play">{{playtext}}</button>
                 </form>
+                {{/isguest}}
 
                 {{#showranking}}
                 <button type="button" class="pp-lobby-rankingopen" data-action="open-ranking" aria-controls="pp-lobby-ranking" aria-expanded="false">{{rankingbuttontext}}</button>

@@ -110,6 +110,12 @@ class lobby_page_service {
         $attempt = reset($inprogress) ?: null;
 
         $data['cmid'] = $cm->id;
+        // The guest account only gets the Demo (see game_page_service::check_guest_demo_only()),
+        // so the Lobby hides what only real play uses: the balance, shop, transfer and Play.
+        if (isguestuser($userid)) {
+            $data['isguest'] = true;
+            $data['guestdemoonlytext'] = get_string('guestdemoonly', 'mod_playerpuzzle');
+        }
         $data += self::build_shop_context((int) $course->id, $instance, $userid);
         $data += self::build_progress_context($instance, $attempt, $userid);
         $data += self::build_minquestions_context($instance);
@@ -131,7 +137,9 @@ class lobby_page_service {
      * @return array Empty when the ranking is off.
      */
     private static function build_ranking_context(stdClass $instance, stdClass $cm, int $userid): array {
-        if (empty($instance->show_ranking)) {
+        // Nor for the guest account: it names the class's students to anyone the course lets
+        // in as a visitor, the same people core keeps the participants list from.
+        if (empty($instance->show_ranking) || isguestuser($userid)) {
             return [];
         }
 

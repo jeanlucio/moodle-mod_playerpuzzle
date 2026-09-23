@@ -756,4 +756,26 @@ final class game_page_service_test extends \advanced_testcase {
         $this->assertNull($config['snapshot']);
         $this->assertSame([4, 5, 6], $config['combatstate']['boardgrid']);
     }
+
+    /**
+     * Tests that the guest account is kept to the Demo: a real attempt is refused, the Demo
+     * is allowed, and a real student is never affected.
+     *
+     * @return void
+     */
+    public function test_check_guest_demo_only(): void {
+        $this->setGuestUser();
+        game_page_service::check_guest_demo_only(true, $this->returnurl);
+
+        $this->setUser($this->student);
+        game_page_service::check_guest_demo_only(false, $this->returnurl);
+
+        $this->setGuestUser();
+        try {
+            game_page_service::check_guest_demo_only(false, $this->returnurl);
+            $this->fail('The guest account started a real attempt.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('guestdemoonly', $e->errorcode);
+        }
+    }
 }

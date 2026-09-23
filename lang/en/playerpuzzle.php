@@ -138,6 +138,7 @@ $string['grademethod_first'] = 'First attempt';
 $string['grademethod_help'] = 'Defines how the final grade is calculated from the student\'s match attempts (Single Match mode only): <ul><li><strong>Highest score:</strong> the best score among all attempts.</li><li><strong>Average score:</strong> the average of the attempts actually made.</li><li><strong>First attempt:</strong> the score of the first attempt only.</li><li><strong>Last attempt:</strong> the score of the most recent attempt only.</li><li><strong>Average over all required matches:</strong> the sum of attempt scores divided by the configured maximum matches, so any match not attempted counts as zero. Requires the maximum matches to not be set to Unlimited.</li></ul>';
 $string['grademethod_highest'] = 'Highest score';
 $string['grademethod_last'] = 'Last attempt';
+$string['guestdemoonly'] = 'Visitors can only play the Demo. Log in with your own account to play for real.';
 $string['hint'] = 'Hint';
 $string['hint_help'] = 'Optional. Shown to a student who buys the Question Hint consumable while this question is open.';
 $string['hintbutton'] = '💡 Hint ({$a} left)';

@@ -733,4 +733,25 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertArrayNotHasKey('showranking', $data);
         $this->assertArrayNotHasKey('rankingrows', $data);
     }
+
+    /**
+     * Tests that the guest account gets the Demo-only Lobby flag and its note, and no ranking
+     * (it would name the class's students to any visitor), while a student gets neither
+     * restriction.
+     *
+     * @return void
+     */
+    public function test_build_page_data_flags_the_guest_account(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $student = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id, $context);
+        $guest = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) guest_user()->id, $context);
+
+        $this->assertArrayNotHasKey('isguest', $student);
+        $this->assertTrue($student['showranking']);
+        $this->assertTrue($guest['isguest']);
+        $this->assertArrayNotHasKey('showranking', $guest);
+        $this->assertSame(get_string('guestdemoonly', 'mod_playerpuzzle'), $guest['guestdemoonlytext']);
+    }
 }

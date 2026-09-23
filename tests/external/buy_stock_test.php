@@ -254,4 +254,42 @@ final class buy_stock_test extends \advanced_testcase {
             \mod_playerpuzzle_recording_lock_factory::events_for('mod_playerpuzzle')
         );
     }
+
+    /**
+     * Opens the course to guest access and logs in as the guest account, as a visitor to
+     * such a course would be.
+     *
+     * @return void
+     */
+    private function log_in_as_course_guest(): void {
+        global $DB;
+
+        $plugin = enrol_get_plugin('guest');
+        $instance = $DB->get_record('enrol', ['courseid' => $this->course->id, 'enrol' => 'guest']);
+        if ($instance) {
+            $plugin->update_status($instance, ENROL_INSTANCE_ENABLED);
+        } else {
+            $plugin->add_instance($this->course, ['status' => ENROL_INSTANCE_ENABLED]);
+        }
+        $this->setGuestUser();
+    }
+
+    /**
+     * Tests that the guest account cannot buy: it only ever plays the Demo, which spends no
+     * stock, and a purchase would land on the one account every visitor shares.
+     *
+     * @return void
+     */
+    public function test_buy_stock_rejects_the_guest_account(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->log_in_as_course_guest();
+
+        $result = $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'potion']);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('guestdemoonly', $result['exception']->errorcode);
+        $this->assertFalse($DB->record_exists('playerpuzzle_user_stock', ['userid' => guest_user()->id]));
+    }
 }

@@ -905,6 +905,41 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that events the last checkpoint never sent, carried by the final call itself,
+     * reach the replay: nothing is stored beforehand, the claim undersells the match (1
+     * damage, no coins), and only the replay of the move sent with the call can produce the
+     * full 100% score and the 10 coins this seed-2 win is worth (see the test above).
+     *
+     * @return void
+     */
+    public function test_the_final_call_carries_the_events_the_replay_needs(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 10, 'bossdamage' => 10, 'coingain' => 10]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'rngseed', 2, ['token' => $token]);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 1,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+            'eventoffset'          => 0,
+            'movelog'              => [['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]],
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(10, $result['data']['coinsbanked']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertEqualsWithDelta(100.0, (float) $attempt->score, 0.001);
+        $this->assertSame(1, (int) $attempt->moveseq);
+    }
+
+    /**
      * Tests that a defeat does NOT satisfy completionwins, even though the attempt is now
      * finished — only completionattempts counts a loss towards its own threshold.
      *

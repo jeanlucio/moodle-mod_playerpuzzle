@@ -81,33 +81,45 @@ class save_combat_state extends external_api {
             'bossmana'           => new external_value(PARAM_INT, 'Boss Mana meter, 0-100'),
             'bossmultiplier'     => new external_value(PARAM_FLOAT, 'Boss Star multiplier'),
             'currentturn'        => new external_value(PARAM_ALPHA, 'Whose turn is next: player or boss'),
-            'moveseq'            => new external_value(PARAM_INT, 'Monotonic sequence number of this event-log batch'),
-            'movelog'            => new external_multiple_structure(
-                new external_single_structure([
-                    'type'    => new external_value(PARAM_ALPHA, "Event type: 'move', 'question' or 'consumable'"),
-                    'r1'      => new external_value(PARAM_INT, 'Row of the first swapped cell (move only)', VALUE_OPTIONAL),
-                    'c1'      => new external_value(PARAM_INT, 'Column of the first swapped cell (move only)', VALUE_OPTIONAL),
-                    'r2'      => new external_value(PARAM_INT, 'Row of the second swapped cell (move only)', VALUE_OPTIONAL),
-                    'c2'      => new external_value(PARAM_INT, 'Column of the second swapped cell (move only)', VALUE_OPTIONAL),
-                    'side'    => new external_value(
-                        PARAM_ALPHA,
-                        "Who answered: 'player' or 'boss' (question only)",
-                        VALUE_OPTIONAL
-                    ),
-                    'outcome' => new external_value(
-                        PARAM_ALPHA,
-                        "How the question ended: 'answered', 'skipped', 'unavailable' or 'failed' (question only)",
-                        VALUE_OPTIONAL
-                    ),
-                    'kind'    => new external_value(
-                        PARAM_ALPHA,
-                        "Which consumable was used: 'potion', 'shield', 'magic' or 'sword' (consumable only)",
-                        VALUE_OPTIONAL
-                    ),
-                ]),
-                'Combat events (board swaps, questions, consumable uses) since the last accepted checkpoint, in order'
-            ),
+            'eventoffset'        => new external_value(PARAM_INT, "Index in the phase's event log of this batch's first event"),
+            'movelog'            => self::movelog_structure(),
         ]);
+    }
+
+    /**
+     * Parameter structure of a batch of combat events, shared with the final save_progress/
+     * advance_phase calls, which carry whatever the last checkpoint had not sent yet.
+     *
+     * @return external_multiple_structure
+     */
+    public static function movelog_structure(): external_multiple_structure {
+        return new external_multiple_structure(
+            new external_single_structure([
+                'type'    => new external_value(PARAM_ALPHA, "Event type: 'move', 'question' or 'consumable'"),
+                'r1'      => new external_value(PARAM_INT, 'Row of the first swapped cell (move only)', VALUE_OPTIONAL),
+                'c1'      => new external_value(PARAM_INT, 'Column of the first swapped cell (move only)', VALUE_OPTIONAL),
+                'r2'      => new external_value(PARAM_INT, 'Row of the second swapped cell (move only)', VALUE_OPTIONAL),
+                'c2'      => new external_value(PARAM_INT, 'Column of the second swapped cell (move only)', VALUE_OPTIONAL),
+                'side'    => new external_value(
+                    PARAM_ALPHA,
+                    "Who answered: 'player' or 'boss' (question only)",
+                    VALUE_OPTIONAL
+                ),
+                'outcome' => new external_value(
+                    PARAM_ALPHA,
+                    "How the question ended: 'answered', 'skipped', 'unavailable' or 'failed' (question only)",
+                    VALUE_OPTIONAL
+                ),
+                'kind'    => new external_value(
+                    PARAM_ALPHA,
+                    "Which consumable was used: 'potion', 'shield', 'magic' or 'sword' (consumable only)",
+                    VALUE_OPTIONAL
+                ),
+            ]),
+            'Combat events (board swaps, questions, consumable uses) not yet sent, in order',
+            VALUE_DEFAULT,
+            []
+        );
     }
 
     /**
@@ -131,8 +143,8 @@ class save_combat_state extends external_api {
      * @param int $bossmana Boss Mana meter.
      * @param float $bossmultiplier Boss Star multiplier.
      * @param string $currentturn Whose turn is next.
-     * @param int $moveseq Monotonic sequence number of this event-log batch.
-     * @param array $movelog Combat events since the last accepted checkpoint, in order.
+     * @param int $eventoffset Index in the phase's event log of this batch's first event.
+     * @param array $movelog Combat events not yet confirmed stored, in order.
      * @return array Result with success.
      */
     public static function execute(
@@ -154,7 +166,7 @@ class save_combat_state extends external_api {
         int $bossmana,
         float $bossmultiplier,
         string $currentturn,
-        int $moveseq,
+        int $eventoffset,
         array $movelog
     ): array {
         global $DB, $USER;
@@ -178,7 +190,7 @@ class save_combat_state extends external_api {
             'bossmana'           => $bossmana,
             'bossmultiplier'     => $bossmultiplier,
             'currentturn'        => $currentturn,
-            'moveseq'            => $moveseq,
+            'eventoffset'        => $eventoffset,
             'movelog'            => $movelog,
         ]);
 
@@ -199,7 +211,7 @@ class save_combat_state extends external_api {
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
 
         $meters = $params;
-        unset($meters['cmid'], $meters['token'], $meters['boardgrid'], $meters['moveseq'], $meters['movelog']);
+        unset($meters['cmid'], $meters['token'], $meters['boardgrid'], $meters['eventoffset'], $meters['movelog']);
 
         // Locked: appending to the event log is a read-modify-write of the attempt row, which
         // must never interleave with another writer of that same row (a concurrent
@@ -209,38 +221,26 @@ class save_combat_state extends external_api {
             $params['token'],
             (int) $cm->instance,
             (int) $USER->id,
-            function (\stdClass $attempt) use ($DB, $params, $meters): bool {
+            function (\stdClass $attempt) use ($DB, $params, $meters): int {
                 $attempt->combatstate = combat_state::encode($params['boardgrid'], $meters);
 
-                // A sequence number no greater than what is already stored is a resend (the
-                // network retried, or sendBeacon fired after an earlier awaited call already
-                // landed) — the rest of the checkpoint above is applied as usual (idempotent
-                // by nature, since it is always a whole-state overwrite), but the event log
-                // itself is left untouched rather than risk double-recording events already
-                // accepted.
-                if ($params['moveseq'] > (int) $attempt->moveseq) {
-                    $existingevents = move_log::decode($attempt->movelog);
-                    if (!move_log::is_within_phase_budget(count($existingevents), count($params['movelog']))) {
-                        throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
-                    }
-                    $attempt->moveseq = $params['moveseq'];
-                    // Appended onto the phase's own cumulative log, never overwritten — a
-                    // replay needs the whole phase's event history, not just this
-                    // checkpoint's own batch, so it can walk forward from the phase's starting
-                    // board regardless of how many checkpoints (or reloads) happened in between.
-                    $attempt->movelog = move_log::encode(move_log::append($existingevents, $params['movelog']));
+                // The event log is merged by position (move_log::merge()), never overwritten:
+                // a replay needs the whole phase's history, and a resend must neither
+                // duplicate what is stored nor lose what came with it.
+                if (!move_log::merge_into_attempt($attempt, $params['eventoffset'], $params['movelog'])) {
+                    throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
                 }
 
                 $attempt->timemodified = time();
                 $DB->update_record('playerpuzzle_attempts', $attempt);
-                return true;
+                return (int) $attempt->moveseq;
             }
         );
         if ($result === false) {
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
 
-        return ['success' => true];
+        return ['success' => true, 'eventcount' => $result];
     }
 
     /**
@@ -250,7 +250,8 @@ class save_combat_state extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'success' => new external_value(PARAM_BOOL, 'Whether the checkpoint was saved'),
+            'success'    => new external_value(PARAM_BOOL, 'Whether the checkpoint was saved'),
+            'eventcount' => new external_value(PARAM_INT, "Events now stored in the phase's log — the offset to continue from"),
         ]);
     }
 }

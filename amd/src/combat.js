@@ -55,6 +55,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }]));
     }
 
+    // Mirrors move_log::MAX_EVENTS_PER_CHECKPOINT server-side.
+    const MAX_EVENTS_PER_CHECKPOINT = 200;
+
     class CombatHandler {
         constructor(scene, gameConfig, strings) {
             this.scene = scene;
@@ -146,15 +149,15 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // Seeded PRNG driving board generation/gravity/shuffle (board.js reads this via
             // this.rng, replacing what used to be plain Math.random calls) — deterministic
             // for a given seed, so a server-side replay of the recorded event log can
-            // reproduce the same board states. moveSeq/pendingMoveLog track what has been
-            // recorded locally but not yet confirmed saved (board swaps and resolved
-            // questions alike — see recordMove()/recordQuestionEvent()); sendCheckpoint()
-            // only clears the buffer once the server actually accepts it.
+            // reproduce the same board states. confirmedEvents is how many of this phase's
+            // events the server has stored (the offset the next batch starts at);
+            // pendingMoveLog holds the ones recorded since, until the server confirms them.
             this.rng = Prng.create(parseInt(gameConfig.rngseed, 10) || 0);
-            this.moveSeq = parseInt(gameConfig.moveseq, 10) || 0;
+            this.confirmedEvents = parseInt(gameConfig.moveseq, 10) || 0;
             this.pendingMoveLog = [];
 
             this._checkpointDirty = false;
+            this.matchSaved = false;
             this.startCheckpointing();
         }
 
@@ -262,7 +265,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          */
         sendCheckpoint(useBeacon) {
             const board = this.scene.board;
-            if (!board) {
+            if (!board || this.matchSaved) {
                 return;
             }
 
@@ -282,13 +285,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 }
             }
 
-            // Only bump the sequence number (and send a movelog at all) when something is
-            // actually pending — a resend of the same seq with an empty movelog would
-            // otherwise look identical to "nothing new happened" server-side, but sending the
-            // ALREADY-confirmed seq again is exactly the idempotent no-op that is meant to be.
-            const hasPendingMoves = this.pendingMoveLog.length > 0;
-            const sendingSeq = hasPendingMoves ? this.moveSeq + 1 : this.moveSeq;
-            const sendingMoveLog = this.pendingMoveLog;
+            // A batch is capped at the server's per-checkpoint limit; anything past it simply
+            // waits for the next checkpoint.
+            const sendingOffset = this.confirmedEvents;
+            const sendingMoveLog = this.pendingMoveLog.slice(0, MAX_EVENTS_PER_CHECKPOINT);
 
             const args = {
                 cmid: this.gameConfig.cmid,
@@ -309,34 +309,43 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 bossmana: Math.round(this.bossMana),
                 bossmultiplier: this.bossMultiplier,
                 currentturn: this.currentTurn,
-                moveseq: sendingSeq,
+                eventoffset: sendingOffset,
                 movelog: sendingMoveLog,
             };
 
             this._checkpointDirty = false;
 
             if (useBeacon) {
-                // Fire and forget, same as the rest of this checkpoint — there is no "next
-                // tick" left to retry from once the page is gone, so the buffer is cleared
-                // optimistically rather than left to leak into a session that no longer exists.
+                // Fire and forget: the buffer is kept, not cleared. A tab only backgrounded
+                // (not closed) comes back and resends it from the same offset, and the server
+                // stores each event exactly once whichever copy arrives first.
                 sendCheckpointBeacon(args);
-                this.moveSeq = sendingSeq;
-                this.pendingMoveLog = [];
+                this._checkpointDirty = true;
                 return;
             }
 
-            Ajax.call([{methodname: 'mod_playerpuzzle_save_combat_state', args}])[0].done(() => {
-                this.moveSeq = sendingSeq;
-                // Only remove the moves that were actually just sent — new ones may already
-                // have been recorded (a player kept playing while this call was in flight).
-                this.pendingMoveLog = this.pendingMoveLog.slice(sendingMoveLog.length);
+            Ajax.call([{methodname: 'mod_playerpuzzle_save_combat_state', args}])[0].done(res => {
+                this.confirmStoredEvents(res.eventcount);
             }).fail(() => {
                 // A missed periodic checkpoint is not user-visible and not worth retrying —
-                // the next tick (or the final beacon on exit) tries again with fresher state.
-                // moveSeq/pendingMoveLog are deliberately left untouched, so that retry resends
-                // this exact batch (plus anything recorded meanwhile) under the same target seq.
+                // the next tick (or the final beacon on exit) resends from the same offset.
                 this._checkpointDirty = true;
             });
+        }
+
+        /**
+         * Drops the events the server now reports as stored from the pending buffer. New
+         * events recorded while the call was in flight stay pending.
+         *
+         * @param {number} eventcount Events the server has stored for this phase.
+         */
+        confirmStoredEvents(eventcount) {
+            const stored = parseInt(eventcount, 10);
+            if (!(stored > this.confirmedEvents)) {
+                return;
+            }
+            this.pendingMoveLog = this.pendingMoveLog.slice(stored - this.confirmedEvents);
+            this.confirmedEvents = stored;
         }
 
         /**
@@ -1002,6 +1011,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         coinsearnedsofar: Math.round(this.playerGold),
                         bosscoinsearnedsofar: Math.round(this.bossGold),
                         difficulty: $('#pp-phase-difficulty').val() || 'normal',
+                        eventoffset: this.confirmedEvents,
+                        movelog: this.pendingMoveLog,
                     },
                 }])[0].done(onSuccess).fail(() => {
                     $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
@@ -1328,6 +1339,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const strings = this.strings;
             const viewurl = this.gameConfig.viewurl;
             me.input.enabled = false;
+            // The save_progress call below consumes the attempt's token and carries every event
+            // still pending, so any later checkpoint could only fail against the spent token.
+            this.matchSaved = true;
             me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
 
             // The boss's own Coin total (bossGold) never buys it anything — it exists purely to
@@ -1366,6 +1380,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     damage: this.damageDealt(),
                     coinsearnedsofar: Math.round(this.playerGold),
                     bosscoinsearnedsofar: Math.round(this.bossGold),
+                    eventoffset: this.confirmedEvents,
+                    movelog: this.pendingMoveLog,
                 },
             }])[0].done(res => {
                 const successMsg = strings.progresssaved.replace('{$a}', res.coinsbanked);

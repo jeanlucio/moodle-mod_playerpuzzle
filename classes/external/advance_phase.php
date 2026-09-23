@@ -34,6 +34,7 @@ use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\move_log;
 use mod_playerpuzzle\local\replay_credit;
 use mod_playerpuzzle\local\user_stock;
 use moodle_exception;
@@ -67,6 +68,13 @@ class advance_phase extends external_api {
                 VALUE_DEFAULT,
                 'normal'
             ),
+            'eventoffset'          => new external_value(
+                PARAM_INT,
+                "Index in the phase's event log of the first event in movelog",
+                VALUE_DEFAULT,
+                0
+            ),
+            'movelog'              => save_combat_state::movelog_structure(),
         ]);
     }
 
@@ -82,6 +90,8 @@ class advance_phase extends external_api {
      * @param int $coinsearnedsofar Player coins earned this phase, client-reported.
      * @param int $bosscoinsearnedsofar Boss coins earned this phase, client-reported.
      * @param string $difficulty Difficulty chosen for the next phase.
+     * @param int $eventoffset Index in the phase's event log of the first event in $movelog.
+     * @param array $movelog Combat events the last checkpoint had not sent yet, in order.
      * @return array Result with the new token, level, phase, difficulty, scaled boss/student HP, and coins banked.
      */
     public static function execute(
@@ -90,7 +100,9 @@ class advance_phase extends external_api {
         int $damage,
         int $coinsearnedsofar,
         int $bosscoinsearnedsofar,
-        string $difficulty = 'normal'
+        string $difficulty = 'normal',
+        int $eventoffset = 0,
+        array $movelog = []
     ): array {
         global $DB, $USER;
 
@@ -101,6 +113,8 @@ class advance_phase extends external_api {
             'coinsearnedsofar'     => $coinsearnedsofar,
             'bosscoinsearnedsofar' => $bosscoinsearnedsofar,
             'difficulty'           => $difficulty,
+            'eventoffset'          => $eventoffset,
+            'movelog'              => $movelog,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -139,6 +153,12 @@ class advance_phase extends external_api {
                     combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase),
                     (string) $attempt->difficulty
                 );
+
+                // The phase's last events usually land after the last periodic checkpoint, so
+                // they ride along with this call (see save_progress.php for the same step).
+                if (move_log::is_valid($params['movelog'])) {
+                    move_log::merge_into_attempt($attempt, $params['eventoffset'], $params['movelog']);
+                }
 
                 // Server-side replay: when the recorded seed/event log for this phase
                 // re-simulates to a conclusive result, that value drives both the win check

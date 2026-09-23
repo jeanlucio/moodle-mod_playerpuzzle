@@ -195,32 +195,40 @@ final class move_log_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that appending preserves order and simply concatenates.
+     * Tests that merging by position appends only what the stored log does not have yet —
+     * a fresh batch, a resend overlapping what is stored, and a batch past the end (ignored,
+     * it would leave a hole).
      *
      * @return void
      */
-    public function test_append_preserves_order(): void {
-        $existing = [['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]];
-        $incoming = [['type' => 'question', 'side' => 'player', 'outcome' => 'answered']];
+    public function test_merge_appends_only_events_past_the_stored_count(): void {
+        $a = ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1];
+        $b = ['type' => 'question', 'side' => 'player', 'outcome' => 'answered'];
+        $c = ['type' => 'consumable', 'kind' => 'potion'];
 
-        $this->assertSame(
-            [
-                ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1],
-                ['type' => 'question', 'side' => 'player', 'outcome' => 'answered'],
-            ],
-            move_log::append($existing, $incoming)
-        );
+        $this->assertSame([$a, $b], move_log::merge([$a], 1, [$b]));
+        $this->assertSame([$a, $b, $c], move_log::merge([$a, $b], 1, [$b, $c]));
+        $this->assertSame([$a, $b], move_log::merge([$a, $b], 0, [$a]));
+        $this->assertSame([$a], move_log::merge([$a], 3, [$c]));
     }
 
     /**
-     * Tests that the whole-phase budget accepts a total at or under the cap and rejects one
-     * over it.
+     * Tests that merging into an attempt keeps moveseq equal to the stored count, and refuses
+     * (leaving the attempt untouched) a result over the whole-phase budget.
      *
      * @return void
      */
-    public function test_is_within_phase_budget(): void {
-        $this->assertTrue(move_log::is_within_phase_budget(move_log::MAX_EVENTS_PER_PHASE - 1, 1));
-        $this->assertFalse(move_log::is_within_phase_budget(move_log::MAX_EVENTS_PER_PHASE, 1));
+    public function test_merge_into_attempt_tracks_the_count_and_the_phase_budget(): void {
+        $move = ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1];
+
+        $attempt = (object) ['movelog' => null, 'moveseq' => 0];
+        $this->assertTrue(move_log::merge_into_attempt($attempt, 0, [$move, $move]));
+        $this->assertSame(2, $attempt->moveseq);
+
+        $full = move_log::encode(array_fill(0, move_log::MAX_EVENTS_PER_PHASE, $move));
+        $attempt = (object) ['movelog' => $full, 'moveseq' => move_log::MAX_EVENTS_PER_PHASE];
+        $this->assertFalse(move_log::merge_into_attempt($attempt, move_log::MAX_EVENTS_PER_PHASE, [$move]));
+        $this->assertSame($full, $attempt->movelog);
     }
 
     /**

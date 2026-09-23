@@ -36,6 +36,7 @@ use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
+use mod_playerpuzzle\local\move_log;
 use mod_playerpuzzle\local\replay_credit;
 use mod_playerpuzzle\local\user_stock;
 use moodle_exception;
@@ -57,6 +58,13 @@ class save_progress extends external_api {
             'damage'               => new external_value(PARAM_INT, 'Damage dealt to the boss'),
             'coinsearnedsofar'     => new external_value(PARAM_INT, 'Player coins earned so far this phase/match, client-reported'),
             'bosscoinsearnedsofar' => new external_value(PARAM_INT, 'Boss coins earned so far this phase/match, client-reported'),
+            'eventoffset'          => new external_value(
+                PARAM_INT,
+                "Index in the phase's event log of the first event in movelog",
+                VALUE_DEFAULT,
+                0
+            ),
+            'movelog'              => save_combat_state::movelog_structure(),
         ]);
     }
 
@@ -71,6 +79,8 @@ class save_progress extends external_api {
      * @param int $damage Damage dealt to the boss.
      * @param int $coinsearnedsofar Player coins earned so far this phase/match, client-reported.
      * @param int $bosscoinsearnedsofar Boss coins earned so far this phase/match, client-reported.
+     * @param int $eventoffset Index in the phase's event log of the first event in $movelog.
+     * @param array $movelog Combat events the last checkpoint had not sent yet, in order.
      * @return array Result with status, message, and coins banked.
      */
     public static function execute(
@@ -79,7 +89,9 @@ class save_progress extends external_api {
         int $victory,
         int $damage,
         int $coinsearnedsofar,
-        int $bosscoinsearnedsofar
+        int $bosscoinsearnedsofar,
+        int $eventoffset = 0,
+        array $movelog = []
     ): array {
         global $DB, $USER;
 
@@ -90,6 +102,8 @@ class save_progress extends external_api {
             'damage'               => $damage,
             'coinsearnedsofar'     => $coinsearnedsofar,
             'bosscoinsearnedsofar' => $bosscoinsearnedsofar,
+            'eventoffset'          => $eventoffset,
+            'movelog'              => $movelog,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -140,6 +154,15 @@ class save_progress extends external_api {
         // Hard-mode loss is scored against the doubled boss HP it was really fighting. A Demo
         // attempt always fought the fixed combat::DEMO_HP instead, matching what the client
         // was actually shown for that fight.
+        // The phase's last events (the final move and whatever it triggered) usually land
+        // after the last periodic checkpoint, so they ride along with this call — without
+        // them the replay would only ever see a phase that had not ended yet. A malformed or
+        // oversized batch is simply not stored: it only costs this phase its verification,
+        // never the save itself.
+        if (move_log::is_valid($params['movelog'])) {
+            move_log::merge_into_attempt($attempt, $params['eventoffset'], $params['movelog']);
+        }
+
         $isdemo = (bool) $attempt->isdemo;
         $bosshp = $isdemo ? combat::DEMO_HP : combat::apply_difficulty(
             combat::calculate_boss_hp(

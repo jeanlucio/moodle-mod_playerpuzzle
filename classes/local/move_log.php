@@ -105,18 +105,6 @@ class move_log {
     }
 
     /**
-     * Whether the combined total of an existing stored log and an incoming batch stays within
-     * the whole-phase budget.
-     *
-     * @param int $existingcount Number of events already stored for this phase.
-     * @param int $incomingcount Number of events in the batch about to be appended.
-     * @return bool
-     */
-    public static function is_within_phase_budget(int $existingcount, int $incomingcount): bool {
-        return ($existingcount + $incomingcount) <= self::MAX_EVENTS_PER_PHASE;
-    }
-
-    /**
      * Validates a single event against the shape its own declared type requires.
      *
      * @param mixed $event One element of the raw events array.
@@ -146,15 +134,47 @@ class move_log {
     }
 
     /**
-     * Appends a validated batch of events onto an already-decoded existing log, preserving
-     * order — the whole point of keeping the log cumulative rather than overwriting it.
+     * Merges a client batch into the stored log by position: the batch says at which index of
+     * the phase's log its first event sits, and only the part the server does not already
+     * have is appended. A resend (the network retried, the response was lost, a beacon raced
+     * a periodic checkpoint) therefore never duplicates events nor drops the new ones sent
+     * along with it. A batch starting past the end of the stored log would leave a hole, so
+     * it is ignored — the client resends from the stored count on its next checkpoint.
      *
      * @param array $existing Already-stored events for this phase, decoded.
-     * @param array $incoming New events to append, already validated.
+     * @param int $offset Index in the phase's log of the batch's first event.
+     * @param array $incoming The batch, already validated.
      * @return array The combined, ordered event list.
      */
-    public static function append(array $existing, array $incoming): array {
-        return array_merge($existing, $incoming);
+    public static function merge(array $existing, int $offset, array $incoming): array {
+        $count = count($existing);
+        if ($offset < 0 || $offset > $count) {
+            return $existing;
+        }
+
+        return array_merge($existing, array_slice($incoming, $count - $offset));
+    }
+
+    /**
+     * Merges a validated client batch into an attempt's stored log (see merge()), keeping
+     * moveseq equal to the number of events stored — the offset the client continues from.
+     *
+     * @param \stdClass $attempt The attempt row (movelog/moveseq updated in place, not saved).
+     * @param int $offset Index in the phase's log of the batch's first event.
+     * @param array $incoming The batch, already validated with is_valid().
+     * @return bool False, leaving the attempt untouched, when the merged log would exceed the
+     *  whole-phase budget.
+     */
+    public static function merge_into_attempt(\stdClass $attempt, int $offset, array $incoming): bool {
+        $merged = self::merge(self::decode($attempt->movelog), $offset, $incoming);
+        if (count($merged) > self::MAX_EVENTS_PER_PHASE) {
+            return false;
+        }
+
+        $attempt->movelog = self::encode($merged);
+        $attempt->moveseq = count($merged);
+
+        return true;
     }
 
     /**

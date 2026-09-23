@@ -32,6 +32,7 @@ use core_external\external_value;
 use mod_playerpuzzle\local\attempt_questions;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\question_fetcher;
+use mod_playerpuzzle\local\engine\security;
 use moodle_exception;
 
 /**
@@ -98,15 +99,35 @@ class validate_answer extends external_api {
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
         $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $cm->instance], '*', MUST_EXIST);
 
-        $attempt = $DB->get_record('playerpuzzle_attempts', [
-            'token'          => $params['token'],
-            'playerpuzzleid' => (int) $playerpuzzle->id,
-            'userid'         => (int) $USER->id,
-            'status'         => 'inprogress',
-        ]);
-        if (!$attempt) {
+        // Locked: resolving a question is a read-modify-write of the attempt row (the question
+        // counters, the open question), which must never interleave with another writer of that
+        // same row — a checkpoint landing in between would otherwise be undone by, or undo,
+        // this whole-row write.
+        $result = security::with_locked_attempt(
+            $params['token'],
+            (int) $playerpuzzle->id,
+            (int) $USER->id,
+            fn(\stdClass $attempt): array => self::resolve($attempt, $playerpuzzle, $params, $context)
+        );
+        if ($result === false) {
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
+
+        return $result;
+    }
+
+    /**
+     * Resolves the attempt's open question for the player or the boss, with the attempt row
+     * already locked by the caller.
+     *
+     * @param \stdClass $attempt The locked, freshly re-fetched in-progress attempt.
+     * @param \stdClass $playerpuzzle The instance record.
+     * @param array $params The validated web service parameters.
+     * @param context_module $context The module context.
+     * @return array Result matrix, as returned by execute().
+     */
+    private static function resolve(\stdClass $attempt, \stdClass $playerpuzzle, array $params, context_module $context): array {
+        global $DB;
 
         $questionid = (int) $attempt->currentquestionid;
 

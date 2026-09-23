@@ -220,7 +220,25 @@ class security {
             $token = bin2hex(random_bytes(32));
             $attempt->token = $token;
             $attempt->timemodified = time();
-            $DB->update_record('playerpuzzle_attempts', $attempt);
+            // Only the rotated fields are written, under the same per-attempt lock every
+            // in-match writer holds: the page being reloaded may still have a checkpoint beacon
+            // in flight, and a whole-row write from either side would silently undo the
+            // other's (a reverted token breaks every call from the new page; a stale movelog
+            // drops recorded events).
+            $rotate = function () use ($DB, $attempt): bool {
+                $DB->update_record('playerpuzzle_attempts', (object) [
+                    'id' => $attempt->id,
+                    'token' => $attempt->token,
+                    'timemodified' => $attempt->timemodified,
+                ]);
+                return true;
+            };
+            // Note: a lock timeout must not leave the new page holding a token that was never
+            // stored, so the (still partial, still safe for every other column) write happens
+            // regardless.
+            if (self::with_attempt_lock((int) $attempt->id, $rotate) === false) {
+                $rotate();
+            }
 
             // A checkpoint with the boss already at 0 HP can only mean the phase was won and
             // the pagehide/beacon safety net (save_combat_state) persisted that instant, but
@@ -398,21 +416,37 @@ class security {
             return false;
         }
 
-        $factory = \core\lock\lock_config::get_lock_factory('mod_playerpuzzle');
-        $lock = $factory->get_lock('attempt_' . $candidate->id, self::LOCK_TIMEOUT_SECONDS);
-        if (!$lock) {
-            // Another request is already mutating this same attempt; whatever it decides,
-            // this request loses the race and must not also apply its own effect.
-            return false;
-        }
-
-        try {
+        // A lock timeout means another request is already mutating this same attempt; whatever
+        // it decides, this request loses the race and must not also apply its own effect.
+        return self::with_attempt_lock((int) $candidate->id, function () use ($DB, $params, $callback) {
             $attempt = $DB->get_record('playerpuzzle_attempts', $params);
             if (!$attempt) {
                 return false;
             }
 
             return $callback($attempt);
+        });
+    }
+
+    /**
+     * Runs a callback holding the per-attempt lock, keyed by attempt id — the one lock every
+     * writer of an attempt row shares, so a read-modify-write of the row (appending to its
+     * event log, rotating its token) never interleaves with another one.
+     *
+     * @param int $attemptid The attempt ID.
+     * @param callable $callback Returns whatever the caller wants back.
+     * @return mixed|false The callback's return value, or false if the lock could not be
+     *  acquired in time.
+     */
+    private static function with_attempt_lock(int $attemptid, callable $callback) {
+        $factory = \core\lock\lock_config::get_lock_factory('mod_playerpuzzle');
+        $lock = $factory->get_lock('attempt_' . $attemptid, self::LOCK_TIMEOUT_SECONDS);
+        if (!$lock) {
+            return false;
+        }
+
+        try {
+            return $callback();
         } finally {
             $lock->release();
         }

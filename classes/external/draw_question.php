@@ -31,6 +31,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\engine\question_fetcher;
+use mod_playerpuzzle\local\engine\security;
 use moodle_exception;
 
 /**
@@ -82,31 +83,36 @@ class draw_question extends external_api {
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
         $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $cm->instance], '*', MUST_EXIST);
 
-        $attempt = $DB->get_record('playerpuzzle_attempts', [
-            'token'          => $params['token'],
-            'playerpuzzleid' => (int) $playerpuzzle->id,
-            'userid'         => (int) $USER->id,
-            'status'         => 'inprogress',
-        ]);
-        if (!$attempt) {
+        // Locked: drawing writes the attempt's open question, a read-modify-write of the row
+        // that must never interleave with another writer of it (see save_combat_state.php).
+        $current = security::with_locked_attempt(
+            $params['token'],
+            (int) $playerpuzzle->id,
+            (int) $USER->id,
+            function (\stdClass $attempt) use ($DB, $playerpuzzle, $context): array {
+                $questionid = (int) $attempt->currentquestionid;
+                $current = $questionid > 0
+                    ? question_fetcher::get_single_question($questionid, (int) $playerpuzzle->id, $context)
+                    : null;
+
+                if ($current === null) {
+                    $questionid = question_fetcher::draw_random_question_id((int) $playerpuzzle->id);
+                    $attempt->currentquestionid = $questionid ?? 0;
+                    $attempt->timemodified = time();
+                    $DB->update_record('playerpuzzle_attempts', $attempt);
+
+                    $current = $questionid !== null
+                        ? question_fetcher::get_single_question($questionid, (int) $playerpuzzle->id, $context)
+                        : null;
+                }
+
+                return ['question' => $current];
+            }
+        );
+        if ($current === false) {
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
-
-        $questionid = (int) $attempt->currentquestionid;
-        $current = $questionid > 0
-            ? question_fetcher::get_single_question($questionid, (int) $playerpuzzle->id, $context)
-            : null;
-
-        if ($current === null) {
-            $questionid = question_fetcher::draw_random_question_id((int) $playerpuzzle->id);
-            $attempt->currentquestionid = $questionid ?? 0;
-            $attempt->timemodified = time();
-            $DB->update_record('playerpuzzle_attempts', $attempt);
-
-            $current = $questionid !== null
-                ? question_fetcher::get_single_question($questionid, (int) $playerpuzzle->id, $context)
-                : null;
-        }
+        $current = $current['question'];
 
         if ($current === null) {
             return [

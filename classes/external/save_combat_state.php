@@ -31,6 +31,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\combat_state;
+use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\move_log;
 use moodle_exception;
 
@@ -192,41 +193,47 @@ class save_combat_state extends external_api {
 
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
 
-        $attempt = $DB->get_record('playerpuzzle_attempts', [
-            'token'          => $params['token'],
-            'playerpuzzleid' => (int) $cm->instance,
-            'userid'         => (int) $USER->id,
-            'status'         => 'inprogress',
-        ]);
-        if (!$attempt) {
-            throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
-        }
-
         $meters = $params;
         unset($meters['cmid'], $meters['token'], $meters['boardgrid'], $meters['moveseq'], $meters['movelog']);
 
-        $attempt->combatstate = combat_state::encode($params['boardgrid'], $meters);
+        // Locked: appending to the event log is a read-modify-write of the attempt row, which
+        // must never interleave with another writer of that same row (a concurrent
+        // validate_answer, or the checkpoint beacon of a page being reloaded) — a whole-row
+        // write from either side would otherwise drop what the other just stored.
+        $result = security::with_locked_attempt(
+            $params['token'],
+            (int) $cm->instance,
+            (int) $USER->id,
+            function (\stdClass $attempt) use ($DB, $params, $meters): bool {
+                $attempt->combatstate = combat_state::encode($params['boardgrid'], $meters);
 
-        // A sequence number no greater than what is already stored is a resend (the network
-        // retried, or sendBeacon fired after an earlier awaited call already landed) — the
-        // rest of the checkpoint above is applied as usual (idempotent by nature, since it is
-        // always a whole-state overwrite), but the event log itself is left untouched rather
-        // than risk double-recording events already accepted.
-        if ($params['moveseq'] > (int) $attempt->moveseq) {
-            $existingevents = move_log::decode($attempt->movelog);
-            if (!move_log::is_within_phase_budget(count($existingevents), count($params['movelog']))) {
-                throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
+                // A sequence number no greater than what is already stored is a resend (the
+                // network retried, or sendBeacon fired after an earlier awaited call already
+                // landed) — the rest of the checkpoint above is applied as usual (idempotent
+                // by nature, since it is always a whole-state overwrite), but the event log
+                // itself is left untouched rather than risk double-recording events already
+                // accepted.
+                if ($params['moveseq'] > (int) $attempt->moveseq) {
+                    $existingevents = move_log::decode($attempt->movelog);
+                    if (!move_log::is_within_phase_budget(count($existingevents), count($params['movelog']))) {
+                        throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
+                    }
+                    $attempt->moveseq = $params['moveseq'];
+                    // Appended onto the phase's own cumulative log, never overwritten — a
+                    // replay needs the whole phase's event history, not just this
+                    // checkpoint's own batch, so it can walk forward from the phase's starting
+                    // board regardless of how many checkpoints (or reloads) happened in between.
+                    $attempt->movelog = move_log::encode(move_log::append($existingevents, $params['movelog']));
+                }
+
+                $attempt->timemodified = time();
+                $DB->update_record('playerpuzzle_attempts', $attempt);
+                return true;
             }
-            $attempt->moveseq = $params['moveseq'];
-            // Appended onto the phase's own cumulative log, never overwritten — a replay needs
-            // the whole phase's event history, not just this checkpoint's own batch, so it can
-            // walk forward from the phase's starting board regardless of how many checkpoints
-            // (or reloads) happened in between.
-            $attempt->movelog = move_log::encode(move_log::append($existingevents, $params['movelog']));
+        );
+        if ($result === false) {
+            throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
-
-        $attempt->timemodified = time();
-        $DB->update_record('playerpuzzle_attempts', $attempt);
 
         return ['success' => true];
     }

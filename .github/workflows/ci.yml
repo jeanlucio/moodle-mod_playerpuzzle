@@ -41,6 +41,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Moodle 5.3 is still beta with no MOODLE_503_STABLE branch yet (confirmed
+          # 23/09/2026) — main is the only way to test against it before that branch is cut,
+          # a moving target moodle-plugin-ci itself supports for exactly this. PHP 8.3 is
+          # main's own declared minimum (public/admin/environment.xml).
+          - {moodle-branch: 'main', php: '8.3', database: 'pgsql', runchecks: 'all'}
+          - {moodle-branch: 'main', php: '8.4', database: 'mariadb'}
           - {moodle-branch: 'MOODLE_502_STABLE', php: '8.3', database: 'pgsql', runchecks: 'all'}
           - {moodle-branch: 'MOODLE_502_STABLE', php: '8.3', database: 'pgsql', runchecks: 'all', noplayerhud: 'true'}
           - {moodle-branch: 'MOODLE_502_STABLE', php: '8.4', database: 'mariadb'}

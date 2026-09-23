@@ -24,9 +24,10 @@
  */
 
 /**
- * Behat data generator for mod_playerpuzzle, adding the "user stocks" entity: pre-seeded
- * loadout stock or PuzzleCoin balance, used to reach a shop state (owned units, spendable
- * coins) without clicking through a real purchase in a Given step.
+ * Behat data generator for mod_playerpuzzle: the "user stocks" entity (pre-seeded loadout
+ * stock or PuzzleCoin balance, to reach a shop state without clicking through a real
+ * purchase in a Given step) and the "attempts" entity (an in-progress attempt with a known
+ * PRNG seed, so a scenario can play a real match whose board, and outcome, are known).
  */
 class behat_mod_playerpuzzle_generator extends behat_generator_base {
     /**
@@ -40,6 +41,12 @@ class behat_mod_playerpuzzle_generator extends behat_generator_base {
                 'singular' => 'user stock',
                 'datagenerator' => 'user_stock',
                 'required' => ['playerpuzzle', 'user', 'consumabletype', 'quantity'],
+                'switchids' => ['playerpuzzle' => 'playerpuzzleid', 'user' => 'userid'],
+            ],
+            'attempts' => [
+                'singular' => 'attempt',
+                'datagenerator' => 'attempt',
+                'required' => ['playerpuzzle', 'user', 'rngseed'],
                 'switchids' => ['playerpuzzle' => 'playerpuzzleid', 'user' => 'userid'],
             ],
         ];

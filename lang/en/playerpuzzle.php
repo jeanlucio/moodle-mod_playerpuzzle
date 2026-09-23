@@ -122,6 +122,7 @@ $string['error_hud_cost_qty'] = 'The quantity must be at least 1 when an item is
 $string['event_game_completed'] = 'Game completed';
 $string['event_game_started'] = 'Game started';
 $string['event_replay_diverged'] = 'Server replay diverged from client report';
+$string['event_replay_inconclusive'] = 'Server replay could not verify a match';
 $string['gamemode'] = 'Game mode';
 $string['gamemode_campaign'] = 'Campaign';
 $string['gamemode_help'] = 'Campaign: the instance is a full game with levels and phases, HP scaling automatically as the student progresses. Single Match: the instance is one self-contained, repeatable match with no levels or phases.';

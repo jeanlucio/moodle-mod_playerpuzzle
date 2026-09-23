@@ -26,6 +26,7 @@
 namespace mod_playerpuzzle\local;
 
 use mod_playerpuzzle\event\replay_diverged;
+use mod_playerpuzzle\event\replay_inconclusive;
 
 /**
  * The seed-2/single-move-kill scenario reused here (rngseed 2, one recorded move at
@@ -108,8 +109,8 @@ final class replay_credit_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that an inconclusive replay leaves the claimed values completely unchanged, and
-     * fires no divergence event.
+     * Tests that an inconclusive replay leaves the claimed values completely unchanged, fires
+     * no divergence event, and records the unverified match through replay_inconclusive.
      *
      * @return void
      */
@@ -123,6 +124,34 @@ final class replay_credit_test extends \advanced_testcase {
         $this->assertCount(0, array_filter(
             $sink->get_events(),
             static fn($event): bool => $event instanceof replay_diverged
+        ));
+        $inconclusive = array_values(array_filter(
+            $sink->get_events(),
+            static fn($event): bool => $event instanceof replay_inconclusive
+        ));
+        $this->assertCount(1, $inconclusive);
+        $this->assertSame(
+            ['claimeddamage' => 42, 'claimedplayergold' => 7, 'claimedbossgold' => 3],
+            $inconclusive[0]->other
+        );
+    }
+
+    /**
+     * Tests that a Demo match, never verified by design, does not count as an unverified one.
+     *
+     * @return void
+     */
+    public function test_resolve_fires_no_inconclusive_event_for_a_demo(): void {
+        [$instance, $context] = $this->make_instance_and_context(['minquestions' => 0]);
+        $sink = $this->redirectEvents();
+        $attempt = $this->make_inconclusive_attempt();
+        $attempt->isdemo = 1;
+
+        replay_credit::resolve($attempt, $instance, $context, 42, 7, 3);
+
+        $this->assertCount(0, array_filter(
+            $sink->get_events(),
+            static fn($event): bool => $event instanceof replay_inconclusive
         ));
     }
 

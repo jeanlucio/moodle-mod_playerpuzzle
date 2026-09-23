@@ -27,6 +27,7 @@ namespace mod_playerpuzzle\local;
 
 use context_module;
 use mod_playerpuzzle\event\replay_diverged;
+use mod_playerpuzzle\event\replay_inconclusive;
 use mod_playerpuzzle\local\engine\replay;
 
 /**
@@ -34,7 +35,7 @@ use mod_playerpuzzle\local\engine\replay;
  * credited (a replay_diverged event is fired first if it disagrees with the client's own
  * claim, purely for observability — the derived value is credited either way). When it
  * cannot (a gap in the record, a version mismatch, a pathological input), the client's own
- * claim is returned unchanged, exactly as if this class did not exist — callers still apply
+ * claim is returned unchanged, and a real match fires replay_inconclusive — callers still apply
  * their own existing sanity clamps (the boss-HP cap, the coin ceiling) to whichever value
  * comes back, since a null from replay::derive() means "not verified", not "trust blindly".
  */
@@ -61,6 +62,17 @@ class replay_credit {
     ): array {
         $derived = replay::derive($attempt, $playerpuzzle);
         if ($derived === null) {
+            if (!(bool) $attempt->isdemo) {
+                replay_inconclusive::create([
+                    'objectid' => $attempt->id,
+                    'context' => $context,
+                    'other' => [
+                        'claimeddamage' => $claimeddamage,
+                        'claimedplayergold' => $claimedplayergold,
+                        'claimedbossgold' => $claimedbossgold,
+                    ],
+                ])->trigger();
+            }
             return [
                 'damage' => $claimeddamage,
                 'playergold' => $claimedplayergold,

@@ -41,7 +41,10 @@ use mod_playerpuzzle\local\sound_preferences;
  * per attempt, tied to the specific activity instance the attempt was made in; and in
  * playerpuzzle_user_stock (consumable units a student currently owns for an instance's
  * pre-match loadout). PlayerPuzzle keeps no currency data of its own — coins still live in
- * block_playerhud, which declares that personal data independently.
+ * block_playerhud, which declares that personal data independently. playerpuzzle_questions.
+ * addedby links a teacher/manager to the questions they authored — discovered, exported and,
+ * on deletion, anonymized in place (the question itself stays: it is course content other
+ * students still play against, not personal data).
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -225,6 +228,21 @@ class provider implements
             'userid'       => $userid,
         ]);
 
+        // A teacher/manager who only authored questions (never played) has no attempts or
+        // stock row at all, but addedby is still declared personal data — see get_metadata().
+        $questionssql = "SELECT ctx.id
+                            FROM {playerpuzzle_questions} pq
+                            JOIN {playerpuzzle} pp ON pp.id = pq.playerpuzzleid
+                            JOIN {modules} m ON m.name = :activityname
+                            JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                            JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
+                           WHERE pq.addedby = :userid";
+        $contextlist->add_from_sql($questionssql, [
+            'activityname' => 'playerpuzzle',
+            'modlevel'     => CONTEXT_MODULE,
+            'userid'       => $userid,
+        ]);
+
         return $contextlist;
     }
 
@@ -263,6 +281,19 @@ class provider implements
                        JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
                       WHERE ctx.id = :contextid";
         $userlist->add_from_sql('userid', $stocksql, [
+            'activityname' => 'playerpuzzle',
+            'modlevel'     => CONTEXT_MODULE,
+            'contextid'    => $context->id,
+        ]);
+
+        $questionssql = "SELECT pq.addedby AS userid
+                            FROM {playerpuzzle_questions} pq
+                            JOIN {playerpuzzle} pp ON pp.id = pq.playerpuzzleid
+                            JOIN {modules} m ON m.name = :activityname
+                            JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                            JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
+                           WHERE ctx.id = :contextid";
+        $userlist->add_from_sql('userid', $questionssql, [
             'activityname' => 'playerpuzzle',
             'modlevel'     => CONTEXT_MODULE,
             'contextid'    => $context->id,
@@ -421,6 +452,37 @@ class provider implements
                 (object) ['stock' => $stock]
             );
         }
+
+        $questionssql = "SELECT pq.id, pq.qtype, pq.questiontext, pq.source, pq.approved, pq.timecreated,
+                                 ctx.id AS contextid
+                            FROM {playerpuzzle_questions} pq
+                            JOIN {playerpuzzle} pp ON pp.id = pq.playerpuzzleid
+                            JOIN {modules} m ON m.name = 'playerpuzzle'
+                            JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                            JOIN {context} ctx ON ctx.instanceid = cm.id
+                           WHERE ctx.id $insql
+                             AND pq.addedby = :userid
+                        ORDER BY pq.id ASC";
+        $questionrecords = $DB->get_recordset_sql($questionssql, array_merge($inparams, ['userid' => $userid]));
+
+        $allquestions = [];
+        foreach ($questionrecords as $row) {
+            $allquestions[$row->contextid][] = (object) [
+                'qtype'        => $row->qtype,
+                'questiontext' => $row->questiontext,
+                'source'       => $row->source,
+                'approved'     => transform::yesno($row->approved),
+                'timecreated'  => transform::datetime($row->timecreated),
+            ];
+        }
+        $questionrecords->close();
+
+        foreach ($allquestions as $contextid => $questions) {
+            writer::with_context($contexts[$contextid])->export_data(
+                [get_string('privacy:metadata:playerpuzzle_questions', 'mod_playerpuzzle')],
+                (object) ['questions' => $questions]
+            );
+        }
     }
 
     /**
@@ -444,6 +506,7 @@ class provider implements
         self::delete_consumable_uses('playerpuzzleid = :ppid', ['ppid' => (int) $cm->instance]);
         $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $cm->instance]);
         $DB->delete_records('playerpuzzle_user_stock', ['playerpuzzleid' => $cm->instance]);
+        self::anonymize_question_authorship('playerpuzzleid = :ppid', ['ppid' => (int) $cm->instance]);
     }
 
     /**
@@ -483,6 +546,22 @@ class provider implements
     }
 
     /**
+     * Clears the authorship link on playerpuzzle_questions rows matching a WHERE clause,
+     * without touching the question itself: it is course content other students still play
+     * against, not personal data to erase. 0 is not a real user id, so it reads as "no
+     * longer attributed to anyone" wherever addedby might otherwise be shown or exported.
+     *
+     * @param string $where WHERE clause against {playerpuzzle_questions}.
+     * @param array $params Named parameters for the clause.
+     * @return void
+     */
+    private static function anonymize_question_authorship(string $where, array $params): void {
+        global $DB;
+
+        $DB->set_field_select('playerpuzzle_questions', 'addedby', 0, $where, $params);
+    }
+
+    /**
      * Delete all user data for the specified user, in the specified contexts.
      *
      * @param approved_contextlist $contextlist The approved contexts and user information to delete information for.
@@ -514,6 +593,10 @@ class provider implements
         self::delete_consumable_uses($where, $params);
         $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
         $DB->delete_records_select('playerpuzzle_user_stock', $where, $params);
+        self::anonymize_question_authorship('addedby = :userid AND playerpuzzleid ' . $insql, array_merge(
+            $inparams,
+            ['userid' => $userid]
+        ));
     }
 
     /**
@@ -546,5 +629,9 @@ class provider implements
         self::delete_consumable_uses($where, $params);
         $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
         $DB->delete_records_select('playerpuzzle_user_stock', $where, $params);
+        self::anonymize_question_authorship(
+            'playerpuzzleid = :playerpuzzleid AND addedby ' . $insql,
+            array_merge(['playerpuzzleid' => (int) $cm->instance], $inparams)
+        );
     }
 }

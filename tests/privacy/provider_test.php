@@ -81,6 +81,24 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
+     * Inserts one playerpuzzle_questions row authored by the given user.
+     *
+     * @param int $playerpuzzleid Activity instance ID.
+     * @param int $addedby The authoring user's ID.
+     * @return int Inserted question ID.
+     */
+    private function make_question(int $playerpuzzleid, int $addedby): int {
+        return \mod_playerpuzzle\local\questions_repository::add_question(
+            $playerpuzzleid,
+            'truefalse',
+            'Is this a question?',
+            '',
+            [['text' => 'True', 'iscorrect' => true], ['text' => 'False', 'iscorrect' => false]],
+            $addedby
+        );
+    }
+
+    /**
      * Tests that get_metadata declares the playerpuzzle_attempts table.
      *
      * @return void
@@ -805,5 +823,141 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         provider::get_users_in_context($userlist);
 
         $this->assertSame([], $userlist->get_userids());
+    }
+
+    /**
+     * Tests that get_contexts_for_userid finds a teacher who only authored a question, with
+     * no attempt or stock row at all.
+     *
+     * @return void
+     */
+    public function test_get_contexts_for_userid_finds_question_author(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->make_question((int) $cm->id, (int) $teacher->id);
+
+        $contextlist = provider::get_contexts_for_userid($teacher->id);
+
+        $expected = \context_module::instance($cm->cmid)->id;
+        $this->assertContains((string) $expected, $contextlist->get_contextids());
+    }
+
+    /**
+     * Tests that get_users_in_context finds a question author with no attempt or stock row.
+     *
+     * @return void
+     */
+    public function test_get_users_in_context_finds_question_author(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->make_question((int) $cm->id, (int) $teacher->id);
+
+        $userlist = new userlist(\context_module::instance($cm->cmid), 'mod_playerpuzzle');
+        provider::get_users_in_context($userlist);
+
+        $this->assertContains((int) $teacher->id, $userlist->get_userids());
+    }
+
+    /**
+     * Tests that export_user_data exports the questions a teacher authored, and never a
+     * question authored by someone else in the same activity.
+     *
+     * @return void
+     */
+    public function test_export_user_data_exports_authored_questions(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $teacher = $this->getDataGenerator()->create_user();
+        $otherteacher = $this->getDataGenerator()->create_user();
+        $this->make_question((int) $cm->id, (int) $teacher->id);
+        $this->make_question((int) $cm->id, (int) $otherteacher->id);
+
+        $context = \context_module::instance($cm->cmid);
+        $contextlist = new approved_contextlist($teacher, 'mod_playerpuzzle', [$context->id]);
+        provider::export_user_data($contextlist);
+
+        $data = writer::with_context($context)->get_data(
+            [get_string('privacy:metadata:playerpuzzle_questions', 'mod_playerpuzzle')]
+        );
+        $this->assertCount(1, $data->questions);
+        $this->assertSame('Is this a question?', $data->questions[0]->questiontext);
+    }
+
+    /**
+     * Tests that deleting a teacher's own data anonymizes the addedby of the questions they
+     * authored, while leaving the question itself (and another author's question) intact.
+     *
+     * @return void
+     */
+    public function test_delete_data_for_user_anonymizes_authored_questions(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $teacher = $this->getDataGenerator()->create_user();
+        $otherteacher = $this->getDataGenerator()->create_user();
+        $ownquestionid = $this->make_question((int) $cm->id, (int) $teacher->id);
+        $otherquestionid = $this->make_question((int) $cm->id, (int) $otherteacher->id);
+
+        $context = \context_module::instance($cm->cmid);
+        $contextlist = new approved_contextlist($teacher, 'mod_playerpuzzle', [$context->id]);
+        provider::delete_data_for_user($contextlist);
+
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle_questions', 'addedby', ['id' => $ownquestionid]));
+        $this->assertSame(
+            (int) $otherteacher->id,
+            (int) $DB->get_field('playerpuzzle_questions', 'addedby', ['id' => $otherquestionid])
+        );
+        $this->assertTrue($DB->record_exists('playerpuzzle_questions', ['id' => $ownquestionid]));
+    }
+
+    /**
+     * Tests that delete_data_for_users anonymizes the addedby of every listed user's
+     * questions in the given context, leaving an unlisted author's question untouched.
+     *
+     * @return void
+     */
+    public function test_delete_data_for_users_anonymizes_authored_questions(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $teachera = $this->getDataGenerator()->create_user();
+        $teacherb = $this->getDataGenerator()->create_user();
+        $questiona = $this->make_question((int) $cm->id, (int) $teachera->id);
+        $questionb = $this->make_question((int) $cm->id, (int) $teacherb->id);
+
+        $context = \context_module::instance($cm->cmid);
+        $userlist = new approved_userlist($context, 'mod_playerpuzzle', [$teachera->id]);
+        provider::delete_data_for_users($userlist);
+
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle_questions', 'addedby', ['id' => $questiona]));
+        $this->assertSame(
+            (int) $teacherb->id,
+            (int) $DB->get_field('playerpuzzle_questions', 'addedby', ['id' => $questionb])
+        );
+    }
+
+    /**
+     * Tests that delete_data_for_all_users_in_context anonymizes every question's addedby in
+     * that instance, while the questions themselves survive — they are still the activity's
+     * question bank.
+     *
+     * @return void
+     */
+    public function test_delete_data_for_all_users_in_context_anonymizes_question_authorship(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $teacher = $this->getDataGenerator()->create_user();
+        $questionid = $this->make_question((int) $cm->id, (int) $teacher->id);
+
+        provider::delete_data_for_all_users_in_context(\context_module::instance($cm->cmid));
+
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle_questions', 'addedby', ['id' => $questionid]));
+        $this->assertTrue($DB->record_exists('playerpuzzle_questions', ['id' => $questionid]));
     }
 }

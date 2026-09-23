@@ -411,6 +411,87 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a user with moodle/question:usemine but not moodle/question:useall in the
+     * category's own context only ever imports the questions they authored themselves —
+     * never another author's, even though the category as a whole is reachable to them.
+     *
+     * @return void
+     */
+    public function test_sync_only_imports_own_questions_without_useall(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+
+        $restrictedteacher = $this->getDataGenerator()->create_user();
+        $otherauthor = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($restrictedteacher->id, $this->course->id, 'editingteacher');
+
+        $ownquestion = $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => $restrictedteacher->id,
+        ]);
+        $otherquestion = $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => $otherauthor->id,
+        ]);
+
+        $restrictedrole = $this->getDataGenerator()->create_role();
+        $coursecontext = \context_course::instance($this->course->id);
+        assign_capability('mod/playerpuzzle:managequestions', CAP_ALLOW, $restrictedrole, $coursecontext);
+        assign_capability('moodle/question:usemine', CAP_ALLOW, $restrictedrole, $coursecontext);
+        // The editingteacher role enrolment above already carries useall/usemine on this
+        // category's course context; prohibit useall through the same restricted role so the
+        // net permission stays "usemine only", the exact shape the finding describes.
+        assign_capability('moodle/question:useall', CAP_PROHIBIT, $restrictedrole, $coursecontext);
+        role_assign($restrictedrole, $restrictedteacher->id, $coursecontext);
+        accesslib_clear_all_caches_for_unit_testing();
+
+        $this->setUser($restrictedteacher);
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(1, $stats->imported);
+        $rows = questions_repository::get_questions_for_instance((int) $this->instance->id);
+        $this->assertCount(1, $rows);
+
+        $ownentryid = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $ownquestion->id]);
+        $otherentryid = (int) $DB->get_field(
+            'question_versions',
+            'questionbankentryid',
+            ['questionid' => $otherquestion->id]
+        );
+        $imported = reset($rows);
+        $this->assertSame($ownentryid, (int) $imported->sourceid);
+        $this->assertNotSame($otherentryid, (int) $imported->sourceid);
+    }
+
+    /**
+     * Tests that a user with moodle/question:useall still imports every author's question in
+     * the category, as before — the restriction above only ever narrows a usemine-only user.
+     *
+     * @return void
+     */
+    public function test_sync_imports_every_author_with_useall(): void {
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $otherauthor = $this->getDataGenerator()->create_user();
+
+        $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => (int) $this->getDataGenerator()->create_user()->id,
+        ]);
+        $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => $otherauthor->id,
+        ]);
+
+        // The current admin user (left active by setUp()) carries useall everywhere.
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(2, $stats->imported);
+    }
+
+    /**
      * Tests that importing from a category outside every reachable context for this course
      * module is rejected, never silently reading it anyway.
      *

@@ -25,6 +25,7 @@
 
 namespace mod_playerpuzzle\local;
 
+use context;
 use context_course;
 use context_module;
 use core_question\local\bank\question_version_status;
@@ -92,7 +93,7 @@ class question_bank_sync {
      * @throws moodle_exception When the category is not reachable from this course module.
      */
     public static function sync_from_category(stdClass $cm, int $playerpuzzleid, int $categoryid): stdClass {
-        global $DB;
+        global $DB, $USER;
 
         if (!self::category_is_importable($categoryid, $cm)) {
             throw new moodle_exception('error_categorynotreusable', 'mod_playerpuzzle');
@@ -102,6 +103,26 @@ class question_bank_sync {
         $destcontext = context_module::instance($cm->id);
         $fs = get_file_storage();
 
+        // The reachability check above only guarantees useall OR usemine somewhere in the
+        // course — never which one. moodle/question:usemine grants only the questions the
+        // current user authored (core's own semantics, question_has_capability_on()); a
+        // category reachable through usemine alone must import that subset, not every
+        // author's questions. Only useall — checked directly against this specific
+        // category's own context, not any of the other reachable ones
+        // get_reusable_context_ids() found — unlocks the whole category. A teacher without
+        // useall here simply imports fewer questions than the category holds; nothing tells
+        // them so, the same silence a question_has_capability_on()-gated listing elsewhere
+        // in core gives.
+        $sourcecontext = context::instance_by_id($sourcecontextid);
+        $onlyown = !has_capability('moodle/question:useall', $sourcecontext);
+
+        $params = ['categoryid' => $categoryid, 'ready' => question_version_status::QUESTION_STATUS_READY];
+        $ownclause = '';
+        if ($onlyown) {
+            $ownclause = 'AND q.createdby = :createdby';
+            $params['createdby'] = (int) $USER->id;
+        }
+
         $rows = $DB->get_records_sql(
             "SELECT q.id AS questionid, q.qtype, q.questiontext, q.questiontextformat, qbe.id AS entryid
                FROM {question} q
@@ -110,10 +131,11 @@ class question_bank_sync {
               WHERE q.parent = 0
                 AND qbe.questioncategoryid = :categoryid
                 AND q.qtype IN ('multichoice', 'truefalse')
+                $ownclause
                 AND qv.version = (SELECT MAX(v2.version)
                                      FROM {question_versions} v2
                                     WHERE v2.questionbankentryid = qbe.id AND v2.status = :ready)",
-            ['categoryid' => $categoryid, 'ready' => question_version_status::QUESTION_STATUS_READY]
+            $params
         );
 
         $existingrows = $DB->get_records_select(

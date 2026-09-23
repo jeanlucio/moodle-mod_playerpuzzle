@@ -299,12 +299,12 @@ final class save_combat_state_test extends \advanced_testcase {
 
         $this->call_save_combat_state($this->valid_args($instance, $token, [
             'moveseq' => 1,
-            'movelog' => [['type' => 'question', 'side' => 'boss', 'correct' => false]],
+            'movelog' => [['type' => 'question', 'side' => 'boss', 'outcome' => 'answered']],
         ]));
 
         $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
         $this->assertSame(
-            [['type' => 'question', 'side' => 'boss', 'correct' => false]],
+            [['type' => 'question', 'side' => 'boss', 'outcome' => 'answered']],
             move_log::decode($attempt->movelog)
         );
     }

@@ -58,6 +58,29 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
     // Mirrors move_log::MAX_EVENTS_PER_CHECKPOINT server-side.
     const MAX_EVENTS_PER_CHECKPOINT = 200;
 
+    /**
+     * Makes one web service call, retrying a couple of times after a short pause before
+     * giving up. Only for calls that are safe to repeat — drawing a question re-serves the one
+     * already open, and a repeated boss guess finds no question left to judge — and whose
+     * failure would otherwise leave the match unverifiable, which no longer counts as a win.
+     *
+     * @param {object} request The core/ajax request ({methodname, args}).
+     * @param {number} attempts How many times to try in total.
+     * @returns {Promise<object>} The first successful response.
+     */
+    async function callWithRetry(request, attempts = 3) {
+        for (let i = 1; ; i++) {
+            try {
+                return await Ajax.call([request])[0];
+            } catch (error) {
+                if (i >= attempts) {
+                    throw error;
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000 * i));
+            }
+        }
+    }
+
     class CombatHandler {
         constructor(scene, gameConfig, strings) {
             this.scene = scene;
@@ -110,12 +133,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // Campaign attempt resuming a phase already partway through) must not forget coins
             // already earned this window.
             this.playerGold = parseInt(gameConfig.coinsearnedsofar, 10) || 0;
-            // Mirrors combat::coin_ceiling() — see clampedPlayerGold()'s own docblock for
-            // why the displayed total must clamp to this, not grow unbounded from board
-            // matches alone. Falls back to no ceiling at all (rather than 0, which would
-            // zero out the display) if the value is ever missing/invalid.
-            const parsedceiling = parseInt(gameConfig.coinceiling, 10);
-            this.coinCeiling = Number.isFinite(parsedceiling) ? parsedceiling : Infinity;
             this.playerShieldMeter = 0;
             this.playerShieldReady = false;
             this.playerMultiplier = 1;
@@ -546,7 +563,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 this.currentPlayerHp, this.maxPlayerHp,
                 this.playerPoisonMeter, this.playerPoisonRounds,
                 this.playerShieldMeter, this.playerShieldReady,
-                this.playerMana, this.clampedPlayerGold(), this.playerMultiplier
+                this.playerMana, Math.round(this.playerGold), this.playerMultiplier
             );
             this.scene.ui.updateBossBar(
                 this.currentHp, this.maxBossHp,
@@ -559,31 +576,15 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * The player's own gross earnings this window, clamped to this phase/match's coin
-         * ceiling — mirrors the same clamp coin_ledger::sync() applies server-side (the
-         * actual authority; this only drives the HUD coin display). Clamping here is
-         * mandatory, not cosmetic: without it, playerGold keeps growing unbounded from board
-         * matches alone, and the HUD would show a number the server was never going to
-         * honour at payout.
-         *
-         * @returns {number}
-         */
-        clampedPlayerGold() {
-            return Math.min(Math.round(this.playerGold), this.coinCeiling);
-        }
-
-        /**
          * The final reward this window would pay out right now: gross earnings minus the
-         * boss's own share, both clamped to the same coin ceiling as clampedPlayerGold() —
-         * mirrors coin_ledger::available() server-side (the actual authority for the real
-         * payout; this only drives the end-of-match/phase-complete screens' own preview).
+         * boss's own share — mirrors coin_ledger::available() server-side (the actual
+         * authority for the real payout; this only drives the end-of-match/phase-complete
+         * screens' own preview).
          *
          * @returns {number}
          */
         netCoinBalance() {
-            const earned = this.clampedPlayerGold();
-            const bossearned = Math.min(Math.round(this.bossGold), this.coinCeiling);
-            return Math.max(0, earned - bossearned);
+            return Math.max(0, Math.round(this.playerGold) - Math.round(this.bossGold));
         }
 
         /**
@@ -1050,7 +1051,23 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         eventoffset: this.confirmedEvents,
                         movelog: this.pendingMoveLog,
                     },
-                }])[0].done(onSuccess).fail(() => {
+                }])[0].done(res => {
+                    if (res.outcome === 'advanced') {
+                        onSuccess(res);
+                    } else if (res.outcome === 'restarted') {
+                        // The victory could not be verified: the phase starts over within this
+                        // same attempt, which the reloaded play.php resumes.
+                        $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
+                            .text(strings.victoryunverifiedrestart);
+                        Accessibility.announce(strings.victoryunverifiedrestart);
+                        me.time.delayedCall(4000, () => this.submitRestartForm());
+                    } else {
+                        // The replay found a defeat: record it as one, through the end screen.
+                        document.getElementById('playerpuzzle-phasecomplete').close();
+                        $('#playerpuzzle-phasecomplete').remove();
+                        this.showEndScreen(false);
+                    }
+                }).fail(() => {
                     $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
                         .text(strings.phaseadvanceerror);
                     $('#btn-pp-continue-phase, #btn-pp-exit-phase, #btn-pp-review-phase, #pp-phase-difficulty')
@@ -1103,7 +1120,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     // the same "no question" state a missing/empty pool always showed.
                     let question = {text: ctx.strings.questionerror, options: [], hashint: false};
                     try {
-                        const res = await Ajax.call([{
+                        const res = await callWithRetry({
                             methodname: 'mod_playerpuzzle_draw_question',
                             // The move that triggered this question is still pending (no
                             // checkpoint runs while cells are empty) and must be on record
@@ -1114,7 +1131,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 eventoffset: ctx.confirmedEvents,
                                 movelog: ctx.pendingMoveLog.slice(0, MAX_EVENTS_PER_CHECKPOINT),
                             },
-                        }])[0];
+                        });
                         ctx.confirmStoredEvents(res.eventcount);
                         if (res.available) {
                             question = {
@@ -1346,21 +1363,27 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     .off('click').on('click', closeModal);
                             };
 
-                            Ajax.call([{
-                                methodname: 'mod_playerpuzzle_validate_answer',
-                                args: {
-                                    cmid: ctx.gameConfig.cmid,
-                                    token: ctx.gameConfig.token,
-                                    answerid: 0,
-                                    forwhom: 'boss',
-                                },
-                            }])[0].done(res => {
-                                ctx.recordQuestionEvent('boss', 'answered');
-                                renderBossResult(!!res.correct, res.pickedanswerid || null);
-                            }).fail(() => {
-                                ctx.recordQuestionEvent('boss', 'failed');
-                                renderBossResult(false, null);
-                            });
+                            // Not awaited: the modal opens right away and the boss's answer
+                            // fills in once the server has drawn it.
+                            const resolveBossGuess = async() => {
+                                try {
+                                    const res = await callWithRetry({
+                                        methodname: 'mod_playerpuzzle_validate_answer',
+                                        args: {
+                                            cmid: ctx.gameConfig.cmid,
+                                            token: ctx.gameConfig.token,
+                                            answerid: 0,
+                                            forwhom: 'boss',
+                                        },
+                                    });
+                                    ctx.recordQuestionEvent('boss', 'answered');
+                                    renderBossResult(!!res.correct, res.pickedanswerid || null);
+                                } catch (error) {
+                                    ctx.recordQuestionEvent('boss', 'failed');
+                                    renderBossResult(false, null);
+                                }
+                            };
+                            resolveBossGuess();
                         }
 
                     } else {
@@ -1433,9 +1456,28 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     movelog: this.pendingMoveLog,
                 },
             }])[0].done(res => {
-                const successMsg = strings.progresssaved.replace('{$a}', res.coinsbanked);
-                $('#pp-save-status').removeClass('text-muted').addClass('text-success')
-                    .text(successMsg);
+                if (res.outcome === 'restarted') {
+                    // The victory could not be verified: the phase starts over within this
+                    // same attempt, which the reloaded play.php resumes.
+                    $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
+                        .text(strings.victoryunverifiedrestart);
+                    Accessibility.announce(strings.victoryunverifiedrestart);
+                    me.time.delayedCall(4000, () => this.submitRestartForm());
+                    return;
+                }
+                if (victory && res.outcome !== 'won') {
+                    // Shown as a victory, counted as a defeat (the replay found one, or could
+                    // not verify it with no restart left): say so instead of a plain save.
+                    $('#playerpuzzle-gameover h1').removeClass('text-success').addClass('text-danger')
+                        .text(strings.defeat);
+                    $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
+                        .text(res.message);
+                    Accessibility.announce(res.message);
+                } else {
+                    const successMsg = strings.progresssaved.replace('{$a}', res.coinsbanked);
+                    $('#pp-save-status').removeClass('text-muted').addClass('text-success')
+                        .text(successMsg);
+                }
                 $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
                 if (res.questionlog && res.questionlog.length > 0) {
                     $('#btn-pp-review').prop('hidden', false)

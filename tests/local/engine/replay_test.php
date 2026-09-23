@@ -147,7 +147,7 @@ final class replay_test extends \advanced_testcase {
 
         $result = replay::derive($attempt, $this->make_playerpuzzle());
 
-        $this->assertSame(['damage' => 10, 'playergold' => 15, 'bossgold' => 0], $result);
+        $this->assertSame(['damage' => 10, 'playergold' => 15, 'bossgold' => 0, 'bossdefeated' => true], $result);
     }
 
     /**
@@ -186,7 +186,7 @@ final class replay_test extends \advanced_testcase {
 
         $result = replay::derive($attempt, $this->make_playerpuzzle());
 
-        $this->assertSame(['damage' => 10, 'playergold' => 0, 'bossgold' => 0], $result);
+        $this->assertSame(['damage' => 10, 'playergold' => 0, 'bossgold' => 0, 'bossdefeated' => true], $result);
     }
 
     /**
@@ -229,6 +229,23 @@ final class replay_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a match the player loses is conclusive too, and says the boss survived: on
+     * seed 2, after a coin match, the boss's own turn finishes a 1 HP student.
+     *
+     * @return void
+     */
+    public function test_derive_resolves_a_real_defeat(): void {
+        $attempt = $this->make_attempt([
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 1, 'c2' => 4]]),
+        ]);
+
+        $result = replay::derive($attempt, $this->make_playerpuzzle(['basestudenthp' => 1]));
+
+        $this->assertSame(['damage' => 0, 'playergold' => 10, 'bossgold' => 0, 'bossdefeated' => false], $result);
+    }
+
+    /**
      * Tests that a used Hint — the one consumable type with no combat effect of its own — does
      * not, on its own, skip verification.
      *
@@ -253,7 +270,7 @@ final class replay_test extends \advanced_testcase {
 
         $result = replay::derive($attempt, $this->make_playerpuzzle());
 
-        $this->assertSame(['damage' => 10, 'playergold' => 15, 'bossgold' => 0], $result);
+        $this->assertSame(['damage' => 10, 'playergold' => 15, 'bossgold' => 0, 'bossdefeated' => true], $result);
     }
 
     /**
@@ -302,7 +319,7 @@ final class replay_test extends \advanced_testcase {
 
         $result = replay::derive($attempt, $this->make_playerpuzzle());
 
-        $this->assertSame(['damage' => 15, 'playergold' => 0, 'bossgold' => 0], $result);
+        $this->assertSame(['damage' => 15, 'playergold' => 0, 'bossgold' => 0, 'bossdefeated' => true], $result);
     }
 
     /**
@@ -438,7 +455,7 @@ final class replay_test extends \advanced_testcase {
         $right = replay::derive($this->make_seed56_attempt('answered', [['player', true, true]]), $pp);
         $wrong = replay::derive($this->make_seed56_attempt('answered', [['player', false, true]]), $pp);
 
-        $this->assertSame(['damage' => 40, 'playergold' => 25, 'bossgold' => 0], $right);
+        $this->assertSame(['damage' => 40, 'playergold' => 25, 'bossgold' => 0, 'bossdefeated' => true], $right);
         $this->assertNull($wrong);
     }
 
@@ -477,7 +494,7 @@ final class replay_test extends \advanced_testcase {
 
         $result = replay::derive($attempt, $this->make_playerpuzzle(['basestudenthp' => 100]));
 
-        $this->assertSame(['damage' => 10, 'playergold' => 25, 'bossgold' => 0], $result);
+        $this->assertSame(['damage' => 10, 'playergold' => 25, 'bossgold' => 0, 'bossdefeated' => true], $result);
     }
 
     /**
@@ -514,7 +531,8 @@ final class replay_test extends \advanced_testcase {
         ]);
 
         $pp = $this->make_playerpuzzle(['basestudenthp' => 100]);
-        $this->assertSame(['damage' => 10, 'playergold' => 25, 'bossgold' => 0], replay::derive($player, $pp));
+        $expected = ['damage' => 10, 'playergold' => 25, 'bossgold' => 0, 'bossdefeated' => true];
+        $this->assertSame($expected, replay::derive($player, $pp));
         $this->assertNull(replay::derive($boss, $this->make_playerpuzzle()));
     }
 
@@ -543,7 +561,7 @@ final class replay_test extends \advanced_testcase {
         ]);
         $withpool = replay::derive($attempt, $this->make_playerpuzzle(['id' => $instance->id, 'basestudenthp' => 100]));
 
-        $this->assertSame(['damage' => 10, 'playergold' => 25, 'bossgold' => 0], $empty);
+        $this->assertSame(['damage' => 10, 'playergold' => 25, 'bossgold' => 0, 'bossdefeated' => true], $empty);
         $this->assertNull($withpool);
     }
 

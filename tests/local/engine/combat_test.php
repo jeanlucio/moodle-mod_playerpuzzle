@@ -142,44 +142,6 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
-     * Tests coin_ceiling() scales with this phase's own boss HP relative to the scaled
-     * combo damage value — a stable per-phase value, not tied to damage actually dealt
-     * (see the method's own docblock for why a damage-dealt ceiling would wrongly floor to
-     * 0 before a student lands their first Sword hit).
-     *
-     * @return void
-     */
-    public function test_coin_ceiling(): void {
-        // Boss HP 100, a combo worth 10, coingain 10, Normal factor: (100/10)*10*1 = 100.
-        $this->assertSame(100, combat::coin_ceiling(100, 10, 10, 1.0));
-        // Hard triples the coin factor.
-        $this->assertSame(300, combat::coin_ceiling(100, 10, 10, 3.0));
-        // Easy halves it, floored.
-        $this->assertSame(50, combat::coin_ceiling(100, 10, 10, 0.5));
-        $this->assertSame(0, combat::coin_ceiling(0, 10, 10, 1.0));
-    }
-
-    /**
-     * Tests coin_ceiling() never divides by zero when the scaled boss damage is 0 (a
-     * teacher configuring 0 bossdamage) — the denominator floors to 1.
-     *
-     * @return void
-     */
-    public function test_coin_ceiling_guards_against_zero_bossdamage(): void {
-        $this->assertSame(1000, combat::coin_ceiling(100, 0, 10, 1.0));
-    }
-
-    /**
-     * Tests coin_ceiling() clamps a negative boss HP value to 0, never a negative
-     * ceiling — defensive only, this should never happen in practice.
-     *
-     * @return void
-     */
-    public function test_coin_ceiling_clamps_negative_bosshp(): void {
-        $this->assertSame(0, combat::coin_ceiling(-50, 10, 10, 1.0));
-    }
-
-    /**
      * Tests the fixed shop prices for every consumable type, and the fallback for an
      * unknown type.
      *

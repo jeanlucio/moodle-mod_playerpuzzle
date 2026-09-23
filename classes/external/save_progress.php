@@ -113,105 +113,101 @@ class save_progress extends external_api {
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
         $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $cm->instance], '*', MUST_EXIST);
 
-        $isvictory = $params['victory'] === 1;
-        $finalstatus = $isvictory ? 'won' : 'lost';
+        $claimedvictory = $params['victory'] === 1;
 
-        // Backstop against a claimed victory that bypasses the client-side boss-revive rule
-        // entirely (a forged request, or a genuine client bug) — checked before the token is
-        // consumed below, so a rejected claim leaves the attempt resumable instead of wasting
-        // it. The client should never actually reach this: the revive keeps the boss alive
-        // until enough questions are answered.
-        if ($isvictory) {
-            $pending = $DB->get_record('playerpuzzle_attempts', [
-                'token'          => $params['token'],
-                'playerpuzzleid' => (int) $playerpuzzle->id,
-                'userid'         => (int) $USER->id,
-                'status'         => 'inprogress',
-            ]);
-            if ($pending && (int) $pending->questions_total < (int) $playerpuzzle->minquestions) {
-                throw new moodle_exception('minquestionsnotmet', 'mod_playerpuzzle', '', (int) $playerpuzzle->minquestions);
-            }
-        }
-
-        $attempt = security::validate_and_consume_token(
+        // The verdict (and the attempt moving to its final status, or back to the start of the
+        // phase) happens under the attempt's lock: two requests racing the same token must
+        // never both finalize it — see security::with_locked_attempt()'s own docblock.
+        $result = security::with_locked_attempt(
             $params['token'],
             (int) $playerpuzzle->id,
             (int) $USER->id,
-            $finalstatus
+            function (\stdClass $attempt) use ($DB, $playerpuzzle, $params, $context, $claimedvictory): array {
+                // Backstop against a claimed victory that bypasses the client-side boss-revive
+                // rule entirely (a forged request, or a genuine client bug). Nothing has been
+                // written yet, so a rejected claim leaves the attempt resumable. The client
+                // should never actually reach this: the revive keeps the boss alive until
+                // enough questions are answered.
+                if ($claimedvictory && (int) $attempt->questions_total < (int) $playerpuzzle->minquestions) {
+                    throw new moodle_exception(
+                        'minquestionsnotmet',
+                        'mod_playerpuzzle',
+                        '',
+                        (int) $playerpuzzle->minquestions
+                    );
+                }
+
+                // The phase's last events (the final move and whatever it triggered) usually
+                // land after the last periodic checkpoint, so they ride along with this call —
+                // without them the replay would only ever see a phase that had not ended yet.
+                // A malformed or oversized batch is simply not stored.
+                if (move_log::is_valid($params['movelog'])) {
+                    move_log::merge_into_attempt($attempt, $params['eventoffset'], $params['movelog']);
+                }
+
+                $verdict = replay_credit::verdict(
+                    $attempt,
+                    $playerpuzzle,
+                    $context,
+                    $claimedvictory,
+                    $params['damage'],
+                    $params['coinsearnedsofar'],
+                    $params['bosscoinsearnedsofar']
+                );
+
+                if ($verdict['outcome'] === 'restart') {
+                    replay_credit::restart_phase($attempt, $playerpuzzle);
+                    $attempt->timemodified = time();
+                    $DB->update_record('playerpuzzle_attempts', $attempt);
+                    return ['attempt' => $attempt, 'verdict' => $verdict];
+                }
+
+                // Score against the boss HP this phase was really fought at: the frozen config
+                // the replay itself used (a teacher edit mid-phase changes neither), or the
+                // fixed Demo HP. Damage can never exceed it.
+                $bosshp = (bool) $attempt->isdemo ? combat::DEMO_HP : combat::apply_difficulty(
+                    combat::calculate_boss_hp(
+                        (int) $attempt->frozenbasebosshp ?: (int) $playerpuzzle->basebosshp,
+                        (int) $attempt->currentlevel,
+                        (int) $attempt->currentphase
+                    ),
+                    (string) $attempt->difficulty
+                );
+                $safedamage = max(0, min($verdict['damage'], $bosshp));
+                $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);
+                $attempt->score = round(($safedamage / max(1, $bosshp)) * 100, 5);
+
+                coin_ledger::sync($attempt, $verdict['playergold'], $verdict['bossgold']);
+                $attempt->status = $verdict['outcome'];
+                $attempt->timefinished = time();
+                $attempt->timemodified = $attempt->timefinished;
+                // The attempt just reached a final status — no fight left to resume.
+                $attempt->combatstate = null;
+                $DB->update_record('playerpuzzle_attempts', $attempt);
+
+                return ['attempt' => $attempt, 'verdict' => $verdict];
+            }
         );
-        if (!$attempt) {
+        if ($result === false) {
             // Token unknown, already consumed, or belongs to a different user/instance:
             // this is a replay or forged submission, not a coding mistake.
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
 
-        // Sanity check: damage can never exceed the boss HP the server itself calculated for
-        // the attempt's own level/phase and difficulty — never the raw configured base, which
-        // would wrongly cap every Campaign attempt to the Level 1, Phase 1 value regardless of
-        // how far the student actually progressed (Single Match always carries currentlevel =
-        // currentphase = 1, so the formula returns the base HP unchanged there). The same
-        // difficulty factor game_page_service used to build the fight is applied here, so a
-        // Hard-mode loss is scored against the doubled boss HP it was really fighting. A Demo
-        // attempt always fought the fixed combat::DEMO_HP instead, matching what the client
-        // was actually shown for that fight.
-        // The phase's last events (the final move and whatever it triggered) usually land
-        // after the last periodic checkpoint, so they ride along with this call — without
-        // them the replay would only ever see a phase that had not ended yet. A malformed or
-        // oversized batch is simply not stored: it only costs this phase its verification,
-        // never the save itself.
-        if (move_log::is_valid($params['movelog'])) {
-            move_log::merge_into_attempt($attempt, $params['eventoffset'], $params['movelog']);
+        $attempt = $result['attempt'];
+        if ($result['verdict']['outcome'] === 'restart') {
+            return [
+                'status'      => 'success',
+                'outcome'     => 'restarted',
+                'message'     => get_string('victoryunverifiedrestart', 'mod_playerpuzzle'),
+                'coinsbanked' => 0,
+                'questionlog' => [],
+            ];
         }
 
         $isdemo = (bool) $attempt->isdemo;
-        $bosshp = $isdemo ? combat::DEMO_HP : combat::apply_difficulty(
-            combat::calculate_boss_hp(
-                (int) $playerpuzzle->basebosshp,
-                (int) $attempt->currentlevel,
-                (int) $attempt->currentphase
-            ),
-            (string) $attempt->difficulty
-        );
-        // Server-side replay: when the recorded seed/event log for this phase re-simulates
-        // to a conclusive result, that value is used below instead of the client's own claim
-        // (never Demo, never a phase whose engine version has since changed — see
-        // replay::derive()'s own docblock). When it cannot, this returns the claimed values
-        // completely unchanged, and every clamp below still applies exactly as before.
-        $resolved = replay_credit::resolve(
-            $attempt,
-            $playerpuzzle,
-            $context,
-            $params['damage'],
-            $params['coinsearnedsofar'],
-            $params['bosscoinsearnedsofar']
-        );
-
-        $safedamage = max(0, min($resolved['damage'], $bosshp));
-        $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);
-        $attempt->score = round(($safedamage / max(1, $bosshp)) * 100, 5);
-
-        // Coin ledger: the amount actually banked below comes from coins_earned/boss_coins_earned,
-        // never from a raw client-reported gold total — the client's own report is only trusted
-        // up to a plausibility ceiling sized to this phase's own boss HP (a stable value, not
-        // tied to damage dealt — see combat::coin_ceiling()'s own docblock for why).
-        $scaledbossdamage = combat::apply_difficulty(
-            combat::calculate_boss_hp(
-                (int) $playerpuzzle->bossdamage,
-                (int) $attempt->currentlevel,
-                (int) $attempt->currentphase
-            ),
-            (string) $attempt->difficulty
-        );
-        $ceiling = combat::coin_ceiling(
-            $bosshp,
-            $scaledbossdamage,
-            (int) $playerpuzzle->coingain,
-            combat::difficulty_coin_factor((string) $attempt->difficulty)
-        );
-        coin_ledger::sync($attempt, $resolved['playergold'], $resolved['bossgold'], $ceiling);
-        // The attempt just reached a final status — no fight left to resume.
-        $attempt->combatstate = null;
-        $DB->update_record('playerpuzzle_attempts', $attempt);
+        $finalstatus = $attempt->status;
+        $isvictory = $finalstatus === 'won';
 
         $event = \mod_playerpuzzle\event\game_completed::create([
             'objectid' => $attempt->id,
@@ -280,9 +276,16 @@ class save_progress extends external_api {
             }
         }
 
+        // A claimed victory the replay found to be a defeat, or could not verify with no
+        // restart left, is reported as such — the client then shows a defeat, not a win.
+        $message = ($claimedvictory && !$isvictory && !$isdemo)
+            ? get_string('victoryunverifiedlost', 'mod_playerpuzzle')
+            : get_string('progresssaved', 'mod_playerpuzzle', $coinsbanked);
+
         return [
             'status'      => 'success',
-            'message'     => get_string('progresssaved', 'mod_playerpuzzle', $coinsbanked),
+            'outcome'     => $finalstatus,
+            'message'     => $message,
             'coinsbanked' => $coinsbanked,
             'questionlog' => attempt_questions::get_phase_log(
                 (int) $attempt->id,
@@ -300,6 +303,10 @@ class save_progress extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'status'      => new external_value(PARAM_ALPHA, 'Success status'),
+            'outcome'     => new external_value(
+                PARAM_ALPHA,
+                "How the match counted: 'won', 'lost', or 'restarted' (an unverifiable victory restarted the phase)"
+            ),
             'message'     => new external_value(PARAM_TEXT, 'Feedback message for the player'),
             'coinsbanked' => new external_value(PARAM_INT, 'PuzzleCoin banked this session'),
             'questionlog' => new external_multiple_structure(

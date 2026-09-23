@@ -31,6 +31,7 @@ use core_external\external_api;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
 use mod_playerpuzzle\local\move_log;
+use mod_playerpuzzle\local\replay_credit;
 use mod_playerpuzzle\local\user_stock;
 
 /**
@@ -117,6 +118,37 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
+     * Gives an attempt a phase the server-side replay verifies, as the live client's own log
+     * would: a seed and its recorded moves, with the frozen config they were played at. Boss
+     * HP and combo damage are frozen equal, so a single 3-Sword match finishes the boss at
+     * any level, phase or difficulty. The default is seed 2's one-move win (see
+     * tests/local/engine/replay_test.php): 15 coins for the player, none for the boss.
+     *
+     * @param string $token The attempt's token.
+     * @param int $seed The phase's PRNG seed.
+     * @param array $moves Recorded swaps, each [r1, c1, r2, c2].
+     * @return void
+     */
+    private function make_verified_phase(string $token, int $seed = 2, array $moves = [[3, 1, 3, 2]]): void {
+        global $DB;
+
+        $events = array_map(
+            static fn(array $m): array => ['type' => 'move', 'r1' => $m[0], 'c1' => $m[1], 'r2' => $m[2], 'c2' => $m[3]],
+            $moves
+        );
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token], MUST_EXIST);
+        $DB->update_record('playerpuzzle_attempts', (object) [
+            'id' => $attemptid,
+            'rngseed' => $seed,
+            'movelog' => move_log::encode($events),
+            'moveseq' => count($events),
+            'frozenbasebosshp' => 10,
+            'frozenbossdamage' => 10,
+            'frozencoingain' => 10,
+        ]);
+    }
+
+    /**
      * Calls the mod_playerpuzzle_save_progress web service through the real dispatch
      * path, exercising sesskey, capability and parameter validation.
      *
@@ -129,8 +161,8 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a victory credits PuzzleCoin, from the coin ledger's own available balance
-     * rather than a raw client-reported gold total — and never auto-credits the configured
+     * Tests that a victory credits PuzzleCoin, from the replay-verified coin total
+     * rather than a raw client-reported one — and never auto-credits the configured
      * PlayerHUD coin item, even though one is configured: PlayerHUD coins only ever reach
      * PuzzleCoin through an explicit, student-initiated transfer.
      *
@@ -142,6 +174,7 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
@@ -153,9 +186,9 @@ final class save_progress_test extends \advanced_testcase {
         ]);
 
         $this->assertFalse($result['error']);
-        $this->assertSame(42, $result['data']['coinsbanked']);
+        $this->assertSame(15, $result['data']['coinsbanked']);
         $this->assertSame(
-            42,
+            15,
             user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
         );
         $this->assertSame(0, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
@@ -173,6 +206,7 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
@@ -184,9 +218,9 @@ final class save_progress_test extends \advanced_testcase {
         ]);
 
         $this->assertFalse($result['error']);
-        $this->assertSame(42, $result['data']['coinsbanked']);
+        $this->assertSame(15, $result['data']['coinsbanked']);
         $this->assertSame(
-            42,
+            15,
             user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
         );
     }
@@ -219,6 +253,7 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
@@ -266,6 +301,7 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
@@ -386,44 +422,13 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that reported damage is clamped to the instance's own basebosshp, never
-     * trusting a client-reported value beyond what the server itself configured.
+     * Tests that a verified win scores full marks against the boss HP the phase was really
+     * fought at — scaled for the attempt's own level/phase from the frozen config — whatever
+     * damage the client claims.
      *
      * @return void
      */
-    public function test_damage_is_clamped_to_basebosshp(): void {
-        global $DB;
-
-        $instance = $this->make_instance(['basebosshp' => 1000]);
-
-        $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
-
-        $result = $this->call_save_progress([
-            'cmid'                 => $instance->cmid,
-            'token'                => $token,
-            'victory'              => 1,
-            'damage'               => 999999,
-            'coinsearnedsofar'     => 0,
-            'bosscoinsearnedsofar' => 0,
-        ]);
-
-        $this->assertFalse($result['error']);
-        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
-        $this->assertSame(0, (int) $attempt->bosshp_remaining);
-        $this->assertEqualsWithDelta(100.0, (float) $attempt->score, 0.001);
-    }
-
-    /**
-     * Tests that the damage clamp uses the boss HP scaled for the attempt's own
-     * level/phase (combat::calculate_boss_hp()), not the raw configured base — a
-     * student mid-Campaign at Level 5, Phase 1 has a boss with 300 HP (basebosshp=100),
-     * not 100. Before this was fixed, every Campaign attempt past Level 1 Phase 1 was
-     * wrongly capped to the base value.
-     *
-     * @return void
-     */
-    public function test_damage_is_clamped_to_phase_scaled_hp_not_base(): void {
+    public function test_a_verified_win_scores_full_marks_against_the_phase_hp(): void {
         global $DB;
 
         $instance = $this->make_instance(['basebosshp' => 100]);
@@ -431,42 +436,76 @@ final class save_progress_test extends \advanced_testcase {
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', 5, ['token' => $token]);
-        $DB->set_field('playerpuzzle_attempts', 'currentphase', 1, ['token' => $token]);
+        $this->make_verified_phase($token);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
             'token'                => $token,
             'victory'              => 1,
-            'damage'               => 250,
+            'damage'               => 1,
             'coinsearnedsofar'     => 0,
             'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
+        $this->assertSame('won', $result['data']['outcome']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
-        // Boss HP at Level 5, Phase 1 with basebosshp=100 is 300.
-        // 250 damage is well within that, so it must not be clamped down to 100.
-        $this->assertSame(50, (int) $attempt->bosshp_remaining);
-        $this->assertEqualsWithDelta(83.33333, (float) $attempt->score, 0.001);
+        $this->assertSame('won', $attempt->status);
+        $this->assertSame(0, (int) $attempt->bosshp_remaining);
+        $this->assertEqualsWithDelta(100.0, (float) $attempt->score, 0.001);
     }
 
     /**
-     * Tests that the damage clamp also applies the run's difficulty factor: on Hard the
-     * boss has double the HP, so a partial run is scored against that doubled total rather
-     * than being wrongly capped at 100% for the Normal-sized boss.
+     * Tests that a defeat the replay cannot verify to the end is scored by the damage its log
+     * still vouches for, against the phase-scaled HP — never by the claim. Seed 2's kill move
+     * against a 1000 HP boss (frozen) at Level 5, Phase 1: everything scales x3, so the
+     * verified Sword match deals 30 of 3000.
      *
      * @return void
      */
-    public function test_damage_clamp_respects_difficulty(): void {
+    public function test_an_unverifiable_defeat_scores_only_the_verified_damage(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 5, ['token' => $token]);
+        $this->make_verified_phase($token);
+        $DB->set_field('playerpuzzle_attempts', 'frozenbasebosshp', 1000, ['token' => $token]);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 2999,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame('lost', $result['data']['outcome']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame(2970, (int) $attempt->bosshp_remaining);
+        $this->assertEqualsWithDelta(1.0, (float) $attempt->score, 0.001);
+    }
+
+    /**
+     * Tests that scoring applies the run's difficulty factor: on Hard the boss has double the
+     * HP (and deals double damage), so the same verified Sword match is 20 of 2000.
+     *
+     * @return void
+     */
+    public function test_scoring_respects_difficulty(): void {
         global $DB;
 
         $instance = $this->make_instance(['basebosshp' => 100]);
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard', 1, 1);
+        $this->make_verified_phase($token);
+        $DB->set_field('playerpuzzle_attempts', 'frozenbasebosshp', 1000, ['token' => $token]);
 
-        // Hard boss HP at Level 1, Phase 1 with basebosshp=100 is 200. 150 damage is a
-        // 75% dent — the score, not a clamped-to-100 100%.
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
             'token'                => $token,
@@ -478,8 +517,8 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
-        $this->assertSame(50, (int) $attempt->bosshp_remaining);
-        $this->assertEqualsWithDelta(75.0, (float) $attempt->score, 0.001);
+        $this->assertSame(1980, (int) $attempt->bosshp_remaining);
+        $this->assertEqualsWithDelta(1.0, (float) $attempt->score, 0.001);
     }
 
     /**
@@ -518,6 +557,7 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token);
 
         $args = [
             'cmid'                 => $instance->cmid,
@@ -648,35 +688,99 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the amount banked is capped by the plausibility ceiling — sized to this
-     * phase's own boss HP, not to damage actually dealt — a client reporting far more
-     * coins than the phase could plausibly be worth only gets credit up to the ceiling,
-     * never the inflated raw report.
+     * Tests that a victory the replay cannot verify restarts the phase within the same
+     * attempt: nothing banked, the attempt still in progress on a fresh seed, the same token
+     * still valid, and one restart counted.
      *
      * @return void
      */
-    public function test_coin_ceiling_caps_an_inflated_report(): void {
-        [$biid, $itemid] = $this->make_hud_item();
-        // Bossdamage/coingain default to 10 (generator); at Level 1 Phase 1 with Normal
-        // difficulty the scaled combo damage is 10 too, so with basebosshp overridden to
-        // 500, the ceiling is floor((500/10) * 10 * 1.0) = 500 — comfortably below the
-        // 99999 reported here.
-        $instance = $this->make_instance(['hud_coin_item' => $itemid, 'basebosshp' => 500]);
+    public function test_an_unverifiable_victory_restarts_the_phase(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
 
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 1);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $before = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
             'token'                => $token,
             'victory'              => 1,
-            'damage'               => 500,
+            'damage'               => 1000,
             'coinsearnedsofar'     => 99999,
             'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
-        $this->assertSame(500, $result['data']['coinsbanked']);
+        $this->assertSame('restarted', $result['data']['outcome']);
+        $this->assertSame(0, $result['data']['coinsbanked']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $before->id], '*', MUST_EXIST);
+        $this->assertSame('inprogress', $attempt->status);
+        $this->assertSame($token, $attempt->token);
+        $this->assertSame(1, (int) $attempt->phaserestarts);
+        $this->assertSame(0, user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE));
+    }
+
+    /**
+     * Tests that an unverifiable victory with no restart left counts as a defeat, and says so.
+     *
+     * @return void
+     */
+    public function test_an_unverifiable_victory_counts_as_lost_once_restarts_run_out(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $DB->set_field('playerpuzzle_attempts', 'phaserestarts', replay_credit::MAX_PHASE_RESTARTS, ['token' => $token]);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 99999,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame('lost', $result['data']['outcome']);
+        $this->assertSame(get_string('victoryunverifiedlost', 'mod_playerpuzzle'), $result['data']['message']);
+        $this->assertSame('lost', $DB->get_field('playerpuzzle_attempts', 'status', ['token' => $token]));
+        $this->assertSame(0, $result['data']['coinsbanked']);
+    }
+
+    /**
+     * Tests that a claimed victory the replay verifies as a defeat is recorded as one: on
+     * seed 2, a coin match then the boss's turn finishes a 1 HP student.
+     *
+     * @return void
+     */
+    public function test_a_claimed_victory_the_replay_finds_lost_counts_as_lost(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basestudenthp' => 1]);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token, 2, [[0, 4, 1, 4]]);
+        $DB->set_field('playerpuzzle_attempts', 'frozenbasebosshp', 1000, ['token' => $token]);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 10,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame('lost', $result['data']['outcome']);
+        $this->assertSame('lost', $DB->get_field('playerpuzzle_attempts', 'status', ['token' => $token]));
+        $this->assertSame(0, $result['data']['coinsbanked']);
     }
 
     /**
@@ -756,7 +860,7 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the boss's own reported coin gain nets against the player's before
+     * Tests that the boss's own coin gain nets against the player's before
      * payout — the boss's combos never bank anything for itself, they only reduce what
      * the student takes home.
      *
@@ -768,18 +872,21 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        // Seed 20: a first match, the boss's turn earns it 10 coins, then the finishing
+        // Sword match — 20 coins for the player in all.
+        $this->make_verified_phase($token, 20, [[2, 6, 2, 7], [3, 4, 3, 5]]);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
             'token'                => $token,
             'victory'              => 1,
             'damage'               => 500,
-            'coinsearnedsofar'     => 30,
+            'coinsearnedsofar'     => 20,
             'bosscoinsearnedsofar' => 10,
         ]);
 
         $this->assertFalse($result['error']);
-        $this->assertSame(20, $result['data']['coinsbanked']);
+        $this->assertSame(10, $result['data']['coinsbanked']);
     }
 
     /**
@@ -835,6 +942,7 @@ final class save_progress_test extends \advanced_testcase {
         ]);
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
@@ -859,15 +967,8 @@ final class save_progress_test extends \advanced_testcase {
      * one tests/local/engine/replay_test.php locks in as always deriving damage 10, playergold
      * 15, bossgold 0 (a single Sword-match kill of a 10 HP boss, with an incidental Coin match
      * in the same cascade) — see that test's own docblock for where those numbers come from.
-     * The banked amount here is 10, not 15: with basebosshp/bossdamage/coingain all equal to
-     * 10, combat::coin_ceiling() itself works out to exactly 10 (a structural property of this
-     * specific 1:1 configuration, not a replay bug) — the ceiling clamp still applies to a
-     * replay-derived value exactly as it always applied to a claimed one. What this test
-     * actually proves is that the derived truth (10/10), not the forged claim (99999/99999),
-     * is what reaches both the persisted attempt row and the banked total; the case where a
-     * replay-derived value differs from an inflated-but-still-plausible claim (i.e. one the
-     * old ceiling-only check would itself have accepted) is covered directly, with a
-     * deliberately generous ceiling, by replay_credit_test.php.
+     * The derived truth (10 damage, 15 coins), not the forged claim (99999/99999), is what
+     * reaches both the persisted attempt row and the banked total.
      *
      * @return void
      */
@@ -898,7 +999,7 @@ final class save_progress_test extends \advanced_testcase {
         ]);
 
         $this->assertFalse($result['error']);
-        $this->assertSame(10, $result['data']['coinsbanked']);
+        $this->assertSame(15, $result['data']['coinsbanked']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
         $this->assertSame(0, (int) $attempt->bosshp_remaining);
         $this->assertEqualsWithDelta(100.0, (float) $attempt->score, 0.001);
@@ -933,7 +1034,7 @@ final class save_progress_test extends \advanced_testcase {
         ]);
 
         $this->assertFalse($result['error']);
-        $this->assertSame(10, $result['data']['coinsbanked']);
+        $this->assertSame(15, $result['data']['coinsbanked']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
         $this->assertEqualsWithDelta(100.0, (float) $attempt->score, 0.001);
         $this->assertSame(1, (int) $attempt->moveseq);

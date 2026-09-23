@@ -164,6 +164,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $documentedexclusions = [
             'playerpuzzleid', 'token', 'timemodified', 'isdemo', 'currentquestionid',
             'rngseed', 'moveseq', 'engineversion', 'frozenbasebosshp', 'frozenbossdamage', 'frozencoingain',
+            'phaserestarts',
         ];
 
         $collection = provider::get_metadata(new collection('mod_playerpuzzle'));

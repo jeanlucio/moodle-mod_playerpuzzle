@@ -221,20 +221,6 @@ class game_page_service {
             );
         }
 
-        // Mirrors combat::coin_ceiling(), the same plausibility ceiling save_progress.php/
-        // advance_phase.php independently recompute server-side on every call. Sent to the
-        // client purely so its own coin display can match that ceiling — without it, the
-        // client's own playerGold tracker grows unbounded from board matches and shows a
-        // number the server was never going to honour at payout. Recomputed fresh on every
-        // play.php load (including the reload after a Campaign phase advances),
-        // so it always matches the phase actually being played.
-        $coinceiling = combat::coin_ceiling(
-            $bosshp,
-            $bossdamage,
-            (int) $instance->coingain,
-            combat::difficulty_coin_factor($difficulty)
-        );
-
         // A resumed real phase is rebuilt by the server's own replay rather than taken from
         // the client's last checkpoint (see replay::snapshot()). A Demo keeps the checkpoint:
         // it fights at a fixed HP the replay does not model, and has nothing at stake.
@@ -304,7 +290,6 @@ class game_page_service {
             // matches what the server will actually bank (Easy 0.5x, Hard 3x). The client
             // still sends the raw, unmultiplied gold; the server re-applies this factor.
             'coinfactor'           => combat::difficulty_coin_factor($difficulty),
-            'coinceiling'          => $coinceiling,
             'currentlevel'         => $attemptinfo->currentlevel,
             'currentphase'         => $attemptinfo->currentphase,
             'maxlevels'            => (int) $instance->maxlevels,

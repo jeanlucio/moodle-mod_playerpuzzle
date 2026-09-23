@@ -146,45 +146,44 @@ class advance_phase extends external_api {
                 $currentlevel = (int) $attempt->currentlevel;
                 $currentphase = (int) $attempt->currentphase;
 
-                // Sanity check: the client cannot simply claim victory — the reported damage
-                // must genuinely clear the boss HP the server itself calculated for the phase
-                // being left, including this run's difficulty factor, or advancing is refused.
-                $currentbosshp = combat::apply_difficulty(
-                    combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $currentlevel, $currentphase),
-                    (string) $attempt->difficulty
-                );
-
                 // The phase's last events usually land after the last periodic checkpoint, so
                 // they ride along with this call (see save_progress.php for the same step).
                 if (move_log::is_valid($params['movelog'])) {
                     move_log::merge_into_attempt($attempt, $params['eventoffset'], $params['movelog']);
                 }
 
-                // Server-side replay: when the recorded seed/event log for this phase
-                // re-simulates to a conclusive result, that value drives both the win check
-                // right below and the coin sync further down, instead of the client's own
-                // claim (never Demo, never a phase whose engine version has since changed —
-                // see replay::derive()'s own docblock). When it cannot, this returns the
-                // claimed values completely unchanged, and every check below still applies
-                // exactly as before.
-                $resolved = replay_credit::resolve(
+                // The phase only advances on a victory the replay verifies. One it cannot
+                // verify restarts the phase within this same attempt (up to a cap), and one it
+                // finds to be a defeat is left for save_progress to record — the client moves
+                // to its defeat screen, which makes that call — see replay_credit::verdict().
+                $verdict = replay_credit::verdict(
                     $attempt,
                     $playerpuzzle,
                     $context,
+                    true,
                     $params['damage'],
                     $params['coinsearnedsofar'],
                     $params['bosscoinsearnedsofar']
                 );
+                if ($verdict['outcome'] !== 'won') {
+                    if ($verdict['outcome'] === 'restart') {
+                        replay_credit::restart_phase($attempt, $playerpuzzle);
+                    }
+                    $attempt->timemodified = time();
+                    $DB->update_record('playerpuzzle_attempts', $attempt);
 
-                if ($resolved['damage'] < $currentbosshp) {
-                    throw new moodle_exception('phasenotwon', 'mod_playerpuzzle');
+                    return self::unchanged_phase_result(
+                        $attempt,
+                        $playerpuzzle,
+                        $verdict['outcome'] === 'restart' ? 'restarted' : 'lost'
+                    );
                 }
 
                 // Backstop against a claimed phase win that bypasses the client-side boss-revive
                 // rule entirely (a forged request, or a genuine client bug) — the attempt is
-                // never mutated above this point, so a rejection leaves it untouched and still
-                // resumable. The client should never actually reach this: the revive keeps the
-                // boss alive until enough questions are answered.
+                // never persisted above this point on this path, so a rejection leaves it
+                // untouched and still resumable. The client should never actually reach this:
+                // the revive keeps the boss alive until enough questions are answered.
                 if ((int) $attempt->questions_total < (int) $playerpuzzle->minquestions) {
                     throw new moodle_exception(
                         'minquestionsnotmet',
@@ -213,25 +212,13 @@ class advance_phase extends external_api {
                 // next fight with.
                 $newdifficulty = security::clean_difficulty($params['difficulty']);
 
-                // Coin ledger: sync this just-finished phase's report against a plausibility
-                // ceiling sized to this phase's own boss HP (a stable value, not tied to
-                // damage dealt — see combat::coin_ceiling()'s own docblock), bank whatever is
+                // Coin ledger: record this just-finished phase's verified coins, bank whatever is
                 // available, then reset the ledger to 0 — the next phase starts its own clean
-                // window, since coins_earned/boss_coins_earned track only the phase
-                // currently being played, not the whole Campaign attempt.
-                // attempt_consumables::reset_attempt() below clears the same window's
-                // per-type use count, for the same reason.
-                $scaledbossdamage = combat::apply_difficulty(
-                    combat::calculate_boss_hp((int) $playerpuzzle->bossdamage, $currentlevel, $currentphase),
-                    (string) $attempt->difficulty
-                );
-                $ceiling = combat::coin_ceiling(
-                    $currentbosshp,
-                    $scaledbossdamage,
-                    (int) $playerpuzzle->coingain,
-                    combat::difficulty_coin_factor((string) $attempt->difficulty)
-                );
-                coin_ledger::sync($attempt, $resolved['playergold'], $resolved['bossgold'], $ceiling);
+                // window, since coins_earned/boss_coins_earned track only the phase currently
+                // being played, not the whole Campaign attempt. attempt_consumables::
+                // reset_attempt() below clears the same window's per-type use count, for the
+                // same reason.
+                coin_ledger::sync($attempt, $verdict['playergold'], $verdict['bossgold']);
 
                 $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
 
@@ -266,6 +253,7 @@ class advance_phase extends external_api {
                 // see security::seed_replay_state()'s own docblock for why a seed must never
                 // survive across phases.
                 security::seed_replay_state($attempt, $playerpuzzle);
+                $attempt->phaserestarts = 0;
 
                 $newtoken = bin2hex(random_bytes(32));
                 $attempt->token = $newtoken;
@@ -282,6 +270,7 @@ class advance_phase extends external_api {
                 playerpuzzle_update_grades($playerpuzzle, (int) $USER->id);
 
                 return [
+                    'outcome'      => 'advanced',
                     'token'        => $newtoken,
                     'currentlevel' => $newlevel,
                     'currentphase' => $newphase,
@@ -311,12 +300,45 @@ class advance_phase extends external_api {
     }
 
     /**
+     * The result for a call that did not advance: the attempt stays on its current phase
+     * (restarted, or about to be recorded as lost), with its current token and fight values.
+     *
+     * @param \stdClass $attempt The attempt row.
+     * @param \stdClass $playerpuzzle The instance record.
+     * @param string $outcome 'restarted' or 'lost'.
+     * @return array Same shape as an advanced result.
+     */
+    private static function unchanged_phase_result(\stdClass $attempt, \stdClass $playerpuzzle, string $outcome): array {
+        $level = (int) $attempt->currentlevel;
+        $phase = (int) $attempt->currentphase;
+
+        return [
+            'outcome'      => $outcome,
+            'token'        => (string) $attempt->token,
+            'currentlevel' => $level,
+            'currentphase' => $phase,
+            'difficulty'   => (string) $attempt->difficulty,
+            'bosshp'       => combat::apply_difficulty(
+                combat::calculate_boss_hp((int) $playerpuzzle->basebosshp, $level, $phase),
+                (string) $attempt->difficulty
+            ),
+            'studenthp'    => combat::calculate_student_hp((int) $playerpuzzle->basestudenthp, $level, $phase),
+            'coinsbanked'  => 0,
+        ];
+    }
+
+    /**
      * Returns the return value definitions.
      *
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
+            'outcome'      => new external_value(
+                PARAM_ALPHA,
+                "'advanced'; 'restarted' (an unverifiable victory restarted the phase); or 'lost' (the " .
+                "replay found a defeat, which the client records through save_progress)"
+            ),
             'token'        => new external_value(PARAM_ALPHANUM, 'New anti-replay token for the advanced phase'),
             'currentlevel' => new external_value(PARAM_INT, 'Level the attempt is now on'),
             'currentphase' => new external_value(PARAM_INT, 'Phase the attempt is now on'),

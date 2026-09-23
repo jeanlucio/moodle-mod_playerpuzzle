@@ -39,9 +39,9 @@ use mod_playerpuzzle\local\question_results;
  * derive() never throws and never blocks a match from closing: any condition it cannot
  * resolve with confidence — a gap in the record, an engine-version mismatch, a malformed
  * event, a pathologically long cascade — returns null rather than a guessed value, and the
- * caller falls back to exactly today's plausibility-ceiling behaviour for that call. A
- * definitive result is only ever returned once the simulation reaches a real terminal state
- * (the boss dying for good, or the player doing so) by consuming the recorded events; running
+ * caller treats the match as unverified (see replay_credit::verdict()). A definitive result
+ * is only ever returned once the simulation reaches a real terminal state (the boss dying
+ * for good, or the player doing so) by consuming the recorded events; running
  * out of events with neither side dead is treated the same as any other gap, never as a
  * partial answer, since a partial replay could under-credit a match that genuinely finished
  * — the one outcome this whole mechanism exists to avoid.
@@ -78,9 +78,9 @@ class replay {
      * @param \stdClass $playerpuzzle The instance record (minquestions/basestudenthp read from
      *  it — the latter is not itself frozen per phase, unlike the boss-side config; see
      *  simulate()'s own note on why that is safe).
-     * @return array|null ['damage' => int, 'playergold' => int, 'bossgold' => int], or null
-     *  when the phase could not be conclusively re-derived — the caller should fall back to
-     *  its own existing plausibility check in that case.
+     * @return array|null ['damage' => int, 'playergold' => int, 'bossgold' => int,
+     *  'bossdefeated' => bool] (whether the match ended with the boss dead for good, or with
+     *  the player), or null when the phase could not be conclusively re-derived.
      */
     public static function derive(\stdClass $attempt, \stdClass $playerpuzzle): ?array {
         if ((bool) $attempt->isdemo) {
@@ -129,6 +129,11 @@ class replay {
      *  consistently.
      */
     public static function snapshot(\stdClass $attempt, \stdClass $playerpuzzle): ?array {
+        if ((int) $attempt->engineversion !== (int) get_config('mod_playerpuzzle', 'version')) {
+            // Same reason as derive(): today's engine may not rebuild what yesterday's played.
+            return null;
+        }
+
         try {
             return self::simulate($attempt, $playerpuzzle, true);
         } catch (\Throwable $e) {
@@ -677,8 +682,8 @@ class replay {
      * @param int $maxbosshp The phase's own max boss HP.
      * @param array $state Final combat state.
      * @param array $sim The simulation context.
-     * @return array|null ['damage' => int, 'playergold' => int, 'bossgold' => int], or null
-     *  when something was left unconsumed.
+     * @return array|null ['damage' => int, 'playergold' => int, 'bossgold' => int,
+     *  'bossdefeated' => bool], or null when something was left unconsumed.
      */
     private static function result(int $maxbosshp, array $state, array $sim): ?array {
         if ($sim['eventindex'] !== count($sim['events']) || $sim['outcomeindex'] !== count($sim['outcomes'])) {
@@ -694,6 +699,9 @@ class replay {
             'damage' => max(0, $maxbosshp - max(0, (int) round($state['currentHp']))),
             'playergold' => max(0, (int) round($state['playerGold'])),
             'bossgold' => max(0, (int) round($state['bossGold'])),
+            // Read off the simulation itself, not off the rounded damage: a boss left on a
+            // fraction of a hit point when the player falls rounds to full damage, yet lived.
+            'bossdefeated' => $state['currentHp'] <= 0,
         ];
     }
 }

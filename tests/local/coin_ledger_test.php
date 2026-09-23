@@ -41,33 +41,17 @@ final class coin_ledger_test extends \basic_testcase {
     }
 
     /**
-     * Tests that sync() ratchets coins_earned/boss_coins_earned up to a reported value
-     * under the ceiling.
+     * Tests that sync() ratchets coins_earned/boss_coins_earned up to the credited values.
      *
      * @return void
      */
     public function test_sync_ratchets_up_to_the_reported_value(): void {
         $attempt = $this->fresh_attempt();
 
-        coin_ledger::sync($attempt, 30, 5, 100);
+        coin_ledger::sync($attempt, 30, 5);
 
         $this->assertSame(30, $attempt->coins_earned);
         $this->assertSame(5, $attempt->boss_coins_earned);
-    }
-
-    /**
-     * Tests that sync() clamps a reported value above the ceiling down to the ceiling —
-     * the plausibility check actually taking effect.
-     *
-     * @return void
-     */
-    public function test_sync_clamps_above_the_ceiling(): void {
-        $attempt = $this->fresh_attempt();
-
-        coin_ledger::sync($attempt, 9999, 9999, 50);
-
-        $this->assertSame(50, $attempt->coins_earned);
-        $this->assertSame(50, $attempt->boss_coins_earned);
     }
 
     /**
@@ -79,8 +63,8 @@ final class coin_ledger_test extends \basic_testcase {
     public function test_sync_never_decreases_stored_value(): void {
         $attempt = $this->fresh_attempt();
 
-        coin_ledger::sync($attempt, 40, 10, 100);
-        coin_ledger::sync($attempt, 5, -20, 100);
+        coin_ledger::sync($attempt, 40, 10);
+        coin_ledger::sync($attempt, 5, -20);
 
         $this->assertSame(40, $attempt->coins_earned);
         $this->assertSame(10, $attempt->boss_coins_earned);

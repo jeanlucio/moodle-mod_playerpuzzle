@@ -27,6 +27,7 @@ namespace mod_playerpuzzle\event;
 
 use mod_playerpuzzle\external\save_progress;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\move_log;
 
 /**
  * Tests for game_completed.
@@ -73,9 +74,22 @@ final class game_completed_test extends \advanced_testcase {
      * @return void
      */
     public function test_victory_triggers_game_completed(): void {
+        global $DB;
+
         $instance = $this->make_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        // A win only counts once the server-side replay verifies it: seed 2's one-move kill,
+        // with boss HP and combo damage frozen equal (see tests/local/engine/replay_test.php).
+        $DB->update_record('playerpuzzle_attempts', (object) [
+            'id' => (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]),
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            'moveseq' => 1,
+            'frozenbasebosshp' => 10,
+            'frozenbossdamage' => 10,
+            'frozencoingain' => 10,
+        ]);
 
         $sink = $this->redirectEvents();
         save_progress::execute($instance->cmid, $token, 1, 500, 0, 0);

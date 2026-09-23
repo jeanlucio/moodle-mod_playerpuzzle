@@ -609,5 +609,16 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092300, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092301) {
+        // Restarts of the current phase after a victory the replay could not verify.
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('phaserestarts', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'questionresults');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026092301, 'playerpuzzle');
+    }
+
     return true;
 }

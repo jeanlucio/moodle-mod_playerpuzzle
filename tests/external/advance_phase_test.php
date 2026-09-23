@@ -120,11 +120,15 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Puts an attempt at a specific level/phase and returns its token.
+     * Creates an in-progress attempt on a given level/phase whose phase the server-side replay
+     * verifies as won, as the live client's own log would: seed 2's one-move win (see
+     * tests/local/engine/replay_test.php), with boss HP and combo damage frozen equal so the
+     * single 3-Sword match finishes the boss at any level, phase or difficulty — 15 coins for
+     * the player at Normal, none for the boss.
      *
-     * @param int $instanceid Activity instance ID.
-     * @param int $level Level to set.
-     * @param int $phase Phase to set.
+     * @param int $instanceid The instance ID.
+     * @param int $level Level to put the attempt on.
+     * @param int $phase Phase to put the attempt on.
      * @return string The attempt's token.
      */
     private function put_attempt_at(int $instanceid, int $level, int $phase): string {
@@ -132,7 +136,36 @@ final class advance_phase_test extends \advanced_testcase {
         $token = security::generate_attempt_token($instanceid, (int) $this->student->id, 'normal', 1, 1);
         $DB->set_field('playerpuzzle_attempts', 'currentlevel', $level, ['token' => $token]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', $phase, ['token' => $token]);
+        $this->make_verified_phase($token);
         return $token;
+    }
+
+    /**
+     * Gives an attempt's current phase a log the server-side replay verifies (see
+     * put_attempt_at() for the default fixture).
+     *
+     * @param string $token The attempt's token.
+     * @param int $seed The phase's PRNG seed.
+     * @param array $moves Recorded swaps, each [r1, c1, r2, c2].
+     * @return void
+     */
+    private function make_verified_phase(string $token, int $seed = 2, array $moves = [[3, 1, 3, 2]]): void {
+        global $DB;
+
+        $events = array_map(
+            static fn(array $m): array => ['type' => 'move', 'r1' => $m[0], 'c1' => $m[1], 'r2' => $m[2], 'c2' => $m[3]],
+            $moves
+        );
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token], MUST_EXIST);
+        $DB->update_record('playerpuzzle_attempts', (object) [
+            'id' => $attemptid,
+            'rngseed' => $seed,
+            'movelog' => move_log::encode($events),
+            'moveseq' => count($events),
+            'frozenbasebosshp' => 10,
+            'frozenbossdamage' => 10,
+            'frozencoingain' => 10,
+        ]);
     }
 
     /**
@@ -249,58 +282,88 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that reported damage below the current phase's boss HP is rejected — the
-     * client cannot simply claim victory without the server verifying it.
+     * Tests that a victory the replay cannot verify does not advance: the phase restarts
+     * within the same attempt, on the same token, with one restart counted.
      *
      * @return void
      */
-    public function test_advance_phase_rejects_insufficient_damage(): void {
+    public function test_advance_phase_restarts_an_unverifiable_victory(): void {
+        global $DB;
+
         $instance = $this->make_instance(['basebosshp' => 1000]);
         $this->setUser($this->student);
-        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
         $result = $this->call_advance_phase([
             'cmid'                 => $instance->cmid,
             'token'                => $token,
-            'damage'               => 500,
-            'coinsearnedsofar'     => 0,
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 99999,
             'bosscoinsearnedsofar' => 0,
         ]);
 
-        $this->assertTrue($result['error']);
-        $this->assertSame('phasenotwon', $result['exception']->errorcode);
+        $this->assertFalse($result['error']);
+        $this->assertSame('restarted', $result['data']['outcome']);
+        $this->assertSame($token, $result['data']['token']);
+        $this->assertSame(0, $result['data']['coinsbanked']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame(1, (int) $attempt->currentphase);
+        $this->assertSame(1, (int) $attempt->phaserestarts);
     }
 
     /**
-     * Tests that the win check applies the run's difficulty factor: on Hard the boss has
-     * double the HP, so damage that would clear a Normal-sized boss is not enough to
-     * advance, but damage clearing the doubled HP is.
+     * Tests that a claimed victory the replay verifies as a defeat does not advance, and is
+     * left in progress for save_progress to record: on seed 2, a coin match then the boss's
+     * turn finishes a 1 HP student.
      *
      * @return void
      */
-    public function test_advance_phase_win_check_respects_difficulty(): void {
+    public function test_advance_phase_reports_a_verified_defeat_as_lost(): void {
         global $DB;
 
+        $instance = $this->make_instance(['basestudenthp' => 1]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $this->make_verified_phase($token, 2, [[0, 4, 1, 4]]);
+        $DB->set_field('playerpuzzle_attempts', 'frozenbasebosshp', 1000, ['token' => $token]);
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 10,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame('lost', $result['data']['outcome']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame('inprogress', $attempt->status);
+        $this->assertSame(1, (int) $attempt->currentphase);
+        $this->assertSame(0, (int) $attempt->phaserestarts);
+    }
+
+    /**
+     * Tests that a verified win on Hard advances and banks the Hard coin factor (x3): the
+     * boss and its combo damage both double, so the same one-move win still finishes it.
+     *
+     * @return void
+     */
+    public function test_advance_phase_verified_win_respects_difficulty(): void {
         $instance = $this->make_instance(['basebosshp' => 100]);
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard', 1, 1);
-        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 1, ['token' => $token]);
-        $DB->set_field('playerpuzzle_attempts', 'currentphase', 1, ['token' => $token]);
+        $this->make_verified_phase($token);
 
-        // Normal boss HP here is 100; Hard doubles it to 200.
-        $tooweak = $this->call_advance_phase([
-            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 150,
+        $result = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 1,
             'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
         ]);
-        $this->assertTrue($tooweak['error']);
-        $this->assertSame('phasenotwon', $tooweak['exception']->errorcode);
 
-        $enough = $this->call_advance_phase([
-            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 200,
-            'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
-        ]);
-        $this->assertFalse($enough['error']);
-        $this->assertSame(2, $enough['data']['currentphase']);
+        $this->assertFalse($result['error']);
+        $this->assertSame('advanced', $result['data']['outcome']);
+        $this->assertSame(2, $result['data']['currentphase']);
+        $this->assertSame(45, $result['data']['coinsbanked']);
     }
 
     /**
@@ -378,6 +441,8 @@ final class advance_phase_test extends \advanced_testcase {
         $originalid = $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
 
         for ($i = 0; $i < 5; $i++) {
+            // Every phase starts a fresh log; each one is won again.
+            $this->make_verified_phase($token);
             $result = $this->call_advance_phase([
                 'cmid'                 => $instance->cmid,
                 'token'                => $token,
@@ -442,14 +507,14 @@ final class advance_phase_test extends \advanced_testcase {
             'cmid'                 => $instance->cmid,
             'token'                => $token,
             'damage'               => 100,
-            'coinsearnedsofar'     => 42,
+            'coinsearnedsofar'     => 15,
             'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
-        $this->assertSame(42, $result['data']['coinsbanked']);
+        $this->assertSame(15, $result['data']['coinsbanked']);
         $this->assertSame(
-            42,
+            15,
             user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
         );
         $this->assertSame(0, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
@@ -470,14 +535,14 @@ final class advance_phase_test extends \advanced_testcase {
             'cmid'                 => $instance->cmid,
             'token'                => $token,
             'damage'               => 100,
-            'coinsearnedsofar'     => 42,
+            'coinsearnedsofar'     => 15,
             'bosscoinsearnedsofar' => 0,
         ]);
 
         $this->assertFalse($result['error']);
-        $this->assertSame(42, $result['data']['coinsbanked']);
+        $this->assertSame(15, $result['data']['coinsbanked']);
         $this->assertSame(
-            42,
+            15,
             user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
         );
     }
@@ -742,15 +807,13 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a genuinely-won phase is still rejected when the attempt hasn't
-     * answered enough questions yet — the server-side backstop against a client that
-     * bypasses the boss-revive rule entirely, leaving the attempt untouched (still on
-     * the same phase, token unrotated) so a legitimate follow-up call can still advance
-     * it once the requirement is met.
+     * Tests that a phase "won" before enough questions were answered never advances: the
+     * replay revives the boss exactly as the live client does, so the claimed kill is not the
+     * end of the log's match — unverifiable, the phase restarts.
      *
      * @return void
      */
-    public function test_minquestions_backstop_rejects_premature_advance(): void {
+    public function test_minquestions_unmet_never_advances(): void {
         global $DB;
 
         $instance = $this->make_instance(['basebosshp' => 100, 'minquestions' => 3]);
@@ -763,8 +826,8 @@ final class advance_phase_test extends \advanced_testcase {
             'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
         ]);
 
-        $this->assertTrue($result['error']);
-        $this->assertSame('minquestionsnotmet', $result['exception']->errorcode);
+        $this->assertFalse($result['error']);
+        $this->assertSame('restarted', $result['data']['outcome']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
         $this->assertSame('inprogress', $attempt->status);
         $this->assertSame(1, (int) $attempt->currentphase);
@@ -793,38 +856,11 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the amount banked is capped by the plausibility ceiling — sized to this
-     * phase's own boss HP, not to damage actually dealt.
-     *
-     * @return void
-     */
-    public function test_coin_ceiling_caps_an_inflated_report(): void {
-        [, $itemid] = $this->make_hud_item();
-        // Bossdamage/coingain default to 10; at Level 1 Phase 1 Normal the scaled combo
-        // damage is 10 too, so with basebosshp 100 the ceiling is floor((100/10)*10*1) = 100.
-        $instance = $this->make_instance(['basebosshp' => 100, 'hud_coin_item' => $itemid]);
-        $this->setUser($this->student);
-        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
-
-        $result = $this->call_advance_phase([
-            'cmid'                 => $instance->cmid,
-            'token'                => $token,
-            'damage'               => 100,
-            'coinsearnedsofar'     => 99999,
-            'bosscoinsearnedsofar' => 0,
-        ]);
-
-        $this->assertFalse($result['error']);
-        $this->assertSame(100, $result['data']['coinsbanked']);
-    }
-
-    /**
      * Tests the anti-cheat replay end to end, through the real web service: a known seed and
      * a known recorded event log, re-simulated server-side, drive the win check and the
      * banked total — never the client's own wildly inflated claim. Same seed/move pair as
      * save_progress_test.php's own equivalent test — see that test's docblock for exactly
-     * where the numbers (damage 10, playergold 15, then clamped to 10 by this exact 1:1
-     * basebosshp/bossdamage/coingain configuration's own coin ceiling) come from.
+     * where the numbers (damage 10, playergold 15) come from.
      *
      * @return void
      */
@@ -854,6 +890,6 @@ final class advance_phase_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertSame(2, $result['data']['currentphase']);
-        $this->assertSame(10, $result['data']['coinsbanked']);
+        $this->assertSame(15, $result['data']['coinsbanked']);
     }
 }

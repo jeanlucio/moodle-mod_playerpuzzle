@@ -78,6 +78,8 @@ class provider implements
      * declared below, the same category as combatstate. questionresults (whether each of
      * the student's questions this phase was answered right or wrong, as decided by the
      * server) is declared for the same reason: it is about the student's own answers.
+     * phaserestarts (how many times the current phase restarted after an unverifiable
+     * victory) is anti-cheat plumbing like rngseed, carrying nothing about the user.
      *
      * @param collection $collection The initialised collection to add items to.
      * @return collection A listing of user data stored through this system.

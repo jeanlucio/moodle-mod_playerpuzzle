@@ -71,6 +71,7 @@
         <FIELD NAME="frozenbossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Instance bossdamage snapshotted at the start of this phase, same reasoning as frozenbasebosshp"/>
         <FIELD NAME="frozencoingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Instance coingain snapshotted at the start of this phase, same reasoning as frozenbasebosshp"/>
         <FIELD NAME="questionresults" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of this phase's question outcomes as decided server-side by validate_answer ({side, correct, counted}), in order; the replay takes outcomes from here, never from the client's own event log. Reset alongside rngseed"/>
+        <FIELD NAME="phaserestarts" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="How many times the current phase was restarted because its claimed victory could not be verified; capped, reset when the attempt advances to a new phase"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" DECIMALS="5" SEQUENCE="false" COMMENT="Final calculated grade"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="inprogress" SEQUENCE="false" COMMENT="Status: inprogress, won, lost, timeout, abandoned"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>

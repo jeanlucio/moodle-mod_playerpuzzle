@@ -27,8 +27,8 @@ namespace mod_playerpuzzle\local;
 use stdClass;
 
 /**
- * Reconciles the coin amounts a client reports (coinsearnedsofar/bosscoinsearnedsofar)
- * against an attempt's own ledger columns (coins_earned, boss_coins_earned).
+ * Keeps an attempt's own coin ledger columns (coins_earned, boss_coins_earned) — the totals
+ * replay_credit::verdict() credits for a finished phase, never a raw client report.
  *
  * The ledger window is the current phase (Campaign) or the current match (Single Match) —
  * at the end of a phase/match, save_progress/advance_phase sync both columns, then
@@ -38,27 +38,19 @@ use stdClass;
  */
 class coin_ledger {
     /**
-     * Ratchets coins_earned/boss_coins_earned forward from a client report, each capped by
-     * the same plausibility ceiling — never allowed to decrease, and never trusted past what
-     * the reported damage makes plausible.
+     * Ratchets coins_earned/boss_coins_earned forward to the phase's verified totals — never
+     * allowed to decrease.
      *
      * @param stdClass $attempt The attempt row (coins_earned/boss_coins_earned read and
      *  written in place; caller persists).
-     * @param int $reportedearned Client-reported coinsearnedsofar this phase/match.
-     * @param int $reportedbossearned Client-reported bosscoinsearnedsofar this phase/match.
-     * @param int $ceiling Plausibility ceiling from combat::coin_ceiling(), applied to both
-     *  sides — the boss's own combat output is symmetric to the student's, by design.
+     * @param int $earned Player coins earned this phase/match, as credited by
+     *  replay_credit::verdict().
+     * @param int $bossearned Boss coins earned this phase/match, same source.
      * @return void
      */
-    public static function sync(stdClass $attempt, int $reportedearned, int $reportedbossearned, int $ceiling): void {
-        $attempt->coins_earned = max(
-            (int) $attempt->coins_earned,
-            min(max(0, $reportedearned), $ceiling)
-        );
-        $attempt->boss_coins_earned = max(
-            (int) $attempt->boss_coins_earned,
-            min(max(0, $reportedbossearned), $ceiling)
-        );
+    public static function sync(stdClass $attempt, int $earned, int $bossearned): void {
+        $attempt->coins_earned = max((int) $attempt->coins_earned, max(0, $earned));
+        $attempt->boss_coins_earned = max((int) $attempt->boss_coins_earned, max(0, $bossearned));
     }
 
     /**

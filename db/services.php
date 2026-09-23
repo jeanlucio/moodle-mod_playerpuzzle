@@ -44,8 +44,8 @@ $functions = [
     'mod_playerpuzzle_validate_answer' => [
         'classname'    => 'mod_playerpuzzle\external\validate_answer',
         'methodname'   => 'execute',
-        'description'  => 'Validates a player answer during the combat phase.',
-        'type'         => 'read',
+        'description'  => 'Validates a player answer, or draws the boss guess, and records the result.',
+        'type'         => 'write',
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],

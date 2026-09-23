@@ -38,7 +38,11 @@ jobs:
           MYSQL_COLLATION_SERVER: 'utf8mb4_unicode_ci'
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
+        # mariadb:11.4's entrypoint boots twice on first start (a temporary server to secure
+        # system users, then the real one) before it answers — the 3-retry/10s budget that
+        # worked for 10.11 marked it unhealthy mid-boot, taking down every leg in the job
+        # (services are shared across the whole matrix, not per-leg).
+        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 10
 
     strategy:
       fail-fast: false

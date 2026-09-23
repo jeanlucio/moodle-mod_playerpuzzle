@@ -47,13 +47,8 @@ $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 $PAGE->set_pagelayout('incourse');
 
-// Output starts here.
+// Output starts here. The activity header already shows the name and the description.
 echo $OUTPUT->header();
-
-// Display the introduction if the teacher wrote one.
-if (trim($playerpuzzle->intro) !== '') {
-    echo $OUTPUT->box(format_module_intro('playerpuzzle', $playerpuzzle, $cm->id), 'generalbox', 'intro');
-}
 
 $templatedata = \mod_playerpuzzle\local\lobby_page_service::build_page_data(
     $cm,

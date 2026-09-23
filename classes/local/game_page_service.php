@@ -26,6 +26,7 @@ namespace mod_playerpuzzle\local;
 
 use context_module;
 use mod_playerpuzzle\local\engine\combat;
+use mod_playerpuzzle\local\engine\replay;
 use mod_playerpuzzle\local\engine\security;
 use moodle_exception;
 use moodle_url;
@@ -234,6 +235,13 @@ class game_page_service {
             combat::difficulty_coin_factor($difficulty)
         );
 
+        // A resumed real phase is rebuilt by the server's own replay rather than taken from
+        // the client's last checkpoint (see replay::snapshot()). A Demo keeps the checkpoint:
+        // it fights at a fixed HP the replay does not model, and has nothing at stake.
+        $snapshot = (!$attemptinfo->isnew && !$isdemo)
+            ? self::rebuild_resume_point($attemptinfo, $instance, $userid)
+            : null;
+
         $consumableuses = attempt_consumables::get_uses_by_type($attemptinfo->attemptid);
 
         // Units of each type currently owned (bought pre-match in the Lobby) — lets the
@@ -274,11 +282,22 @@ class game_page_service {
             // its correct state on load.
             'coinsearnedsofar'     => $attemptinfo->coinsearned,
             'bosscoinsearnedsofar' => $attemptinfo->bosscoinsearned,
-            // Snapshot of the board/HP/meters/turn left by a checkpoint (null for a phase
-            // that never got one, or that was just started/advanced) — lets board.js/
-            // combat.js resume the fight in place instead of always starting the phase
-            // fresh.
-            'combatstate'          => $attemptinfo->combatstate,
+            // Where a resumed phase stands, rebuilt by the server (see replay::snapshot()):
+            // board, PRNG position, HP/meters/gold, whose turn, a question still open, or a
+            // match already over. When present, the client loads it instead of combatstate.
+            'snapshot'             => $snapshot === null ? null : [
+                'grid'            => $snapshot['grid'],
+                'rngstate'        => $snapshot['rngstate'],
+                'turn'            => $snapshot['turn'],
+                'pendingquestion' => $snapshot['pendingquestion'],
+                'terminal'        => $snapshot['terminal'],
+                'state'           => $snapshot['state'],
+            ],
+            // The board/HP/meters/turn the client's last checkpoint declared (null for a phase
+            // that never got one, or that was just started/advanced) — only used to resume
+            // when there is no server-rebuilt snapshot above (a Demo, or a log that does not
+            // replay consistently).
+            'combatstate'          => $snapshot === null ? $attemptinfo->combatstate : null,
             'consumableuses'       => $consumableuses,
             'consumablestock'      => $consumablestock,
             // Coin multiplier the client applies to its own gold display so the end screen
@@ -309,11 +328,55 @@ class game_page_service {
             // security::seed_replay_state()), so a future server-side replay of this phase's
             // recorded moves reaches the same board states the client did.
             'rngseed'              => $attemptinfo->rngseed,
-            'moveseq'              => $attemptinfo->moveseq,
+            // Events already stored for this phase — the offset the client's next batch starts at.
+            'moveseq'              => $snapshot === null ? $attemptinfo->moveseq : $snapshot['eventcount'],
             'enablespeech'         => sound_preferences::is_enabled('speech', $userid),
             'musicenabled'         => sound_preferences::is_enabled('music', $userid),
             'sfxenabled'           => sound_preferences::is_enabled('sfx', $userid),
             'isdemo'               => $attemptinfo->isdemo,
         ];
+    }
+
+    /**
+     * Rebuilds a resumed attempt's current phase through the server-side replay, storing any
+     * event the replay had to add (a question judged or a consumable counted before the
+     * reload, but never logged) — under the attempt's lock, like every other writer of its
+     * event log.
+     *
+     * @param stdClass $attemptinfo The resumed attempt, as returned by
+     *  security::resume_or_create_attempt_token().
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @return array|null The snapshot (see replay::snapshot()), or null when the phase cannot
+     *  be rebuilt from its log.
+     */
+    private static function rebuild_resume_point(stdClass $attemptinfo, stdClass $instance, int $userid): ?array {
+        global $DB;
+
+        $result = security::with_locked_attempt(
+            $attemptinfo->token,
+            (int) $instance->id,
+            $userid,
+            function (stdClass $attempt) use ($DB, $instance): ?array {
+                $snapshot = replay::snapshot($attempt, $instance);
+                if ($snapshot === null || $snapshot['appendedevents'] === []) {
+                    return $snapshot;
+                }
+
+                $stored = count(move_log::decode($attempt->movelog));
+                if (!move_log::merge_into_attempt($attempt, $stored, $snapshot['appendedevents'])) {
+                    return null;
+                }
+                $DB->update_record('playerpuzzle_attempts', (object) [
+                    'id' => $attempt->id,
+                    'movelog' => $attempt->movelog,
+                    'moveseq' => $attempt->moveseq,
+                ]);
+
+                return $snapshot;
+            }
+        );
+
+        return $result === false ? null : $result;
     }
 }

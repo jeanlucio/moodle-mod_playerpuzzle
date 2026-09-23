@@ -97,10 +97,43 @@ class replay {
         }
 
         try {
-            return self::simulate($attempt, $playerpuzzle);
+            return self::simulate($attempt, $playerpuzzle, false);
         } catch (\Throwable $e) {
             debugging(
                 'mod_playerpuzzle replay could not verify attempt ' . $attempt->id . ': ' . $e->getMessage(),
+                DEBUG_DEVELOPER
+            );
+            return null;
+        }
+    }
+
+    /**
+     * Rebuilds the exact point an in-progress phase reached, for a page reload to resume from:
+     * the same simulation derive() runs, stopped where the recorded events end instead of
+     * requiring a finished match. The client loads this instead of trusting its own last
+     * checkpoint, so a reload resumes on the very board the server will later verify — with
+     * the PRNG where the server's own sequence is — and with HP/meters the server computed,
+     * not ones the client declared.
+     *
+     * Two gaps a reload can open are closed on the way, since the server already knows what
+     * happened: a question answered but not yet logged takes its stored outcome, and a
+     * combat consumable use_stock counted but never logged is applied at the resume point.
+     * The events added for either are returned so the caller can store them.
+     *
+     * @param \stdClass $attempt The in-progress attempt row.
+     * @param \stdClass $playerpuzzle The instance record.
+     * @return array|null ['grid' => (int|null)[] (flat, row-major; null = a cell emptied by
+     *  the pending question's match), 'rngstate' => int, 'turn' => string,
+     *  'pendingquestion' => string|null, 'terminal' => bool, 'state' => array,
+     *  'eventcount' => int, 'appendedevents' => array], or null when the log does not replay
+     *  consistently.
+     */
+    public static function snapshot(\stdClass $attempt, \stdClass $playerpuzzle): ?array {
+        try {
+            return self::simulate($attempt, $playerpuzzle, true);
+        } catch (\Throwable $e) {
+            debugging(
+                'mod_playerpuzzle replay could not rebuild attempt ' . $attempt->id . ': ' . $e->getMessage(),
                 DEBUG_DEVELOPER
             );
             return null;
@@ -114,10 +147,21 @@ class replay {
      *
      * @param \stdClass $attempt The attempt row.
      * @param \stdClass $playerpuzzle The instance record.
-     * @return array|null See derive().
+     * @param bool $snapshotmode True to stop where the events end and describe that point
+     *  (see snapshot()), false to require a finished match (see derive()).
+     * @return array|null See derive() / snapshot().
      */
-    private static function simulate(\stdClass $attempt, \stdClass $playerpuzzle): ?array {
-        $rng = prng::create((int) $attempt->rngseed);
+    private static function simulate(\stdClass $attempt, \stdClass $playerpuzzle, bool $snapshotmode): ?array {
+        // Counting draws is enough to hand the generator's position to the client: each draw
+        // only adds a fixed step to its state (see prng::create()).
+        $seed = (int) $attempt->rngseed;
+        $inner = prng::create($seed);
+        $draws = new \stdClass();
+        $draws->count = 0;
+        $rng = function () use ($inner, $draws): float {
+            $draws->count++;
+            return $inner();
+        };
         $grid = board_engine::generate_grid(self::ROWS, self::COLS, null, $rng);
 
         $level = (int) $attempt->currentlevel;
@@ -174,7 +218,17 @@ class replay {
             'poolempty' => null,
             'serveruses' => attempt_consumables::get_uses_by_type((int) $attempt->id),
             'loggeduses' => array_fill_keys(move_log::COMBAT_CONSUMABLES, 0),
+            'snapshotmode' => $snapshotmode,
+            'appended' => [],
+            'stop' => null,
         ];
+        // Builds this method's return value at a stopping point, in whichever mode it runs.
+        $finish = function (string $turn, bool $terminal) use (&$grid, &$state, &$sim, $maxbosshp, $seed, $draws): ?array {
+            if (!$sim['snapshotmode']) {
+                return $terminal ? self::result($maxbosshp, $state, $sim) : null;
+            }
+            return self::describe($grid, $state, $sim, $turn, $terminal, ($seed + $draws->count * 0x6D2B79F5) & 0xFFFFFFFF);
+        };
         $minquestions = (int) $playerpuzzle->minquestions;
         $turn = 'player';
 
@@ -195,17 +249,28 @@ class replay {
                         if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
                             $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
                         } else {
-                            return self::result($maxbosshp, $state, $sim);
+                            return $finish('player', true);
                         }
                     }
                 }
 
                 $event = $sim['events'][$sim['eventindex']] ?? null;
                 if ($event === null) {
-                    // Nothing more recorded — either a genuine gap (a lost checkpoint, a
-                    // sendBeacon that never arrived) or the phase simply is not finished from
-                    // this log's point of view. Either way, inconclusive, not a divergence.
-                    return null;
+                    // Nothing more recorded. Verifying, that is either a genuine gap (a lost
+                    // checkpoint, a sendBeacon that never arrived) or a phase not finished from
+                    // this log's point of view — inconclusive either way. Rebuilding, it is
+                    // exactly where the player resumes, their move pending.
+                    if ($snapshotmode && !self::apply_unlogged_consumables($sim, $state, $config)) {
+                        return null;
+                    }
+                    if ($snapshotmode && $state['currentHp'] <= 0) {
+                        if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
+                            $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
+                        } else {
+                            return $finish('player', true);
+                        }
+                    }
+                    return $finish('player', false);
                 }
                 if (($event['type'] ?? null) !== 'move' || !isset($event['r1'], $event['c1'], $event['r2'], $event['c2'])) {
                     return null;
@@ -214,18 +279,18 @@ class replay {
 
                 board_engine::swap_in_grid($grid, $event['r1'], $event['c1'], $event['r2'], $event['c2']);
                 if (!self::resolve_cascade($grid, $rng, $state, $config, $sim, 'player')) {
-                    return null;
+                    return $sim['stop'] !== null ? $finish('player', false) : null;
                 }
 
                 if ($state['currentHp'] <= 0) {
                     if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
                         $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
                     } else {
-                        return self::result($maxbosshp, $state, $sim);
+                        return $finish('player', true);
                     }
                 }
                 if ($state['currentPlayerHp'] <= 0) {
-                    return self::result($maxbosshp, $state, $sim);
+                    return $finish('player', true);
                 }
 
                 $turn = 'boss';
@@ -241,7 +306,7 @@ class replay {
                         if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
                             $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
                         } else {
-                            return self::result($maxbosshp, $state, $sim);
+                            return $finish('player', true);
                         }
                     }
                 }
@@ -260,11 +325,11 @@ class replay {
                 }
                 board_engine::swap_in_grid($grid, $move['r1'], $move['c1'], $move['r2'], $move['c2']);
                 if (!self::resolve_cascade($grid, $rng, $state, $config, $sim, 'boss')) {
-                    return null;
+                    return $sim['stop'] !== null ? $finish('boss', false) : null;
                 }
 
                 if ($state['currentPlayerHp'] <= 0) {
-                    return self::result($maxbosshp, $state, $sim);
+                    return $finish('boss', true);
                 }
 
                 $turn = 'player';
@@ -277,7 +342,7 @@ class replay {
                     $state['currentPlayerHp'] = $tick['newHp'];
                     $state['playerPoisonRounds'] = $tick['newPoisonRounds'];
                     if ($state['currentPlayerHp'] <= 0) {
-                        return self::result($maxbosshp, $state, $sim);
+                        return $finish('player', true);
                     }
                 }
                 if (!board_engine::has_available_move($grid, self::ROWS, self::COLS)) {
@@ -394,6 +459,19 @@ class replay {
      */
     private static function consume_question(array &$sim, string $side, array &$state, float $basedamage): bool {
         $event = $sim['events'][$sim['eventindex']] ?? null;
+        if ($event === null && $sim['snapshotmode']) {
+            // The events end right as this question opens. If the server already judged it
+            // (answered before the reload, logged too late), its outcome is taken and the
+            // missing marker added; otherwise this is where the player resumes, question open.
+            $next = $sim['outcomes'][$sim['outcomeindex']] ?? null;
+            if (($next['side'] ?? null) !== $side) {
+                $sim['stop'] = $side;
+                return false;
+            }
+            $event = ['type' => 'question', 'side' => $side, 'outcome' => 'answered'];
+            $sim['events'][] = $event;
+            $sim['appended'][] = $event;
+        }
         if (($event['type'] ?? null) !== 'question' || ($event['side'] ?? null) !== $side) {
             return false;
         }
@@ -435,6 +513,67 @@ class replay {
         }
 
         return false;
+    }
+
+    /**
+     * Applies, at the resume point, every combat consumable use_stock counted but the log never
+     * received (used just before the reload, its checkpoint lost): the stock is already spent,
+     * so dropping the effect would cost the player twice, and logging it keeps the phase's
+     * later verification consistent with that count.
+     *
+     * @param array $sim The simulation context (mutated in place).
+     * @param array $state Combat state (mutated in place).
+     * @param array $config Keys baseDamage/coinGain/coinFactor.
+     * @return bool False when the log holds more uses than the server counted.
+     */
+    private static function apply_unlogged_consumables(array &$sim, array &$state, array $config): bool {
+        foreach (move_log::COMBAT_CONSUMABLES as $kind) {
+            $missing = (int) ($sim['serveruses'][$kind] ?? 0) - $sim['loggeduses'][$kind];
+            if ($missing < 0) {
+                return false;
+            }
+            for ($i = 0; $i < $missing; $i++) {
+                $event = ['type' => 'consumable', 'kind' => $kind];
+                $sim['events'][] = $event;
+                $sim['appended'][] = $event;
+                $sim['eventindex']++;
+                $sim['loggeduses'][$kind]++;
+                self::apply_consumable($kind, $state, $config);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Describes where a rebuilt phase stands — see snapshot().
+     *
+     * @param array $grid The board grid at the stopping point.
+     * @param array $state Combat state at the stopping point.
+     * @param array $sim The simulation context.
+     * @param string $turn Whose turn it is.
+     * @param bool $terminal Whether the match has already ended.
+     * @param int $rngstate The PRNG's internal state at the stopping point.
+     * @return array See snapshot().
+     */
+    private static function describe(array $grid, array $state, array $sim, string $turn, bool $terminal, int $rngstate): array {
+        $flat = [];
+        foreach ($grid as $row) {
+            foreach ($row as $cell) {
+                $flat[] = $cell;
+            }
+        }
+
+        return [
+            'grid' => $flat,
+            'rngstate' => $rngstate,
+            'turn' => $sim['stop'] ?? $turn,
+            'pendingquestion' => $sim['stop'],
+            'terminal' => $terminal,
+            'state' => $state,
+            'eventcount' => count($sim['events']),
+            'appendedevents' => $sim['appended'],
+        ];
     }
 
     /**

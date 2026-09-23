@@ -712,12 +712,13 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that resuming an attempt with a saved checkpoint passes it through decoded, for
-     * board.js/combat.js to rebuild the fight in progress.
+     * Tests that resuming a real attempt rebuilds the phase through the server's own replay
+     * and ignores whatever the client's last checkpoint declared: here the checkpoint claims
+     * a boss at 1 HP, but nothing has been played, so the snapshot says the boss is untouched.
      *
      * @return void
      */
-    public function test_build_game_config_carries_combatstate_on_resume(): void {
+    public function test_build_game_config_rebuilds_a_resumed_phase_instead_of_its_checkpoint(): void {
         global $DB;
 
         [$cm, $instance] = $this->make_cm_and_instance();
@@ -730,13 +731,89 @@ final class game_page_service_test extends \advanced_testcase {
         $DB->set_field(
             'playerpuzzle_attempts',
             'combatstate',
-            '{"boardgrid":[4,5,6],"currentturn":"player"}',
+            '{"boardgrid":[4,5,6],"currentturn":"player","currentbosshp":1}',
             ['token' => $token]
         );
 
         $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
 
+        $this->assertNull($config['combatstate']);
+        $this->assertSame('player', $config['snapshot']['turn']);
+        $this->assertCount(64, $config['snapshot']['grid']);
+        $this->assertEquals($config['bosshp'], $config['snapshot']['state']['currentHp']);
+        $this->assertSame(0, $config['moveseq']);
+    }
+
+    /**
+     * Tests that an event the rebuild had to add — here, a question the server had already
+     * judged before the reload, but whose marker never reached the log — is stored, and the
+     * client continues from the new count.
+     *
+     * @return void
+     */
+    public function test_build_game_config_stores_events_the_rebuild_added(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id
+        );
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+        $DB->update_record('playerpuzzle_attempts', (object) [
+            'id' => $attemptid,
+            'rngseed' => 56,
+            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]),
+            'moveseq' => 1,
+            'questionresults' => question_results::append(null, 'player', true, true),
+            'questions_total' => 1,
+            'frozenbasebosshp' => 100000,
+        ]);
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+
+        $this->assertNull($config['snapshot']['pendingquestion']);
+        $this->assertSame(2, $config['moveseq']);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
+        $this->assertSame(2, (int) $attempt->moveseq);
+        $this->assertSame(
+            ['type' => 'question', 'side' => 'player', 'outcome' => 'answered'],
+            move_log::decode($attempt->movelog)[1]
+        );
+    }
+
+    /**
+     * Tests that a resumed Demo keeps resuming from its checkpoint: it fights at a fixed HP the
+     * replay does not model, and has nothing at stake to verify.
+     *
+     * @return void
+     */
+    public function test_build_game_config_keeps_the_checkpoint_for_a_demo(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'normal',
+            1,
+            1,
+            true
+        );
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'combatstate',
+            '{"boardgrid":[4,5,6],"currentturn":"player"}',
+            ['token' => $token]
+        );
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false, 'normal', true);
+
+        $this->assertNull($config['snapshot']);
         $this->assertSame([4, 5, 6], $config['combatstate']['boardgrid']);
-        $this->assertSame('player', $config['combatstate']['currentturn']);
     }
 }

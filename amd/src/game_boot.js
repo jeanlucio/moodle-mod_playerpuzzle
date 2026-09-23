@@ -386,6 +386,7 @@ define([
             this.board = new BoardHandler(this, L, strings);
 
             this.combat.updateUI();
+            this.board.resumeFlow();
 
             // Demo match: board/combat input stays locked until the student
             // steps through the static walkthrough — re-enabled by its own onDismiss callback.

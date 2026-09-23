@@ -139,12 +139,19 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.maxBossHp = parseInt(gameConfig.bosshp) || 1000;
             this.currentHp = this.maxBossHp;
 
-            // A checkpointed fight overrides every HP/meter/turn default set above with its
-            // last saved values — the board grid itself is restored separately,
-            // by board.js reading this same gameConfig.combatstate.boardgrid. Absent for a
-            // phase that never got one (a fresh start, or one just advanced past), in which
-            // case every side simply starts at full HP as already set up above.
-            this.hydrateFromCheckpoint(gameConfig.combatstate);
+            // A resumed phase overrides every HP/meter/turn default set above. The server's
+            // rebuilt snapshot is preferred; the client's own last checkpoint is only the
+            // fallback (a Demo, or a log the server could not replay). board.js builds the
+            // board from restoredGrid either way; a fresh phase has neither, and every side
+            // simply starts at full HP as already set up above.
+            this.restoredGrid = null;
+            this.pendingQuestion = null;
+            this.resumedEnded = false;
+            if (gameConfig.snapshot) {
+                this.hydrateFromSnapshot(gameConfig.snapshot);
+            } else {
+                this.hydrateFromCheckpoint(gameConfig.combatstate);
+            }
 
             // Seeded PRNG driving board generation/gravity/shuffle (board.js reads this via
             // this.rng, replacing what used to be plain Math.random calls) — deterministic
@@ -152,7 +159,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // reproduce the same board states. confirmedEvents is how many of this phase's
             // events the server has stored (the offset the next batch starts at);
             // pendingMoveLog holds the ones recorded since, until the server confirms them.
-            this.rng = Prng.create(parseInt(gameConfig.rngseed, 10) || 0);
+            // A rebuilt snapshot hands over the generator's exact position in the phase's
+            // sequence, so the pieces falling from here on are the ones the server replays.
+            this.rng = gameConfig.snapshot
+                ? Prng.create(gameConfig.snapshot.rngstate)
+                : Prng.create(parseInt(gameConfig.rngseed, 10) || 0);
             this.confirmedEvents = parseInt(gameConfig.moveseq, 10) || 0;
             this.pendingMoveLog = [];
 
@@ -207,6 +218,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 return;
             }
 
+            this.restoredGrid = state.boardgrid;
             this.currentPlayerHp = state.currentplayerhp;
             this.currentHp = state.currentbosshp;
             this.playerShieldMeter = state.playershieldmeter;
@@ -222,6 +234,30 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.bossMana = state.bossmana;
             this.bossMultiplier = state.bossmultiplier;
             this.currentTurn = state.currentturn;
+        }
+
+        /**
+         * Restores a resumed phase from the snapshot the server rebuilt by replaying its
+         * event log (replay::snapshot()): HP/meters/gold as the server computed them, whose
+         * turn it is, a question still open (the board then has the cells its match emptied
+         * still empty), or a match that already ended.
+         *
+         * @param {object} snapshot The gameConfig.snapshot object.
+         */
+        hydrateFromSnapshot(snapshot) {
+            const {state} = snapshot;
+            [
+                'currentPlayerHp', 'currentHp', 'playerMultiplier', 'bossMultiplier',
+                'playerShieldMeter', 'playerShieldReady', 'bossShieldMeter', 'bossShieldReady',
+                'playerPoisonMeter', 'playerPoisonRounds', 'bossPoisonMeter', 'bossPoisonRounds',
+                'playerMana', 'bossMana', 'playerGold', 'bossGold',
+            ].forEach(key => {
+                this[key] = state[key];
+            });
+            this.currentTurn = snapshot.turn;
+            this.restoredGrid = snapshot.grid;
+            this.pendingQuestion = snapshot.pendingquestion;
+            this.resumedEnded = !!snapshot.terminal;
         }
 
         /**
@@ -1069,8 +1105,17 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     try {
                         const res = await Ajax.call([{
                             methodname: 'mod_playerpuzzle_draw_question',
-                            args: {cmid: ctx.gameConfig.cmid, token: ctx.gameConfig.token},
+                            // The move that triggered this question is still pending (no
+                            // checkpoint runs while cells are empty) and must be on record
+                            // before the question can have an outcome.
+                            args: {
+                                cmid: ctx.gameConfig.cmid,
+                                token: ctx.gameConfig.token,
+                                eventoffset: ctx.confirmedEvents,
+                                movelog: ctx.pendingMoveLog.slice(0, MAX_EVENTS_PER_CHECKPOINT),
+                            },
                         }])[0];
+                        ctx.confirmStoredEvents(res.eventcount);
                         if (res.available) {
                             question = {
                                 id: res.id,

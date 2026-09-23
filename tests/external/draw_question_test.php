@@ -28,6 +28,7 @@ namespace mod_playerpuzzle\external;
 use context_module;
 use core_external\external_api;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\move_log;
 use mod_playerpuzzle\local\questions_repository;
 
 /**
@@ -255,5 +256,34 @@ final class draw_question_test extends \advanced_testcase {
         $this->setUser($this->student);
         $this->expectException(\core\exception\require_login_exception::class);
         draw_question::execute($instance->cmid, 'anytoken');
+    }
+
+    /**
+     * Tests that the events still pending on the client (the move that triggered the
+     * question) are stored before the question is drawn, and the reply says where the client
+     * continues from.
+     *
+     * @return void
+     */
+    public function test_stores_the_pending_events_before_drawing(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->make_question((int) $instance->id);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $move = ['type' => 'move', 'r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4];
+        $result = $this->call_draw_question([
+            'cmid' => $instance->cmid,
+            'token' => $token,
+            'eventoffset' => 0,
+            'movelog' => [$move],
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(1, $result['data']['eventcount']);
+        $stored = move_log::decode($DB->get_field('playerpuzzle_attempts', 'movelog', ['token' => $token]));
+        $this->assertSame([$move], $stored);
     }
 }

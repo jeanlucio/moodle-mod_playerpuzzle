@@ -546,4 +546,97 @@ final class replay_test extends \advanced_testcase {
         $this->assertSame(['damage' => 10, 'playergold' => 25, 'bossgold' => 0], $empty);
         $this->assertNull($withpool);
     }
+
+    /**
+     * Tests that rebuilding a phase with nothing logged yet gives the fresh board and hands
+     * over the PRNG exactly where generating it left off: the next draw from the returned
+     * state is the next draw of the original sequence.
+     *
+     * @return void
+     */
+    public function test_snapshot_of_an_empty_log_is_the_fresh_board_and_prng_position(): void {
+        $snap = replay::snapshot($this->make_attempt(['rngseed' => 2]), $this->make_playerpuzzle());
+
+        $rng = prng::create(2);
+        $fresh = board_engine::generate_grid(8, 8, null, $rng);
+        $this->assertSame(array_merge(...$fresh), $snap['grid']);
+        $this->assertSame($rng(), prng::create($snap['rngstate'])());
+        $this->assertSame('player', $snap['turn']);
+        $this->assertNull($snap['pendingquestion']);
+        $this->assertFalse($snap['terminal']);
+        $this->assertSame(0, $snap['eventcount']);
+    }
+
+    /**
+     * Tests that a log ending after the player's move resumes on the player's next turn, with
+     * the boss's own (unlogged, deterministic) turn already played, and that a log ending on
+     * the finishing blow comes back terminal.
+     *
+     * @return void
+     */
+    public function test_snapshot_resumes_after_the_boss_turn_or_reports_the_end(): void {
+        $move = move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]);
+        $pp = $this->make_playerpuzzle(['basestudenthp' => 100]);
+
+        $ongoing = replay::snapshot($this->make_attempt(['rngseed' => 2, 'movelog' => $move]), $pp);
+        $won = replay::snapshot($this->make_attempt(['rngseed' => 2, 'movelog' => $move, 'frozenbasebosshp' => 10]), $pp);
+
+        $this->assertSame('player', $ongoing['turn']);
+        $this->assertFalse($ongoing['terminal']);
+        $this->assertNotContains(null, $ongoing['grid']);
+        $this->assertTrue($won['terminal']);
+        $this->assertEquals(0, $won['state']['currentHp']);
+    }
+
+    /**
+     * Tests that a log ending as a question opens resumes with that question pending — the
+     * cells its match emptied still empty, gravity not yet applied — unless the server had
+     * already judged it, in which case the outcome is applied and the missing marker returned
+     * for storage.
+     *
+     * @return void
+     */
+    public function test_snapshot_stops_at_an_open_question_unless_the_server_judged_it(): void {
+        $pp = $this->make_playerpuzzle(['basestudenthp' => 100]);
+
+        $movelog = move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]);
+        $open = replay::snapshot($this->make_attempt([
+            'rngseed' => 56,
+            'movelog' => $movelog,
+            'frozenbasebosshp' => 100000,
+        ]), $pp);
+        $judged = replay::snapshot($this->make_attempt([
+            'rngseed' => 56,
+            'movelog' => $movelog,
+            'questionresults' => question_results::append(null, 'player', true, true),
+            'questions_total' => 1,
+            'frozenbasebosshp' => 100000,
+        ]), $pp);
+
+        $this->assertSame('player', $open['pendingquestion']);
+        $this->assertContains(null, $open['grid']);
+        $this->assertSame([], $open['appendedevents']);
+        $this->assertNull($judged['pendingquestion']);
+        $this->assertSame([['type' => 'question', 'side' => 'player', 'outcome' => 'answered']], $judged['appendedevents']);
+        $this->assertSame(2, $judged['eventcount']);
+    }
+
+    /**
+     * Tests that a combat consumable use_stock counted but the log never received is applied
+     * at the resume point and returned for storage, so its already-spent stock still has its
+     * effect: a counted Sword on seed 2's untouched board with a 10 HP boss ends the match.
+     *
+     * @return void
+     */
+    public function test_snapshot_applies_a_counted_but_unlogged_consumable(): void {
+        $this->record_server_uses(95, ['sword' => 1]);
+
+        $snap = replay::snapshot(
+            $this->make_attempt(['id' => 95, 'rngseed' => 2, 'frozenbasebosshp' => 10]),
+            $this->make_playerpuzzle()
+        );
+
+        $this->assertSame([['type' => 'consumable', 'kind' => 'sword']], $snap['appendedevents']);
+        $this->assertTrue($snap['terminal']);
+    }
 }

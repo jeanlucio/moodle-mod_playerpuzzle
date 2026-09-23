@@ -32,6 +32,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\move_log;
 use moodle_exception;
 
 /**
@@ -54,6 +55,13 @@ class draw_question extends external_api {
         return new external_function_parameters([
             'cmid'  => new external_value(PARAM_INT, 'Course module ID'),
             'token' => new external_value(PARAM_ALPHANUM, 'Anti-replay token of the in-progress attempt'),
+            'eventoffset' => new external_value(
+                PARAM_INT,
+                "Index in the phase's event log of the first event in movelog",
+                VALUE_DEFAULT,
+                0
+            ),
+            'movelog' => save_combat_state::movelog_structure(),
         ]);
     }
 
@@ -64,17 +72,30 @@ class draw_question extends external_api {
      * again" loop cannot bulk-harvest the question bank for free, since each draw call while a
      * question is already open just re-serves that same one.
      *
+     * The client's pending events ride along and are stored first: they include the move
+     * that triggered this question, which must be on record before the question can have an
+     * outcome. Otherwise, while the question is open (no checkpoint can be taken then), a
+     * reload would rewind the fight to before that move and leave the answer orphaned — or
+     * let a wrong answer be undone by reloading and playing another move.
+     *
      * @param int $cmid Course module ID.
      * @param string $token Anti-replay token of the in-progress attempt.
+     * @param int $eventoffset Index in the phase's event log of the first event in $movelog.
+     * @param array $movelog Combat events not yet confirmed stored, in order.
      * @return array Result matrix.
      */
-    public static function execute(int $cmid, string $token): array {
+    public static function execute(int $cmid, string $token, int $eventoffset = 0, array $movelog = []): array {
         global $DB, $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid'  => $cmid,
             'token' => $token,
+            'eventoffset' => $eventoffset,
+            'movelog' => $movelog,
         ]);
+        if (!move_log::is_valid($params['movelog'])) {
+            throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
+        }
 
         $context = context_module::instance($params['cmid']);
         self::validate_context($context);
@@ -89,7 +110,10 @@ class draw_question extends external_api {
             $params['token'],
             (int) $playerpuzzle->id,
             (int) $USER->id,
-            function (\stdClass $attempt) use ($DB, $playerpuzzle, $context): array {
+            function (\stdClass $attempt) use ($DB, $playerpuzzle, $context, $params): array {
+                if (!move_log::merge_into_attempt($attempt, $params['eventoffset'], $params['movelog'])) {
+                    throw new moodle_exception('invalidcombatstate', 'mod_playerpuzzle');
+                }
                 $questionid = (int) $attempt->currentquestionid;
                 $current = $questionid > 0
                     ? question_fetcher::get_single_question($questionid, (int) $playerpuzzle->id, $context)
@@ -98,24 +122,25 @@ class draw_question extends external_api {
                 if ($current === null) {
                     $questionid = question_fetcher::draw_random_question_id((int) $playerpuzzle->id);
                     $attempt->currentquestionid = $questionid ?? 0;
-                    $attempt->timemodified = time();
-                    $DB->update_record('playerpuzzle_attempts', $attempt);
-
                     $current = $questionid !== null
                         ? question_fetcher::get_single_question($questionid, (int) $playerpuzzle->id, $context)
                         : null;
                 }
+                $attempt->timemodified = time();
+                $DB->update_record('playerpuzzle_attempts', $attempt);
 
-                return ['question' => $current];
+                return ['question' => $current, 'eventcount' => (int) $attempt->moveseq];
             }
         );
         if ($current === false) {
             throw new moodle_exception('invalidattempttoken', 'mod_playerpuzzle');
         }
+        $eventcount = $current['eventcount'];
         $current = $current['question'];
 
         if ($current === null) {
             return [
+                'eventcount' => $eventcount,
                 'available' => false,
                 'id'        => 0,
                 'type'      => '',
@@ -126,6 +151,7 @@ class draw_question extends external_api {
         }
 
         return [
+            'eventcount' => $eventcount,
             'available' => true,
             'id'        => $current['id'],
             'type'      => $current['type'],
@@ -142,6 +168,7 @@ class draw_question extends external_api {
      */
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
+            'eventcount' => new external_value(PARAM_INT, "Events now stored in the phase's log — the offset to continue from"),
             'available' => new external_value(PARAM_BOOL, 'Whether a question is available at all'),
             'id'        => new external_value(PARAM_INT, 'Question id (0 when unavailable)'),
             'type'      => new external_value(PARAM_ALPHA, 'Question type: multichoice or truefalse'),

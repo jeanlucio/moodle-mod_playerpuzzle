@@ -68,10 +68,6 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
                 this.a11yCells[0][0].focus({preventScroll: true});
             }
 
-            if (this.scene.combat.currentTurn === 'player') {
-                this.announceTurnStart();
-            }
-
             // Show a move hint after 5 s of player inactivity.
             this.scene.time.addEvent({
                 delay: 1000,
@@ -79,6 +75,33 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
                 callbackScope: this,
                 loop: true
             });
+        }
+
+        /**
+         * Picks up a resumed fight where it stood: a match already over goes straight to its
+         * end screen, a question still open reopens (its close then refills the board and
+         * finishes the cascade, as in live play), and otherwise the turn continues. A boss
+         * turn can only be pending here on the checkpoint fallback — a rebuilt snapshot always
+         * plays the boss's turn out itself — and is kicked off, or the fight would sit forever
+         * with neither side able to move. Called by game_boot once the whole scene (board, HUD)
+         * exists, since an end screen or a question needs all of it.
+         *
+         * @return void
+         */
+        resumeFlow() {
+            const me = this.scene;
+            const combat = me.combat;
+
+            if (combat.resumedEnded) {
+                combat.checkGameOver();
+            } else if (combat.pendingQuestion) {
+                combat.openQuestionModal(combat.pendingQuestion);
+            } else if (combat.currentTurn === 'player') {
+                this.announceTurnStart();
+            } else {
+                me.input.enabled = false;
+                me.time.delayedCall(800, combat.executeBossTurn, [], combat);
+            }
         }
 
         drawBackground() {
@@ -133,18 +156,22 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
 
         initGrid() {
             const me = this.scene;
-            // A checkpointed fight reuses its exact saved piece types instead of rolling a
-            // fresh board — the reload is meant to resume the same position, not hand the
-            // player a new one (which could form matches, or remove ones already set up,
-            // the moment the board loads).
-            const combatstate = me.combat && me.combat.gameConfig.combatstate;
-            const savedgrid = combatstate ? combatstate.boardgrid : null;
+            // A resumed fight reuses its exact piece types (the server's rebuilt board, or the
+            // client's own checkpoint as a fallback) instead of rolling a fresh one — the
+            // reload is meant to resume the same position, not hand the player a new one.
+            const savedgrid = me.combat ? me.combat.restoredGrid : null;
             const types = BoardRules.generateGrid(this.rows, this.cols, savedgrid, me.combat.rng);
 
             for (let row = 0; row < this.rows; row++) {
                 this.grid[row] = [];
                 for (let col = 0; col < this.cols; col++) {
                     const randomType = types[row][col];
+                    // Only a board rebuilt with a question still open has empty cells: the
+                    // ones its match cleared, refilled once the question closes.
+                    if (randomType === null) {
+                        this.grid[row][col] = null;
+                        continue;
+                    }
 
                     const x = this.offsetX + (col * this.pieceSize);
                     const y = this.offsetY + (row * this.pieceSize);

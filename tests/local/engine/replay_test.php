@@ -229,6 +229,27 @@ final class replay_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a match's damage is rounded the way the live client rounds it before it is
+     * dealt: on seed 4, a 4-piece Sword combo with an odd baseDamage (11) hits for 16.5,
+     * which the client deals as 17 — enough to finish a 17 HP boss. Dealt unrounded, the boss
+     * would be left on half a point and the client's real win would not verify.
+     *
+     * @return void
+     */
+    public function test_derive_rounds_match_damage_like_the_client(): void {
+        $attempt = $this->make_attempt([
+            'rngseed' => 4,
+            'movelog' => move_log::encode([['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 3, 'c2' => 5]]),
+            'frozenbasebosshp' => 17,
+            'frozenbossdamage' => 11,
+        ]);
+
+        $result = replay::derive($attempt, $this->make_playerpuzzle(['basestudenthp' => 100]));
+
+        $this->assertSame(['damage' => 17, 'playergold' => 0, 'bossgold' => 0, 'bossdefeated' => true], $result);
+    }
+
+    /**
      * Tests that a match the player loses is conclusive too, and says the boss survived: on
      * seed 2, after a coin match, the boss's own turn finishes a 1 HP student.
      *

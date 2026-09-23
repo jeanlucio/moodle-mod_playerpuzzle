@@ -417,7 +417,10 @@ class replay {
             $state = $result['state'];
 
             if ($result['damageDealt'] > 0) {
-                $scaled = $result['damageDealt'] * ($turn === 'player' ? $state['playerMultiplier'] : 1);
+                // Rounded exactly like board.js::checkMatches() (Math.round(), halves up) before
+                // being dealt: an odd baseDamage makes a 4-piece combo land on .5, and an
+                // unrounded hit would leave a boss the client already killed on half a point.
+                $scaled = floor($result['damageDealt'] * ($turn === 'player' ? $state['playerMultiplier'] : 1) + 0.5);
                 if ($turn === 'player') {
                     $applied = combat_engine::resolve_damage($state['currentHp'], $state['bossShieldReady'], $scaled);
                     $state['currentHp'] = $applied['newHp'];

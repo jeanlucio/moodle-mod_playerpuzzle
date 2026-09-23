@@ -58,6 +58,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'grademethod',
             'minquestions',
             'considererrors',
+            'show_ranking',
             'grade',
             'gradepass',
             'duedate',

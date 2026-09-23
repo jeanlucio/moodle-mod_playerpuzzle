@@ -620,5 +620,16 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092301, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092302) {
+        // Lets the teacher hide the student-facing ranking; on by default.
+        $table = new xmldb_table('playerpuzzle');
+        $field = new xmldb_field('show_ranking', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'considererrors');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026092302, 'playerpuzzle');
+    }
+
     return true;
 }

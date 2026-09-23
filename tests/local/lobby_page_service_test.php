@@ -676,4 +676,61 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $this->assertStringContainsString('mobile=1', $data['playurl']);
     }
+
+    /**
+     * Tests that the ranking panel is built with the page when the teacher has it on: the
+     * student's own row among the rows, and the note for the activity's game mode.
+     *
+     * @return void
+     */
+    public function test_build_page_data_includes_the_ranking_when_on(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['maxlevels' => 1]);
+        $this->getDataGenerator()->enrol_user($this->student->id, $this->course->id, 'student');
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id,
+            'userid' => $this->student->id,
+            'token' => bin2hex(random_bytes(32)),
+            'currentphase' => 3,
+            'status' => 'inprogress',
+            'timecreated' => time(),
+        ]);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $DB->get_record('playerpuzzle', ['id' => $instance->id], '*', MUST_EXIST),
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertTrue($data['showranking']);
+        $this->assertSame(get_string('ranking_note_campaign', 'mod_playerpuzzle'), $data['rankingnote']);
+        $this->assertCount(1, $data['rankingrows']);
+        $this->assertTrue($data['rankingrows'][0]['iscurrentuser']);
+        $this->assertSame('20', $data['rankingrows'][0]['points']);
+    }
+
+    /**
+     * Tests that turning the ranking off leaves it out of the page entirely.
+     *
+     * @return void
+     */
+    public function test_build_page_data_leaves_the_ranking_out_when_off(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['show_ranking' => 0]);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $DB->get_record('playerpuzzle', ['id' => $instance->id], '*', MUST_EXIST),
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertArrayNotHasKey('showranking', $data);
+        $this->assertArrayNotHasKey('rankingrows', $data);
+    }
 }

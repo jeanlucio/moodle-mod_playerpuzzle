@@ -59,6 +59,7 @@ class mod_playerpuzzle_generator extends testing_module_generator {
             'grademethod'         => 1,
             'minquestions'        => 3,
             'considererrors'      => 0,
+            'show_ranking'        => 1,
             'grade'               => 100,
             'gradepass'           => 0,
         ];

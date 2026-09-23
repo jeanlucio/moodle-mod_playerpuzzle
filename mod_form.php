@@ -179,6 +179,11 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addHelpButton('maxattempts', 'maxattempts', 'mod_playerpuzzle');
         $mform->hideIf('maxattempts', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
 
+        $mform->addElement('advcheckbox', 'show_ranking', get_string('show_ranking', 'mod_playerpuzzle'));
+        $mform->setType('show_ranking', PARAM_INT);
+        $mform->setDefault('show_ranking', 1);
+        $mform->addHelpButton('show_ranking', 'show_ranking', 'mod_playerpuzzle');
+
         $this->add_hud_elements($mform, (int) $COURSE->id);
 
         $this->standard_grading_coursemodule_elements();

@@ -627,7 +627,8 @@ body.path-mod-playerpuzzle .pp-lobby-playdemo:focus-visible {
     outline-offset: 3px;
 }
 
-body.path-mod-playerpuzzle .pp-lobby-play {
+body.path-mod-playerpuzzle .pp-lobby-play,
+body.path-mod-playerpuzzle .pp-lobby-rankingopen {
     width: 100%;
     font-weight: 800;
     font-size: 1.15rem;
@@ -644,13 +645,69 @@ body.path-mod-playerpuzzle .pp-lobby-play {
     transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-body.path-mod-playerpuzzle .pp-lobby-play:hover {
+body.path-mod-playerpuzzle .pp-lobby-play:hover,
+body.path-mod-playerpuzzle .pp-lobby-rankingopen:hover {
     transform: translateY(-2px);
 }
 
-body.path-mod-playerpuzzle .pp-lobby-play:focus-visible {
+body.path-mod-playerpuzzle .pp-lobby-play:focus-visible,
+body.path-mod-playerpuzzle .pp-lobby-rankingopen:focus-visible {
     outline: 3px solid #ffd873;
     outline-offset: 3px;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-rankingopen {
+    margin-top: 0.75rem;
+}
+
+/**
+ * Ranking panel, shown in place of the Lobby's main panel.
+ */
+body.path-mod-playerpuzzle .pp-lobby-ranking-title {
+    color: #ffd873;
+    font-weight: 800;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ranking-table {
+    width: 100%;
+    margin: 0.75rem 0 1rem;
+    border-collapse: collapse;
+    color: #f3e6c4;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ranking-table th,
+body.path-mod-playerpuzzle .pp-lobby-ranking-table td {
+    padding: 0.4rem 0.5rem;
+    border: 0;
+    border-bottom: 1px solid rgba(205, 179, 122, 0.35);
+    text-align: start;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ranking-table th {
+    color: #cdb37a;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ranking-me td {
+    color: #ffd873;
+    font-weight: 700;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ranking-outsider td {
+    border-top: 2px dashed rgba(205, 179, 122, 0.5);
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ranking-youtag {
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-ranking-empty {
+    color: #f3e6c4;
+    margin: 1rem 0;
 }
 
 /**

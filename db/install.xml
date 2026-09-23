@@ -30,6 +30,7 @@
         <FIELD NAME="grademethod" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Single-match mode only; mirrors PLAYERWORDS_GRADE_*"/>
         <FIELD NAME="minquestions" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="3" SEQUENCE="false" COMMENT="0-10; applies to both modes; opt-out, not opt-in"/>
         <FIELD NAME="considererrors" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boolean; only enableable when minquestions &gt;= 1"/>
+        <FIELD NAME="show_ranking" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Boolean; whether students can open the ranking from the Lobby"/>
         <FIELD NAME="grade" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="100.00000" SEQUENCE="false" DECIMALS="5" COMMENT="Maximum grade value"/>
         <FIELD NAME="gradepass" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" SEQUENCE="false" DECIMALS="5" COMMENT="Minimum passing grade"/>
         <FIELD NAME="duedate" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Deadline shown as a calendar event; 0 = no deadline"/>

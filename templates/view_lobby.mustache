@@ -58,7 +58,24 @@
         "playdemotext": "Play Demo",
         "canmanagequestions": true,
         "managequestionsurl": "/mod/playerpuzzle/managequestions.php?id=1",
-        "managequestionslabel": "Manage questions"
+        "managequestionslabel": "Manage questions",
+        "showranking": true,
+        "rankingbuttontext": "Ranking",
+        "rankingtitle": "Class ranking",
+        "rankingnote": "Points out of 100: a complete campaign is worth 100, counting only verified victories.",
+        "rankingposition": "Position",
+        "rankingstudent": "Student",
+        "rankingpoints": "Points",
+        "rankingyou": "(you)",
+        "rankingempty": "Nobody has scored yet.",
+        "rankingback": "Back",
+        "rankingisempty": false,
+        "rankingrows": [
+            {"position": 1, "fullname": "Ana Souza", "points": "80", "iscurrentuser": false},
+            {"position": 2, "fullname": "Bruno Lima", "points": "60", "iscurrentuser": true}
+        ],
+        "rankinghasoutsider": false,
+        "rankingoutsider": null
     }
 }}
 <div class="pp-lobby" style="border-image-source: url('{{panelstoneurl}}');">
@@ -75,119 +92,165 @@
         </div>
 
         <div class="pp-lobby-panel">
-            <div class="pp-lobby-ribbon" style="background-image: url('{{scrollbannerurl}}');">
-                <h2 class="pp-lobby-ribbon-title">
-                    {{#progresstext}}{{progresstext}}{{/progresstext}}
-                    {{^progresstext}}{{readytext}}{{/progresstext}}
-                </h2>
+            <div id="pp-lobby-main" class="pp-lobby-view">
+                <div class="pp-lobby-ribbon" style="background-image: url('{{scrollbannerurl}}');">
+                    <h2 class="pp-lobby-ribbon-title">
+                        {{#progresstext}}{{progresstext}}{{/progresstext}}
+                        {{^progresstext}}{{readytext}}{{/progresstext}}
+                    </h2>
+                </div>
+
+                <div class="pp-lobby-stats">
+                    <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
+                            <circle cx="12" cy="12" r="5.4" fill="none" stroke="#8a611c" stroke-width="1.2"/>
+                        </svg>
+                        <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
+                    </span>
+                </div>
+
+                <div class="pp-lobby-shop" data-cmid="{{cmid}}">
+                    <h3 class="pp-lobby-shop-title">{{shoptitle}}</h3>
+                    <ul class="pp-lobby-shop-list">
+                        {{#shopitems}}
+                        <li class="pp-lobby-shop-item" data-type="{{type}}">
+                            <span class="pp-lobby-shop-name">{{label}}</span>
+                            <span class="pp-lobby-shop-owned" data-role="owned">{{ownedtext}}</span>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary pp-lobby-buy"
+                                data-type="{{type}}"
+                                aria-label="{{arialabel}}"
+                            >
+                                {{buylabel}}
+                                <span class="pp-lobby-shop-price" aria-hidden="true">🪙{{price}}</span>
+                            </button>
+                        </li>
+                        {{/shopitems}}
+                    </ul>
+                </div>
+
+                {{#hastransfer}}
+                <div class="pp-lobby-transfer" data-cmid="{{cmid}}">
+                    <h3 class="pp-lobby-transfer-title">{{transfertitle}}</h3>
+                    <span class="pp-lobby-chip" data-role="hudcoinchip" aria-label="{{hudcoinstext}}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" fill="#8ea7c9" stroke="#3f5670" stroke-width="1.5"/>
+                            <circle cx="12" cy="12" r="5.4" fill="none" stroke="#3f5670" stroke-width="1.2"/>
+                        </svg>
+                        <span data-role="hudcoinvalue" aria-hidden="true">{{hudcoinvalue}}</span>
+                    </span>
+                    <label for="pp-lobby-transfer-amount" class="pp-lobby-transfer-label">{{transferamountlabel}}</label>
+                    <input
+                        type="number"
+                        id="pp-lobby-transfer-amount"
+                        class="pp-lobby-transfer-input"
+                        min="1"
+                        step="1"
+                        value="1"
+                    >
+                    <button type="button" class="btn btn-sm btn-outline-secondary pp-lobby-transfer-btn">
+                        {{transferbuttonlabel}}
+                    </button>
+                </div>
+                {{/hastransfer}}
+
+                <div class="form-check pp-lobby-speech">
+                    <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="pp-lobby-speech"
+                        {{#speechenabled}}checked{{/speechenabled}}
+                    >
+                    <label class="form-check-label" for="pp-lobby-speech">{{speechlabel}}</label>
+                </div>
+
+                <form method="post" action="{{{playurl}}}">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+
+                    {{#difficultycurrent}}
+                    <p class="pp-lobby-note">{{difficultycurrent}}</p>
+                    {{/difficultycurrent}}
+
+                    {{#difficultylabel}}
+                    <fieldset class="pp-lobby-difficulty">
+                        <legend class="pp-lobby-difficulty-legend">
+                            <span>{{difficultylabel}}</span>
+                            {{{difficultyhelpicon}}}
+                        </legend>
+                        <div class="pp-lobby-difficulty-options">
+                            {{#difficultychoices}}
+                            <span class="pp-lobby-difficulty-option">
+                                <input type="radio" name="difficulty" id="pp-difficulty-{{value}}" value="{{value}}" {{#checked}}checked{{/checked}}>
+                                <label for="pp-difficulty-{{value}}">{{label}}</label>
+                            </span>
+                            {{/difficultychoices}}
+                        </div>
+                    </fieldset>
+                    {{/difficultylabel}}
+
+                    <button type="submit" class="pp-lobby-play">{{playtext}}</button>
+                </form>
+
+                {{#showranking}}
+                <button type="button" class="pp-lobby-rankingopen" data-action="open-ranking" aria-controls="pp-lobby-ranking" aria-expanded="false">{{rankingbuttontext}}</button>
+                {{/showranking}}
+
+                <form method="post" action="{{{demourl}}}">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    <input type="hidden" name="isdemo" value="1">
+                    <button type="submit" class="pp-lobby-playdemo">{{playdemotext}}</button>
+                </form>
+
+                {{#minquestionstext}}
+                <p class="pp-lobby-note">{{minquestionstext}}</p>
+                {{/minquestionstext}}
+
+                {{#canmanagequestions}}
+                <a href="{{managequestionsurl}}" class="pp-lobby-managelink">{{managequestionslabel}}</a>
+                {{/canmanagequestions}}
             </div>
-
-            <div class="pp-lobby-stats">
-                <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
-                        <circle cx="12" cy="12" r="5.4" fill="none" stroke="#8a611c" stroke-width="1.2"/>
-                    </svg>
-                    <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
-                </span>
-            </div>
-
-            <div class="pp-lobby-shop" data-cmid="{{cmid}}">
-                <h3 class="pp-lobby-shop-title">{{shoptitle}}</h3>
-                <ul class="pp-lobby-shop-list">
-                    {{#shopitems}}
-                    <li class="pp-lobby-shop-item" data-type="{{type}}">
-                        <span class="pp-lobby-shop-name">{{label}}</span>
-                        <span class="pp-lobby-shop-owned" data-role="owned">{{ownedtext}}</span>
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary pp-lobby-buy"
-                            data-type="{{type}}"
-                            aria-label="{{arialabel}}"
-                        >
-                            {{buylabel}}
-                            <span class="pp-lobby-shop-price" aria-hidden="true">🪙{{price}}</span>
-                        </button>
-                    </li>
-                    {{/shopitems}}
-                </ul>
-            </div>
-
-            {{#hastransfer}}
-            <div class="pp-lobby-transfer" data-cmid="{{cmid}}">
-                <h3 class="pp-lobby-transfer-title">{{transfertitle}}</h3>
-                <span class="pp-lobby-chip" data-role="hudcoinchip" aria-label="{{hudcoinstext}}">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="12" cy="12" r="9" fill="#8ea7c9" stroke="#3f5670" stroke-width="1.5"/>
-                        <circle cx="12" cy="12" r="5.4" fill="none" stroke="#3f5670" stroke-width="1.2"/>
-                    </svg>
-                    <span data-role="hudcoinvalue" aria-hidden="true">{{hudcoinvalue}}</span>
-                </span>
-                <label for="pp-lobby-transfer-amount" class="pp-lobby-transfer-label">{{transferamountlabel}}</label>
-                <input
-                    type="number"
-                    id="pp-lobby-transfer-amount"
-                    class="pp-lobby-transfer-input"
-                    min="1"
-                    step="1"
-                    value="1"
-                >
-                <button type="button" class="btn btn-sm btn-outline-secondary pp-lobby-transfer-btn">
-                    {{transferbuttonlabel}}
-                </button>
-            </div>
-            {{/hastransfer}}
-
-            <div class="form-check pp-lobby-speech">
-                <input
-                    type="checkbox"
-                    class="form-check-input"
-                    id="pp-lobby-speech"
-                    {{#speechenabled}}checked{{/speechenabled}}
-                >
-                <label class="form-check-label" for="pp-lobby-speech">{{speechlabel}}</label>
-            </div>
-
-            <form method="post" action="{{{playurl}}}">
-                <input type="hidden" name="sesskey" value="{{sesskey}}">
-
-                {{#difficultycurrent}}
-                <p class="pp-lobby-note">{{difficultycurrent}}</p>
-                {{/difficultycurrent}}
-
-                {{#difficultylabel}}
-                <fieldset class="pp-lobby-difficulty">
-                    <legend class="pp-lobby-difficulty-legend">
-                        <span>{{difficultylabel}}</span>
-                        {{{difficultyhelpicon}}}
-                    </legend>
-                    <div class="pp-lobby-difficulty-options">
-                        {{#difficultychoices}}
-                        <span class="pp-lobby-difficulty-option">
-                            <input type="radio" name="difficulty" id="pp-difficulty-{{value}}" value="{{value}}" {{#checked}}checked{{/checked}}>
-                            <label for="pp-difficulty-{{value}}">{{label}}</label>
-                        </span>
-                        {{/difficultychoices}}
-                    </div>
-                </fieldset>
-                {{/difficultylabel}}
-
-                <button type="submit" class="pp-lobby-play">{{playtext}}</button>
-            </form>
-
-            <form method="post" action="{{{demourl}}}">
-                <input type="hidden" name="sesskey" value="{{sesskey}}">
-                <input type="hidden" name="isdemo" value="1">
-                <button type="submit" class="pp-lobby-playdemo">{{playdemotext}}</button>
-            </form>
-
-            {{#minquestionstext}}
-            <p class="pp-lobby-note">{{minquestionstext}}</p>
-            {{/minquestionstext}}
-
-            {{#canmanagequestions}}
-            <a href="{{managequestionsurl}}" class="pp-lobby-managelink">{{managequestionslabel}}</a>
-            {{/canmanagequestions}}
+            {{#showranking}}
+            <section id="pp-lobby-ranking" class="pp-lobby-view pp-lobby-ranking" aria-labelledby="pp-lobby-ranking-title" hidden>
+                <h3 id="pp-lobby-ranking-title" class="pp-lobby-ranking-title" tabindex="-1">{{rankingtitle}}</h3>
+                <p class="pp-lobby-note">{{rankingnote}}</p>
+                {{#rankingisempty}}
+                <p class="pp-lobby-ranking-empty">{{rankingempty}}</p>
+                {{/rankingisempty}}
+                {{^rankingisempty}}
+                <table class="pp-lobby-ranking-table table-reboot">
+                    <caption class="visually-hidden">{{rankingtitle}}</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">{{rankingposition}}</th>
+                            <th scope="col">{{rankingstudent}}</th>
+                            <th scope="col">{{rankingpoints}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#rankingrows}}
+                        <tr {{#iscurrentuser}}class="pp-lobby-ranking-me" aria-current="true"{{/iscurrentuser}}>
+                            <td>{{position}}</td>
+                            <td>{{fullname}} {{#iscurrentuser}}<span class="pp-lobby-ranking-youtag">{{rankingyou}}</span>{{/iscurrentuser}}</td>
+                            <td>{{points}}</td>
+                        </tr>
+                        {{/rankingrows}}
+                        {{#rankinghasoutsider}}
+                        {{#rankingoutsider}}
+                        <tr class="pp-lobby-ranking-me pp-lobby-ranking-outsider" aria-current="true">
+                            <td>{{position}}</td>
+                            <td>{{fullname}} <span class="pp-lobby-ranking-youtag">{{rankingyou}}</span></td>
+                            <td>{{points}}</td>
+                        </tr>
+                        {{/rankingoutsider}}
+                        {{/rankinghasoutsider}}
+                    </tbody>
+                </table>
+                {{/rankingisempty}}
+                <button type="button" class="pp-lobby-playdemo" data-action="close-ranking">{{rankingback}}</button>
+            </section>
+            {{/showranking}}
         </div>
     </div>
 </div>

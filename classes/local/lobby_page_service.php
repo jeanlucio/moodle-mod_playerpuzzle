@@ -115,8 +115,45 @@ class lobby_page_service {
         $data += self::build_minquestions_context($instance);
         $data += self::build_difficulty_context($attempt);
         $data += self::build_speech_context($userid);
+        $data += self::build_ranking_context($instance, $cm, $userid);
 
         return $data;
+    }
+
+    /**
+     * Builds the ranking panel's context, when the teacher has it on: the top rows, the
+     * viewer's own row when outside them, and a note on what the points mean for this game
+     * mode. Built with the page, so opening the panel needs no extra request.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param stdClass $cm Course module.
+     * @param int $userid Current user ID.
+     * @return array Empty when the ranking is off.
+     */
+    private static function build_ranking_context(stdClass $instance, stdClass $cm, int $userid): array {
+        if (empty($instance->show_ranking)) {
+            return [];
+        }
+
+        $ranking = ranking_service::get_ranking($instance, $cm, $userid);
+        $single = $instance->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE;
+
+        return [
+            'showranking' => true,
+            'rankingbuttontext' => get_string('ranking_open', 'mod_playerpuzzle'),
+            'rankingtitle' => get_string('ranking_title', 'mod_playerpuzzle'),
+            'rankingnote' => get_string($single ? 'ranking_note_single' : 'ranking_note_campaign', 'mod_playerpuzzle'),
+            'rankingposition' => get_string('ranking_position', 'mod_playerpuzzle'),
+            'rankingstudent' => get_string('ranking_student', 'mod_playerpuzzle'),
+            'rankingpoints' => get_string('ranking_points', 'mod_playerpuzzle'),
+            'rankingyou' => get_string('ranking_you', 'mod_playerpuzzle'),
+            'rankingempty' => get_string('ranking_empty', 'mod_playerpuzzle'),
+            'rankingback' => get_string('ranking_back', 'mod_playerpuzzle'),
+            'rankingrows' => $ranking['rows'],
+            'rankinghasoutsider' => $ranking['hasoutsider'],
+            'rankingoutsider' => $ranking['outsiderrow'],
+            'rankingisempty' => $ranking['isempty'],
+        ];
     }
 
     /**

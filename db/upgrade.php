@@ -631,5 +631,19 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092302, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092305) {
+        // Due date removed: covered by availability restrictions and completion conditions
+        // instead, so a separate deadline field/calendar event was pure duplicate complexity.
+        $table = new xmldb_table('playerpuzzle');
+        $field = new xmldb_field('duedate');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        $DB->delete_records('event', ['modulename' => 'playerpuzzle', 'eventtype' => 'due']);
+
+        upgrade_mod_savepoint(true, 2026092305, 'playerpuzzle');
+    }
+
     return true;
 }

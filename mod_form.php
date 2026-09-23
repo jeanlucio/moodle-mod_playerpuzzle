@@ -60,10 +60,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $this->standard_intro_elements();
 
-        $mform->addElement('header', 'availabilityhdr', get_string('availability'));
-        $mform->addElement('date_time_selector', 'duedate', get_string('duedate', 'mod_playerpuzzle'), ['optional' => true]);
-        $mform->addHelpButton('duedate', 'duedate', 'mod_playerpuzzle');
-
         $mform->addElement('header', 'studentsettings', get_string('studentsettings', 'mod_playerpuzzle'));
 
         $mform->addElement('text', 'basestudenthp', get_string('basestudenthp', 'mod_playerpuzzle'));

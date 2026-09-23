@@ -1143,7 +1143,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     $('#playerpuzzle-question-text').html(questionText);
                     const answersContainer = $('#playerpuzzle-answers-container');
                     answersContainer.empty();
-                    $('#playerpuzzle-btn-confirm').hide().off('click');
+                    // Re-enabled here, not only where each path shows it: a skipped player
+                    // question closes with the button still disabled (it only enables once an
+                    // answer is picked), and the boss's or an empty question's "Continue" would
+                    // otherwise come up disabled, leaving no way to close the modal.
+                    $('#playerpuzzle-btn-confirm').hide().prop('disabled', false).off('click');
                     $('#playerpuzzle-btn-skip').hide().off('click');
                     $('#playerpuzzle-hint-text').hide().empty();
                     $('#playerpuzzle-btn-hint').hide().prop('disabled', false).off('click');

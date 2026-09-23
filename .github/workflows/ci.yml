@@ -53,16 +53,24 @@ jobs:
           # 23/09/2026) — main is the only way to test against it before that branch is cut,
           # a moving target moodle-plugin-ci itself supports for exactly this. PHP 8.3 is
           # main's own declared minimum (public/admin/environment.xml).
-          - {moodle-branch: 'main', php: '8.3', database: 'pgsql', runchecks: 'all'}
+          - {moodle-branch: 'main', php: '8.3', database: 'pgsql'}
           - {moodle-branch: 'main', php: '8.4', database: 'mariadb'}
+          # runchecks: 'all' (the full lint suite) only needs one leg total — phpcs/phpdoc
+          # come from moodle-plugin-ci's own toolchain, fixed regardless of MOODLE_BRANCH, and
+          # phplint/phpmd/validate/savepoints/mustache/JS-unit-tests only ever read the
+          # plugin's own files. grunt is the one exception (ESLint/stylelint configs live in
+          # the checked-out core and do drift release to release), so this leg is kept on the
+          # newest true stable, not on main, which is still a moving beta target.
           - {moodle-branch: 'MOODLE_502_STABLE', php: '8.3', database: 'pgsql', runchecks: 'all'}
-          - {moodle-branch: 'MOODLE_502_STABLE', php: '8.3', database: 'pgsql', runchecks: 'all', noplayerhud: 'true'}
+          - {moodle-branch: 'MOODLE_502_STABLE', php: '8.3', database: 'pgsql', noplayerhud: 'true'}
           - {moodle-branch: 'MOODLE_502_STABLE', php: '8.4', database: 'mariadb'}
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.3', database: 'pgsql'}
           - {moodle-branch: 'MOODLE_501_STABLE', php: '8.2', database: 'mariadb'}
           - {moodle-branch: 'MOODLE_500_STABLE', php: '8.2', database: 'pgsql'}
           - {moodle-branch: 'MOODLE_500_STABLE', php: '8.2', database: 'mariadb'}
-          - {moodle-branch: 'MOODLE_405_STABLE', php: '8.2', database: 'pgsql'}
+          # 4.5 supports PHP 8.1-8.3 (docs.moodle.org/502/en/PHP); spread across its two legs
+          # like 5.1's own 8.3/8.2 split, instead of adding a third, to cover the floor too.
+          - {moodle-branch: 'MOODLE_405_STABLE', php: '8.1', database: 'pgsql'}
           - {moodle-branch: 'MOODLE_405_STABLE', php: '8.2', database: 'mariadb'}
 
     steps:

@@ -132,6 +132,9 @@ class question_bank_sync {
 
         $stats = (object) ['imported' => 0, 'updated' => 0, 'skipped' => 0, 'disabled' => 0];
         $seenentryids = [];
+        // Every question actually written this run, keyed by its destination id — its
+        // answers are read back in one batch after the loop instead of once per question.
+        $processed = [];
 
         foreach ($rows as $row) {
             $entryid = (int) $row->entryid;
@@ -189,29 +192,10 @@ class question_bank_sync {
                 $questionid
             );
 
-            // A direct answers-only read, never questions_repository::get_question(): that
-            // helper also re-fetches the parent question row, which sync_from_category()
-            // already has in $row/$questionid — a wasted query repeated once per imported
-            // question.
-            $destanswers = array_values(
-                $DB->get_records('playerpuzzle_question_answers', ['questionid' => $questionid], 'sortorder ASC')
-            );
-            foreach ($destanswers as $index => $destanswer) {
-                $sourceanswerid = $answers[$index]['sourceanswerid'] ?? null;
-                if ($sourceanswerid === null) {
-                    continue;
-                }
-                self::copy_area_files(
-                    $fs,
-                    $sourcecontextid,
-                    'answer',
-                    $sourceanswerid,
-                    $destcontext->id,
-                    'answertext',
-                    (int) $destanswer->id
-                );
-            }
+            $processed[$questionid] = $answers;
         }
+
+        self::copy_answer_files($fs, $sourcecontextid, $destcontext->id, $processed);
 
         foreach ($existingmap as $entryid => $existing) {
             if (!isset($seenentryids[$entryid]) && (int) $existing->approved === 1) {
@@ -221,6 +205,63 @@ class question_bank_sync {
         }
 
         return $stats;
+    }
+
+    /**
+     * Copies the embedded answer files for every question this sync run wrote, reading
+     * their destination answer rows in a single query instead of one per question — the
+     * per-answer file copy itself still runs one call at a time, since the File API has no
+     * bulk-copy-by-itemid primitive to batch it against.
+     *
+     * @param file_storage $fs File storage instance.
+     * @param int $sourcecontextid The source category's context id.
+     * @param int $destcontextid PlayerPuzzle's own module context id.
+     * @param array $processed Question id => the answers array sync_from_category() built
+     *  for it (same shape load_answers() returns), in destination sortorder.
+     * @return void
+     */
+    private static function copy_answer_files(
+        file_storage $fs,
+        int $sourcecontextid,
+        int $destcontextid,
+        array $processed
+    ): void {
+        global $DB;
+
+        if (empty($processed)) {
+            return;
+        }
+
+        [$insql, $inparams] = $DB->get_in_or_equal(array_keys($processed), SQL_PARAMS_NAMED);
+        $destanswers = $DB->get_records_select(
+            'playerpuzzle_question_answers',
+            "questionid $insql",
+            $inparams,
+            'questionid ASC, sortorder ASC'
+        );
+
+        $bydestquestion = [];
+        foreach ($destanswers as $destanswer) {
+            $bydestquestion[(int) $destanswer->questionid][] = $destanswer;
+        }
+
+        foreach ($processed as $questionid => $answers) {
+            foreach ($bydestquestion[$questionid] ?? [] as $index => $destanswer) {
+                $sourceanswerid = $answers[$index]['sourceanswerid'] ?? null;
+                if ($sourceanswerid === null) {
+                    continue;
+                }
+                self::copy_area_files(
+                    $fs,
+                    $sourcecontextid,
+                    'answer',
+                    $sourceanswerid,
+                    $destcontextid,
+                    'answertext',
+                    (int) $destanswer->id
+                );
+            }
+        }
     }
 
     /**

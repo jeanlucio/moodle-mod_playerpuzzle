@@ -405,4 +405,60 @@ final class use_stock_test extends \advanced_testcase {
         global $DB;
         return (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token], MUST_EXIST);
     }
+
+    /**
+     * Tests that using a consumable debits the stock under the stock lock a Lobby purchase
+     * takes, nested inside the attempt lock — a purchase of the same type racing the use
+     * could otherwise overwrite the debit and hand the unit back.
+     *
+     * @return void
+     */
+    public function test_use_debits_under_the_attempt_and_stock_locks(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, 'potion', 3);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = $this->attempt_id_for($token);
+        $stock = 'stock_' . $this->student->id . '_' . $instance->id;
+        \mod_playerpuzzle_recording_lock_factory::install();
+
+        $result = $this->call_use_stock(['cmid' => $instance->cmid, 'token' => $token, 'type' => 'potion']);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame([
+            "acquire attempt_{$attemptid}",
+            "acquire {$stock}",
+            "release {$stock}",
+            "release attempt_{$attemptid}",
+        ], \mod_playerpuzzle_recording_lock_factory::events_for('mod_playerpuzzle'));
+    }
+
+    /**
+     * Tests that when the stock lock cannot be had, the use fails without debiting the stock
+     * or counting towards the phase limit.
+     *
+     * @return void
+     */
+    public function test_use_with_a_busy_stock_lock_changes_nothing(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, 'potion', 3);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = $this->attempt_id_for($token);
+        $stock = 'stock_' . $this->student->id . '_' . $instance->id;
+        \mod_playerpuzzle_recording_lock_factory::install(["mod_playerpuzzle/{$stock}"]);
+
+        $result = $this->call_use_stock(['cmid' => $instance->cmid, 'token' => $token, 'type' => 'potion']);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('stockbusy', $result['exception']->errorcode);
+        $this->assertSame(3, user_stock::get_quantity((int) $this->student->id, (int) $instance->id, 'potion'));
+        $this->assertSame(0, attempt_consumables::get_uses($attemptid, 'potion'));
+    }
 }

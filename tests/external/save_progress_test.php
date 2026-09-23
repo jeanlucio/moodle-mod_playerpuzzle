@@ -1078,4 +1078,77 @@ final class save_progress_test extends \advanced_testcase {
         $data = $completioninfo->get_data($cm, false, (int) $this->student->id);
         $this->assertEquals(COMPLETION_INCOMPLETE, $data->completionstate);
     }
+
+    /**
+     * Tests that a win banks its coins under the stock lock a Lobby purchase takes, nested
+     * inside the attempt lock — two different locks on the same stock row would not exclude
+     * each other, and a purchase racing the payout could lose one of the two updates.
+     *
+     * @return void
+     */
+    public function test_victory_banks_coins_under_the_attempt_and_stock_locks(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+        $stock = 'stock_' . $this->student->id . '_' . $instance->id;
+        \mod_playerpuzzle_recording_lock_factory::install();
+
+        $result = $this->call_save_progress([
+            'cmid' => $instance->cmid, 'token' => $token, 'victory' => 1, 'damage' => 10,
+            'coinsearnedsofar' => 15, 'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(15, $result['data']['coinsbanked']);
+        $this->assertSame([
+            "acquire attempt_{$attemptid}",
+            "acquire {$stock}",
+            "release {$stock}",
+            "release attempt_{$attemptid}",
+        ], \mod_playerpuzzle_recording_lock_factory::events_for('mod_playerpuzzle'));
+    }
+
+    /**
+     * Tests that when the stock lock cannot be had, the call fails before writing anything:
+     * the attempt stays in progress with its token, no coins are banked, and the same call
+     * succeeds once the lock is free again.
+     *
+     * @return void
+     */
+    public function test_a_busy_stock_lock_leaves_the_attempt_to_retry(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token);
+        $stock = 'stock_' . $this->student->id . '_' . $instance->id;
+        \mod_playerpuzzle_recording_lock_factory::install(["mod_playerpuzzle/{$stock}"]);
+        $args = [
+            'cmid' => $instance->cmid, 'token' => $token, 'victory' => 1, 'damage' => 10,
+            'coinsearnedsofar' => 15, 'bosscoinsearnedsofar' => 0,
+        ];
+
+        $result = $this->call_save_progress($args);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('stockbusy', $result['exception']->errorcode);
+        $this->assertSame('inprogress', $DB->get_field('playerpuzzle_attempts', 'status', ['token' => $token]));
+        $this->assertSame(
+            0,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
+
+        \mod_playerpuzzle_recording_lock_factory::install();
+        $retry = $this->call_save_progress($args);
+
+        $this->assertFalse($retry['error']);
+        $this->assertSame(15, $retry['data']['coinsbanked']);
+    }
 }

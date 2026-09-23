@@ -97,8 +97,9 @@ class use_stock extends external_api {
         }
 
         // The whole use (limit check through to debiting stock) runs inside the attempt's
-        // own lock — see security::with_locked_attempt()'s own docblock for why.
-        $result = security::with_locked_attempt(
+        // own lock, plus the stock lock a Lobby purchase takes on the same stock rows — see
+        // security::with_locked_attempt_and_stock().
+        $result = security::with_locked_attempt_and_stock(
             $params['token'],
             (int) $playerpuzzle->id,
             (int) $USER->id,

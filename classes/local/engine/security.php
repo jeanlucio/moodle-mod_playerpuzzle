@@ -519,10 +519,55 @@ class security {
     }
 
     /**
+     * Same as with_locked_attempt(), but also holds the user's stock lock (see
+     * with_locked_user_stock()) for the whole callback — for match operations that credit or
+     * debit playerpuzzle_user_stock. Every write to that table must happen under the stock
+     * lock: a Lobby purchase only takes that one, so a match operation holding just the
+     * attempt lock could interleave with it and lose one of the two updates.
+     *
+     * Always attempt first, then stock, so no two callers can wait on each other.
+     *
+     * @param string $token The token provided by the client.
+     * @param int $playerpuzzleid The instance ID.
+     * @param int $userid The user ID.
+     * @param callable $callback Receives the locked, freshly re-fetched attempt row and
+     *  returns whatever the caller wants back.
+     * @return mixed|false The callback's return value, or false if no matching in-progress
+     *  attempt was found, or the attempt lock could not be acquired in time.
+     * @throws \moodle_exception When the stock lock could not be acquired in time; nothing
+     *  has been written then.
+     */
+    public static function with_locked_attempt_and_stock(
+        string $token,
+        int $playerpuzzleid,
+        int $userid,
+        callable $callback
+    ) {
+        return self::with_locked_inprogress_attempt(
+            $token,
+            $playerpuzzleid,
+            $userid,
+            function (\stdClass $attempt) use ($userid, $playerpuzzleid, $callback) {
+                $lock = self::get_user_stock_lock($userid, $playerpuzzleid);
+                if (!$lock) {
+                    throw new \moodle_exception('stockbusy', 'mod_playerpuzzle');
+                }
+
+                try {
+                    return $callback($attempt);
+                } finally {
+                    $lock->release();
+                }
+            }
+        );
+    }
+
+    /**
      * Runs a callback with exclusive access to one user's loadout stock for an instance,
      * closing the same TOCTOU window with_locked_attempt() closes for an in-progress
      * attempt — but a pre-match purchase has no attempt/token to key the lock off, so this
-     * locks by userid+playerpuzzleid directly instead.
+     * locks by userid+playerpuzzleid directly instead. Match operations that touch the stock
+     * take this same lock through with_locked_attempt_and_stock().
      *
      * @param int $userid The user ID.
      * @param int $playerpuzzleid The instance ID.
@@ -531,8 +576,7 @@ class security {
      *  acquired in time.
      */
     public static function with_locked_user_stock(int $userid, int $playerpuzzleid, callable $callback) {
-        $factory = \core\lock\lock_config::get_lock_factory('mod_playerpuzzle');
-        $lock = $factory->get_lock('stock_' . $userid . '_' . $playerpuzzleid, self::LOCK_TIMEOUT_SECONDS);
+        $lock = self::get_user_stock_lock($userid, $playerpuzzleid);
         if (!$lock) {
             return false;
         }
@@ -542,5 +586,17 @@ class security {
         } finally {
             $lock->release();
         }
+    }
+
+    /**
+     * Acquires the lock guarding one user's playerpuzzle_user_stock rows for an instance.
+     *
+     * @param int $userid The user ID.
+     * @param int $playerpuzzleid The instance ID.
+     * @return \core\lock\lock|false The lock, or false if it could not be acquired in time.
+     */
+    private static function get_user_stock_lock(int $userid, int $playerpuzzleid) {
+        $factory = \core\lock\lock_config::get_lock_factory('mod_playerpuzzle');
+        return $factory->get_lock('stock_' . $userid . '_' . $playerpuzzleid, self::LOCK_TIMEOUT_SECONDS);
     }
 }

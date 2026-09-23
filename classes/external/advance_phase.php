@@ -127,9 +127,9 @@ class advance_phase extends external_api {
         // The whole phase-advance mutation (win checks, coin/item credit, token rotation)
         // runs inside the attempt's own lock: two requests racing the same token (a
         // double-click, or a captured request replayed in parallel) must never both see
-        // 'inprogress' and both credit the phase's reward — see
-        // security::with_locked_attempt()'s own docblock.
-        $result = security::with_locked_attempt(
+        // 'inprogress' and both credit the phase's reward. The coin credit also needs the stock
+        // lock a Lobby purchase takes — see security::with_locked_attempt_and_stock().
+        $result = security::with_locked_attempt_and_stock(
             $params['token'],
             (int) $playerpuzzle->id,
             (int) $USER->id,

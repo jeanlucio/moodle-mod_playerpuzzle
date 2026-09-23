@@ -228,4 +228,30 @@ final class buy_stock_test extends \advanced_testcase {
         $this->expectException(\core\exception\require_login_exception::class);
         buy_stock::execute($instance->cmid, 'potion');
     }
+
+    /**
+     * Tests that a purchase takes the same stock lock the match operations take (see
+     * security::with_locked_attempt_and_stock()), and nothing else — a Lobby purchase has no
+     * attempt to lock.
+     *
+     * @return void
+     */
+    public function test_buy_stock_takes_the_stock_lock(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE, 20);
+        $stock = 'stock_' . $this->student->id . '_' . $instance->id;
+        \mod_playerpuzzle_recording_lock_factory::install();
+
+        $result = $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'potion']);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(
+            ["acquire {$stock}", "release {$stock}"],
+            \mod_playerpuzzle_recording_lock_factory::events_for('mod_playerpuzzle')
+        );
+    }
 }

@@ -892,4 +892,68 @@ final class advance_phase_test extends \advanced_testcase {
         $this->assertSame(2, $result['data']['currentphase']);
         $this->assertSame(15, $result['data']['coinsbanked']);
     }
+
+    /**
+     * Tests that a phase win banks its coins under the stock lock a Lobby purchase takes,
+     * nested inside the attempt lock (see save_progress_test for why).
+     *
+     * @return void
+     */
+    public function test_advance_phase_banks_coins_under_the_attempt_and_stock_locks(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+        $stock = 'stock_' . $this->student->id . '_' . $instance->id;
+        \mod_playerpuzzle_recording_lock_factory::install();
+
+        $result = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100,
+            'coinsearnedsofar' => 15, 'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(15, $result['data']['coinsbanked']);
+        $this->assertSame([
+            "acquire attempt_{$attemptid}",
+            "acquire {$stock}",
+            "release {$stock}",
+            "release attempt_{$attemptid}",
+        ], \mod_playerpuzzle_recording_lock_factory::events_for('mod_playerpuzzle'));
+    }
+
+    /**
+     * Tests that when the stock lock cannot be had, the phase does not advance, no coins are
+     * banked and the token is not rotated, so the client can simply retry.
+     *
+     * @return void
+     */
+    public function test_advance_phase_with_a_busy_stock_lock_changes_nothing(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $stock = 'stock_' . $this->student->id . '_' . $instance->id;
+        \mod_playerpuzzle_recording_lock_factory::install(["mod_playerpuzzle/{$stock}"]);
+
+        $result = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100,
+            'coinsearnedsofar' => 15, 'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('stockbusy', $result['exception']->errorcode);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame(1, (int) $attempt->currentphase);
+        $this->assertSame('inprogress', $attempt->status);
+        $this->assertSame(
+            0,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
+    }
 }

@@ -117,12 +117,13 @@ class save_progress extends external_api {
 
         // The verdict (and the attempt moving to its final status, or back to the start of the
         // phase) happens under the attempt's lock: two requests racing the same token must
-        // never both finalize it — see security::with_locked_attempt()'s own docblock.
-        $result = security::with_locked_attempt(
+        // never both finalize it. The win's coins are banked under the stock lock too, the one
+        // a Lobby purchase takes — see security::with_locked_attempt_and_stock().
+        $result = security::with_locked_attempt_and_stock(
             $params['token'],
             (int) $playerpuzzle->id,
             (int) $USER->id,
-            function (\stdClass $attempt) use ($DB, $playerpuzzle, $params, $context, $claimedvictory): array {
+            function (\stdClass $attempt) use ($DB, $USER, $playerpuzzle, $params, $context, $claimedvictory): array {
                 // Backstop against a claimed victory that bypasses the client-side boss-revive
                 // rule entirely (a forged request, or a genuine client bug). Nothing has been
                 // written yet, so a rejected claim leaves the attempt resumable. The client
@@ -159,7 +160,7 @@ class save_progress extends external_api {
                     replay_credit::restart_phase($attempt, $playerpuzzle);
                     $attempt->timemodified = time();
                     $DB->update_record('playerpuzzle_attempts', $attempt);
-                    return ['attempt' => $attempt, 'verdict' => $verdict];
+                    return ['attempt' => $attempt, 'verdict' => $verdict, 'coinsbanked' => 0];
                 }
 
                 // Score against the boss HP this phase was really fought at: the frozen config
@@ -185,7 +186,16 @@ class save_progress extends external_api {
                 $attempt->combatstate = null;
                 $DB->update_record('playerpuzzle_attempts', $attempt);
 
-                return ['attempt' => $attempt, 'verdict' => $verdict];
+                // Defeat/timeout discards the session's coins; only a win banks them. A Demo win
+                // never banks anything: it is a disposable practice fight, repeatable at will, and
+                // would otherwise let coins/XP be farmed without limit.
+                $coinsbanked = 0;
+                if ($attempt->status === 'won' && !(bool) $attempt->isdemo) {
+                    $coinsbanked = coin_ledger::available($attempt);
+                    user_stock::credit((int) $USER->id, (int) $playerpuzzle->id, user_stock::CURRENCY_TYPE, $coinsbanked);
+                }
+
+                return ['attempt' => $attempt, 'verdict' => $verdict, 'coinsbanked' => $coinsbanked];
             }
         );
         if ($result === false) {
@@ -222,15 +232,8 @@ class save_progress extends external_api {
         ]);
         $event->trigger();
 
-        $coinsbanked = 0;
+        $coinsbanked = $result['coinsbanked'];
         if ($isvictory && !$isdemo) {
-            // Defeat/timeout discards the session's coins; only a win banks them. A Demo win
-            // never banks anything: it is a disposable practice fight, repeatable at will, and
-            // would otherwise let coins/XP be farmed without limit.
-            $payable = coin_ledger::available($attempt);
-            user_stock::credit((int) $USER->id, (int) $playerpuzzle->id, user_stock::CURRENCY_TYPE, $payable);
-            $coinsbanked = $payable;
-
             $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
             if ($blockinstanceid !== null) {
                 // Win-grant item, separate from the coin balance. XP is withheld when the

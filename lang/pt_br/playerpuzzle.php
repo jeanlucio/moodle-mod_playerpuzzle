@@ -370,6 +370,7 @@ $string['source_ai'] = 'IA';
 $string['source_bank'] = 'Banco de questões';
 $string['source_manual'] = 'Manual';
 $string['statuscolumnlabel'] = 'Status';
+$string['stockbusy'] = 'Suas moedas e itens estão sendo atualizados por outra ação; tente novamente.';
 $string['stockpurchaselocked'] = 'Outra compra já está em andamento; tente novamente.';
 $string['studentsettings'] = 'Configurações do estudante';
 $string['timelimit'] = 'Limite de tempo (minutos)';

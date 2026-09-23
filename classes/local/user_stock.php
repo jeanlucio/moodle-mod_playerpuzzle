@@ -30,10 +30,10 @@ namespace mod_playerpuzzle\local;
  *
  * Unlike attempt_consumables (which counts uses within a single attempt, reset every phase),
  * this stock is persistent: it survives across attempts until spent. credit()/debit() are
- * plain read-then-write, the same idiom attempt_consumables already uses — atomicity against
- * a genuinely concurrent caller is the responsibility of whoever calls them, inside a lock
- * scoped to the operation (the attempt's own lock while spending during a match, a
- * user/instance lock while buying in the Lobby).
+ * plain read-then-write, the same idiom attempt_consumables already uses, so every caller must
+ * hold the one lock guarding these rows — security::with_locked_user_stock() in the Lobby,
+ * security::with_locked_attempt_and_stock() during a match. Two different locks for the same
+ * rows would not exclude each other, and one of two concurrent updates would be lost.
  */
 class user_stock {
     /**

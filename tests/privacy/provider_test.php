@@ -346,9 +346,10 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
     }
 
     /**
-     * Tests that export_user_data carries the move log too — unlike its sibling
-     * anti-cheat replay fields (rngseed, moveseq, engineversion, frozen config), movelog
-     * is a record of the student's own gameplay actions, declared alongside combatstate.
+     * Tests that export_user_data carries the move log and the question outcomes too —
+     * unlike their sibling anti-cheat replay fields (rngseed, moveseq, engineversion, frozen
+     * config), both are about the student's own play: their gameplay actions and whether
+     * their answers were right.
      *
      * @return void
      */
@@ -365,6 +366,12 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
             '[{"r1":0,"c1":0,"r2":0,"c2":1}]',
             ['id' => $attemptid]
         );
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'questionresults',
+            '[{"side":"player","correct":true,"counted":true}]',
+            ['id' => $attemptid]
+        );
 
         $context = \context_module::instance($cm->cmid);
         $contextlist = new approved_contextlist($user, 'mod_playerpuzzle', [$context->id]);
@@ -374,6 +381,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
             get_string('privacy:metadata:playerpuzzle_attempts', 'mod_playerpuzzle'),
         ]);
         $this->assertSame('[{"r1":0,"c1":0,"r2":0,"c2":1}]', $data->attempts[0]->movelog);
+        $this->assertSame('[{"side":"player","correct":true,"counted":true}]', $data->attempts[0]->questionresults);
     }
 
     /**

@@ -116,6 +116,7 @@ class security {
         $attempt->rngseed = random_int(0, 2147483647);
         $attempt->moveseq = 0;
         $attempt->movelog = null;
+        $attempt->questionresults = null;
         $attempt->engineversion = (int) get_config('mod_playerpuzzle', 'version');
         $attempt->frozenbasebosshp = (int) $playerpuzzle->basebosshp;
         $attempt->frozenbossdamage = (int) $playerpuzzle->bossdamage;

@@ -544,6 +544,7 @@ final class backup_restore_test extends \advanced_testcase {
             'frozenbasebosshp'  => 111,
             'frozenbossdamage'  => 22,
             'frozencoingain'    => 33,
+            'questionresults'   => '[{"side":"boss","correct":false,"counted":false}]',
             'timecreated'       => time(),
             'timefinished'      => time(),
         ]);
@@ -580,6 +581,7 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertSame(111, (int) $newattempt->frozenbasebosshp);
         $this->assertSame(22, (int) $newattempt->frozenbossdamage);
         $this->assertSame(33, (int) $newattempt->frozencoingain);
+        $this->assertSame('[{"side":"boss","correct":false,"counted":false}]', $newattempt->questionresults);
 
         $newquestion = $DB->get_record(
             'playerpuzzle_attempt_questions',

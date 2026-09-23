@@ -28,6 +28,7 @@ namespace mod_playerpuzzle\external;
 use context_module;
 use core_external\external_api;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\question_results;
 use mod_playerpuzzle\local\questions_repository;
 
 /**
@@ -654,5 +655,79 @@ final class validate_answer_test extends \advanced_testcase {
         ]);
 
         $this->assertSame(0, (int) $DB->get_field('playerpuzzle_attempts', 'questions_total', ['id' => $attemptid]));
+    }
+
+    /**
+     * Tests that every judged answer is stored as the server's own outcome for the replay, in
+     * order: a player answer counts towards questions_total, the boss's guess does not.
+     *
+     * @return void
+     */
+    public function test_judged_answers_are_stored_as_server_outcomes(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+        $wrongid = $this->find_answer_id($questionid, (int) $instance->id, 'Two');
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $this->put_question_open($token, $questionid);
+        $this->call_validate_answer(['cmid' => $instance->cmid, 'token' => $token, 'answerid' => $wrongid]);
+        $this->put_question_open($token, $questionid);
+        $boss = $this->call_validate_answer([
+            'cmid' => $instance->cmid,
+            'token' => $token,
+            'answerid' => 0,
+            'forwhom' => 'boss',
+        ]);
+
+        $stored = question_results::decode($DB->get_field('playerpuzzle_attempts', 'questionresults', ['token' => $token]));
+        $this->assertSame([
+            ['side' => 'player', 'correct' => false, 'counted' => true],
+            ['side' => 'boss', 'correct' => $boss['data']['correct'], 'counted' => false],
+        ], $stored);
+    }
+
+    /**
+     * Tests that a question that was open but vanished still leaves a (wrong, uncounted)
+     * outcome, since the client shows it as a wrong answer.
+     *
+     * @return void
+     */
+    public function test_a_vanished_open_question_is_stored_as_wrong(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->put_question_open($token, $questionid);
+        $DB->set_field('playerpuzzle_questions', 'approved', 0, ['id' => $questionid]);
+        $this->call_validate_answer(['cmid' => $instance->cmid, 'token' => $token, 'answerid' => 1, 'forwhom' => 'boss']);
+
+        $stored = question_results::decode($DB->get_field('playerpuzzle_attempts', 'questionresults', ['token' => $token]));
+        $this->assertSame([['side' => 'boss', 'correct' => false, 'counted' => false]], $stored);
+    }
+
+    /**
+     * Tests that validating with no question open stores nothing: the live client never does
+     * that, and storing a "wrong" outcome here would let a forged client mint a missed boss
+     * question whenever it liked.
+     *
+     * @return void
+     */
+    public function test_no_open_question_stores_no_outcome(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->call_validate_answer(['cmid' => $instance->cmid, 'token' => $token, 'answerid' => 0, 'forwhom' => 'boss']);
+
+        $this->assertNull($DB->get_field('playerpuzzle_attempts', 'questionresults', ['token' => $token]));
     }
 }

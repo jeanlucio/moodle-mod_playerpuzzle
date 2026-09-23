@@ -156,6 +156,7 @@ final class security_test extends \advanced_testcase {
             'rngseed' => 999999999,
             'moveseq' => 42,
             'movelog' => '[{"r1":0,"c1":0,"r2":0,"c2":1}]',
+            'questionresults' => '[{"side":"player","correct":true,"counted":true}]',
             'engineversion' => 1,
             'frozenbasebosshp' => 1,
             'frozenbossdamage' => 1,
@@ -167,6 +168,7 @@ final class security_test extends \advanced_testcase {
         $this->assertNotSame(999999999, $attempt->rngseed);
         $this->assertSame(0, $attempt->moveseq);
         $this->assertNull($attempt->movelog);
+        $this->assertNull($attempt->questionresults);
         $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), $attempt->engineversion);
         $this->assertSame(55, $attempt->frozenbasebosshp);
         $this->assertSame(6, $attempt->frozenbossdamage);

@@ -176,24 +176,21 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Records a resolved mana-triggered question into the pending event log, alongside
-         * board swaps, so a future server-side replay knows exactly where in the turn
-         * sequence its HP/damage effect (a crit hit for a correct answer, self-damage for a
-         * wrong one) belongs — something board_engine/combat_engine cannot recompute from the
-         * board alone. The correct/incorrect outcome itself is already authoritative from
-         * validate_answer.php; this only marks where it happened.
+         * Records how a mana-triggered question was closed into the pending event log,
+         * alongside board swaps, so the server-side replay knows where in the turn sequence
+         * it happened. Every question the game opens gets exactly one entry, whatever its
+         * ending — a missing one leaves the replay unable to place anything after it.
          *
-         * Deliberately called only from a successful validate_answer response, never from an
-         * AJAX failure's local-only fallback: when the request itself never reached the
-         * server, there is nothing server-verified to record, and a fabricated entry here
-         * would claim an event that never actually happened. A gap left by that omission is
-         * exactly the kind a future replay's own fail-safe policy is meant to tolerate.
+         * Whether an answer was right is never sent: the replay takes that from the outcome
+         * validate_answer.php itself stored.
          *
-         * @param {string} side 'player' or 'boss' — who answered.
-         * @param {boolean} correct Whether the answer was correct.
+         * @param {string} side 'player' or 'boss' — who was asked.
+         * @param {string} outcome 'answered' (validate_answer replied), 'skipped' (the player
+         *  closed it unanswered), 'unavailable' (nothing could be drawn) or 'failed' (the
+         *  validation call never came back).
          */
-        recordQuestionEvent(side, correct) {
-            this.pendingMoveLog.push({type: 'question', side, correct});
+        recordQuestionEvent(side, outcome) {
+            this.pendingMoveLog.push({type: 'question', side, outcome});
         }
 
         /**
@@ -1088,7 +1085,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                             : 'btn btn-outline-primary btn-lg mb-3 w-100';
 
                         if (trigger === 'player') {
-                            $('#playerpuzzle-btn-skip').show().on('click', closeModal);
+                            $('#playerpuzzle-btn-skip').show().on('click', () => {
+                                ctx.recordQuestionEvent('player', 'skipped');
+                                closeModal();
+                            });
                             $('#playerpuzzle-btn-confirm').text(ctx.strings.btnattack)
                                 .prop('disabled', true).show();
 
@@ -1198,9 +1198,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                             );
                                         }
                                     }
-                                    ctx.recordQuestionEvent('player', !!res.correct);
+                                    ctx.recordQuestionEvent('player', 'answered');
                                     applyResult(!!res.correct, res.correctanswerid || null);
                                 }).fail(() => {
+                                    ctx.recordQuestionEvent('player', 'failed');
                                     applyResult(false, null);
                                 });
                             });
@@ -1272,14 +1273,16 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     forwhom: 'boss',
                                 },
                             }])[0].done(res => {
-                                ctx.recordQuestionEvent('boss', !!res.correct);
+                                ctx.recordQuestionEvent('boss', 'answered');
                                 renderBossResult(!!res.correct, res.pickedanswerid || null);
                             }).fail(() => {
+                                ctx.recordQuestionEvent('boss', 'failed');
                                 renderBossResult(false, null);
                             });
                         }
 
                     } else {
+                        ctx.recordQuestionEvent(trigger, 'unavailable');
                         answersContainer.append(
                             `<p class="text-danger">${ctx.strings.noanswers}</p>`
                         );

@@ -33,6 +33,7 @@ use mod_playerpuzzle\local\attempt_questions;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\question_results;
 use moodle_exception;
 
 /**
@@ -140,12 +141,25 @@ class validate_answer extends external_api {
             'approved'       => 1,
         ]);
         if (!$valid) {
+            // A question that was open but has since vanished still ends as "wrong" on the
+            // client, so the replay needs that outcome too. With none open at all, nothing is
+            // recorded: the live client never validates without drawing first, and recording
+            // here would let a forged client mint "boss answered wrong" outcomes on demand.
+            if ($questionid > 0) {
+                $attempt->questionresults = question_results::append(
+                    $attempt->questionresults,
+                    $params['forwhom'],
+                    false,
+                    false
+                );
+            }
             self::consume_current_question($attempt);
             return ['correct' => false];
         }
 
         if ($params['forwhom'] === 'boss') {
             $result = self::draw_boss_guess($questionid, (string) $attempt->difficulty);
+            $attempt->questionresults = question_results::append($attempt->questionresults, 'boss', $result['correct'], false);
             self::consume_current_question($attempt);
             return $result;
         }
@@ -160,6 +174,7 @@ class validate_answer extends external_api {
         if ($correct) {
             $attempt->questions_correct = (int) $attempt->questions_correct + 1;
         }
+        $attempt->questionresults = question_results::append($attempt->questionresults, 'player', $correct, true);
         self::consume_current_question($attempt);
 
         // Log the student's answer for the post-game review — a text snapshot, so it still

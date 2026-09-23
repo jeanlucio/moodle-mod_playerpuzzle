@@ -33,12 +33,12 @@ namespace mod_playerpuzzle\local;
  * Two event shapes share the log, distinguished by 'type':
  * - {type: 'move', r1, c1, r2, c2}: a confirmed player board swap. The board/RNG side of a
  *   replay is fully re-derivable from these alone via board_engine.php.
- * - {type: 'question', side, correct}: a mana-triggered question was resolved for 'player' or
- *   'boss'. The answer itself is already independently authoritative
- *   (validate_answer.php/playerpuzzle_attempt_questions) — this entry only marks *where* in
- *   the turn sequence that already-validated outcome landed, since it changes HP/damage
- *   outside anything board_engine/combat_engine can recompute from the board alone (a correct
- *   answer deals crit damage, a wrong one damages the asker).
+ * - {type: 'question', side, outcome}: a mana-triggered question for 'player' or 'boss' was
+ *   closed. It only marks *where* in the turn sequence that happened and how it ended —
+ *   'answered' (validate_answer.php decided it), 'skipped' (the player closed it unanswered),
+ *   'unavailable' (no question could be drawn) or 'failed' (the validation call never came
+ *   back). Whether an answer was right is never taken from here: the replay pairs each
+ *   'answered' marker with the outcome the server itself stored (question_results.php).
  *
  * Deliberately excludes consumable uses: those are independently authoritative through their
  * own web service (use_stock.php), atomically debiting stock server-side, and their effect
@@ -75,6 +75,9 @@ class move_log {
 
     /** @var string[] Valid values for a 'question' event's side. */
     private const VALID_SIDES = ['player', 'boss'];
+
+    /** @var string[] Valid values for a 'question' event's outcome. */
+    public const VALID_OUTCOMES = ['answered', 'skipped', 'unavailable', 'failed'];
 
     /**
      * Whether a client-reported batch of events has a shape safe to store: within the
@@ -132,7 +135,9 @@ class move_log {
             return true;
         }
 
-        return isset($event['side']) && in_array($event['side'], self::VALID_SIDES, true) && isset($event['correct']);
+        return isset($event['side'], $event['outcome'])
+            && in_array($event['side'], self::VALID_SIDES, true)
+            && in_array($event['outcome'], self::VALID_OUTCOMES, true);
     }
 
     /**

@@ -637,6 +637,12 @@ final class advance_phase_test extends \advanced_testcase {
             '[{"r1":0,"c1":0,"r2":0,"c2":1}]',
             ['id' => $attempt->id]
         );
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'questionresults',
+            '[{"side":"player","correct":true,"counted":true}]',
+            ['id' => $attempt->id]
+        );
 
         $result = $this->call_advance_phase([
             'cmid'                 => $instance->cmid,
@@ -651,6 +657,7 @@ final class advance_phase_test extends \advanced_testcase {
         $this->assertNotSame($oldseed, (int) $updated->rngseed);
         $this->assertSame(0, (int) $updated->moveseq);
         $this->assertNull($updated->movelog);
+        $this->assertNull($updated->questionresults);
         $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), (int) $updated->engineversion);
         $this->assertSame(100, (int) $updated->frozenbasebosshp);
         $this->assertSame(15, (int) $updated->frozenbossdamage);

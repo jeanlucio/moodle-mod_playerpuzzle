@@ -75,7 +75,9 @@ class provider implements
      * themselves, the same category as currentquestionid. movelog (the ordered log of board
      * swaps and question resolutions for the current phase) is different: it is a record of
      * the student's own gameplay actions, so — unlike its sibling fields above — it IS
-     * declared below, the same category as combatstate.
+     * declared below, the same category as combatstate. questionresults (whether each of
+     * the student's questions this phase was answered right or wrong, as decided by the
+     * server) is declared for the same reason: it is about the student's own answers.
      *
      * @param collection $collection The initialised collection to add items to.
      * @return collection A listing of user data stored through this system.
@@ -93,6 +95,7 @@ class provider implements
             'boss_coins_earned' => 'privacy:metadata:boss_coins_earned',
             'combatstate'       => 'privacy:metadata:combatstate',
             'movelog'           => 'privacy:metadata:movelog',
+            'questionresults'   => 'privacy:metadata:questionresults',
             'score'             => 'privacy:metadata:score',
             'status'            => 'privacy:metadata:status',
             'timecreated'       => 'privacy:metadata:timecreated',
@@ -289,7 +292,7 @@ class provider implements
 
         $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.difficulty, pa.bosshp_remaining,
                        pa.questions_correct, pa.questions_total, pa.coins_earned,
-                       pa.boss_coins_earned, pa.combatstate, pa.movelog, pa.score, pa.status,
+                       pa.boss_coins_earned, pa.combatstate, pa.movelog, pa.questionresults, pa.score, pa.status,
                        pa.timecreated, pa.timefinished, ctx.id AS contextid
                   FROM {playerpuzzle_attempts} pa
                   JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
@@ -313,6 +316,7 @@ class provider implements
                 'bosscoinsearned'  => $record->boss_coins_earned,
                 'combatstate'      => $record->combatstate,
                 'movelog'          => $record->movelog,
+                'questionresults'  => $record->questionresults,
                 'score'            => $record->score,
                 'status'           => $record->status,
                 'timecreated'      => transform::datetime($record->timecreated),

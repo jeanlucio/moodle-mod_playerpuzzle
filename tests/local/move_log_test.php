@@ -57,8 +57,8 @@ final class move_log_test extends \advanced_testcase {
      * @return void
      */
     public function test_is_valid_accepts_a_question_event_for_either_side(): void {
-        $this->assertTrue(move_log::is_valid([['type' => 'question', 'side' => 'player', 'correct' => true]]));
-        $this->assertTrue(move_log::is_valid([['type' => 'question', 'side' => 'boss', 'correct' => false]]));
+        $this->assertTrue(move_log::is_valid([['type' => 'question', 'side' => 'player', 'outcome' => 'answered']]));
+        $this->assertTrue(move_log::is_valid([['type' => 'question', 'side' => 'boss', 'outcome' => 'failed']]));
     }
 
     /**
@@ -70,7 +70,7 @@ final class move_log_test extends \advanced_testcase {
     public function test_is_valid_accepts_a_mixed_batch(): void {
         $events = [
             ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1],
-            ['type' => 'question', 'side' => 'player', 'correct' => true],
+            ['type' => 'question', 'side' => 'player', 'outcome' => 'answered'],
             ['type' => 'move', 'r1' => 3, 'c1' => 3, 'r2' => 3, 'c2' => 4],
         ];
 
@@ -170,16 +170,28 @@ final class move_log_test extends \advanced_testcase {
      * @return void
      */
     public function test_is_valid_rejects_a_question_with_an_invalid_side(): void {
-        $this->assertFalse(move_log::is_valid([['type' => 'question', 'side' => 'referee', 'correct' => true]]));
+        $this->assertFalse(move_log::is_valid([['type' => 'question', 'side' => 'referee', 'outcome' => 'answered']]));
     }
 
     /**
-     * Tests that a question event missing 'correct' is rejected.
+     * Tests that a question event missing its outcome is rejected.
      *
      * @return void
      */
-    public function test_is_valid_rejects_a_question_missing_correct(): void {
+    public function test_is_valid_rejects_a_question_missing_outcome(): void {
         $this->assertFalse(move_log::is_valid([['type' => 'question', 'side' => 'player']]));
+    }
+
+    /**
+     * Tests that a question event with an unknown outcome is rejected — including the old
+     * shape that told the server whether the answer was right, which the client no longer gets
+     * to say.
+     *
+     * @return void
+     */
+    public function test_is_valid_rejects_an_unknown_question_outcome(): void {
+        $this->assertFalse(move_log::is_valid([['type' => 'question', 'side' => 'player', 'outcome' => 'won']]));
+        $this->assertFalse(move_log::is_valid([['type' => 'question', 'side' => 'player', 'correct' => true]]));
     }
 
     /**
@@ -189,12 +201,12 @@ final class move_log_test extends \advanced_testcase {
      */
     public function test_append_preserves_order(): void {
         $existing = [['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]];
-        $incoming = [['type' => 'question', 'side' => 'player', 'correct' => true]];
+        $incoming = [['type' => 'question', 'side' => 'player', 'outcome' => 'answered']];
 
         $this->assertSame(
             [
                 ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1],
-                ['type' => 'question', 'side' => 'player', 'correct' => true],
+                ['type' => 'question', 'side' => 'player', 'outcome' => 'answered'],
             ],
             move_log::append($existing, $incoming)
         );
@@ -219,7 +231,7 @@ final class move_log_test extends \advanced_testcase {
     public function test_encode_decode_round_trip(): void {
         $events = [
             ['type' => 'move', 'r1' => 2, 'c1' => 3, 'r2' => 2, 'c2' => 4],
-            ['type' => 'question', 'side' => 'boss', 'correct' => false],
+            ['type' => 'question', 'side' => 'boss', 'outcome' => 'failed'],
         ];
 
         $this->assertSame($events, move_log::decode(move_log::encode($events)));

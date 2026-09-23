@@ -291,6 +291,7 @@ $string['privacy:metadata:pq:addedby'] = 'O professor ou gestor que cadastrou a 
 $string['privacy:metadata:preference:music'] = 'Se a música de fundo está ativada para você, em qualquer atividade PlayerPuzzle deste site.';
 $string['privacy:metadata:preference:sfx'] = 'Se os efeitos sonoros estão ativados para você, em qualquer atividade PlayerPuzzle deste site.';
 $string['privacy:metadata:preference:speech'] = 'Se a narração falada dos anúncios do jogo está ativada para você, em qualquer atividade PlayerPuzzle deste site.';
+$string['privacy:metadata:questionresults'] = 'Se cada pergunta feita ao estudante na fase atual foi respondida corretamente, conforme decidido pelo servidor, guardado só para uma verificação no servidor confirmar a partida.';
 $string['privacy:metadata:questions_correct'] = 'O número de perguntas respondidas corretamente nesta tentativa.';
 $string['privacy:metadata:questions_total'] = 'O número total de perguntas feitas nesta tentativa.';
 $string['privacy:metadata:score'] = 'A nota final calculada para esta tentativa.';

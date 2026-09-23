@@ -91,6 +91,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'frozenbasebosshp',
             'frozenbossdamage',
             'frozencoingain',
+            'questionresults',
             'score',
             'status',
             'timecreated',

@@ -597,5 +597,17 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092202, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092300) {
+        // Server-decided question outcomes for the current phase, so the replay stops taking
+        // "was this answer right?" from the client's own event log.
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('questionresults', XMLDB_TYPE_TEXT, null, null, null, null, null, 'frozencoingain');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026092300, 'playerpuzzle');
+    }
+
     return true;
 }

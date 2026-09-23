@@ -94,9 +94,9 @@ class save_combat_state extends external_api {
                         "Who answered: 'player' or 'boss' (question only)",
                         VALUE_OPTIONAL
                     ),
-                    'correct' => new external_value(
-                        PARAM_BOOL,
-                        'Whether the question was answered correctly (question only)',
+                    'outcome' => new external_value(
+                        PARAM_ALPHA,
+                        "How the question ended: 'answered', 'skipped', 'unavailable' or 'failed' (question only)",
                         VALUE_OPTIONAL
                     ),
                 ]),

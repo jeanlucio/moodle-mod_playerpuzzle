@@ -26,12 +26,15 @@
 namespace mod_playerpuzzle\local\engine;
 
 use mod_playerpuzzle\local\move_log;
+use mod_playerpuzzle\local\question_results;
 
 /**
- * Every non-trivial scenario below was cross-checked against a JS mirror of this class's own
- * turn loop, run headless through Node against the real amd/src/engine/board_rules.js and
- * combat_rules.js — never hand-computed. The mirror script is not part of the repository; the
- * seed/event log/expected result triples it produced are hardcoded here as fixtures.
+ * The board/combat scenarios below (seeds 2, 11 and 56) were cross-checked against a JS mirror
+ * of this class's own turn loop, run headless through Node against the real
+ * amd/src/engine/board_rules.js and combat_rules.js — never hand-computed. The mirror script is
+ * not part of the repository; the seed/event log/expected result triples it produced are
+ * hardcoded here as fixtures. The question-reconciliation cases reuse those same seeds and only
+ * vary what the log and the server-decided outcomes say about each question.
  *
  * @covers \mod_playerpuzzle\local\engine\replay
  */
@@ -55,6 +58,7 @@ final class replay_test extends \advanced_testcase {
             'engineversion' => (int) get_config('mod_playerpuzzle', 'version'),
             'rngseed' => 1,
             'movelog' => null,
+            'questionresults' => null,
             'currentlevel' => 1,
             'currentphase' => 1,
             'difficulty' => 'normal',
@@ -73,6 +77,7 @@ final class replay_test extends \advanced_testcase {
      */
     private function make_playerpuzzle(array $overrides = []): \stdClass {
         return (object) array_merge([
+            'id' => 0,
             'minquestions' => 0,
             'basestudenthp' => 1000,
         ], $overrides);
@@ -116,7 +121,7 @@ final class replay_test extends \advanced_testcase {
      */
     public function test_derive_returns_null_when_first_event_is_not_a_move(): void {
         $attempt = $this->make_attempt([
-            'movelog' => move_log::encode([['type' => 'question', 'side' => 'player', 'correct' => true]]),
+            'movelog' => move_log::encode([['type' => 'question', 'side' => 'player', 'outcome' => 'answered']]),
         ]);
         $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle()));
     }
@@ -238,14 +243,14 @@ final class replay_test extends \advanced_testcase {
             'movelog' => move_log::encode([
                 ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 1, 'c2' => 0],
                 ['type' => 'move', 'r1' => 1, 'c1' => 4, 'r2' => 1, 'c2' => 5],
-                ['type' => 'question', 'side' => 'boss', 'correct' => true],
+                ['type' => 'question', 'side' => 'boss', 'outcome' => 'answered'],
                 ['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 0, 'c2' => 4],
                 ['type' => 'move', 'r1' => 0, 'c1' => 2, 'r2' => 0, 'c2' => 3],
             ]),
             'frozenbasebosshp' => 15,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
-            'questions_total' => 1,
+            'questionresults' => question_results::append(null, 'boss', true, false),
         ]);
 
         $result = replay::derive($attempt, $this->make_playerpuzzle());
@@ -328,12 +333,12 @@ final class replay_test extends \advanced_testcase {
             'movelog' => move_log::encode([
                 ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 1, 'c2' => 0],
                 ['type' => 'move', 'r1' => 1, 'c1' => 4, 'r2' => 1, 'c2' => 5],
-                ['type' => 'question', 'side' => 'boss', 'correct' => true],
+                ['type' => 'question', 'side' => 'boss', 'outcome' => 'answered'],
                 ['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 0, 'c2' => 4],
                 ['type' => 'move', 'r1' => 0, 'c1' => 2, 'r2' => 0, 'c2' => 3],
             ]),
             'frozenbasebosshp' => 15,
-            'questions_total' => 1,
+            'questionresults' => question_results::append(null, 'boss', true, false),
         ]);
 
         $result = replay::derive($attempt, $this->make_playerpuzzle(['minquestions' => 5]));
@@ -342,5 +347,156 @@ final class replay_test extends \advanced_testcase {
         // revives instead of the match ending there, and no further move is recorded for
         // the player's next turn, so this correctly comes back inconclusive.
         $this->assertNull($result);
+    }
+
+    /**
+     * Builds seed 56's one-move attempt: its first swap triggers a player question five
+     * cascade rounds in, and with the boss at 40 HP only a correct answer's critical hit
+     * finishes it inside that cascade.
+     *
+     * @param string $outcome How the logged question ended.
+     * @param array $serveroutcomes Outcomes as validate_answer would have stored them.
+     * @param int $bosshp The phase's base boss HP.
+     * @return \stdClass
+     */
+    private function make_seed56_attempt(string $outcome, array $serveroutcomes, int $bosshp = 40): \stdClass {
+        $raw = null;
+        foreach ($serveroutcomes as [$side, $correct, $counted]) {
+            $raw = question_results::append($raw, $side, $correct, $counted);
+        }
+
+        return $this->make_attempt([
+            'rngseed' => 56,
+            'movelog' => move_log::encode([
+                ['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7],
+                ['type' => 'question', 'side' => 'player', 'outcome' => $outcome],
+            ]),
+            'questionresults' => $raw,
+            'questions_total' => count($serveroutcomes),
+            'frozenbasebosshp' => $bosshp,
+        ]);
+    }
+
+    /**
+     * Tests that whether an answer was right comes from the server's own outcome, never the
+     * client's log: the exact same log is a win when the server says the answer was correct,
+     * and inconclusive when it says it was wrong (no critical hit, so the boss survives and
+     * the log runs out).
+     *
+     * @return void
+     */
+    public function test_derive_takes_the_question_outcome_from_the_server(): void {
+        $pp = $this->make_playerpuzzle(['basestudenthp' => 100]);
+
+        $right = replay::derive($this->make_seed56_attempt('answered', [['player', true, true]]), $pp);
+        $wrong = replay::derive($this->make_seed56_attempt('answered', [['player', false, true]]), $pp);
+
+        $this->assertSame(['damage' => 40, 'playergold' => 25, 'bossgold' => 0], $right);
+        $this->assertNull($wrong);
+    }
+
+    /**
+     * Tests that an "answered" marker with no server outcome behind it is not trusted — a
+     * forged log cannot claim an answer the server never judged.
+     *
+     * @return void
+     */
+    public function test_derive_returns_null_when_an_answer_has_no_server_outcome(): void {
+        $attempt = $this->make_seed56_attempt('answered', []);
+
+        $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle(['basestudenthp' => 100])));
+    }
+
+    /**
+     * Tests that a server outcome for the other side does not reconcile with the player's
+     * question.
+     *
+     * @return void
+     */
+    public function test_derive_returns_null_when_the_server_outcome_is_for_the_other_side(): void {
+        $attempt = $this->make_seed56_attempt('answered', [['boss', true, false]]);
+
+        $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle(['basestudenthp' => 100])));
+    }
+
+    /**
+     * Tests that a skipped player question is accepted and changes nothing: with the boss at
+     * 10 HP the cascade alone finishes it.
+     *
+     * @return void
+     */
+    public function test_derive_accepts_a_skipped_player_question(): void {
+        $attempt = $this->make_seed56_attempt('skipped', [], 10);
+
+        $result = replay::derive($attempt, $this->make_playerpuzzle(['basestudenthp' => 100]));
+
+        $this->assertSame(['damage' => 10, 'playergold' => 25, 'bossgold' => 0], $result);
+    }
+
+    /**
+     * Tests that a server outcome left unconsumed at the end of the match makes the replay
+     * inconclusive — here, a wrong answer the client reported as skipped to dodge its penalty.
+     *
+     * @return void
+     */
+    public function test_derive_returns_null_when_a_server_outcome_is_left_over(): void {
+        $attempt = $this->make_seed56_attempt('skipped', [['player', false, true]], 10);
+
+        $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle(['basestudenthp' => 100])));
+    }
+
+    /**
+     * Tests that a player question whose validation never came back is accepted as the wrong
+     * answer the client applied on its own, while the boss's is inconclusive (there is no
+     * safe way to guess which way the server would have drawn it).
+     *
+     * @return void
+     */
+    public function test_derive_handles_a_failed_validation_by_side(): void {
+        $player = $this->make_seed56_attempt('failed', [], 10);
+        $boss = $this->make_attempt([
+            'rngseed' => 11,
+            'movelog' => move_log::encode([
+                ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 1, 'c2' => 0],
+                ['type' => 'move', 'r1' => 1, 'c1' => 4, 'r2' => 1, 'c2' => 5],
+                ['type' => 'question', 'side' => 'boss', 'outcome' => 'failed'],
+                ['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 0, 'c2' => 4],
+                ['type' => 'move', 'r1' => 0, 'c1' => 2, 'r2' => 0, 'c2' => 3],
+            ]),
+            'frozenbasebosshp' => 15,
+        ]);
+
+        $pp = $this->make_playerpuzzle(['basestudenthp' => 100]);
+        $this->assertSame(['damage' => 10, 'playergold' => 25, 'bossgold' => 0], replay::derive($player, $pp));
+        $this->assertNull(replay::derive($boss, $this->make_playerpuzzle()));
+    }
+
+    /**
+     * Tests that "no question available" is only accepted when the instance really had no
+     * approved question to draw — otherwise it is a draw call that never came back (or was
+     * blocked on purpose to dodge the question).
+     *
+     * @return void
+     */
+    public function test_derive_accepts_an_unavailable_question_only_with_an_empty_pool(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $instance = $this->getDataGenerator()->create_module('playerpuzzle', ['course' => $course->id]);
+        $attempt = $this->make_seed56_attempt('unavailable', [], 10);
+
+        $empty = replay::derive($attempt, $this->make_playerpuzzle(['id' => $instance->id, 'basestudenthp' => 100]));
+
+        global $DB;
+        $DB->insert_record('playerpuzzle_questions', (object) [
+            'playerpuzzleid' => $instance->id,
+            'qtype' => 'truefalse',
+            'questiontext' => 'Q',
+            'approved' => 1,
+            'timecreated' => time(),
+            'addedby' => 2,
+        ]);
+        $withpool = replay::derive($attempt, $this->make_playerpuzzle(['id' => $instance->id, 'basestudenthp' => 100]));
+
+        $this->assertSame(['damage' => 10, 'playergold' => 25, 'bossgold' => 0], $empty);
+        $this->assertNull($withpool);
     }
 }

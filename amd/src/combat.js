@@ -736,11 +736,19 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * worth skipping the round trip entirely for it; Quick Magic has no such guard,
          * matching its board-piece twin (the Grimoire never blocks overfilling either).
          *
+         * Only usable at the start of the player's own turn, while the board is waiting for
+         * their move: that is the one point the server-side replay applies a consumable at, so
+         * a use during the boss's turn (a Shield raised mid-attack) would describe a fight the
+         * replay can never reproduce.
+         *
          * @param {string} type One of 'potion', 'shield', 'magic', 'sword'.
          */
         useConsumable(type) {
             const badge = this.scene.ui.purchaseBadges && this.scene.ui.purchaseBadges[type];
             if (badge && badge.disabled) {
+                return;
+            }
+            if (this.currentTurn !== 'player' || !this.scene.input.enabled) {
                 return;
             }
             if (type === 'shield' && (this.playerShieldReady || this.playerShieldMeter >= 100)) {
@@ -757,6 +765,17 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * @param {string} type Consumable type.
          */
         requestUse(type) {
+            // The board stays locked until the server answers, so the use lands in the event
+            // log before the player's next move, never after it.
+            const me = this.scene;
+            me.input.enabled = false;
+            let ended = false;
+            const unlock = () => {
+                if (!ended) {
+                    me.input.enabled = true;
+                }
+            };
+
             Ajax.call([{
                 methodname: 'mod_playerpuzzle_use_stock',
                 args: {
@@ -765,14 +784,16 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     type,
                 },
             }])[0].done(res => {
-                if (!res.success) {
-                    return;
+                if (res.success) {
+                    this.consumableStock[type] = res.newquantity;
+                    this.consumableUses[type] = (this.consumableUses[type] || 0) + 1;
+                    this.pendingMoveLog.push({type: 'consumable', kind: type});
+                    ended = this.applyConsumableEffect(type);
+                    this.updateUI();
                 }
-                this.consumableStock[type] = res.newquantity;
-                this.consumableUses[type] = (this.consumableUses[type] || 0) + 1;
-                this.applyConsumableEffect(type);
-                this.updateUI();
+                unlock();
             }).fail(error => {
+                unlock();
                 Notification.alert(this.strings.shoperror, (error && error.message) || this.strings.shoperror);
             });
         }
@@ -815,6 +836,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * client-side, same as every other board-piece effect.
          *
          * @param {string} type Consumable type.
+         * @returns {boolean} True when the effect ended the match (a Sword finishing the boss).
          */
         applyConsumableEffect(type) {
             const me = this.scene;
@@ -842,7 +864,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 me.ui.pushHistoryLog('player', this.strings.historylogattack.replace('{$a}', Math.round(result.damageAmount)));
             }
 
-            this.checkGameOver();
+            return this.checkGameOver();
         }
 
         /**

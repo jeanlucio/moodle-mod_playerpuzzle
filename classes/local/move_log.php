@@ -30,7 +30,7 @@ namespace mod_playerpuzzle\local;
  * overwritten) so a future server-side replay can walk it from the phase's own starting board
  * forward, not just from whatever the most recent checkpoint happened to capture.
  *
- * Two event shapes share the log, distinguished by 'type':
+ * Three event shapes share the log, distinguished by 'type':
  * - {type: 'move', r1, c1, r2, c2}: a confirmed player board swap. The board/RNG side of a
  *   replay is fully re-derivable from these alone via board_engine.php.
  * - {type: 'question', side, outcome}: a mana-triggered question for 'player' or 'boss' was
@@ -39,13 +39,11 @@ namespace mod_playerpuzzle\local;
  *   'unavailable' (no question could be drawn) or 'failed' (the validation call never came
  *   back). Whether an answer was right is never taken from here: the replay pairs each
  *   'answered' marker with the outcome the server itself stored (question_results.php).
- *
- * Deliberately excludes consumable uses: those are independently authoritative through their
- * own web service (use_stock.php), atomically debiting stock server-side, and their effect
- * (fixed heal/damage/meter fill) needs no replay of its own to verify — only the moment they
- * changed HP would matter for total ordering, and unlike a question, a consumable's use is
- * already gated by the server confirming success before the client ever applies its effect, so
- * a forged claim of "used at some other in-between moment" buys nothing.
+ * - {type: 'consumable', kind}: a Potion/Shield/Magic/Sword was used at the start of the
+ *   player's turn, before their next move — the only moment the game allows it, so the replay
+ *   can apply its effect at exactly that point. Each use is also counted by use_stock.php
+ *   itself (attempt_consumables.php), and the replay requires both to agree. Hint is never
+ *   logged: it only reveals text.
  */
 class move_log {
     /**
@@ -71,13 +69,16 @@ class move_log {
     private const BOARD_DIMENSION = 8;
 
     /** @var string[] Event types this log accepts. */
-    private const VALID_TYPES = ['move', 'question'];
+    private const VALID_TYPES = ['move', 'question', 'consumable'];
 
     /** @var string[] Valid values for a 'question' event's side. */
     private const VALID_SIDES = ['player', 'boss'];
 
     /** @var string[] Valid values for a 'question' event's outcome. */
     public const VALID_OUTCOMES = ['answered', 'skipped', 'unavailable', 'failed'];
+
+    /** @var string[] Consumable kinds that change combat state, and so are logged. */
+    public const COMBAT_CONSUMABLES = ['potion', 'shield', 'magic', 'sword'];
 
     /**
      * Whether a client-reported batch of events has a shape safe to store: within the
@@ -133,6 +134,10 @@ class move_log {
                 }
             }
             return true;
+        }
+
+        if ($event['type'] === 'consumable') {
+            return isset($event['kind']) && in_array($event['kind'], self::COMBAT_CONSUMABLES, true);
         }
 
         return isset($event['side'], $event['outcome'])

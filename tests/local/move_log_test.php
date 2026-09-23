@@ -92,7 +92,7 @@ final class move_log_test extends \advanced_testcase {
      * @return void
      */
     public function test_is_valid_rejects_an_unknown_type(): void {
-        $this->assertFalse(move_log::is_valid([['type' => 'consumable', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]]));
+        $this->assertFalse(move_log::is_valid([['type' => 'teleport', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]]));
     }
 
     /**
@@ -257,5 +257,20 @@ final class move_log_test extends \advanced_testcase {
         $this->assertSame([], move_log::decode(null));
         $this->assertSame([], move_log::decode(''));
         $this->assertSame([], move_log::decode('not json'));
+    }
+
+    /**
+     * Tests that a combat consumable event is valid, while Hint (which only reveals text) and
+     * an unknown kind are not.
+     *
+     * @return void
+     */
+    public function test_is_valid_accepts_only_combat_consumables(): void {
+        foreach (['potion', 'shield', 'magic', 'sword'] as $kind) {
+            $this->assertTrue(move_log::is_valid([['type' => 'consumable', 'kind' => $kind]]));
+        }
+        $this->assertFalse(move_log::is_valid([['type' => 'consumable', 'kind' => 'hint']]));
+        $this->assertFalse(move_log::is_valid([['type' => 'consumable', 'kind' => 'bomb']]));
+        $this->assertFalse(move_log::is_valid([['type' => 'consumable']]));
     }
 }

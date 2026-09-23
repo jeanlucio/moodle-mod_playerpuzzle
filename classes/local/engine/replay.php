@@ -96,24 +96,6 @@ class replay {
             return null;
         }
 
-        if (self::used_a_combat_affecting_consumable($attempt->id)) {
-            // A used Potion/Shield/Magic/Sword changes HP/shield/poison state at a moment
-            // this class has no way to place in the sequence — unlike a board match or a
-            // question, a consumable's use is never recorded in the event log at all (it is
-            // already independently authoritative through use_stock.php, so verifying it was
-            // never the point), but its *effect* still needs to be reflected in the
-            // simulated state for HP tracking to mean anything. Without that, the
-            // simulation's own belief about the fight can diverge from what really
-            // happened — a shield the real player armed via a purchased charge blocks a hit
-            // here it never knew was coming, and the "player defeated" terminal state can
-            // trigger long before the real match's true outcome, badly under-deriving the
-            // damage a genuinely finished, genuinely won phase actually dealt. Skipping
-            // verification whenever any of the four combat-affecting types were used this
-            // phase is the safe, conservative choice until a future revision teaches the
-            // event log about them too.
-            return null;
-        }
-
         try {
             return self::simulate($attempt, $playerpuzzle);
         } catch (\Throwable $e) {
@@ -123,23 +105,6 @@ class replay {
             );
             return null;
         }
-    }
-
-    /**
-     * Whether any of the four consumable types whose effect changes combat state (Potion,
-     * Shield, Magic, Sword — everything except Hint, which only reveals text) was used
-     * during this phase/match window.
-     *
-     * @param int $attemptid The attempt id.
-     * @return bool
-     */
-    private static function used_a_combat_affecting_consumable(int $attemptid): bool {
-        foreach (['potion', 'shield', 'magic', 'sword'] as $type) {
-            if (attempt_consumables::get_uses($attemptid, $type) > 0) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -207,12 +172,34 @@ class replay {
             'questionstotal' => max(0, (int) $attempt->questions_total - $countedinphase),
             'playerpuzzleid' => (int) ($playerpuzzle->id ?? 0),
             'poolempty' => null,
+            'serveruses' => attempt_consumables::get_uses_by_type((int) $attempt->id),
+            'loggeduses' => array_fill_keys(move_log::COMBAT_CONSUMABLES, 0),
         ];
         $minquestions = (int) $playerpuzzle->minquestions;
         $turn = 'player';
 
         for ($turncount = 0; $turncount < self::MAX_TURNS; $turncount++) {
             if ($turn === 'player') {
+                // Consumables are only usable at the start of the player's turn, before
+                // their move, so that is the only place their events can appear.
+                while (($sim['events'][$sim['eventindex']]['type'] ?? null) === 'consumable') {
+                    $kind = $sim['events'][$sim['eventindex']]['kind'] ?? null;
+                    if (!in_array($kind, move_log::COMBAT_CONSUMABLES, true)) {
+                        return null;
+                    }
+                    $sim['eventindex']++;
+                    $sim['loggeduses'][$kind]++;
+                    self::apply_consumable($kind, $state, $config);
+
+                    if ($state['currentHp'] <= 0) {
+                        if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
+                            $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
+                        } else {
+                            return self::result($maxbosshp, $state, $sim);
+                        }
+                    }
+                }
+
                 $event = $sim['events'][$sim['eventindex']] ?? null;
                 if ($event === null) {
                     // Nothing more recorded — either a genuine gap (a lost checkpoint, a
@@ -451,6 +438,33 @@ class replay {
     }
 
     /**
+     * Applies a consumable's effect — mirrors combat.js::applyConsumableEffect(): the shared
+     * meter/heal logic, plus the Sword's direct hit on the boss (through its shield, like any
+     * other hit).
+     *
+     * @param string $kind One of move_log::COMBAT_CONSUMABLES.
+     * @param array $state Combat state (mutated in place).
+     * @param array $config Keys baseDamage/coinGain/coinFactor.
+     * @return void
+     */
+    private static function apply_consumable(string $kind, array &$state, array $config): void {
+        $result = combat_engine::resolve_consumable_effect($kind, $state, $config);
+        $state = $result['state'];
+
+        if ($kind === 'sword') {
+            $applied = combat_engine::resolve_damage(
+                $state['currentHp'],
+                $state['bossShieldReady'],
+                (float) $result['damageAmount']
+            );
+            $state['currentHp'] = $applied['newHp'];
+            if ($applied['shieldConsumed']) {
+                $state['bossShieldReady'] = false;
+            }
+        }
+    }
+
+    /**
      * Whether the instance had no approved question to draw, looked up once per replay.
      *
      * @param array $sim The simulation context (caches the answer in place).
@@ -516,7 +530,10 @@ class replay {
      * Every logged event and every server-decided question outcome must have been consumed by
      * the time the match ends: a leftover outcome is a question the client never placed in
      * the log (an answer hidden as "skipped", say), and leftover events describe a match that
-     * kept going after this one ended — either way the log is not the match.
+     * kept going after this one ended — either way the log is not the match. Likewise the
+     * consumables the log applied must be exactly the ones use_stock.php counted: a use missing
+     * from the log (a Shield armed but never placed) or one the server never authorised would
+     * both make this a different fight from the one really played.
      *
      * @param int $maxbosshp The phase's own max boss HP.
      * @param array $state Final combat state.
@@ -527,6 +544,11 @@ class replay {
     private static function result(int $maxbosshp, array $state, array $sim): ?array {
         if ($sim['eventindex'] !== count($sim['events']) || $sim['outcomeindex'] !== count($sim['outcomes'])) {
             return null;
+        }
+        foreach ($sim['loggeduses'] as $kind => $count) {
+            if ($count !== (int) ($sim['serveruses'][$kind] ?? 0)) {
+                return null;
+            }
         }
 
         return [

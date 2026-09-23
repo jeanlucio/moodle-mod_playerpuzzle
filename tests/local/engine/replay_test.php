@@ -151,19 +151,53 @@ final class replay_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a used combat-affecting consumable (Shield here — arms a block the
-     * simulation has no way to know happened) skips verification entirely for the whole
-     * phase, even though the exact same seed/log otherwise resolves to a clean, conclusive
-     * win — same fixture as test_derive_resolves_a_real_single_move_win() above, the only
-     * difference being a recorded Shield use. A used Potion/Magic/Sword must skip it the
-     * same way; Shield alone is exercised here since the mechanism (a lookup keyed only by
-     * type) does not depend on which of the four it is.
+     * Records consumable uses the way use_stock.php would have counted them.
+     *
+     * @param int $attemptid The attempt id.
+     * @param array $uses Type => times used.
+     * @return void
+     */
+    private function record_server_uses(int $attemptid, array $uses): void {
+        global $DB;
+
+        foreach ($uses as $type => $times) {
+            $DB->insert_record('playerpuzzle_attempt_consumables', (object) [
+                'attemptid' => $attemptid,
+                'consumabletype' => $type,
+                'timesused' => $times,
+            ]);
+        }
+    }
+
+    /**
+     * Tests that a Sword used at the start of the player's turn is applied right there: on
+     * seed 2 with a 10 HP boss, the Sword alone (baseDamage 10) finishes it before any move.
      *
      * @return void
      */
-    public function test_derive_returns_null_when_a_combat_consumable_was_used(): void {
-        global $DB;
+    public function test_derive_applies_a_logged_consumable_before_the_move(): void {
+        $attempt = $this->make_attempt([
+            'id' => 97,
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'consumable', 'kind' => 'sword']]),
+            'frozenbasebosshp' => 10,
+        ]);
+        $this->record_server_uses(97, ['sword' => 1]);
 
+        $result = replay::derive($attempt, $this->make_playerpuzzle());
+
+        $this->assertSame(['damage' => 10, 'playergold' => 0, 'bossgold' => 0], $result);
+    }
+
+    /**
+     * Tests that a combat consumable the server counted but the log never placed makes the
+     * replay inconclusive — a Shield armed off the record would block a hit the simulation
+     * never saw. Same fixture as test_derive_resolves_a_real_single_move_win(), which is
+     * conclusive without the stray use.
+     *
+     * @return void
+     */
+    public function test_derive_returns_null_when_a_counted_consumable_is_missing_from_the_log(): void {
         $attempt = $this->make_attempt([
             'id' => 99,
             'rngseed' => 2,
@@ -172,10 +206,23 @@ final class replay_test extends \advanced_testcase {
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
         ]);
-        $DB->insert_record('playerpuzzle_attempt_consumables', (object) [
-            'attemptid' => 99,
-            'consumabletype' => 'shield',
-            'timesused' => 1,
+        $this->record_server_uses(99, ['shield' => 1]);
+
+        $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle()));
+    }
+
+    /**
+     * Tests that a consumable in the log that use_stock.php never authorised is not applied
+     * on the client's word.
+     *
+     * @return void
+     */
+    public function test_derive_returns_null_when_a_logged_consumable_was_never_counted(): void {
+        $attempt = $this->make_attempt([
+            'id' => 96,
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'consumable', 'kind' => 'sword']]),
+            'frozenbasebosshp' => 10,
         ]);
 
         $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle()));

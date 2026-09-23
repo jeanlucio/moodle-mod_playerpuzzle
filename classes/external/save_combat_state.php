@@ -84,7 +84,7 @@ class save_combat_state extends external_api {
             'moveseq'            => new external_value(PARAM_INT, 'Monotonic sequence number of this event-log batch'),
             'movelog'            => new external_multiple_structure(
                 new external_single_structure([
-                    'type'    => new external_value(PARAM_ALPHA, "Event type: 'move' or 'question'"),
+                    'type'    => new external_value(PARAM_ALPHA, "Event type: 'move', 'question' or 'consumable'"),
                     'r1'      => new external_value(PARAM_INT, 'Row of the first swapped cell (move only)', VALUE_OPTIONAL),
                     'c1'      => new external_value(PARAM_INT, 'Column of the first swapped cell (move only)', VALUE_OPTIONAL),
                     'r2'      => new external_value(PARAM_INT, 'Row of the second swapped cell (move only)', VALUE_OPTIONAL),
@@ -99,8 +99,13 @@ class save_combat_state extends external_api {
                         "How the question ended: 'answered', 'skipped', 'unavailable' or 'failed' (question only)",
                         VALUE_OPTIONAL
                     ),
+                    'kind'    => new external_value(
+                        PARAM_ALPHA,
+                        "Which consumable was used: 'potion', 'shield', 'magic' or 'sword' (consumable only)",
+                        VALUE_OPTIONAL
+                    ),
                 ]),
-                'Combat events (board swaps and question resolutions) since the last accepted checkpoint, in order'
+                'Combat events (board swaps, questions, consumable uses) since the last accepted checkpoint, in order'
             ),
         ]);
     }

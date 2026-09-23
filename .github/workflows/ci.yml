@@ -38,11 +38,12 @@ jobs:
           MYSQL_COLLATION_SERVER: 'utf8mb4_unicode_ci'
         ports:
           - 3306:3306
-        # mariadb:11.4's entrypoint boots twice on first start (a temporary server to secure
-        # system users, then the real one) before it answers — the 3-retry/10s budget that
-        # worked for 10.11 marked it unhealthy mid-boot, taking down every leg in the job
-        # (services are shared across the whole matrix, not per-leg).
-        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 10
+        # mariadb:11.4 dropped the mysql*-prefixed client binaries entirely (confirmed by
+        # running the image locally: `mysqladmin` is gone, `mariadb-admin` is its
+        # replacement) — mysqladmin ping always failed with "not found", so the container
+        # never reported healthy no matter how long the check waited, taking every leg in the
+        # job down with it (services are shared across the whole matrix, not per-leg).
+        options: --health-cmd="mariadb-admin ping" --health-interval 10s --health-timeout 5s --health-retries 10
 
     strategy:
       fail-fast: false

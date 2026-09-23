@@ -17,8 +17,11 @@ jobs:
     runs-on: ubuntu-22.04
 
     services:
+      # Shared by the whole matrix, so pinned to Moodle 5.3's own floor (main's
+      # public/admin/environment.xml: mariadb 11.4.0, postgres 17) — a newer server always
+      # satisfies an older branch's lower minimum, so this covers every leg, not just main's.
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: 'postgres'
           POSTGRES_HOST_AUTH_METHOD: 'trust'
@@ -27,7 +30,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
 
       mariadb:
-        image: mariadb:10.11
+        image: mariadb:11.4
         env:
           MYSQL_USER: 'root'
           MYSQL_ALLOW_EMPTY_PASSWORD: 'true'

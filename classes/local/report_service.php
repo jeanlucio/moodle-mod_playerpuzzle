@@ -341,17 +341,18 @@ class report_service {
     }
 
     /**
-     * Returns the students this report should show, keyed by user id: enrolled users
-     * holding the 'view' capability, minus anyone who can also view the report
-     * themselves (teachers/managers previewing the activity are not tracked as
-     * players), scoped to the viewer's own group(s) under SEPARATEGROUPS.
+     * Returns the students a viewer may see, keyed by user id: enrolled users holding the
+     * 'view' capability, minus anyone who can also view the report themselves
+     * (teachers/managers previewing the activity are not tracked as players), scoped to the
+     * viewer's own group(s) under SEPARATEGROUPS. Shared by this report and the student-facing
+     * ranking (ranking_service), so both apply the exact same people and group rules.
      *
      * @param stdClass $cm Course module record.
      * @param context $context Module context.
      * @param int $viewerid Current viewer's user id.
      * @return stdClass[] Keyed by user id.
      */
-    private static function get_student_pool(stdClass $cm, context $context, int $viewerid): array {
+    public static function get_student_pool(stdClass $cm, context $context, int $viewerid): array {
         $namefields = \core_user\fields::for_name()->get_sql('u')->selects;
         $students = get_enrolled_users(
             $context,

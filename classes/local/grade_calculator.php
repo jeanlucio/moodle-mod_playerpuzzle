@@ -54,7 +54,7 @@ class grade_calculator {
             return self::calculate_single_match_grade($instance, $attempts);
         }
 
-        return self::calculate_campaign_grade($instance, $attempts);
+        return self::campaign_score($instance, $attempts, (float) $instance->grade);
     }
 
     /**
@@ -64,11 +64,15 @@ class grade_calculator {
      * configured. Never a count of `status = 'won'` rows — a single continuous attempt can
      * cover dozens of phases of progress at once.
      *
+     * Scaled against $base rather than always $instance->grade, so the ranking can reuse the
+     * exact same formula against its own fixed base (see ranking_service::BASE_POINTS).
+     *
      * @param stdClass $instance Activity instance.
      * @param stdClass[] $attempts All attempts for this user on this instance.
+     * @param float $base What a complete campaign is worth.
      * @return float
      */
-    private static function calculate_campaign_grade(stdClass $instance, array $attempts): float {
+    public static function campaign_score(stdClass $instance, array $attempts, float $base): float {
         $totalphases = max(1, (int) $instance->maxlevels) * 10;
         $wonordinal = max(array_map([self::class, 'won_phase_ordinal'], $attempts));
         $progresspercent = min(100, ($wonordinal / $totalphases) * 100);
@@ -81,10 +85,10 @@ class grade_calculator {
             $total = array_sum(array_map(fn(stdClass $a): int => (int) $a->questions_total, $attempts));
             $accuracypercent = $total > 0 ? ($correct / $total) * 100 : 100;
 
-            return (($progresspercent + $accuracypercent) / 2) * (float) $instance->grade / 100;
+            return (($progresspercent + $accuracypercent) / 2) * $base / 100;
         }
 
-        return ($progresspercent / 100) * (float) $instance->grade;
+        return ($progresspercent / 100) * $base;
     }
 
     /**
@@ -124,9 +128,8 @@ class grade_calculator {
         }
         usort($finished, fn(stdClass $a, stdClass $b): int => $a->timefinished <=> $b->timefinished);
 
-        $considererrors = (int) $instance->considererrors && (int) $instance->minquestions >= 1;
         $scores = array_map(
-            fn(stdClass $attempt): float => self::single_match_score($instance, $attempt, $considererrors),
+            fn(stdClass $attempt): float => self::single_match_score($instance, $attempt, (float) $instance->grade),
             $finished
         );
 
@@ -140,25 +143,27 @@ class grade_calculator {
     }
 
     /**
-     * One finished match's own score.
+     * One finished match's own score: $base for a win — weighted by that match's own question
+     * accuracy when Considerar Erros is on — and 0 for anything else. Takes $base rather than
+     * always $instance->grade so the ranking can reuse it (see ranking_service::BASE_POINTS).
      *
      * @param stdClass $instance Activity instance.
      * @param stdClass $attempt A finished attempt.
-     * @param bool $considererrors Whether question accuracy weights the score.
+     * @param float $base What a win is worth.
      * @return float
      */
-    private static function single_match_score(stdClass $instance, stdClass $attempt, bool $considererrors): float {
+    public static function single_match_score(stdClass $instance, stdClass $attempt, float $base): float {
         if ($attempt->status !== 'won') {
             return 0.0;
         }
-        if (!$considererrors) {
-            return (float) $instance->grade;
+        if (!((int) $instance->considererrors && (int) $instance->minquestions >= 1)) {
+            return $base;
         }
 
         $total = (int) $attempt->questions_total;
         $accuracy = $total > 0 ? ((int) $attempt->questions_correct / $total) : 1.0;
 
-        return (float) $instance->grade * $accuracy;
+        return $base * $accuracy;
     }
 
     /**

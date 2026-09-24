@@ -167,11 +167,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addHelpButton('considererrors', 'considererrors', 'mod_playerpuzzle');
         $mform->disabledIf('considererrors', 'minquestions', 'eq', 0);
 
-        $mform->addElement('text', 'timelimit', get_string('timelimit', 'mod_playerpuzzle'));
-        $mform->setType('timelimit', PARAM_INT);
-        $mform->setDefault('timelimit', 0);
-        $mform->addHelpButton('timelimit', 'timelimit', 'mod_playerpuzzle');
-
         $mform->addElement('text', 'maxattempts', get_string('maxattempts', 'mod_playerpuzzle'));
         $mform->setType('maxattempts', PARAM_INT);
         $mform->setDefault('maxattempts', 0);

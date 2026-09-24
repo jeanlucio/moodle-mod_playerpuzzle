@@ -18,7 +18,6 @@
         <FIELD NAME="bossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Damage dealt by boss per turn"/>
         <FIELD NAME="coingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Base coins per 3-piece Coin match; combo curve applies, does not scale by level/phase"/>
         <FIELD NAME="questioncategory" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Last Moodle question bank category id imported from via managequestions.php; 0 = none imported yet"/>
-        <FIELD NAME="timelimit" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Time limit in minutes (0 means no limit)"/>
         <FIELD NAME="maxattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Max attempts allowed (0 means unlimited)"/>
         <FIELD NAME="hud_coin_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID a student can transfer from into PuzzleCoin (0 = unconfigured)"/>
         <FIELD NAME="hud_retry_cost_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item charged from the 2nd attempt onwards (0 = free)"/>

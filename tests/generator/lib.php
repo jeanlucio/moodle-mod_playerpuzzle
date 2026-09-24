@@ -47,7 +47,6 @@ class mod_playerpuzzle_generator extends testing_module_generator {
             // Last Moodle question bank category imported from via managequestions.php;
             // 0 = none imported yet.
             'questioncategory'    => 0,
-            'timelimit'           => 0,
             'maxattempts'         => 0,
             'hud_coin_item'       => 0,
             'hud_retry_cost_item' => 0,

@@ -678,5 +678,17 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092402, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092403) {
+        // Time limit removed: the field was never enforced anywhere (no client timer, no
+        // server-side check), so it silently misled teachers into believing it worked.
+        $table = new xmldb_table('playerpuzzle');
+        $field = new xmldb_field('timelimit');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026092403, 'playerpuzzle');
+    }
+
     return true;
 }

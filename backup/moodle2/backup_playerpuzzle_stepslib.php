@@ -46,7 +46,6 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'bossdamage',
             'coingain',
             'questioncategory',
-            'timelimit',
             'maxattempts',
             'hud_coin_item',
             'hud_retry_cost_item',

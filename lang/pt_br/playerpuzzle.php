@@ -211,6 +211,7 @@ $string['manafull'] = 'Medidor de mana cheio. Um desafio de pergunta foi aberto.
 $string['managequestions'] = 'Gerenciar perguntas';
 $string['markcorrect'] = 'Correta';
 $string['max_single_matches'] = 'Número de Partidas Únicas';
+$string['max_single_matches_help'] = 'Quantas vezes o estudante pode tentar esta atividade. Cada tentativa é uma partida completa e independente, sempre disputada com o mesmo HP base configurado — não há níveis nem fases pra progredir, diferente do modo Campanha. Moedas ganhas acumulam entre as tentativas, disponíveis pra gastar na loja antes da próxima. 0 significa tentativas ilimitadas.';
 $string['maxattempts'] = 'Número máximo de tentativas';
 $string['maxattempts_help'] = 'Conta só as tentativas que terminam em derrota ao longo de toda a campanha, não quantas fases o estudante jogou — vencer uma fase nunca gasta uma tentativa. Depois de uma derrota, a próxima tentativa retoma no mesmo nível e fase, não do início. 0 significa ilimitado.';
 $string['maxattemptsreached'] = 'Você já usou todas as tentativas disponíveis para esta atividade.';

@@ -90,6 +90,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         );
         $mform->setType('max_single_matches', PARAM_INT);
         $mform->setDefault('max_single_matches', 0);
+        $mform->addHelpButton('max_single_matches', 'max_single_matches', 'mod_playerpuzzle');
         $mform->hideIf('max_single_matches', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
 
         $mform->addElement(

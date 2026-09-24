@@ -121,12 +121,34 @@ vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
 
 [Detalhamento completo teste a teste e tabela de cobertura →]({{ '/testing-pt.html' | relative_url }})
 
+## JavaScript — Testes Unitários (`tests/js/engine/`)
+
+A matemática determinística de match-3/combate/PRNG, rodada sem cabeça via o test runner
+nativo do Node (`node --test`) — sem Jest, sem navegador. Primeiro plugin do ecossistema com
+uma camada de teste JS própria.
+
+| Arquivo de teste | Casos |
+|-------------------|------:|
+| `board_rules.test.js` | 25 |
+| `combat_rules.test.js` | 29 |
+| `prng.test.js` | 5 |
+| **Subtotal** | **59** |
+
+```bash
+node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
+```
+
 ## Behat — Testes de Aceitação
 
-| Arquivo de feature | O que é coberto |
-|---------------------|------------------|
-| `mod_playerpuzzle_smoke.feature` | O fluxo da moldura Moodle: adicionar a atividade, chegar ao Lobby, entrar numa partida |
-| `mod_playerpuzzle_settings.feature` | Comportamento do formulário de configurações da atividade |
+| Arquivo de feature | Cenários |
+|---------------------|---------:|
+| `mod_playerpuzzle_accessibility.feature` | 4 |
+| `mod_playerpuzzle_gameplay.feature` | 4 |
+| `mod_playerpuzzle_match.feature` | 3 |
+| `mod_playerpuzzle_ranking.feature` | 3 |
+| `mod_playerpuzzle_settings.feature` | 1 |
+| `mod_playerpuzzle_smoke.feature` | 1 |
+| **Subtotal** | **16** |
 
 ```bash
 php admin/tool/behat/cli/init.php

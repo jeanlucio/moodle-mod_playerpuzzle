@@ -142,12 +142,48 @@ coverage below 65%:
 * **`external/generate_questions`** (48.48% lines) — same AI-generation gap, seen from the
   web service side.
 
+## JavaScript — Unit Tests (`tests/js/engine/`)
+
+`amd/src/engine/board_rules.js`, `combat_rules.js` and `prng.js` hold the deterministic
+match-3/combat/PRNG math the client must reproduce bit-for-bit against the server's own PHP
+engine (`classes/local/engine/`) for the anti-cheat replay to ever agree with what was really
+played. That math is extracted into small UMD modules and tested headless via Node's own
+built-in test runner — no Jest, no browser, no Moodle/RequireJS/Phaser runtime at all. Each
+module's UMD wrapper falls back to a plain CommonJS `module.exports` outside a `define()`
+environment, so a test `require()`s it directly. This is the first plugin in the ecosystem
+with a JS test layer of its own, so there is no house convention to follow yet — see the
+[CI workflow](https://github.com/jeanlucio/moodle-mod_playerpuzzle/blob/main/.github/workflows/ci.yml)
+for exactly how it plugs into the pipeline (its own step, gated to the `runchecks: all` leg
+alongside Grunt, since it is toolchain-level rather than Moodle-version-dependent).
+
+| Test file | Cases | What is covered |
+|-----------|------:|-----------------|
+| `board_rules.test.js` | 25 | JS mirror of `board_engine_test.php`: horizontal/vertical match detection for runs of exactly 3 and longer (never just 2), treating type 0 as real, deduping a shared intersection cell; `isMatchAt`/`matchRunLengthAt` with and without a type filter; `swapInGrid` is its own inverse; `evaluateSwap` reports the matched type and reverts the grid, or returns `null`; `findMove` finds an available swap or reports none on an unwinnable board; `pickTypeAvoidingMatch` never completes a run; `generateGrid` replays a saved grid verbatim or rolls a fresh one with no initial match; `applyGravityToGrid` drops floating pieces, leaves a full column untouched, and spawns using the injected rng, never `Math.random` directly; `hasAnyMatch` reflects the board; `shuffleGrid` matches the documented Fisher-Yates result for a known sequence and only redistributes existing types; `shuffleUntilValid` retries an invalid shuffle |
+| `combat_rules.test.js` | 29 | JS mirror of `combat_engine_test.php`: `comboMultiplier` scaling, poison/shield meter arming (with overshoot handling), `phaseLimit`/`needsRevive`/`reviveHp`/`hasNextPhase`, `resolveDamage` (shield block, clamp at 0), `resolvePoisonTick`, every `resolveMatchEffects` piece type (Potion, Star, Shield/Poison/Mana, Sword scaling by combo group, Coin, Mana-crossing question triggers for the right side only) without mutating input state, and `resolveConsumableEffect`'s own standalone Potion/Shield/Magic/Sword effects |
+| `prng.test.js` | 5 | JS mirror of `prng_test.php`: the same seed always reproduces the same sequence, matching a documented exact sequence bit for bit; different seeds diverge; every draw lands in `[0, 1)`; a seed outside the 32-bit range wraps the same way `>>> 0` coercion would |
+| **Subtotal** | **59** | |
+
+These three files are a deliberate bit-for-bit mirror of their PHP counterparts, not an
+independent test suite: `tests/local/engine/golden_vectors_test.php` on the PHP side locks in
+fixtures produced by running these exact JS modules headless through Node, so a future change
+that desyncs either side's rng-draw order, iteration order, or retry condition fails on the
+PHP side even before a live client/server mismatch would ever surface.
+
+```bash
+node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
+```
+
 ## Behat — Acceptance Tests
 
-| Feature file | What is covered |
-|--------------|-----------------|
-| `mod_playerpuzzle_smoke.feature` | The Moodle-chrome flow: adding the activity, reaching the Lobby, entering a match. Deliberately scoped to what's outside the Canvas — see [Accessibility](#accessibility) for why the Canvas itself isn't Behat-testable today. |
-| `mod_playerpuzzle_settings.feature` | Activity settings form behavior |
+| Feature file | Scenarios | What is covered |
+|--------------|----------:|-----------------|
+| `mod_playerpuzzle_accessibility.feature` | 4 | The accessible board (a real `<table role="grid">` mirroring the Canvas — see [Accessibility](#accessibility)) announces whose turn it is; grabs keyboard focus on its own, with no need to Tab to it; `Space` re-reads the available moves without acting; a digit key executes a move without erroring |
+| `mod_playerpuzzle_gameplay.feature` | 4 | Scoped deliberately to the Moodle frame around the pre-match loadout shop only — never board/combat mechanics, which run entirely in the Canvas with no deterministic seed to drive a real match against without a flaky retry-until-it-matches scenario: the Lobby shows the PuzzleCoin balance and shop; buying a consumable debits/credits via AJAX without reloading the page; buying without enough PuzzleCoin shows an error instead of failing silently; a loadout purchase does not block entering the game |
+| `mod_playerpuzzle_match.feature` | 3 | Every attempt seeded with PRNG seed 2, so the accessible board's announced moves are fixed and deterministic (move 4, a Sword match, always matches the boss's configured HP): a winning move ends in a verified victory that banks its coins; a move leaving the student to the boss's turn ends in a verified defeat; a victory the server's own replay cannot verify restarts the phase instead of counting |
+| `mod_playerpuzzle_ranking.feature` | 3 | A one-level campaign's ranking math (phase N credits (N-1)×10 of 100 points): the ranking panel opens in place of the Lobby's own panel and closes back to it; a teacher can turn the ranking off; with separate groups a student only sees their own group's ranking |
+| `mod_playerpuzzle_settings.feature` | 1 | A teacher adds a PlayerPuzzle activity and it appears on the course page |
+| `mod_playerpuzzle_smoke.feature` | 1 | A student opens the Lobby and can start the game — the baseline Moodle-chrome flow (adding the activity, reaching the Lobby, entering a match), deliberately never touching Canvas pixels themselves |
+| **Subtotal** | **16** | |
 
 ```bash
 php admin/tool/behat/cli/init.php

@@ -143,12 +143,51 @@ merecem atenção, com cobertura de linhas real abaixo de 65%:
 * **`external/generate_questions`** (48,48% linhas) — a mesma lacuna de geração por IA, vista
   pelo lado do web service.
 
+## JavaScript — Testes Unitários (`tests/js/engine/`)
+
+`amd/src/engine/board_rules.js`, `combat_rules.js` e `prng.js` guardam a matemática
+determinística de match-3/combate/PRNG que o cliente precisa reproduzir bit a bit contra o
+próprio motor PHP do servidor (`classes/local/engine/`) pra que o replay anti-trapaça algum
+dia concorde com o que foi de fato jogado. Essa matemática é extraída em módulos UMD pequenos
+e testada sem cabeça (headless) via o test runner nativo do Node — sem Jest, sem navegador,
+sem runtime nenhum de Moodle/RequireJS/Phaser. O wrapper UMD de cada módulo cai pra um
+`module.exports` CommonJS simples fora de um ambiente `define()`, então um teste faz
+`require()` dele direto. Este é o primeiro plugin do ecossistema com uma camada de teste JS
+própria, então ainda não existe uma convenção da casa a seguir — veja o
+[workflow de CI](https://github.com/jeanlucio/moodle-mod_playerpuzzle/blob/main/.github/workflows/ci.yml)
+pra ver exatamente como ele se encaixa no pipeline (passo próprio, restrito à leg
+`runchecks: all` junto com o Grunt, já que é uma questão de toolchain, não de versão do
+Moodle).
+
+| Arquivo de teste | Casos | O que é coberto |
+|-------------------|------:|------------------|
+| `board_rules.test.js` | 25 | Espelho em JS de `board_engine_test.php`: detecção de combinação horizontal/vertical pra sequências de exatamente 3 e mais longas (nunca só 2), tratando o tipo 0 como real, deduplicando uma célula de interseção compartilhada; `isMatchAt`/`matchRunLengthAt` com e sem filtro de tipo; `swapInGrid` é sua própria inversa; `evaluateSwap` reporta o tipo combinado e reverte o grid, ou retorna `null`; `findMove` encontra uma troca disponível ou reporta nenhuma num tabuleiro impossível de vencer; `pickTypeAvoidingMatch` nunca completa uma sequência; `generateGrid` reproduz um grid salvo fielmente ou sorteia um novo sem combinação inicial; `applyGravityToGrid` deixa cair peças flutuantes, deixa uma coluna já cheia intacta, e sorteia usando o rng injetado, nunca `Math.random` direto; `hasAnyMatch` reflete o tabuleiro; `shuffleGrid` bate com o resultado documentado de Fisher-Yates pra uma sequência conhecida e só redistribui tipos existentes; `shuffleUntilValid` tenta de novo um embaralhamento inválido |
+| `combat_rules.test.js` | 29 | Espelho em JS de `combat_engine_test.php`: escala de `comboMultiplier`, armamento dos medidores de veneno/escudo (com tratamento de excedente), `phaseLimit`/`needsRevive`/`reviveHp`/`hasNextPhase`, `resolveDamage` (bloqueio por escudo, trava em 0), `resolvePoisonTick`, todo tipo de peça em `resolveMatchEffects` (Poção, Estrela, Escudo/Veneno/Mana, Espada escalando pelo grupo de combo, Moeda, Mana cruzando 100 disparando questão só pro lado certo) sem alterar o estado de entrada, e os próprios efeitos independentes de Poção/Escudo/Magia/Espada em `resolveConsumableEffect` |
+| `prng.test.js` | 5 | Espelho em JS de `prng_test.php`: a mesma seed sempre reproduz a mesma sequência, batendo bit a bit com uma sequência exata documentada; seeds diferentes divergem; todo sorteio cai em `[0, 1)`; uma seed fora do intervalo de 32 bits estoura do mesmo jeito que a coerção `>>> 0` faria |
+| **Subtotal** | **59** | |
+
+Esses três arquivos são um espelho deliberado, bit a bit, dos seus equivalentes em PHP, não
+uma suíte de testes independente: `tests/local/engine/golden_vectors_test.php` do lado PHP
+trava fixtures produzidas rodando esses exatos módulos JS sem cabeça através do Node, então
+uma mudança futura que dessincronize a ordem de sorteio do rng, a ordem de iteração, ou a
+condição de nova tentativa de qualquer um dos dois lados falha do lado PHP mesmo antes de um
+descompasso real entre cliente e servidor aparecer.
+
+```bash
+node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
+```
+
 ## Behat — Testes de Aceitação
 
-| Arquivo de feature | O que é coberto |
-|---------------------|------------------|
-| `mod_playerpuzzle_smoke.feature` | O fluxo da moldura Moodle: adicionar a atividade, chegar ao Lobby, entrar numa partida. Deliberadamente restrito ao que está fora do Canvas — veja [Acessibilidade](#accessibility) pra entender por que o Canvas em si não é testável via Behat hoje. |
-| `mod_playerpuzzle_settings.feature` | Comportamento do formulário de configurações da atividade |
+| Arquivo de feature | Cenários | O que é coberto |
+|---------------------|---------:|------------------|
+| `mod_playerpuzzle_accessibility.feature` | 4 | O tabuleiro acessível (uma `<table role="grid">` real espelhando o Canvas — veja [Acessibilidade](#accessibility)) anuncia de quem é a vez; captura o foco do teclado sozinho, sem precisar de Tab; `Space` relê os movimentos disponíveis sem agir; uma tecla numérica executa um movimento sem erro |
+| `mod_playerpuzzle_gameplay.feature` | 4 | Restrito deliberadamente à moldura do Moodle ao redor da loja de loadout pré-partida — nunca à mecânica de tabuleiro/combate, que roda inteira no Canvas sem seed determinística pra guiar uma partida real sem um cenário instável de tentar-até-bater: o Lobby mostra o saldo de PuzzleCoin e a loja; comprar um consumível debita/credita via AJAX sem recarregar a página; comprar sem PuzzleCoin suficiente mostra um erro em vez de falhar silenciosamente; uma compra de loadout não bloqueia a entrada no jogo |
+| `mod_playerpuzzle_match.feature` | 3 | Toda tentativa semeada com a seed PRNG 2, então os movimentos anunciados pelo tabuleiro acessível são fixos e determinísticos (o movimento 4, uma combinação de Espada, sempre bate com o HP configurado do chefe): um movimento vencedor termina em vitória verificada que banca suas moedas; um movimento que deixa o estudante pro turno do chefe termina em derrota verificada; uma vitória que o replay do servidor não consegue verificar reinicia a fase em vez de contar |
+| `mod_playerpuzzle_ranking.feature` | 3 | A matemática de ranking de uma campanha de um nível (a fase N credita (N-1)×10 de 100 pontos): o painel de ranking abre no lugar do próprio painel do Lobby e fecha de volta pra ele; um professor pode desligar o ranking; com grupos separados um estudante só vê o ranking do próprio grupo |
+| `mod_playerpuzzle_settings.feature` | 1 | Um professor adiciona uma atividade PlayerPuzzle e ela aparece na página do curso |
+| `mod_playerpuzzle_smoke.feature` | 1 | Um estudante abre o Lobby e consegue começar o jogo — o fluxo básico da moldura Moodle (adicionar a atividade, chegar ao Lobby, entrar numa partida), deliberadamente sem tocar nos pixels do Canvas |
+| **Subtotal** | **16** | |
 
 ```bash
 php admin/tool/behat/cli/init.php

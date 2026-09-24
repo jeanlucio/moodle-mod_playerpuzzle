@@ -30,6 +30,7 @@ Feature: PlayerPuzzle pre-match loadout shop
     When I log in as "student1"
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
     Then I should see "20" in the "[data-role='coinvalue']" "css_element"
+    And I click on "Shop" "button"
     And I should see "Loadout Shop"
     And I should see "Owned: 0" in the ".pp-lobby-shop-item[data-type='potion']" "css_element"
 
@@ -39,9 +40,10 @@ Feature: PlayerPuzzle pre-match loadout shop
       | Dungeon Quiz | student1 | coin           | 20       |
     When I log in as "student1"
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
+    And I click on "Shop" "button"
     And I click on ".pp-lobby-shop-item[data-type='potion'] .pp-lobby-buy" "css_element"
     Then I should see "Owned: 1" in the ".pp-lobby-shop-item[data-type='potion']" "css_element"
-    And I should see "12" in the "[data-role='coinvalue']" "css_element"
+    And I should see "12" in the "#pp-lobby-shop [data-role='coinvalue']" "css_element"
 
   Scenario: Buying without enough PuzzleCoin shows an error instead of silently failing
     Given the following "mod_playerpuzzle > user stocks" exist:
@@ -49,6 +51,7 @@ Feature: PlayerPuzzle pre-match loadout shop
       | Dungeon Quiz | student1 | coin           | 0        |
     When I log in as "student1"
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
+    And I click on "Shop" "button"
     And I click on ".pp-lobby-shop-item[data-type='potion'] .pp-lobby-buy" "css_element"
     Then I should see "Not enough coins for this purchase." in the ".modal-body" "css_element"
     And I should see "Owned: 0" in the ".pp-lobby-shop-item[data-type='potion']" "css_element"
@@ -59,7 +62,9 @@ Feature: PlayerPuzzle pre-match loadout shop
       | Dungeon Quiz | student1 | coin           | 20       |
     When I log in as "student1"
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
+    And I click on "Shop" "button"
     And I click on ".pp-lobby-shop-item[data-type='potion'] .pp-lobby-buy" "css_element"
     And I should see "Owned: 1" in the ".pp-lobby-shop-item[data-type='potion']" "css_element"
+    And I click on "Back" "button" in the "#pp-lobby-shop" "css_element"
     And I click on "Play Game" "button"
     Then "#playerpuzzle-canvas-container" "css_element" should exist

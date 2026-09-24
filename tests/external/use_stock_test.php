@@ -211,6 +211,32 @@ final class use_stock_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that using a hint is rejected outright when hints_enabled is off, even for a
+     * question that genuinely has a hint and stock the student owns — the activity-wide
+     * switch, not just the per-question hint text.
+     *
+     * @return void
+     */
+    public function test_use_hint_rejects_when_hints_disabled(): void {
+        $instance = $this->make_instance(['hints_enabled' => 0]);
+        $questionid = $this->make_question((int) $instance->id, 'Think about it.');
+        $this->setUser($this->student);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, 'hint', 2);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_use_stock([
+            'cmid'       => $instance->cmid,
+            'token'      => $token,
+            'type'       => 'hint',
+            'questionid' => $questionid,
+        ]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('hintsdisabled', $result['exception']->errorcode);
+        $this->assertSame(2, user_stock::get_quantity((int) $this->student->id, (int) $instance->id, 'hint'));
+    }
+
+    /**
      * Tests that a question with no hint is rejected, without debiting anything.
      *
      * @return void

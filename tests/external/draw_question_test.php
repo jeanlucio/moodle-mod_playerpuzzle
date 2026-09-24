@@ -53,27 +53,29 @@ final class draw_question_test extends \advanced_testcase {
     }
 
     /**
-     * Creates a plain playerpuzzle instance.
+     * Creates a playerpuzzle instance.
      *
+     * @param array $overrides Instance field overrides.
      * @return \stdClass Instance record with the ->cmid field added.
      */
-    private function make_instance(): \stdClass {
+    private function make_instance(array $overrides = []): \stdClass {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
-        return $generator->create_instance(['course' => $this->course->id]);
+        return $generator->create_instance(array_merge(['course' => $this->course->id], $overrides));
     }
 
     /**
      * Creates one approved multichoice question.
      *
      * @param int $playerpuzzleid The instance id.
+     * @param string $hint Optional hint text.
      * @return int The new question id.
      */
-    private function make_question(int $playerpuzzleid): int {
+    private function make_question(int $playerpuzzleid, string $hint = ''): int {
         return questions_repository::add_question(
             $playerpuzzleid,
             'multichoice',
             'One of four?',
-            '',
+            $hint,
             [
                 ['text' => 'One', 'iscorrect' => true],
                 ['text' => 'Two', 'iscorrect' => false],
@@ -202,6 +204,28 @@ final class draw_question_test extends \advanced_testcase {
 
         $second = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token]);
         $this->assertSame($questionid, $second['data']['id']);
+    }
+
+    /**
+     * Tests that a question's own hint is never offered when hints_enabled is off, even
+     * though the question genuinely has one — the client-side "Use Hint" button renders
+     * purely off this flag, so forcing it false here is what hides it, with no changes
+     * needed on the JS side.
+     *
+     * @return void
+     */
+    public function test_hashint_is_false_when_hints_disabled(): void {
+        $instance = $this->make_instance(['hints_enabled' => 0]);
+        $this->make_question((int) $instance->id, 'A real hint.');
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token]);
+
+        $this->assertFalse($result['error']);
+        $this->assertTrue($result['data']['available']);
+        $this->assertFalse($result['data']['hashint']);
     }
 
     /**

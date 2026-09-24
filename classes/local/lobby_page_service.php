@@ -219,6 +219,9 @@ class lobby_page_service {
         $stock = user_stock::get_all($userid, $playerpuzzleid);
         $shopitems = [];
         foreach (attempt_consumables::TYPES as $type) {
+            if ($type === 'hint' && empty($instance->hints_enabled)) {
+                continue;
+            }
             $label = get_string(self::SHOP_TYPE_LABELS[$type], 'mod_playerpuzzle');
             $price = combat::consumable_price($type);
             $shopitems[] = [

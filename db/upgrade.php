@@ -666,5 +666,17 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092401, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092402) {
+        // Whether the Hint consumable is offered at all — an activity-wide switch, on top
+        // of the existing per-question hint text.
+        $table = new xmldb_table('playerpuzzle');
+        $field = new xmldb_field('hints_enabled', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'show_ranking');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026092402, 'playerpuzzle');
+    }
+
     return true;
 }

@@ -84,6 +84,9 @@ class buy_stock extends external_api {
         if (!in_array($params['type'], attempt_consumables::TYPES, true)) {
             throw new moodle_exception('consumabletypeinvalid', 'mod_playerpuzzle');
         }
+        if ($params['type'] === 'hint' && empty($playerpuzzle->hints_enabled)) {
+            throw new moodle_exception('hintsdisabled', 'mod_playerpuzzle');
+        }
 
         // Locked by user+instance, not by an attempt token: a purchase happens before any
         // match starts, so there is no in-progress attempt to lock on — see

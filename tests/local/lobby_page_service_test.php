@@ -228,6 +228,29 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the Hint entry is left out of the shop entirely when hints_enabled is
+     * off, so a student is never offered stock they can never spend.
+     *
+     * @return void
+     */
+    public function test_build_page_data_excludes_hint_when_hints_disabled(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['hints_enabled' => 0]);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertCount(4, $data['shopitems']);
+        foreach ($data['shopitems'] as $item) {
+            $this->assertNotSame('hint', $item['type']);
+        }
+    }
+
+    /**
      * Tests that the transfer widget appears once hud_coin_item is configured, showing the
      * student's real PlayerHUD balance.
      *

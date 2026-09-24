@@ -189,6 +189,24 @@ final class buy_stock_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that buying hint stock is rejected outright when hints_enabled is off — a
+     * student should never be able to spend PuzzleCoin on stock they can never use.
+     *
+     * @return void
+     */
+    public function test_buy_stock_rejects_hint_when_hints_disabled(): void {
+        $instance = $this->make_instance(['hints_enabled' => 0]);
+        $this->setUser($this->student);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE, 100);
+
+        $result = $this->call_buy_stock(['cmid' => $instance->cmid, 'type' => 'hint']);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('hintsdisabled', $result['exception']->errorcode);
+        $this->assertSame(0, user_stock::get_quantity((int) $this->student->id, (int) $instance->id, 'hint'));
+    }
+
+    /**
      * Tests that stock is isolated per instance and per user — buying on one instance
      * never credits another, and one student's purchase never credits another's stock.
      *

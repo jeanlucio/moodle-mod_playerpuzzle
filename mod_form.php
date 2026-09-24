@@ -195,6 +195,11 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setDefault('show_ranking', 1);
         $mform->addHelpButton('show_ranking', 'show_ranking', 'mod_playerpuzzle');
 
+        $mform->addElement('advcheckbox', 'hints_enabled', get_string('hints_enabled', 'mod_playerpuzzle'));
+        $mform->setType('hints_enabled', PARAM_INT);
+        $mform->setDefault('hints_enabled', 1);
+        $mform->addHelpButton('hints_enabled', 'hints_enabled', 'mod_playerpuzzle');
+
         $this->add_hud_elements($mform, (int) $COURSE->id);
 
         $this->standard_grading_coursemodule_elements();

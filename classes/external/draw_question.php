@@ -129,6 +129,13 @@ class draw_question extends external_api {
                 $attempt->timemodified = time();
                 $DB->update_record('playerpuzzle_attempts', $attempt);
 
+                // Hides the "Use Hint" affordance client-side without touching combat.js —
+                // it already renders the button purely off this flag, never a raw hint text
+                // presence, so forcing it false here is enough on its own.
+                if ($current !== null && empty($playerpuzzle->hints_enabled)) {
+                    $current['hashint'] = false;
+                }
+
                 return ['question' => $current, 'eventcount' => (int) $attempt->moveseq];
             }
         );

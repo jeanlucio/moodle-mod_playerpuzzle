@@ -118,18 +118,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setDefault('cooldown_unit', 'minutes');
         $mform->hideIf('cooldowngroup', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
 
-        $mform->addElement(
-            'select',
-            'grademethod',
-            get_string('grademethod', 'mod_playerpuzzle'),
-            playerpuzzle_get_grademethod_options()
-        );
-        $mform->setType('grademethod', PARAM_INT);
-        $mform->setDefault('grademethod', PLAYERPUZZLE_GRADE_HIGHEST);
-        $mform->addHelpButton('grademethod', 'grademethod', 'mod_playerpuzzle');
-        $mform->hideIf('grademethod', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
-        $mform->hideIf('grademethod', 'grade[modgrade_type]', 'eq', 'none');
-
         $bossoptions = [
             'slime.png'  => 'Slime',
             'goblin.png' => 'Goblin',
@@ -203,6 +191,23 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $this->add_hud_elements($mform, (int) $COURSE->id);
 
         $this->standard_grading_coursemodule_elements();
+
+        // Placed here, right after the grade elements, mirroring mod_quiz's own
+        // "Grading method" field — the same concept (combining several attempts/matches
+        // into one final grade) belongs in the Grade section, not among the gameplay
+        // settings above.
+        $mform->addElement(
+            'select',
+            'grademethod',
+            get_string('grademethod', 'mod_playerpuzzle'),
+            playerpuzzle_get_grademethod_options()
+        );
+        $mform->setType('grademethod', PARAM_INT);
+        $mform->setDefault('grademethod', PLAYERPUZZLE_GRADE_HIGHEST);
+        $mform->addHelpButton('grademethod', 'grademethod', 'mod_playerpuzzle');
+        $mform->hideIf('grademethod', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+        $mform->hideIf('grademethod', 'grade[modgrade_type]', 'eq', 'none');
+
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
     }

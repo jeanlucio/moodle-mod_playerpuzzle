@@ -29,6 +29,7 @@ namespace mod_playerpuzzle\local;
  * Tests for game_page_service.
  *
  * @covers \mod_playerpuzzle\local\game_page_service
+ * @covers \mod_playerpuzzle\local\question_results
  */
 final class game_page_service_test extends \advanced_testcase {
     /** @var \stdClass Course used by every test. */

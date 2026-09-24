@@ -36,6 +36,7 @@ use mod_playerpuzzle\local\questions_repository;
  *
  * @covers \mod_playerpuzzle\external\validate_answer
  * @covers \mod_playerpuzzle\local\engine\question_fetcher
+ * @covers \mod_playerpuzzle\local\question_results
  */
 final class validate_answer_test extends \advanced_testcase {
     /** @var \stdClass Course used by every test. */

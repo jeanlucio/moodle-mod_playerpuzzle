@@ -35,6 +35,8 @@ use mod_playerpuzzle\event\replay_inconclusive;
  * where those numbers come from.
  *
  * @covers \mod_playerpuzzle\local\replay_credit
+ * @covers \mod_playerpuzzle\event\replay_diverged
+ * @covers \mod_playerpuzzle\event\replay_inconclusive
  */
 final class replay_credit_test extends \advanced_testcase {
     /** @var \stdClass Course used by every test. */

@@ -34,25 +34,26 @@ Medida localmente com Xdebug (`moodle-coverage`, ferramenta de bancada — não 
 
 | | Cobertura |
 |---|---|
-| Classes | 70,00% (7/10 totalmente cobertas) |
-| Métodos | 81,08% (30/37) |
-| Linhas | 84,44% (521/617) |
+| Classes | 44,68% (21/47 totalmente cobertas) |
+| Métodos | 73,26% (189/258) |
+| Linhas | 84,92% (3735/4398) |
 
-Toda classe que trata do próprio motor de combate — `advance_phase`, `save_progress`,
-`validate_answer`, `combat`, `question_fetcher`, `security`, `game_page_service` — está em
-**100%** de cobertura de linhas e métodos. As três classes abaixo da cobertura total não são
-funcionalidades sem teste; cada lacuna é um ramo específico e de baixo valor:
+_(Retrato de 24/09/2026, 660 testes.)_
 
-* **`hud_service`** (85,71% métodos / 96,30% linhas) — a guarda `!is_installed()` dentro de
-  `get_item_name()` nunca é acionada, porque todo teste que alcança esse método já tem o
-  PlayerHUD instalado (um teste separado de `is_installed()` cobre essa checagem por si só).
-* **`lobby_page_service`** (50,00% métodos / 91,38% linhas) — a métrica estrita de "totalmente
-  coberto" só credita `build_progress_context` e `build_minquestions_context`, ambos a 100%;
-  `build_page_data` (93,33%) e `build_hud_stats_context` (71,43%) são exercitados por todo teste
-  do arquivo, mas não acionam toda permutação individual de item do PlayerHUD configurado.
-* **`privacy/provider`** (42,86% métodos / 93,40% linhas) — todo método de exclusão/exportação
-  fica entre 81% e 97%; nenhum caminho de exclusão ou exportação fica sem teste, só alguns ramos
-  de caso extremo dentro deles (por exemplo, um conjunto de resultados já vazio).
+A cobertura de linhas é o número mais informativo aqui: a maioria das classes abaixo de 100%
+de métodos ainda fica em 90%+ de linhas — os métodos descobertos costumam ser ramos de caso
+extremo (um conjunto de resultados já vazio, uma guarda que todo teste já satisfaz) ou código
+padrão de uma classe de evento do Moodle (`get_url()`, `init()`) que um teste comum de
+disparar-e-verificar nunca chama, não funcionalidades sem teste. As classes que realmente
+merecem atenção, com cobertura de linhas real abaixo de 65%:
+
+* **`local/ai_question_generator`** (62,75% linhas) — o caminho de geração por IA em si
+  (montagem do prompt, chamadas ao provedor) está praticamente sem teste; só a
+  validação/parsing determinístico de uma resposta já recebida está.
+* **`external/generate_questions`** (48,48% linhas) — a mesma lacuna de geração por IA, vista
+  pelo lado do web service.
+* **`form/question_form`** (1,19% linhas) — o formulário de adicionar/editar uma questão está
+  construído mas praticamente nunca é exercitado por um teste.
 
 ## Behat — Testes de Aceitação
 

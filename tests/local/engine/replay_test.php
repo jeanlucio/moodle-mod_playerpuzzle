@@ -37,6 +37,7 @@ use mod_playerpuzzle\local\question_results;
  * vary what the log and the server-decided outcomes say about each question.
  *
  * @covers \mod_playerpuzzle\local\engine\replay
+ * @covers \mod_playerpuzzle\local\question_results
  */
 final class replay_test extends \advanced_testcase {
     #[\Override]

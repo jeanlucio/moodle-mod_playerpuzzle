@@ -34,26 +34,26 @@ Measured locally with Xdebug (`moodle-coverage`, a bench tool — not part of CI
 
 | | Coverage |
 |---|---|
-| Classes | 70.00% (7/10 fully covered) |
-| Methods | 81.08% (30/37) |
-| Lines | 84.44% (521/617) |
+| Classes | 44.68% (21/47 fully covered) |
+| Methods | 73.26% (189/258) |
+| Lines | 84.92% (3735/4398) |
 
-Every class handling the combat engine itself — `advance_phase`, `save_progress`,
-`validate_answer`, `combat`, `question_fetcher`, `security`, `game_page_service` — is at
-**100%** line and method coverage. The three classes below full coverage are not untested
-features; each gap is a specific, low-value branch:
+_(Snapshot: 2026-09-24, 660 tests.)_
 
-* **`hud_service`** (85.71% methods / 96.30% lines) — `get_item_name()`'s
-  `!is_installed()` guard clause is never hit, because every test that reaches this method
-  already has PlayerHUD installed (a separate `is_installed()` test covers that check on its
-  own).
-* **`lobby_page_service`** (50.00% methods / 91.38% lines) — the strict "fully covered"
-  method metric only credits `build_progress_context` and `build_minquestions_context`, at
-  100% each; `build_page_data` (93.33%) and `build_hud_stats_context` (71.43%) are exercised by
-  every test in the file but don't hit every individual HUD-item-configured permutation.
-* **`privacy/provider`** (42.86% methods / 93.40% lines) — every deletion/export method sits
-  between 81% and 97%; no deletion or export path is untested, only a handful of edge-case
-  branches inside them (e.g. an already-empty result set).
+Line coverage is the more informative number here: most classes below 100% method coverage
+still sit at 90%+ lines — the uncovered methods tend to be edge-case branches (an
+already-empty result set, a guard clause every test already satisfies) or a Moodle event
+class's own boilerplate (`get_url()`, `init()`) that a normal trigger-and-assert test never
+calls, not untested features. The classes actually worth a closer look, with real line
+coverage below 65%:
+
+* **`local/ai_question_generator`** (62.75% lines) — the AI-generation path itself (prompt
+  building, provider calls) is largely untested; only the deterministic parsing/validation
+  of an already-returned response is.
+* **`external/generate_questions`** (48.48% lines) — same AI-generation gap, seen from the
+  web service side.
+* **`form/question_form`** (1.19% lines) — the single-question add/edit form is built but
+  essentially never exercised by a test.
 
 ## Behat — Acceptance Tests
 

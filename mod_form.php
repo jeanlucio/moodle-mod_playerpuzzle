@@ -60,15 +60,13 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $this->standard_intro_elements();
 
-        $mform->addElement('header', 'studentsettings', get_string('studentsettings', 'mod_playerpuzzle'));
+        $mform->addElement('header', 'gameplayheader', get_string('gameplayheader', 'mod_playerpuzzle'));
+        $mform->setExpanded('gameplayheader');
 
         $mform->addElement('text', 'basestudenthp', get_string('basestudenthp', 'mod_playerpuzzle'));
         $mform->setType('basestudenthp', PARAM_INT);
         $mform->setDefault('basestudenthp', 100);
         $mform->addHelpButton('basestudenthp', 'basestudenthp', 'mod_playerpuzzle');
-
-        $mform->addElement('header', 'levelsandphases', get_string('levelsandphases', 'mod_playerpuzzle'));
-        $mform->hideIf('levelsandphases', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
 
         $leveloptions = [];
         for ($i = 1; $i <= 10; $i++) {
@@ -79,9 +77,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setDefault('maxlevels', 1);
         $mform->addHelpButton('maxlevels', 'maxlevels', 'mod_playerpuzzle');
         $mform->hideIf('maxlevels', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
-
-        $mform->addElement('header', 'singlematchheader', get_string('singlematchheader', 'mod_playerpuzzle'));
-        $mform->hideIf('singlematchheader', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
 
         $singlematchoptions = [0 => get_string('unlimited', 'mod_playerpuzzle')];
         for ($i = 1; $i <= 10; $i++) {
@@ -109,8 +104,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->hideIf('grademethod', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
         $mform->hideIf('grademethod', 'grade[modgrade_type]', 'eq', 'none');
 
-        $mform->addElement('header', 'bosssettings', get_string('bosssettings', 'mod_playerpuzzle'));
-
         $bossoptions = [
             'slime.png'  => 'Slime',
             'goblin.png' => 'Goblin',
@@ -133,8 +126,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('coingain', PARAM_INT);
         $mform->setDefault('coingain', 10);
         $mform->addHelpButton('coingain', 'coingain', 'mod_playerpuzzle');
-
-        $mform->addElement('header', 'questionsettings', get_string('questionsettings', 'mod_playerpuzzle'));
 
         // Which Moodle question bank category (if any) to import from lives on
         // managequestions.php now, not here — this field only keeps the last-imported
@@ -161,8 +152,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setDefault('considererrors', 0);
         $mform->addHelpButton('considererrors', 'considererrors', 'mod_playerpuzzle');
         $mform->disabledIf('considererrors', 'minquestions', 'eq', 0);
-
-        $mform->addElement('header', 'rules', get_string('rules', 'mod_playerpuzzle'));
 
         $mform->addElement('text', 'timelimit', get_string('timelimit', 'mod_playerpuzzle'));
         $mform->setType('timelimit', PARAM_INT);

@@ -322,8 +322,8 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the Campaign-only fields (levels/phases header, maxlevels,
-     * maxattempts) are registered to hide when gamemode is Single Match.
+     * Tests that the Campaign-only fields (maxlevels, maxattempts) are registered to hide
+     * when gamemode is Single Match.
      *
      * @return void
      */
@@ -334,14 +334,13 @@ final class mod_form_test extends \advanced_testcase {
 
         $mform = $this->build_form($instance, $cm);
 
-        $this->assert_hideif_registered($mform, 'levelsandphases', 'gamemode', 'eq', 'single');
         $this->assert_hideif_registered($mform, 'maxlevels', 'gamemode', 'eq', 'single');
         $this->assert_hideif_registered($mform, 'maxattempts', 'gamemode', 'eq', 'single');
     }
 
     /**
-     * Tests that the Single Match-only fields (its header, max_single_matches,
-     * grademethod) are registered to hide when gamemode is Campaign.
+     * Tests that the Single Match-only fields (max_single_matches, grademethod) are
+     * registered to hide when gamemode is Campaign.
      *
      * @return void
      */
@@ -352,7 +351,6 @@ final class mod_form_test extends \advanced_testcase {
 
         $mform = $this->build_form($instance, $cm);
 
-        $this->assert_hideif_registered($mform, 'singlematchheader', 'gamemode', 'eq', 'campaign');
         $this->assert_hideif_registered($mform, 'max_single_matches', 'gamemode', 'eq', 'campaign');
         $this->assert_hideif_registered($mform, 'grademethod', 'gamemode', 'eq', 'campaign');
     }

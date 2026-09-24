@@ -71,7 +71,7 @@ economy of its own.
 {% include_relative en/usage.md %}
 
 <span id="testing"></span>
-{% include_relative en/testing.md %}
+{% include_relative en/testing-summary.md %}
 
 <span id="third-party"></span>
 {% include_relative en/third-party.md %}

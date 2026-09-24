@@ -71,7 +71,7 @@ quando presente no curso — o PlayerPuzzle não mantém economia própria.
 {% include_relative pt/usage.md %}
 
 <span id="testing"></span>
-{% include_relative pt/testing.md %}
+{% include_relative pt/testing-summary.md %}
 
 <span id="third-party"></span>
 {% include_relative pt/third-party.md %}

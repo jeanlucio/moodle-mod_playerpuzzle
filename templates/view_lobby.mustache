@@ -59,6 +59,14 @@
         "canmanagequestions": true,
         "managequestionsurl": "/mod/playerpuzzle/managequestions.php?id=1",
         "managequestionslabel": "Manage questions",
+        "shopmenulabel": "Shop",
+        "settingsmenulabel": "Settings",
+        "backlabel": "Back",
+        "musicenabled": true,
+        "musiclabel": "Music",
+        "sfxenabled": true,
+        "sfxlabel": "Sound effects",
+        "difficultyselectedtext": "Difficulty: Normal",
         "showranking": true,
         "rankingbuttontext": "Ranking",
         "rankingtitle": "Class ranking",
@@ -68,7 +76,6 @@
         "rankingpoints": "Points",
         "rankingyou": "(you)",
         "rankingempty": "Nobody has scored yet.",
-        "rankingback": "Back",
         "rankingisempty": false,
         "rankingrows": [
             {"position": 1, "fullname": "Ana Souza", "points": "80", "iscurrentuser": false},
@@ -114,9 +121,90 @@
                         <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
                     </span>
                 </div>
+                {{/isguest}}
 
+                <div class="pp-lobby-menu">
+                    {{^isguest}}
+                    <button
+                        type="button"
+                        class="pp-lobby-menu-btn"
+                        data-action="open-panel"
+                        data-panel="pp-lobby-shop"
+                        aria-controls="pp-lobby-shop"
+                        aria-expanded="false"
+                    >
+                        <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+                        <span>{{shopmenulabel}}</span>
+                    </button>
+                    {{/isguest}}
+                    {{#showranking}}
+                    <button
+                        type="button"
+                        class="pp-lobby-menu-btn"
+                        data-action="open-panel"
+                        data-panel="pp-lobby-ranking"
+                        aria-controls="pp-lobby-ranking"
+                        aria-expanded="false"
+                    >
+                        <i class="fa fa-trophy" aria-hidden="true"></i>
+                        <span>{{rankingbuttontext}}</span>
+                    </button>
+                    {{/showranking}}
+                    <button
+                        type="button"
+                        class="pp-lobby-menu-btn"
+                        data-action="open-panel"
+                        data-panel="pp-lobby-settings"
+                        aria-controls="pp-lobby-settings"
+                        aria-expanded="false"
+                    >
+                        <i class="fa fa-cog" aria-hidden="true"></i>
+                        <span>{{settingsmenulabel}}</span>
+                    </button>
+                </div>
+
+                {{#difficultyselectedtext}}
+                <p class="pp-lobby-note" id="pp-lobby-difficulty-readout">{{difficultyselectedtext}}</p>
+                {{/difficultyselectedtext}}
+                {{#difficultycurrent}}
+                <p class="pp-lobby-note">{{difficultycurrent}}</p>
+                {{/difficultycurrent}}
+
+                {{^isguest}}
+                <form method="post" action="{{{playurl}}}" id="pp-lobby-playform">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    <button type="submit" class="pp-lobby-play">{{playtext}}</button>
+                </form>
+                {{/isguest}}
+
+                <form method="post" action="{{{demourl}}}">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    <input type="hidden" name="isdemo" value="1">
+                    <button type="submit" class="pp-lobby-playdemo">{{playdemotext}}</button>
+                </form>
+
+                {{#minquestionstext}}
+                <p class="pp-lobby-note">{{minquestionstext}}</p>
+                {{/minquestionstext}}
+
+                {{#canmanagequestions}}
+                <a href="{{managequestionsurl}}" class="pp-lobby-managelink">{{managequestionslabel}}</a>
+                {{/canmanagequestions}}
+            </div>
+
+            {{^isguest}}
+            <section id="pp-lobby-shop" class="pp-lobby-view" aria-labelledby="pp-lobby-shop-title" hidden>
+                <h3 id="pp-lobby-shop-title" class="pp-lobby-view-title" tabindex="-1">{{shoptitle}}</h3>
+                <div class="pp-lobby-stats">
+                    <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
+                            <circle cx="12" cy="12" r="5.4" fill="none" stroke="#8a611c" stroke-width="1.2"/>
+                        </svg>
+                        <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
+                    </span>
+                </div>
                 <div class="pp-lobby-shop" data-cmid="{{cmid}}">
-                    <h3 class="pp-lobby-shop-title">{{shoptitle}}</h3>
                     <ul class="pp-lobby-shop-list">
                         {{#shopitems}}
                         <li class="pp-lobby-shop-item" data-type="{{type}}">
@@ -138,7 +226,7 @@
 
                 {{#hastransfer}}
                 <div class="pp-lobby-transfer" data-cmid="{{cmid}}">
-                    <h3 class="pp-lobby-transfer-title">{{transfertitle}}</h3>
+                    <h4 class="pp-lobby-transfer-title">{{transfertitle}}</h4>
                     <span class="pp-lobby-chip" data-role="hudcoinchip" aria-label="{{hudcoinstext}}">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <circle cx="12" cy="12" r="9" fill="#8ea7c9" stroke="#3f5670" stroke-width="1.5"/>
@@ -160,9 +248,39 @@
                     </button>
                 </div>
                 {{/hastransfer}}
-                {{/isguest}}
 
-                <div class="form-check pp-lobby-speech">
+                <button type="button" class="pp-lobby-playdemo" data-action="close-panel">{{backlabel}}</button>
+            </section>
+            {{/isguest}}
+
+            <section id="pp-lobby-settings" class="pp-lobby-view" aria-labelledby="pp-lobby-settings-title" hidden>
+                <h3 id="pp-lobby-settings-title" class="pp-lobby-view-title" tabindex="-1">{{settingsmenulabel}}</h3>
+
+                {{#difficultylabel}}
+                <fieldset class="pp-lobby-difficulty">
+                    <legend class="pp-lobby-difficulty-legend">
+                        <span>{{difficultylabel}}</span>
+                        {{{difficultyhelpicon}}}
+                    </legend>
+                    <div class="pp-lobby-difficulty-options">
+                        {{#difficultychoices}}
+                        <span class="pp-lobby-difficulty-option">
+                            <input
+                                type="radio"
+                                name="difficulty"
+                                form="pp-lobby-playform"
+                                id="pp-difficulty-{{value}}"
+                                value="{{value}}"
+                                {{#checked}}checked{{/checked}}
+                            >
+                            <label for="pp-difficulty-{{value}}">{{label}}</label>
+                        </span>
+                        {{/difficultychoices}}
+                    </div>
+                </fieldset>
+                {{/difficultylabel}}
+
+                <div class="form-check pp-lobby-toggle">
                     <input
                         type="checkbox"
                         class="form-check-input"
@@ -172,56 +290,32 @@
                     <label class="form-check-label" for="pp-lobby-speech">{{speechlabel}}</label>
                 </div>
 
-                {{^isguest}}
-                <form method="post" action="{{{playurl}}}">
-                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                <div class="form-check pp-lobby-toggle">
+                    <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="pp-lobby-music"
+                        {{#musicenabled}}checked{{/musicenabled}}
+                    >
+                    <label class="form-check-label" for="pp-lobby-music">{{musiclabel}}</label>
+                </div>
 
-                    {{#difficultycurrent}}
-                    <p class="pp-lobby-note">{{difficultycurrent}}</p>
-                    {{/difficultycurrent}}
+                <div class="form-check pp-lobby-toggle">
+                    <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="pp-lobby-sfx"
+                        {{#sfxenabled}}checked{{/sfxenabled}}
+                    >
+                    <label class="form-check-label" for="pp-lobby-sfx">{{sfxlabel}}</label>
+                </div>
 
-                    {{#difficultylabel}}
-                    <fieldset class="pp-lobby-difficulty">
-                        <legend class="pp-lobby-difficulty-legend">
-                            <span>{{difficultylabel}}</span>
-                            {{{difficultyhelpicon}}}
-                        </legend>
-                        <div class="pp-lobby-difficulty-options">
-                            {{#difficultychoices}}
-                            <span class="pp-lobby-difficulty-option">
-                                <input type="radio" name="difficulty" id="pp-difficulty-{{value}}" value="{{value}}" {{#checked}}checked{{/checked}}>
-                                <label for="pp-difficulty-{{value}}">{{label}}</label>
-                            </span>
-                            {{/difficultychoices}}
-                        </div>
-                    </fieldset>
-                    {{/difficultylabel}}
+                <button type="button" class="pp-lobby-playdemo" data-action="close-panel">{{backlabel}}</button>
+            </section>
 
-                    <button type="submit" class="pp-lobby-play">{{playtext}}</button>
-                </form>
-                {{/isguest}}
-
-                {{#showranking}}
-                <button type="button" class="pp-lobby-rankingopen" data-action="open-ranking" aria-controls="pp-lobby-ranking" aria-expanded="false">{{rankingbuttontext}}</button>
-                {{/showranking}}
-
-                <form method="post" action="{{{demourl}}}">
-                    <input type="hidden" name="sesskey" value="{{sesskey}}">
-                    <input type="hidden" name="isdemo" value="1">
-                    <button type="submit" class="pp-lobby-playdemo">{{playdemotext}}</button>
-                </form>
-
-                {{#minquestionstext}}
-                <p class="pp-lobby-note">{{minquestionstext}}</p>
-                {{/minquestionstext}}
-
-                {{#canmanagequestions}}
-                <a href="{{managequestionsurl}}" class="pp-lobby-managelink">{{managequestionslabel}}</a>
-                {{/canmanagequestions}}
-            </div>
             {{#showranking}}
-            <section id="pp-lobby-ranking" class="pp-lobby-view pp-lobby-ranking" aria-labelledby="pp-lobby-ranking-title" hidden>
-                <h3 id="pp-lobby-ranking-title" class="pp-lobby-ranking-title" tabindex="-1">{{rankingtitle}}</h3>
+            <section id="pp-lobby-ranking" class="pp-lobby-view" aria-labelledby="pp-lobby-ranking-title" hidden>
+                <h3 id="pp-lobby-ranking-title" class="pp-lobby-view-title" tabindex="-1">{{rankingtitle}}</h3>
                 <p class="pp-lobby-note">{{rankingnote}}</p>
                 {{#rankingisempty}}
                 <p class="pp-lobby-ranking-empty">{{rankingempty}}</p>
@@ -256,7 +350,7 @@
                     </tbody>
                 </table>
                 {{/rankingisempty}}
-                <button type="button" class="pp-lobby-playdemo" data-action="close-ranking">{{rankingback}}</button>
+                <button type="button" class="pp-lobby-playdemo" data-action="close-panel">{{backlabel}}</button>
             </section>
             {{/showranking}}
         </div>

@@ -81,6 +81,9 @@ class lobby_page_service {
             'heroimageurl' => $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false),
             'panelstoneurl' => (new moodle_url('/mod/playerpuzzle/pix/panel_stone.webp'))->out(false),
             'scrollbannerurl' => (new moodle_url('/mod/playerpuzzle/pix/scroll_banner.webp'))->out(false),
+            'shopmenulabel' => get_string('lobby_menu_shop', 'mod_playerpuzzle'),
+            'settingsmenulabel' => get_string('lobby_menu_settings', 'mod_playerpuzzle'),
+            'backlabel' => get_string('lobby_back', 'mod_playerpuzzle'),
         ];
 
         if (has_capability('mod/playerpuzzle:managequestions', $context, $userid)) {
@@ -120,7 +123,7 @@ class lobby_page_service {
         $data += self::build_progress_context($instance, $attempt, $userid);
         $data += self::build_minquestions_context($instance);
         $data += self::build_difficulty_context($attempt);
-        $data += self::build_speech_context($userid);
+        $data += self::build_sound_context($userid);
         $data += self::build_ranking_context($instance, $cm, $userid);
 
         return $data;
@@ -156,7 +159,6 @@ class lobby_page_service {
             'rankingpoints' => get_string('ranking_points', 'mod_playerpuzzle'),
             'rankingyou' => get_string('ranking_you', 'mod_playerpuzzle'),
             'rankingempty' => get_string('ranking_empty', 'mod_playerpuzzle'),
-            'rankingback' => get_string('ranking_back', 'mod_playerpuzzle'),
             'rankingrows' => $ranking['rows'],
             'rankinghasoutsider' => $ranking['hasoutsider'],
             'rankingoutsider' => $ranking['outsiderrow'],
@@ -165,18 +167,22 @@ class lobby_page_service {
     }
 
     /**
-     * Builds the spoken-narration toggle context: a per-student preference (see
-     * sound_preferences), not a site setting — whether to hear game announcements read
-     * aloud is the student's own call, so it is offered right here rather than gated
-     * behind an admin having enabled it first.
+     * Builds the three audio toggles' context: spoken narration, Music and Sound Effects —
+     * all per-student preferences (see sound_preferences), never a site setting. Music/Sound
+     * Effects mirror the same badges already offered inside the in-game HUD (ui.js); the
+     * Lobby copy lets the student set them before starting a match, not only mid-game.
      *
      * @param int $userid Current user ID.
      * @return array
      */
-    private static function build_speech_context(int $userid): array {
+    private static function build_sound_context(int $userid): array {
         return [
             'speechenabled' => sound_preferences::is_enabled('speech', $userid),
             'speechlabel'   => get_string('lobby_speech_label', 'mod_playerpuzzle'),
+            'musicenabled'  => sound_preferences::is_enabled('music', $userid),
+            'musiclabel'    => get_string('lobby_music_label', 'mod_playerpuzzle'),
+            'sfxenabled'    => sound_preferences::is_enabled('sfx', $userid),
+            'sfxlabel'      => get_string('lobby_sfx_label', 'mod_playerpuzzle'),
         ];
     }
 
@@ -341,6 +347,14 @@ class lobby_page_service {
             'difficultylabel'    => get_string('lobby_difficulty', 'mod_playerpuzzle'),
             'difficultyhelpicon' => $OUTPUT->help_icon('lobby_difficulty', 'mod_playerpuzzle'),
             'difficultychoices'  => $choices,
+            // A compact always-visible readout on the main screen, since the picker itself
+            // moves into the Settings panel — kept in sync with the radios by lobby_settings.js
+            // as the student changes their choice, without an extra request.
+            'difficultyselectedtext' => get_string(
+                'lobby_difficulty_selected',
+                'mod_playerpuzzle',
+                $options[PLAYERPUZZLE_DIFFICULTY_NORMAL]
+            ),
         ];
     }
 

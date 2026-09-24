@@ -433,6 +433,45 @@ body.path-mod-playerpuzzle .pp-lobby-chip svg {
     flex: none;
 }
 
+/**
+ * Quick-menu row (Shop/Ranking/Settings) — near the top of the Lobby, mirroring a game's
+ * own title-screen menu, ahead of the big Play button below.
+ */
+body.path-mod-playerpuzzle .pp-lobby-menu {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(0, 0, 0, 0.32);
+    border: 1px solid rgba(205, 179, 122, 0.4);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    color: #f3e6c4;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-menu-btn:hover {
+    background: rgba(0, 0, 0, 0.48);
+}
+
+body.path-mod-playerpuzzle .pp-lobby-menu-btn:focus-visible {
+    outline: 3px solid #ffd873;
+    outline-offset: 2px;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-menu-btn i {
+    color: #cdb37a;
+}
+
 body.path-mod-playerpuzzle .pp-lobby-shop {
     width: 100%;
     background: rgba(0, 0, 0, 0.28);
@@ -627,8 +666,7 @@ body.path-mod-playerpuzzle .pp-lobby-playdemo:focus-visible {
     outline-offset: 3px;
 }
 
-body.path-mod-playerpuzzle .pp-lobby-play,
-body.path-mod-playerpuzzle .pp-lobby-rankingopen {
+body.path-mod-playerpuzzle .pp-lobby-play {
     width: 100%;
     font-weight: 800;
     font-size: 1.15rem;
@@ -645,29 +683,28 @@ body.path-mod-playerpuzzle .pp-lobby-rankingopen {
     transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-body.path-mod-playerpuzzle .pp-lobby-play:hover,
-body.path-mod-playerpuzzle .pp-lobby-rankingopen:hover {
+body.path-mod-playerpuzzle .pp-lobby-play:hover {
     transform: translateY(-2px);
 }
 
-body.path-mod-playerpuzzle .pp-lobby-play:focus-visible,
-body.path-mod-playerpuzzle .pp-lobby-rankingopen:focus-visible {
+body.path-mod-playerpuzzle .pp-lobby-play:focus-visible {
     outline: 3px solid #ffd873;
     outline-offset: 3px;
 }
 
-body.path-mod-playerpuzzle .pp-lobby-rankingopen {
-    margin-top: 0.75rem;
-}
-
 /**
- * Ranking panel, shown in place of the Lobby's main panel.
+ * Shop/Settings/Ranking panels, each shown in place of the Lobby's main panel.
  */
-body.path-mod-playerpuzzle .pp-lobby-ranking-title {
+body.path-mod-playerpuzzle .pp-lobby-view-title {
     color: #ffd873;
     font-weight: 800;
     font-size: 1.25rem;
     margin-bottom: 0.5rem;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-toggle {
+    margin-bottom: 0.5rem;
+    color: #f3e6c4;
 }
 
 body.path-mod-playerpuzzle .pp-lobby-ranking-table {

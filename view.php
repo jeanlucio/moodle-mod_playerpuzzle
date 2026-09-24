@@ -59,9 +59,8 @@ $templatedata = \mod_playerpuzzle\local\lobby_page_service::build_page_data(
 );
 
 $PAGE->requires->js_call_amd('mod_playerpuzzle/lobby_shop', 'init', [$cm->id]);
-if (!empty($templatedata['showranking'])) {
-    $PAGE->requires->js_call_amd('mod_playerpuzzle/lobby_ranking', 'init');
-}
+$PAGE->requires->js_call_amd('mod_playerpuzzle/lobby_settings', 'init', [$cm->id]);
+$PAGE->requires->js_call_amd('mod_playerpuzzle/lobby_panels', 'init');
 
 echo $OUTPUT->render_from_template('mod_playerpuzzle/view_lobby', $templatedata);
 

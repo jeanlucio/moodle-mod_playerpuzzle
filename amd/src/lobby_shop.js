@@ -28,6 +28,25 @@ import Notification from 'core/notification';
 import {get_string as getString} from 'core/str';
 
 /**
+ * Updates every PuzzleCoin balance chip on the page — the coin chip is duplicated between
+ * the Lobby's main view and the Shop panel (so the balance stays visible while shopping,
+ * without needing both views open at once), so a purchase or transfer must refresh all of
+ * them, not just the first match.
+ *
+ * @param {number} newbalance The authoritative new balance from the server's response.
+ * @return {Promise<void>}
+ */
+const updateCoinChips = async(newbalance) => {
+    const label = await getString('lobby_puzzlecoinbalance', 'mod_playerpuzzle', newbalance);
+    document.querySelectorAll('[data-role="coinvalue"]').forEach((el) => {
+        el.textContent = newbalance;
+    });
+    document.querySelectorAll('[data-role="coinchip"]').forEach((el) => {
+        el.setAttribute('aria-label', label);
+    });
+};
+
+/**
  * Buys 1 unit of the clicked button's consumable type, then updates that item's owned
  * count and the coin balance chip from the server's authoritative response.
  *
@@ -51,17 +70,7 @@ const buy = async(cmid, button) => {
             ownedEl.textContent = await getString('lobby_stockowned', 'mod_playerpuzzle', result.newquantity);
         }
 
-        const coinValueEl = document.querySelector('[data-role="coinvalue"]');
-        const coinChipEl = document.querySelector('[data-role="coinchip"]');
-        if (coinValueEl) {
-            coinValueEl.textContent = result.newcoinbalance;
-        }
-        if (coinChipEl) {
-            coinChipEl.setAttribute(
-                'aria-label',
-                await getString('lobby_puzzlecoinbalance', 'mod_playerpuzzle', result.newcoinbalance)
-            );
-        }
+        await updateCoinChips(result.newcoinbalance);
     } catch (error) {
         // A rejected purchase (insufficient coins, a locked concurrent purchase) is an
         // anticipated workflow outcome the server already explains via its own
@@ -105,17 +114,7 @@ const transfer = async(cmid, button) => {
             );
         }
 
-        const coinValueEl = document.querySelector('[data-role="coinvalue"]');
-        const coinChipEl = document.querySelector('[data-role="coinchip"]');
-        if (coinValueEl) {
-            coinValueEl.textContent = result.newpuzzlecoinbalance;
-        }
-        if (coinChipEl) {
-            coinChipEl.setAttribute(
-                'aria-label',
-                await getString('lobby_puzzlecoinbalance', 'mod_playerpuzzle', result.newpuzzlecoinbalance)
-            );
-        }
+        await updateCoinChips(result.newpuzzlecoinbalance);
     } catch (error) {
         // A rejected transfer (invalid amount, insufficient PlayerHUD balance, a locked
         // concurrent request) is an anticipated workflow outcome the server already
@@ -127,24 +126,7 @@ const transfer = async(cmid, button) => {
 };
 
 /**
- * Persists the spoken-narration preference, fire-and-forget — mirrors ui.js's own
- * saveSoundPreference() for the in-game Music/Sound Effects badges: the checkbox has
- * already changed state by the time this runs, so nothing in the UI waits on the round
- * trip, and a failure (network blip) is silently ignored — worst case, the preference
- * simply does not survive a reload.
- *
- * @param {number} cmid Course module id.
- * @param {boolean} enabled New state.
- */
-const saveSpeechPreference = (cmid, enabled) => {
-    Ajax.call([{
-        methodname: 'mod_playerpuzzle_set_sound_preference',
-        args: {cmid, type: 'speech', enabled},
-    }]);
-};
-
-/**
- * Wires every "Buy" button, the "Transfer" button, and the narration checkbox in the Lobby.
+ * Wires every "Buy" button and the "Transfer" button in the Lobby.
  *
  * @param {number} cmid Course module id.
  */
@@ -159,12 +141,6 @@ export const init = (cmid) => {
         const transferButton = event.target.closest('.pp-lobby-transfer-btn');
         if (transferButton) {
             transfer(cmid, transferButton);
-        }
-    });
-
-    document.addEventListener('change', (event) => {
-        if (event.target.id === 'pp-lobby-speech') {
-            saveSpeechPreference(cmid, event.target.checked);
         }
     });
 };

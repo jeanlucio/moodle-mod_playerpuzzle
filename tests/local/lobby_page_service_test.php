@@ -141,6 +141,9 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertStringContainsString('player', $data['heroimageurl']);
         $this->assertStringContainsString('panel_stone.webp', $data['panelstoneurl']);
         $this->assertStringContainsString('scroll_banner.webp', $data['scrollbannerurl']);
+        $this->assertSame(get_string('lobby_menu_shop', 'mod_playerpuzzle'), $data['shopmenulabel']);
+        $this->assertSame(get_string('lobby_menu_settings', 'mod_playerpuzzle'), $data['settingsmenulabel']);
+        $this->assertSame(get_string('lobby_back', 'mod_playerpuzzle'), $data['backlabel']);
     }
 
     /**
@@ -172,6 +175,41 @@ final class lobby_page_service_test extends \advanced_testcase {
             $context
         );
         $this->assertTrue($data['speechenabled']);
+    }
+
+    /**
+     * Tests that Music and Sound Effects reflect the student's own preference too, mirroring
+     * the same in-game toggles already offered inside the Phaser HUD — both default on.
+     *
+     * @return void
+     */
+    public function test_build_page_data_shows_music_and_sfx_preferences(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            $context
+        );
+        $this->assertTrue($data['musicenabled']);
+        $this->assertSame(get_string('lobby_music_label', 'mod_playerpuzzle'), $data['musiclabel']);
+        $this->assertTrue($data['sfxenabled']);
+        $this->assertSame(get_string('lobby_sfx_label', 'mod_playerpuzzle'), $data['sfxlabel']);
+
+        sound_preferences::set_enabled('music', false, (int) $this->student->id);
+        sound_preferences::set_enabled('sfx', false, (int) $this->student->id);
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            $context
+        );
+        $this->assertFalse($data['musicenabled']);
+        $this->assertFalse($data['sfxenabled']);
     }
 
     /**
@@ -604,6 +642,32 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that, alongside the picker (now in the Settings panel), the main view still gets
+     * a compact readout of the pre-selected difficulty — Normal, until the student changes it
+     * client-side.
+     *
+     * @return void
+     */
+    public function test_build_page_data_offers_difficulty_readout_alongside_the_picker(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $expected = get_string(
+            'lobby_difficulty_selected',
+            'mod_playerpuzzle',
+            get_string('difficulty_normal', 'mod_playerpuzzle')
+        );
+        $this->assertSame($expected, $data['difficultyselectedtext']);
+    }
+
+    /**
      * Tests that with an attempt in progress the Lobby shows a read-only line naming the
      * attempt's current difficulty (no picker) — the next choice is made on the
      * phase-complete screen, not here.
@@ -628,6 +692,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         );
 
         $this->assertArrayNotHasKey('difficultychoices', $data);
+        $this->assertArrayNotHasKey('difficultyselectedtext', $data);
         $expected = get_string(
             'lobby_difficulty_current',
             'mod_playerpuzzle',

@@ -87,6 +87,26 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Inserts a finished attempt row with a specific timefinished, for cooldown tests.
+     *
+     * @param int $instanceid Activity instance ID.
+     * @param int $userid User ID.
+     * @param int $timefinished Epoch the attempt is recorded as having finished.
+     * @return void
+     */
+    private function make_finished_attempt_at(int $instanceid, int $userid, int $timefinished): void {
+        global $DB;
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instanceid,
+            'userid'         => $userid,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'lost',
+            'timecreated'    => $timefinished,
+            'timefinished'   => $timefinished,
+        ]);
+    }
+
+    /**
      * Inserts a finished Demo attempt row for the given instance/user.
      *
      * @param int $instanceid Activity instance ID.
@@ -379,6 +399,119 @@ final class game_page_service_test extends \advanced_testcase {
 
         // No balance granted at all — would throw if Demo history counted as a real attempt.
         game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that no cooldown at all (the default) never blocks, even with a very recent
+     * finished attempt.
+     *
+     * @return void
+     */
+    public function test_check_cooldown_free_when_unconfigured(): void {
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+
+        game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that a configured cooldown never applies in Campaign mode — an attempt there is
+     * a continuous winning streak, not a short repeatable match to farm.
+     *
+     * @return void
+     */
+    public function test_check_cooldown_never_applies_to_campaign_mode(): void {
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        $instance->cooldown_seconds = 3600;
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+
+        game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that a configured cooldown never blocks the very first attempt — there is no
+     * prior finished match for it to count from.
+     *
+     * @return void
+     */
+    public function test_check_cooldown_free_on_first_attempt(): void {
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        $instance->cooldown_seconds = 3600;
+
+        game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that a play.php POST which will only resume an already in-progress attempt is
+     * never blocked by the cooldown — resuming is not "a new match".
+     *
+     * @return void
+     */
+    public function test_check_cooldown_skips_when_resuming_inprogress(): void {
+        global $DB;
+
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        $instance->cooldown_seconds = 3600;
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id,
+            'userid'         => $this->student->id,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'inprogress',
+            'timecreated'    => time(),
+        ]);
+
+        game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that a new match is blocked while the configured cooldown since the last
+     * finished match has not elapsed yet.
+     *
+     * @return void
+     */
+    public function test_check_cooldown_blocks_before_it_elapses(): void {
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        $instance->cooldown_seconds = 60;
+        $this->make_finished_attempt_at($instance->id, (int) $this->student->id, time() - 10);
+
+        $this->expectException(\moodle_exception::class);
+        game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
+    }
+
+    /**
+     * Tests that a new match is allowed once the configured cooldown since the last
+     * finished match has elapsed.
+     *
+     * @return void
+     */
+    public function test_check_cooldown_allows_once_it_elapses(): void {
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        $instance->cooldown_seconds = 60;
+        $this->make_finished_attempt_at($instance->id, (int) $this->student->id, time() - 120);
+
+        game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
+
+    /**
+     * Tests that a Demo match never counts as "the last finished match" for the cooldown —
+     * a student who has only ever played the Demo still gets a free first real attempt
+     * with no wait.
+     *
+     * @return void
+     */
+    public function test_check_cooldown_ignores_demo_attempts(): void {
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        $instance->cooldown_seconds = 3600;
+        $this->make_finished_demo_attempt($instance->id, (int) $this->student->id);
+
+        game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
         $this->expectNotToPerformAssertions();
     }
 

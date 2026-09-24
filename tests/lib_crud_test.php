@@ -119,6 +119,42 @@ final class lib_crud_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the submitted cooldown_amount/cooldown_unit pair (mod_form.php's
+     * cooldowngroup) is converted to cooldown_seconds, the real column, and the two
+     * transient fields are never persisted as-is.
+     *
+     * @return void
+     */
+    public function test_add_instance_converts_cooldown_amount_and_unit_to_seconds(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $data = (object) [
+            'course'           => $course->id,
+            'name'             => 'Dragon Fight',
+            'intro'            => '',
+            'introformat'      => FORMAT_HTML,
+            'maxlevels'        => 3,
+            'basestudenthp'    => 150,
+            'bossavatar'       => 'dragon.png',
+            'basebosshp'       => 2000,
+            'bossdamage'       => 15,
+            'questioncategory' => 0,
+            'timelimit'        => 0,
+            'maxattempts'      => 0,
+            'hud_coin_item'    => 0,
+            'grade'            => 100,
+            'gradepass'        => 0,
+            'cooldown_amount'  => 2,
+            'cooldown_unit'    => 'hours',
+        ];
+
+        $id = playerpuzzle_add_instance($data);
+
+        $this->assertSame(7200, (int) $DB->get_field('playerpuzzle', 'cooldown_seconds', ['id' => $id], MUST_EXIST));
+    }
+
+    /**
      * Tests that updating an instance persists the new field values.
      *
      * @return void
@@ -161,6 +197,34 @@ final class lib_crud_test extends \advanced_testcase {
 
         $this->assertTrue($result);
         $this->assertSame(0.0, (float) $DB->get_field('playerpuzzle', 'gradepass', ['id' => $instance->id]));
+    }
+
+    /**
+     * Regression test: same cooldown_amount/cooldown_unit -> cooldown_seconds conversion as
+     * test_add_instance_converts_cooldown_amount_and_unit_to_seconds(), but on the update
+     * path.
+     *
+     * @return void
+     */
+    public function test_update_instance_converts_cooldown_amount_and_unit_to_seconds(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+
+        $update = (object) $DB->get_record('playerpuzzle', ['id' => $instance->id], '*', MUST_EXIST);
+        $update->instance = $instance->id;
+        $update->cooldown_amount = 3;
+        $update->cooldown_unit = 'days';
+
+        $result = playerpuzzle_update_instance($update);
+
+        $this->assertTrue($result);
+        $this->assertSame(
+            259200,
+            (int) $DB->get_field('playerpuzzle', 'cooldown_seconds', ['id' => $instance->id])
+        );
     }
 
     /**

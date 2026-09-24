@@ -147,6 +147,55 @@ class game_page_service {
     }
 
     /**
+     * Enforces the configured cooldown between matches, Single Match mode only — a
+     * continuous Campaign attempt has no equivalent "rodada curta" to farm, so the
+     * setting is meaningless there and this is a no-op regardless of what is stored
+     * (see the mod_form.php field, hidden the same way for Campaign).
+     *
+     * Anchored on the most recent finished (non-inprogress, non-Demo) attempt's
+     * timefinished — never checked at all while an in-progress attempt exists to resume,
+     * since resuming one never creates a new attempt and so never spends anything the
+     * cooldown would need to protect.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @param moodle_url $returnurl URL to send the student back to on failure.
+     * @return void
+     * @throws moodle_exception When the cooldown since the last finished match has not
+     *  elapsed yet.
+     */
+    public static function check_cooldown(stdClass $instance, int $userid, moodle_url $returnurl): void {
+        global $DB;
+
+        if ($instance->gamemode !== PLAYERPUZZLE_GAMEMODE_SINGLE) {
+            return;
+        }
+
+        $seconds = (int) $instance->cooldown_seconds;
+        if ($seconds <= 0) {
+            return;
+        }
+        if (security::has_inprogress_attempt((int) $instance->id, $userid)) {
+            return;
+        }
+
+        $lastfinished = $DB->get_field_sql(
+            "SELECT MAX(timefinished)
+               FROM {playerpuzzle_attempts}
+              WHERE playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0",
+            ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress']
+        );
+        if (empty($lastfinished)) {
+            return;
+        }
+
+        $until = (int) $lastfinished + $seconds;
+        if ($until > time()) {
+            throw new moodle_exception('cooldownactive', 'mod_playerpuzzle', $returnurl, format_time($until - time()));
+        }
+    }
+
+    /**
      * Resumes or creates the attempt, and assembles the full JS game config: the scaled
      * boss/student HP and combat damage for the attempt's current level/phase (Single Match
      * always resolves to the base values unchanged, since its attempts stay at Level 1,

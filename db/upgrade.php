@@ -645,5 +645,26 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092305, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026092401) {
+        // Cooldown between matches, Single Match mode only — mirrors mod_playerwords'
+        // cooldown_seconds column and conversion pattern.
+        $table = new xmldb_table('playerpuzzle');
+        $field = new xmldb_field(
+            'cooldown_seconds',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'max_single_matches'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026092401, 'playerpuzzle');
+    }
+
     return true;
 }

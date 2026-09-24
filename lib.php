@@ -357,6 +357,14 @@ function playerpuzzle_add_instance(stdClass $playerpuzzle, ?moodleform $mform = 
     // (NOTNULL) rejects outright.
     $playerpuzzle->gradepass = isset($playerpuzzle->gradepass) ? (float) $playerpuzzle->gradepass : 0.0;
 
+    // The form submits the cooldown as an amount+unit pair (mod_form.php's cooldowngroup);
+    // only cooldown_seconds is a real column.
+    $multipliers = ['minutes' => 60, 'hours' => 3600, 'days' => 86400];
+    $unit = $playerpuzzle->cooldown_unit ?? 'minutes';
+    $amount = (int) ($playerpuzzle->cooldown_amount ?? 0);
+    $playerpuzzle->cooldown_seconds = $amount * ($multipliers[$unit] ?? 60);
+    unset($playerpuzzle->cooldown_amount, $playerpuzzle->cooldown_unit);
+
     $playerpuzzle->id = $DB->insert_record('playerpuzzle', $playerpuzzle);
     playerpuzzle_grade_item_update($playerpuzzle);
 
@@ -377,6 +385,14 @@ function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform
     $playerpuzzle->id = $playerpuzzle->instance;
     // Same null-to-zero normalization as playerpuzzle_add_instance() — see its own comment.
     $playerpuzzle->gradepass = isset($playerpuzzle->gradepass) ? (float) $playerpuzzle->gradepass : 0.0;
+
+    // Same cooldown_amount/cooldown_unit -> cooldown_seconds conversion as
+    // playerpuzzle_add_instance() — see its own comment.
+    $multipliers = ['minutes' => 60, 'hours' => 3600, 'days' => 86400];
+    $unit = $playerpuzzle->cooldown_unit ?? 'minutes';
+    $amount = (int) ($playerpuzzle->cooldown_amount ?? 0);
+    $playerpuzzle->cooldown_seconds = $amount * ($multipliers[$unit] ?? 60);
+    unset($playerpuzzle->cooldown_amount, $playerpuzzle->cooldown_unit);
 
     $result = $DB->update_record('playerpuzzle', $playerpuzzle);
     playerpuzzle_grade_item_update($playerpuzzle);

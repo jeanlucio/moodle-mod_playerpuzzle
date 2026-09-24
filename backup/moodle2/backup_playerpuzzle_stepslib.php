@@ -55,6 +55,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'hud_win_grant_qty',
             'gamemode',
             'max_single_matches',
+            'cooldown_seconds',
             'grademethod',
             'minquestions',
             'considererrors',

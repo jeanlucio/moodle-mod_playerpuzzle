@@ -339,8 +339,8 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the Single Match-only fields (max_single_matches, grademethod) are
-     * registered to hide when gamemode is Campaign.
+     * Tests that the Single Match-only fields (max_single_matches, the cooldown group,
+     * grademethod) are registered to hide when gamemode is Campaign.
      *
      * @return void
      */
@@ -352,6 +352,7 @@ final class mod_form_test extends \advanced_testcase {
         $mform = $this->build_form($instance, $cm);
 
         $this->assert_hideif_registered($mform, 'max_single_matches', 'gamemode', 'eq', 'campaign');
+        $this->assert_hideif_registered($mform, 'cooldowngroup', 'gamemode', 'eq', 'campaign');
         $this->assert_hideif_registered($mform, 'grademethod', 'gamemode', 'eq', 'campaign');
     }
 
@@ -466,5 +467,69 @@ final class mod_form_test extends \advanced_testcase {
         $errors = $formobj->validation($data, []);
 
         $this->assertArrayHasKey('hud_win_grant_qty', $errors);
+    }
+
+    /**
+     * Tests that a negative cooldown amount is rejected.
+     *
+     * @return void
+     */
+    public function test_validation_rejects_negative_cooldown_amount(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $formobj = $this->build_form_object($instance, $cm);
+
+        $data = (array) $instance;
+        $data['name'] = $instance->name;
+        $data['modulename'] = 'playerpuzzle';
+        $data['instance'] = $instance->id;
+        $data['coursemodule'] = $cm->id;
+        $data['availabilityconditionsjson'] = '';
+        $data['cmidnumber'] = '';
+        $data['cooldown_amount'] = -1;
+
+        $errors = $formobj->validation($data, []);
+
+        $this->assertArrayHasKey('cooldowngroup', $errors);
+    }
+
+    /**
+     * Tests that data_preprocessing() converts a stored cooldown_seconds value back into
+     * the cooldown_amount/cooldown_unit pair the form's cooldowngroup actually edits,
+     * picking whichever unit divides it evenly.
+     *
+     * @return void
+     */
+    public function test_data_preprocessing_converts_cooldown_seconds_to_amount_and_unit(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $formobj = $this->build_form_object($instance, $cm);
+
+        $defaultvalues = ['cooldown_seconds' => 7200];
+        $formobj->data_preprocessing($defaultvalues);
+
+        $this->assertSame(2, $defaultvalues['cooldown_amount']);
+        $this->assertSame('hours', $defaultvalues['cooldown_unit']);
+    }
+
+    /**
+     * Tests that a value not evenly divisible by a day or an hour falls back to minutes,
+     * rounded up so a stored value never displays as a misleading 0.
+     *
+     * @return void
+     */
+    public function test_data_preprocessing_falls_back_to_minutes_for_odd_values(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $formobj = $this->build_form_object($instance, $cm);
+
+        $defaultvalues = ['cooldown_seconds' => 100];
+        $formobj->data_preprocessing($defaultvalues);
+
+        $this->assertSame(2, $defaultvalues['cooldown_amount']);
+        $this->assertSame('minutes', $defaultvalues['cooldown_unit']);
     }
 }

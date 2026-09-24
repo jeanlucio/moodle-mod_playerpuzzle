@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260923" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20260924" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -27,6 +27,7 @@
         <FIELD NAME="hud_win_grant_qty" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Quantity granted per win"/>
         <FIELD NAME="gamemode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="campaign" SEQUENCE="false" COMMENT="campaign | single"/>
         <FIELD NAME="max_single_matches" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Single-match mode only; 0 = unlimited"/>
+        <FIELD NAME="cooldown_seconds" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Single-match mode only; minimum wait between matches, 0 = no cooldown"/>
         <FIELD NAME="grademethod" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Single-match mode only; mirrors PLAYERWORDS_GRADE_*"/>
         <FIELD NAME="minquestions" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="3" SEQUENCE="false" COMMENT="0-10; applies to both modes; opt-out, not opt-in"/>
         <FIELD NAME="considererrors" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boolean; only enableable when minquestions &gt;= 1"/>

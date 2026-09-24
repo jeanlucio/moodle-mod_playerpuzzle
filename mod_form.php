@@ -93,6 +93,31 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addHelpButton('max_single_matches', 'max_single_matches', 'mod_playerpuzzle');
         $mform->hideIf('max_single_matches', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
 
+        $cooldowngroup = [];
+        $cooldowngroup[] = $mform->createElement('text', 'cooldown_amount', '', ['size' => 5]);
+        $cooldowngroup[] = $mform->createElement(
+            'select',
+            'cooldown_unit',
+            '',
+            [
+                'minutes' => get_string('cooldown_unit_minutes', 'mod_playerpuzzle'),
+                'hours'   => get_string('cooldown_unit_hours', 'mod_playerpuzzle'),
+                'days'    => get_string('cooldown_unit_days', 'mod_playerpuzzle'),
+            ]
+        );
+        $mform->addGroup(
+            $cooldowngroup,
+            'cooldowngroup',
+            get_string('cooldown_label', 'mod_playerpuzzle'),
+            [' '],
+            false
+        );
+        $mform->setType('cooldown_amount', PARAM_INT);
+        $mform->setType('cooldown_unit', PARAM_ALPHA);
+        $mform->setDefault('cooldown_amount', 0);
+        $mform->setDefault('cooldown_unit', 'minutes');
+        $mform->hideIf('cooldowngroup', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+
         $mform->addElement(
             'select',
             'grademethod',
@@ -268,6 +293,10 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             $errors['completionwinsgroup'] = get_string('error_completionwins', 'mod_playerpuzzle');
         }
 
+        if ((int) ($data['cooldown_amount'] ?? 0) < 0) {
+            $errors['cooldowngroup'] = get_string('error_cooldown', 'mod_playerpuzzle');
+        }
+
         return $errors;
     }
 
@@ -337,6 +366,23 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         }
         if (!empty($defaultvalues['completionwins'])) {
             $defaultvalues['completionwinsenabled'] = 1;
+        }
+
+        if (isset($defaultvalues['cooldown_seconds'])) {
+            $seconds = (int) $defaultvalues['cooldown_seconds'];
+            if ($seconds === 0) {
+                $defaultvalues['cooldown_amount'] = 0;
+                $defaultvalues['cooldown_unit']   = 'minutes';
+            } else if ($seconds % 86400 === 0) {
+                $defaultvalues['cooldown_amount'] = $seconds / 86400;
+                $defaultvalues['cooldown_unit']   = 'days';
+            } else if ($seconds % 3600 === 0) {
+                $defaultvalues['cooldown_amount'] = $seconds / 3600;
+                $defaultvalues['cooldown_unit']   = 'hours';
+            } else {
+                $defaultvalues['cooldown_amount'] = max(1, (int) round($seconds / 60));
+                $defaultvalues['cooldown_unit']   = 'minutes';
+            }
         }
     }
 

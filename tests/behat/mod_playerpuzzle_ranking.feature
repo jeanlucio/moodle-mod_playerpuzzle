@@ -39,7 +39,7 @@ Feature: PlayerPuzzle class ranking in the Lobby
     And I should see "(you)" in the "tr.pp-lobby-ranking-me" "css_element"
     And I should see "30" in the "tr.pp-lobby-ranking-me" "css_element"
     And "Play Game" "button" should not be visible
-    And I click on "Back" "button"
+    And I click on "Back" "button" in the "#pp-lobby-ranking" "css_element"
     And "Play Game" "button" should be visible
     And "#pp-lobby-ranking" "css_element" should not be visible
 

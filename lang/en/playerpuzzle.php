@@ -313,6 +313,7 @@ $string['privacy:metadata:status'] = 'The status of this attempt: in progress, w
 $string['privacy:metadata:timecreated'] = 'The time at which this record was created.';
 $string['privacy:metadata:timefinished'] = 'The time at which the attempt ended.';
 $string['privacy:metadata:timemodified'] = 'The time at which this record was last modified.';
+$string['privacy:metadata:timephasewon'] = 'The time at which the attempt last won a phase.';
 $string['privacy:metadata:us:consumabletype'] = 'The type of consumable owned: potion, shield, magic, sword or hint.';
 $string['privacy:metadata:us:quantity'] = 'How many units of this consumable type are currently owned.';
 $string['privacy:metadata:userid'] = 'The ID of the user this record belongs to.';

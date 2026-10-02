@@ -956,4 +956,54 @@ final class advance_phase_test extends \advanced_testcase {
             user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
         );
     }
+
+    /**
+     * Tests that a won phase records when it was won: the Campaign gradebook date is the
+     * moment the furthest phase was reached, which nothing else in the row keeps.
+     *
+     * @return void
+     */
+    public function test_advance_phase_records_when_the_phase_was_won(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 2, 3);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token], MUST_EXIST);
+        $before = time();
+
+        $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 170,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $timephasewon = (int) $DB->get_field('playerpuzzle_attempts', 'timephasewon', ['id' => $attemptid]);
+        $this->assertGreaterThanOrEqual($before, $timephasewon);
+    }
+
+    /**
+     * Tests that a restarted phase is not a won phase: it must not move the date.
+     *
+     * @return void
+     */
+    public function test_advance_phase_restart_does_not_record_a_win(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 1000]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 99999,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle_attempts', 'timephasewon', ['token' => $token]));
+    }
 }

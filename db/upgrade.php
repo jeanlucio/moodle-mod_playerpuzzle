@@ -690,5 +690,25 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026092403, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026100200) {
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('timephasewon', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'timefinished');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // When a past phase was won was never stored. For attempts that won at least one
+        // phase, a final win's timefinished is exact and an in-progress or lost attempt's
+        // last update is the closest value available.
+        $DB->execute(
+            "UPDATE {playerpuzzle_attempts}
+                SET timephasewon = CASE WHEN status = 'won' THEN timefinished ELSE timemodified END
+              WHERE timephasewon = 0
+                    AND (status = 'won' OR currentlevel > 1 OR currentphase > 1)"
+        );
+
+        upgrade_mod_savepoint(true, 2026100200, 'playerpuzzle');
+    }
+
     return true;
 }

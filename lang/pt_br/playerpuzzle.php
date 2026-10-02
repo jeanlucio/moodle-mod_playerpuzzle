@@ -313,6 +313,7 @@ $string['privacy:metadata:status'] = 'O status desta tentativa: em andamento, vi
 $string['privacy:metadata:timecreated'] = 'O momento em que este registro foi criado.';
 $string['privacy:metadata:timefinished'] = 'O momento em que a tentativa terminou.';
 $string['privacy:metadata:timemodified'] = 'O momento em que este registro foi modificado pela última vez.';
+$string['privacy:metadata:timephasewon'] = 'O momento em que a tentativa venceu uma fase pela última vez.';
 $string['privacy:metadata:us:consumabletype'] = 'O tipo de consumível possuído: poção, escudo, magia, espada ou dica.';
 $string['privacy:metadata:us:quantity'] = 'Quantas unidades desse tipo de consumível são possuídas atualmente.';
 $string['privacy:metadata:userid'] = 'O ID do usuário ao qual este registro pertence.';

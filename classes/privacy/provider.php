@@ -105,6 +105,7 @@ class provider implements
             'status'            => 'privacy:metadata:status',
             'timecreated'       => 'privacy:metadata:timecreated',
             'timefinished'      => 'privacy:metadata:timefinished',
+            'timephasewon'      => 'privacy:metadata:timephasewon',
         ], 'privacy:metadata:playerpuzzle_attempts');
 
         // The playerpuzzle_attempt_questions table carries id (structural), attemptid
@@ -326,7 +327,7 @@ class provider implements
         $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.difficulty, pa.bosshp_remaining,
                        pa.questions_correct, pa.questions_total, pa.coins_earned,
                        pa.boss_coins_earned, pa.combatstate, pa.movelog, pa.questionresults, pa.score, pa.status,
-                       pa.timecreated, pa.timefinished, ctx.id AS contextid
+                       pa.timecreated, pa.timefinished, pa.timephasewon, ctx.id AS contextid
                   FROM {playerpuzzle_attempts} pa
                   JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
                   JOIN {modules} m ON m.name = 'playerpuzzle'
@@ -354,6 +355,7 @@ class provider implements
                 'status'           => $record->status,
                 'timecreated'      => transform::datetime($record->timecreated),
                 'timefinished'     => $record->timefinished ? transform::datetime($record->timefinished) : null,
+                'timephasewon'     => $record->timephasewon ? transform::datetime($record->timephasewon) : null,
             ];
         }
         $records->close();

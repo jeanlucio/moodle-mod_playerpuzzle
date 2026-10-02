@@ -182,6 +182,9 @@ class save_progress extends external_api {
                 $attempt->status = $verdict['outcome'];
                 $attempt->timefinished = time();
                 $attempt->timemodified = $attempt->timefinished;
+                if ($attempt->status === 'won') {
+                    $attempt->timephasewon = $attempt->timefinished;
+                }
                 // The attempt just reached a final status — no fight left to resume.
                 $attempt->combatstate = null;
                 $DB->update_record('playerpuzzle_attempts', $attempt);

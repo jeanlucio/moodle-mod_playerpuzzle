@@ -1151,4 +1151,58 @@ final class save_progress_test extends \advanced_testcase {
         $this->assertFalse($retry['error']);
         $this->assertSame(15, $retry['data']['coinsbanked']);
     }
+
+    /**
+     * Tests that a verified final win records when the phase was won, at the same moment the
+     * attempt finished.
+     *
+     * @return void
+     */
+    public function test_a_verified_win_records_when_the_phase_was_won(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->make_verified_phase($token);
+
+        $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 1,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertGreaterThan(0, (int) $attempt->timefinished);
+        $this->assertSame((int) $attempt->timefinished, (int) $attempt->timephasewon);
+    }
+
+    /**
+     * Tests that a defeat never records a won phase.
+     *
+     * @return void
+     */
+    public function test_defeat_does_not_record_a_win(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 0,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertNotSame('won', $attempt->status);
+        $this->assertSame(0, (int) $attempt->timephasewon);
+    }
 }

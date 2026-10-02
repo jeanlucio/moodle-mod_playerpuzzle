@@ -261,6 +261,7 @@ class advance_phase extends external_api {
                 $attempt->currentphase = $newphase;
                 $attempt->difficulty = $newdifficulty;
                 $attempt->timemodified = time();
+                $attempt->timephasewon = $attempt->timemodified;
                 $DB->update_record('playerpuzzle_attempts', $attempt);
 
                 // Winning a phase is new progress for the Campaign grade formula (the

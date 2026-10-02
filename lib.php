@@ -285,7 +285,7 @@ function playerpuzzle_update_grades(stdClass $playerpuzzle, int $userid = 0): vo
     // contribute to a real grade — see security.php/game_page_service.php's own isdemo
     // exclusions for the same rule applied elsewhere.
     $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.status,
-                   a.questions_correct, a.questions_total, a.timefinished
+                   a.questions_correct, a.questions_total, a.timefinished, a.timephasewon
               FROM {playerpuzzle_attempts} a
              WHERE a.playerpuzzleid = :instanceid AND a.isdemo = 0";
     $params = ['instanceid' => $playerpuzzle->id];
@@ -295,6 +295,7 @@ function playerpuzzle_update_grades(stdClass $playerpuzzle, int $userid = 0): vo
         $params['userid'] = $userid;
     }
 
+    $sql .= ' ORDER BY a.timecreated ASC, a.id ASC';
     $attempts = $DB->get_records_sql($sql, $params);
 
     if (empty($attempts)) {
@@ -329,6 +330,10 @@ function playerpuzzle_update_grades(stdClass $playerpuzzle, int $userid = 0): vo
         $grade = new stdClass();
         $grade->userid = $uid;
         $grade->rawgrade = $rawgrade;
+        $grade->datesubmitted = \mod_playerpuzzle\local\grade_calculator::calculate_user_datesubmitted(
+            $playerpuzzle,
+            $userattemptlist
+        );
         $grades[$uid] = $grade;
     }
 
@@ -394,8 +399,24 @@ function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform
     $playerpuzzle->cooldown_seconds = $amount * ($multipliers[$unit] ?? 60);
     unset($playerpuzzle->cooldown_amount, $playerpuzzle->cooldown_unit);
 
+    // Every setting the grade formulas read (see grade_calculator). Grades already in the
+    // gradebook were computed with the old values: recompute them now, as
+    // quiz_update_instance() does, instead of leaving them stale until each student plays
+    // again. Fields absent from the submitted data keep their stored value.
+    $gradefields = ['gamemode', 'grademethod', 'maxlevels', 'max_single_matches', 'considererrors', 'minquestions'];
+    $old = $DB->get_record('playerpuzzle', ['id' => $playerpuzzle->id], implode(', ', $gradefields), MUST_EXIST);
+    $gradingchanged = false;
+    foreach ($gradefields as $field) {
+        $playerpuzzle->$field = $playerpuzzle->$field ?? $old->$field;
+        $gradingchanged = $gradingchanged || (string) $playerpuzzle->$field !== (string) $old->$field;
+    }
+
     $result = $DB->update_record('playerpuzzle', $playerpuzzle);
-    playerpuzzle_grade_item_update($playerpuzzle);
+    if ($gradingchanged) {
+        playerpuzzle_update_grades($playerpuzzle);
+    } else {
+        playerpuzzle_grade_item_update($playerpuzzle);
+    }
 
     return $result;
 }

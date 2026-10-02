@@ -58,6 +58,107 @@ class grade_calculator {
     }
 
     /**
+     * Returns when the student submitted the work behind their current grade, for the
+     * gradebook's datesubmitted.
+     *
+     * @param stdClass $instance Activity instance (gamemode, grademethod, minquestions,
+     *  considererrors).
+     * @param stdClass[] $attempts All of this user's attempts on this instance, any status
+     *  (currentlevel, currentphase, status, timefinished, timephasewon).
+     * @return int|null Unix timestamp, or null when there is nothing graded yet.
+     */
+    public static function calculate_user_datesubmitted(stdClass $instance, array $attempts): ?int {
+        if (empty($attempts)) {
+            return null;
+        }
+
+        if ($instance->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE) {
+            return self::single_match_datesubmitted($instance, $attempts);
+        }
+
+        return self::campaign_datesubmitted($instance, $attempts);
+    }
+
+    /**
+     * Campaign mode submission time.
+     *
+     * With Considerar Erros the accuracy half of the grade is pooled across every attempt,
+     * so the grade depends on all of them, like an average: it was last submitted at the
+     * latest phase won or fight ended. Without it the grade is the furthest phase ever
+     * reached, like a highest grade: it was submitted when that phase was first reached, so
+     * an attempt that only ties it, or stops short of it, never moves the date. With no phase
+     * won at all, the zero grade came from the first fight that ended.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param stdClass[] $attempts All attempts for this user on this instance.
+     * @return int|null
+     */
+    private static function campaign_datesubmitted(stdClass $instance, array $attempts): ?int {
+        if ((int) $instance->considererrors && (int) $instance->minquestions >= 1) {
+            $latest = 0;
+            foreach ($attempts as $attempt) {
+                $latest = max($latest, (int) $attempt->timephasewon, (int) $attempt->timefinished);
+            }
+
+            return $latest ?: null;
+        }
+
+        $furthest = max(array_map([self::class, 'won_phase_ordinal'], $attempts));
+        if ($furthest > 0) {
+            $reached = [];
+            foreach ($attempts as $attempt) {
+                if (self::won_phase_ordinal($attempt) === $furthest && (int) $attempt->timephasewon > 0) {
+                    $reached[] = (int) $attempt->timephasewon;
+                }
+            }
+
+            return $reached ? min($reached) : null;
+        }
+
+        $ended = array_filter(array_map(fn(stdClass $a): int => (int) $a->timefinished, $attempts));
+
+        return $ended ? min($ended) : null;
+    }
+
+    /**
+     * Single Match submission time: the finish time of the match that produces the grade —
+     * the best one for the highest grade (the earliest of any tie, so a later match with the
+     * same score never moves it), the first or last one for those methods, and the latest one
+     * for both averages, which depend on every match (the rule mod_quiz applies).
+     *
+     * @param stdClass $instance Activity instance.
+     * @param stdClass[] $attempts All attempts for this user on this instance.
+     * @return int|null Null when no match has finished yet.
+     */
+    private static function single_match_datesubmitted(stdClass $instance, array $attempts): ?int {
+        $finished = array_values(array_filter($attempts, fn(stdClass $a): bool => (int) $a->timefinished > 0));
+        if (empty($finished)) {
+            return null;
+        }
+        usort($finished, fn(stdClass $a, stdClass $b): int => $a->timefinished <=> $b->timefinished);
+
+        switch ((int) $instance->grademethod) {
+            case PLAYERPUZZLE_GRADE_FIRST:
+                return (int) $finished[0]->timefinished;
+            case PLAYERPUZZLE_GRADE_LAST:
+            case PLAYERPUZZLE_GRADE_AVERAGE:
+            case PLAYERPUZZLE_GRADE_AVERAGE_ALL:
+                return (int) $finished[count($finished) - 1]->timefinished;
+            default:
+                $best = $finished[0];
+                $bestscore = self::single_match_score($instance, $best, 1.0);
+                foreach ($finished as $attempt) {
+                    $score = self::single_match_score($instance, $attempt, 1.0);
+                    if ($score > $bestscore) {
+                        $best = $attempt;
+                        $bestscore = $score;
+                    }
+                }
+                return (int) $best->timefinished;
+        }
+    }
+
+    /**
      * Campaign mode: the furthest phase a continuous winning streak has ever reached,
      * across every attempt this user has made (a "Tentar Novamente" after a loss opens a
      * new attempt row rather than reusing the old one), against the total phases

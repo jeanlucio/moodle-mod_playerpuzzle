@@ -26,9 +26,10 @@
 namespace mod_playerpuzzle;
 
 /**
- * Tests for playerpuzzle_update_grades().
+ * Tests for playerpuzzle_update_grades() and the recompute triggered by playerpuzzle_update_instance().
  *
  * @covers ::playerpuzzle_update_grades
+ * @covers ::playerpuzzle_update_instance
  */
 final class lib_update_grades_test extends \advanced_testcase {
     #[\Override]
@@ -208,5 +209,103 @@ final class lib_update_grades_test extends \advanced_testcase {
         $gradeitem = $this->fetch_grade_item($instance);
         $this->assertEqualsWithDelta(100.0, (float) $gradeitem->get_grade($usera->id, false)->finalgrade, 0.001);
         $this->assertEqualsWithDelta(40.0, (float) $gradeitem->get_grade($userb->id, false)->finalgrade, 0.001);
+    }
+
+    /**
+     * The grade sent to the gradebook carries the time the furthest phase was reached, not
+     * just the time the grade changed: gradebook consumers (e.g. late-penalty plugins) read
+     * it as the submission time.
+     *
+     * @return void
+     */
+    public function test_update_grades_reports_datesubmitted(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance([
+            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
+        ]);
+        $user = $this->getDataGenerator()->create_user();
+        $this->make_attempt($instance->id, $user->id, [
+            'currentphase' => 6, 'status' => 'lost', 'timephasewon' => 1700000000, 'timefinished' => 1700000600,
+        ]);
+
+        playerpuzzle_update_grades($instance, $user->id);
+
+        $this->assertEquals(1700000000, $this->fetch_grade_item($instance)->get_grade($user->id, false)->get_datesubmitted());
+    }
+
+    /**
+     * Saves the activity settings the way the settings form does.
+     *
+     * @param \stdClass $instance Activity instance.
+     * @param array $changes Settings to change.
+     * @return void
+     */
+    private function save_settings(\stdClass $instance, array $changes): void {
+        global $DB;
+
+        $data = $DB->get_record('playerpuzzle', ['id' => $instance->id]);
+        $data->instance = $instance->id;
+        $data->coursemodule = $instance->cmid;
+        $data->cooldown_amount = 0;
+        $data->cooldown_unit = 'minutes';
+        foreach ($changes as $field => $value) {
+            $data->$field = $value;
+        }
+        playerpuzzle_update_instance($data);
+    }
+
+    /**
+     * Changing the grading method recomputes the grades already in the gradebook, as
+     * quiz_update_instance() does, instead of leaving them on the old method until each
+     * student plays again.
+     *
+     * @return void
+     */
+    public function test_update_instance_recomputes_grades_when_grademethod_changes(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance([
+            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'grademethod' => PLAYERPUZZLE_GRADE_HIGHEST,
+        ]);
+        $user = $this->getDataGenerator()->create_user();
+        $this->make_attempt($instance->id, $user->id, ['status' => 'lost', 'timefinished' => 1700000000]);
+        $this->make_attempt($instance->id, $user->id, ['status' => 'won', 'timefinished' => 1700003600]);
+        playerpuzzle_update_grades($instance, $user->id);
+
+        $this->save_settings($instance, ['grademethod' => PLAYERPUZZLE_GRADE_FIRST]);
+
+        $grade = $this->fetch_grade_item($instance)->get_grade($user->id, false);
+        $this->assertEqualsWithDelta(0.0, (float) $grade->finalgrade, 0.001);
+        $this->assertEquals(1700000000, $grade->get_datesubmitted());
+    }
+
+    /**
+     * The Campaign grade is the progress against every configured phase, so changing the
+     * number of levels recomputes the grades already in the gradebook too.
+     *
+     * @return void
+     */
+    public function test_update_instance_recomputes_grades_when_maxlevels_changes(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance([
+            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxlevels' => 2,
+        ]);
+        $user = $this->getDataGenerator()->create_user();
+        // Every phase of level 1 won: 10 of 20 phases.
+        $this->make_attempt($instance->id, $user->id, [
+            'currentlevel' => 2, 'currentphase' => 1, 'status' => 'lost', 'timephasewon' => 1700000000,
+            'timefinished' => 1700000600,
+        ]);
+        playerpuzzle_update_grades($instance, $user->id);
+        $grade = $this->fetch_grade_item($instance)->get_grade($user->id, false);
+        $this->assertEqualsWithDelta(50.0, (float) $grade->finalgrade, 0.001, 'Precondition: 10 of 20 phases.');
+
+        $this->save_settings($instance, ['maxlevels' => 1]);
+
+        $grade = $this->fetch_grade_item($instance)->get_grade($user->id, false);
+        $this->assertEqualsWithDelta(100.0, (float) $grade->finalgrade, 0.001);
     }
 }

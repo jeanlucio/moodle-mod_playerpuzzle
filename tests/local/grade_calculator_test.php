@@ -447,4 +447,98 @@ final class grade_calculator_test extends \basic_testcase {
 
         $this->assertNull(grade_calculator::calculate_user_grade($instance, [$attempt]));
     }
+
+    /**
+     * Campaign without Considerar Erros: the grade is the furthest phase ever reached, so it
+     * was submitted when that phase was first reached. A later attempt that only ties it, or
+     * stops short of it, never moves the date.
+     *
+     * @return void
+     */
+    public function test_campaign_datesubmitted_is_when_the_furthest_phase_was_first_reached(): void {
+        $instance = $this->make_instance();
+        $attempts = [
+            $this->make_attempt(['currentphase' => 6, 'status' => 'lost', 'timephasewon' => 1000, 'timefinished' => 1100]),
+            $this->make_attempt(['currentphase' => 6, 'status' => 'lost', 'timephasewon' => 2000, 'timefinished' => 2100]),
+            $this->make_attempt(['currentphase' => 4, 'status' => 'lost', 'timephasewon' => 3000, 'timefinished' => 3100]),
+        ];
+
+        $this->assertSame(1000, grade_calculator::calculate_user_datesubmitted($instance, $attempts));
+    }
+
+    /**
+     * Campaign with Considerar Erros: accuracy is pooled across every attempt, so the grade
+     * depends on all of them and was last submitted at the latest phase won or fight ended.
+     *
+     * @return void
+     */
+    public function test_campaign_datesubmitted_with_considererrors_is_the_latest_event(): void {
+        $instance = $this->make_instance(['considererrors' => 1, 'minquestions' => 3]);
+        $attempts = [
+            $this->make_attempt(['currentphase' => 6, 'status' => 'lost', 'timephasewon' => 1000, 'timefinished' => 1500]),
+            $this->make_attempt(['currentphase' => 1, 'status' => 'lost', 'timephasewon' => 0, 'timefinished' => 2500]),
+        ];
+
+        $this->assertSame(2500, grade_calculator::calculate_user_datesubmitted($instance, $attempts));
+    }
+
+    /**
+     * Campaign with no phase won yet: the zero grade came from the first fight that ended.
+     *
+     * @return void
+     */
+    public function test_campaign_datesubmitted_with_nothing_won_is_the_first_fight_ended(): void {
+        $instance = $this->make_instance();
+        $attempts = [
+            $this->make_attempt(['status' => 'lost', 'timephasewon' => 0, 'timefinished' => 1500]),
+            $this->make_attempt(['status' => 'lost', 'timephasewon' => 0, 'timefinished' => 2500]),
+            $this->make_attempt(['status' => 'inprogress', 'timephasewon' => 0, 'timefinished' => 0]),
+        ];
+
+        $this->assertSame(1500, grade_calculator::calculate_user_datesubmitted($instance, $attempts));
+    }
+
+    /**
+     * Data provider for test_single_match_datesubmitted().
+     *
+     * @return array
+     */
+    public static function single_match_datesubmitted_provider(): array {
+        global $CFG;
+        // Providers run before setUp(), so the PLAYERPUZZLE_GRADE_* constants are not loaded yet.
+        require_once($CFG->dirroot . '/mod/playerpuzzle/lib.php');
+        return [
+            'highest picks the earliest of the tied winning matches' => [PLAYERPUZZLE_GRADE_HIGHEST, 2000],
+            'first picks the first match' => [PLAYERPUZZLE_GRADE_FIRST, 1000],
+            'last picks the last match' => [PLAYERPUZZLE_GRADE_LAST, 4000],
+            'average depends on every match, so the last one' => [PLAYERPUZZLE_GRADE_AVERAGE, 4000],
+            'average over all matches also uses the last one' => [PLAYERPUZZLE_GRADE_AVERAGE_ALL, 4000],
+        ];
+    }
+
+    /**
+     * Single Match: the finish time of the match that produces the grade under the method.
+     * An unfinished match never counts.
+     *
+     * @dataProvider single_match_datesubmitted_provider
+     * @param int $grademethod PLAYERPUZZLE_GRADE_* constant.
+     * @param int $expected Expected submission time.
+     * @return void
+     */
+    public function test_single_match_datesubmitted(int $grademethod, int $expected): void {
+        $instance = $this->make_instance([
+            'gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'grademethod' => $grademethod,
+            'max_single_matches' => 5,
+        ]);
+        $attempts = [
+            $this->make_attempt(['status' => 'won', 'timefinished' => 3000]),
+            $this->make_attempt(['status' => 'lost', 'timefinished' => 1000]),
+            $this->make_attempt(['status' => 'won', 'timefinished' => 2000]),
+            $this->make_attempt(['status' => 'lost', 'timefinished' => 4000]),
+            $this->make_attempt(['status' => 'inprogress', 'timefinished' => 0]),
+        ];
+
+        $this->assertSame($expected, grade_calculator::calculate_user_datesubmitted($instance, $attempts));
+    }
 }

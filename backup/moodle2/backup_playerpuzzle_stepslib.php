@@ -98,6 +98,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'status',
             'timecreated',
             'timefinished',
+            'timephasewon',
             'timemodified',
         ]);
         $questions = new backup_nested_element('questions');

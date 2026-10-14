@@ -532,4 +532,38 @@ final class mod_form_test extends \advanced_testcase {
         $this->assertSame(2, $defaultvalues['cooldown_amount']);
         $this->assertSame('minutes', $defaultvalues['cooldown_unit']);
     }
+
+    /**
+     * The limits of the maxlength rules registered on a form field.
+     *
+     * @param \MoodleQuickForm $mform The form.
+     * @param string $field Field name.
+     * @return int[] The rule limits, empty when the field has none.
+     */
+    private function maxlength_rules(\MoodleQuickForm $mform, string $field): array {
+        $rules = (new \ReflectionProperty(\HTML_QuickForm::class, '_rules'))->getValue($mform);
+        $limits = [];
+        foreach ($rules[$field] ?? [] as $rule) {
+            if ($rule['type'] === 'maxlength') {
+                $limits[] = (int) $rule['format'];
+            }
+        }
+        return $limits;
+    }
+
+    /**
+     * The activity name has a maxlength rule that fits its 255-character column.
+     *
+     * @return void
+     */
+    public function test_the_name_field_has_a_maxlength_rule_that_fits_the_column(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $limits = $this->maxlength_rules($this->build_form($instance, $cm), 'name');
+
+        $this->assertNotEmpty($limits, 'The name field has no maxlength rule.');
+        $this->assertLessThanOrEqual(255, min($limits));
+    }
 }

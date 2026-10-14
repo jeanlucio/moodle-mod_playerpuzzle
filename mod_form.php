@@ -44,6 +44,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addElement('text', 'name', get_string('name', 'mod_playerpuzzle'), ['size' => '64']);
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
+        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
 
         $mform->addElement(
             'select',

@@ -495,6 +495,99 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
+     * Builds the form for a fresh instance and a valid submitted-data array for it. The form
+     * is built once per test: building a second one trips the "theme already set up" check.
+     *
+     * @return array{0: \mod_playerpuzzle_mod_form, 1: array} [$form, $data]
+     */
+    private function make_form_and_data(): array {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $data = (array) $instance;
+        $data['name'] = $instance->name;
+        $data['modulename'] = 'playerpuzzle';
+        $data['instance'] = $instance->id;
+        $data['coursemodule'] = $cm->id;
+        $data['availabilityconditionsjson'] = '';
+        $data['cmidnumber'] = '';
+
+        return [$this->build_form_object($instance, $cm), $data];
+    }
+
+    /**
+     * Tests that HP and boss damage below 1 are rejected, so the activity cannot be saved in
+     * a state that makes it unplayable or lets the boss heal the student.
+     *
+     * @return void
+     */
+    public function test_validation_rejects_hp_and_damage_below_one(): void {
+        [$form, $data] = $this->make_form_and_data();
+
+        foreach (['basestudenthp', 'basebosshp', 'bossdamage'] as $field) {
+            foreach ([0, -5] as $value) {
+                $errors = $form->validation(array_merge($data, [$field => $value]), []);
+                $this->assertArrayHasKey($field, $errors, "$field = $value");
+            }
+        }
+    }
+
+    /**
+     * Tests that a negative coin gain is rejected while zero stays allowed.
+     *
+     * @return void
+     */
+    public function test_validation_rejects_negative_coingain_but_allows_zero(): void {
+        [$form, $data] = $this->make_form_and_data();
+
+        $this->assertArrayHasKey('coingain', $form->validation(array_merge($data, ['coingain' => -1]), []));
+        $this->assertArrayNotHasKey('coingain', $form->validation(array_merge($data, ['coingain' => 0]), []));
+    }
+
+    /**
+     * Tests that a negative attempt limit is rejected only for the game mode that uses it.
+     *
+     * @return void
+     */
+    public function test_validation_rejects_negative_attempt_limit_of_the_selected_mode(): void {
+        [$form, $data] = $this->make_form_and_data();
+
+        $campaign = $form->validation(
+            array_merge($data, ['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxattempts' => -1]),
+            []
+        );
+        $this->assertArrayHasKey('maxattempts', $campaign);
+
+        $single = $form->validation(
+            array_merge($data, ['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE, 'max_single_matches' => -1]),
+            []
+        );
+        $this->assertArrayHasKey('max_single_matches', $single);
+
+        $hidden = $form->validation(
+            array_merge($data, ['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE, 'maxattempts' => -1]),
+            []
+        );
+        $this->assertArrayNotHasKey('maxattempts', $hidden);
+    }
+
+    /**
+     * Tests that the default values pass the range checks.
+     *
+     * @return void
+     */
+    public function test_validation_accepts_the_default_gameplay_values(): void {
+        [$form, $data] = $this->make_form_and_data();
+
+        $errors = $form->validation($data, []);
+
+        foreach (['basestudenthp', 'basebosshp', 'bossdamage', 'coingain', 'maxattempts', 'max_single_matches'] as $field) {
+            $this->assertArrayNotHasKey($field, $errors);
+        }
+    }
+
+    /**
      * Tests that data_preprocessing() converts a stored cooldown_seconds value back into
      * the cooldown_amount/cooldown_unit pair the form's cooldowngroup actually edits,
      * picking whichever unit divides it evenly.

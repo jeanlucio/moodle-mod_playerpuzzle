@@ -303,6 +303,36 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             $errors['cooldowngroup'] = get_string('error_cooldown', 'mod_playerpuzzle');
         }
 
+        return $errors + $this->validate_gameplay_ranges($data);
+    }
+
+    /**
+     * Rejects combat values the game cannot play with. The fields are PARAM_INT, which
+     * accepts zero and negatives: a zero or negative HP makes the client and the server
+     * replay disagree (or ends the match at once), and a negative boss damage heals the
+     * student. The attempt limit of the mode that is not selected is hidden in the form, so
+     * it is not checked.
+     *
+     * @param array $data Submitted form data.
+     * @return array Validation errors, keyed by field name.
+     */
+    private function validate_gameplay_ranges(array $data): array {
+        $errors = [];
+
+        foreach (['basestudenthp', 'basebosshp', 'bossdamage'] as $field) {
+            if (isset($data[$field]) && (int) $data[$field] < 1) {
+                $errors[$field] = get_string('error_atleastone', 'mod_playerpuzzle');
+            }
+        }
+
+        $issingle = ($data['gamemode'] ?? PLAYERPUZZLE_GAMEMODE_CAMPAIGN) === PLAYERPUZZLE_GAMEMODE_SINGLE;
+        $nonnegative = ['coingain', $issingle ? 'max_single_matches' : 'maxattempts'];
+        foreach ($nonnegative as $field) {
+            if (isset($data[$field]) && (int) $data[$field] < 0) {
+                $errors[$field] = get_string('error_nonnegative', 'mod_playerpuzzle');
+            }
+        }
+
         return $errors;
     }
 

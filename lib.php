@@ -216,10 +216,14 @@ function playerpuzzle_grade_item_update(stdClass $playerpuzzle, mixed $grades = 
     global $CFG;
     require_once($CFG->libdir . '/gradelib.php');
 
-    $params = [
-        'itemname' => $playerpuzzle->name,
-        'idnumber' => $playerpuzzle->cmidnumber ?? '',
-    ];
+    $params = ['itemname' => $playerpuzzle->name];
+
+    // Only the add/update form carries cmidnumber. A record read straight from {playerpuzzle}
+    // (the web services recomputing a grade) has none, and sending an empty idnumber would
+    // wipe the one the teacher set.
+    if (isset($playerpuzzle->cmidnumber)) {
+        $params['idnumber'] = $playerpuzzle->cmidnumber;
+    }
 
     if ((int) $playerpuzzle->grade > 0) {
         $params['gradetype'] = GRADE_TYPE_VALUE;

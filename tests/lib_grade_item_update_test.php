@@ -95,6 +95,27 @@ final class lib_grade_item_update_test extends \advanced_testcase {
     }
 
     /**
+     * Regression test: the web services recompute grades from a record read straight from
+     * {playerpuzzle}, which has no cmidnumber. That used to send an empty idnumber to
+     * grade_update() and wipe the one the teacher had set on the grade item.
+     *
+     * @return void
+     */
+    public function test_recomputing_grades_keeps_the_idnumber(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id, 'grade' => 100], ['idnumber' => 'puzzle1']);
+        $this->assertSame('puzzle1', $this->fetch_grade_item($instance)->idnumber);
+
+        $record = $DB->get_record('playerpuzzle', ['id' => $instance->id], '*', MUST_EXIST);
+        playerpuzzle_update_grades($record, 0);
+
+        $this->assertSame('puzzle1', $this->fetch_grade_item($instance)->idnumber);
+    }
+
+    /**
      * Tests that passing 'reset' as $grades clears every grade recorded against the item
      * without deleting the item itself.
      *

@@ -74,6 +74,50 @@ final class questions_repository_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the correct side of a true/false question is read by position, so a
+     * question stored with labels in another language than the editor's is not flipped.
+     *
+     * @return void
+     */
+    public function test_get_truefalse_correct_side_ignores_the_label_language(): void {
+        $this->resetAfterTest();
+
+        $truecorrect = questions_repository::add_question(7, 'truefalse', 'Is the sky blue?', '', [
+            ['text' => 'Verdadeiro', 'iscorrect' => true],
+            ['text' => 'Falso', 'iscorrect' => false],
+        ], 42);
+        $falsecorrect = questions_repository::add_question(7, 'truefalse', 'Is the sun cold?', '', [
+            ['text' => 'Verdadeiro', 'iscorrect' => false],
+            ['text' => 'Falso', 'iscorrect' => true],
+        ], 42);
+
+        $this->assertSame('true', questions_repository::get_truefalse_correct_side(
+            questions_repository::get_question($truecorrect, 7)
+        ));
+        $this->assertSame('false', questions_repository::get_truefalse_correct_side(
+            questions_repository::get_question($falsecorrect, 7)
+        ));
+    }
+
+    /**
+     * Tests that a true/false question with no answer marked correct reports no side.
+     *
+     * @return void
+     */
+    public function test_get_truefalse_correct_side_is_null_without_a_correct_answer(): void {
+        $this->resetAfterTest();
+
+        $questionid = questions_repository::add_question(7, 'truefalse', 'Is it?', '', [
+            ['text' => 'True', 'iscorrect' => false],
+            ['text' => 'False', 'iscorrect' => false],
+        ], 42);
+
+        $this->assertNull(
+            questions_repository::get_truefalse_correct_side(questions_repository::get_question($questionid, 7))
+        );
+    }
+
+    /**
      * Tests that an empty hint is stored as null rather than an empty string.
      *
      * @return void

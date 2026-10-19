@@ -340,6 +340,27 @@ class questions_repository {
     }
 
     /**
+     * Tells which side of a loaded true/false question is the correct one.
+     *
+     * Decided by position, never by comparing answertext: the two rows hold the label in
+     * the language of whoever created or imported the question, so matching it against the
+     * current user's translation fails whenever the two languages differ. Every writer
+     * stores the "true" row first (the manual form, the AI generator and the question bank).
+     *
+     * @param stdClass $question A question as returned by {@see get_question()}.
+     * @return string|null 'true' or 'false', or null when no answer is marked correct.
+     */
+    public static function get_truefalse_correct_side(stdClass $question): ?string {
+        foreach (array_values($question->answers) as $index => $answer) {
+            if ((int) $answer->iscorrect === 1) {
+                return $index === 0 ? 'true' : 'false';
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Returns every question belonging to an instance, regardless of source/approval status
      * — the management listing shows all of them, with their own status badges. Ordered by
      * most recently created first, so a freshly added or AI-generated batch surfaces at the

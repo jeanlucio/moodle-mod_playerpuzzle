@@ -218,10 +218,9 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
         );
 
         if ($question->qtype === 'truefalse') {
-            foreach ($question->answers as $answer) {
-                if ((int) $answer->iscorrect === 1) {
-                    $formdata->tfcorrect = $answer->answertext === get_string('true', 'qtype_truefalse') ? 'true' : 'false';
-                }
+            $correctside = questions_repository::get_truefalse_correct_side($question);
+            if ($correctside !== null) {
+                $formdata->tfcorrect = $correctside;
             }
         } else {
             $optiontexteditors = [];

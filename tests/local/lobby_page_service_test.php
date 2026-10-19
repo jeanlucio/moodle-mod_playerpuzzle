@@ -45,6 +45,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         require_once($CFG->dirroot . '/mod/playerpuzzle/lib.php');
         $this->course = $this->getDataGenerator()->create_course();
         $this->student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($this->student->id, $this->course->id, 'student');
     }
 
     /**
@@ -775,7 +776,6 @@ final class lobby_page_service_test extends \advanced_testcase {
         global $DB;
 
         [$cm, $instance] = $this->make_cm_and_instance(['maxlevels' => 1]);
-        $this->getDataGenerator()->enrol_user($this->student->id, $this->course->id, 'student');
         $DB->insert_record('playerpuzzle_attempts', (object) [
             'playerpuzzleid' => $instance->id,
             'userid' => $this->student->id,
@@ -841,5 +841,24 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertTrue($guest['isguest']);
         $this->assertArrayNotHasKey('showranking', $guest);
         $this->assertSame(get_string('guestdemoonly', 'mod_playerpuzzle'), $guest['guestdemoonlytext']);
+    }
+
+    /**
+     * Regression test: a logged-in user who is in the course only through guest access is a
+     * visitor, even though isguestuser() is false for them. The ranking names the class's
+     * students, which core keeps from them, so it must not be built for them.
+     *
+     * @return void
+     */
+    public function test_build_page_data_treats_a_logged_in_visitor_like_the_guest_account(): void {
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+        $visitor = $this->getDataGenerator()->create_user();
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $visitor->id, $context);
+
+        $this->assertTrue($data['isguest']);
+        $this->assertArrayNotHasKey('showranking', $data);
+        $this->assertArrayNotHasKey('rankingrows', $data);
     }
 }

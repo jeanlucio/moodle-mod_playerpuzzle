@@ -941,16 +941,42 @@ final class game_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_check_guest_demo_only(): void {
+        [$cm] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+        $this->getDataGenerator()->enrol_user($this->student->id, $this->course->id, 'student');
+
         $this->setGuestUser();
-        game_page_service::check_guest_demo_only(true, $this->returnurl);
+        game_page_service::check_guest_demo_only(true, $this->returnurl, $context);
 
         $this->setUser($this->student);
-        game_page_service::check_guest_demo_only(false, $this->returnurl);
+        game_page_service::check_guest_demo_only(false, $this->returnurl, $context);
 
         $this->setGuestUser();
         try {
-            game_page_service::check_guest_demo_only(false, $this->returnurl);
+            game_page_service::check_guest_demo_only(false, $this->returnurl, $context);
             $this->fail('The guest account started a real attempt.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('guestdemoonly', $e->errorcode);
+        }
+    }
+
+    /**
+     * Regression test: a logged-in user who is in the course only through guest access is a
+     * visitor too, even though isguestuser() is false for them. Before the fix they could
+     * start real attempts, with grades and coins of their own.
+     *
+     * @return void
+     */
+    public function test_check_guest_demo_only_also_keeps_a_logged_in_visitor_to_the_demo(): void {
+        [$cm] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+        $visitor = $this->getDataGenerator()->create_user();
+
+        $this->setUser($visitor);
+        game_page_service::check_guest_demo_only(true, $this->returnurl, $context);
+        try {
+            game_page_service::check_guest_demo_only(false, $this->returnurl, $context);
+            $this->fail('A logged-in visitor started a real attempt.');
         } catch (\moodle_exception $e) {
             $this->assertSame('guestdemoonly', $e->errorcode);
         }

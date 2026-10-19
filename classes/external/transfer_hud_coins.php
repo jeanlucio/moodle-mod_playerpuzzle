@@ -71,9 +71,9 @@ class transfer_hud_coins extends external_api {
         $context = context_module::instance($params['cmid']);
         self::validate_context($context);
         require_capability('mod/playerpuzzle:view', $context);
-        // The shop and the transfer feed real play, which the guest account never gets — see
+        // The shop and the transfer feed real play, which a visitor never gets — see
         // game_page_service::check_guest_demo_only().
-        if (isguestuser()) {
+        if (is_guest($context)) {
             throw new moodle_exception('guestdemoonly', 'mod_playerpuzzle');
         }
 

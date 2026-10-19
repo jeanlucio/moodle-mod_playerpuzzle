@@ -113,9 +113,10 @@ class lobby_page_service {
         $attempt = reset($inprogress) ?: null;
 
         $data['cmid'] = $cm->id;
-        // The guest account only gets the Demo (see game_page_service::check_guest_demo_only()),
-        // so the Lobby hides what only real play uses: the balance, shop, transfer and Play.
-        if (isguestuser($userid)) {
+        // A visitor (the guest account, or a logged-in user entering through guest access)
+        // only gets the Demo (see game_page_service::check_guest_demo_only()), so the Lobby
+        // hides what only real play uses: the balance, shop, transfer and Play.
+        if (is_guest($context, $userid)) {
             $data['isguest'] = true;
             $data['guestdemoonlytext'] = get_string('guestdemoonly', 'mod_playerpuzzle');
         }
@@ -124,7 +125,7 @@ class lobby_page_service {
         $data += self::build_minquestions_context($instance);
         $data += self::build_difficulty_context($attempt);
         $data += self::build_sound_context($userid);
-        $data += self::build_ranking_context($instance, $cm, $userid);
+        $data += self::build_ranking_context($instance, $cm, $userid, $context);
 
         return $data;
     }
@@ -137,12 +138,20 @@ class lobby_page_service {
      * @param stdClass $instance Activity instance.
      * @param stdClass $cm Course module.
      * @param int $userid Current user ID.
+     * @param context_module $context Module context.
      * @return array Empty when the ranking is off.
      */
-    private static function build_ranking_context(stdClass $instance, stdClass $cm, int $userid): array {
-        // Nor for the guest account: it names the class's students to anyone the course lets
-        // in as a visitor, the same people core keeps the participants list from.
-        if (empty($instance->show_ranking) || isguestuser($userid)) {
+    private static function build_ranking_context(
+        stdClass $instance,
+        stdClass $cm,
+        int $userid,
+        context_module $context
+    ): array {
+        // Nor for a visitor: it names the class's students to anyone the course lets in as
+        // a visitor, the same people core keeps the participants list from. isguestuser()
+        // would only catch the guest account, not a logged-in user entering through guest
+        // access.
+        if (empty($instance->show_ranking) || is_guest($context, $userid)) {
             return [];
         }
 

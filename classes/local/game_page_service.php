@@ -24,6 +24,7 @@
 
 namespace mod_playerpuzzle\local;
 
+use context;
 use context_module;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\replay;
@@ -37,18 +38,20 @@ use stdClass;
  */
 class game_page_service {
     /**
-     * Keeps the guest account to the Demo. Every guest-access visitor of a course shares the
-     * one guest user record, so a real attempt, its coins and its grade could never be told
-     * apart between them; the Demo already counts for none of that. Same stance
+     * Keeps visitors to the Demo: the guest account, and a logged-in user who is in the
+     * course only through guest access. A real attempt, its coins and its grade belong to a
+     * participant, and the guest account is one record shared by every visitor, so they
+     * could never be told apart; the Demo already counts for none of that. Same stance
      * mod_playerwords takes by letting guests play a round that persists nothing.
      *
      * @param bool $isdemo Whether the requested fight is the Demo.
      * @param moodle_url $returnurl Where the error page links back to.
+     * @param context $context Module context.
      * @return void
-     * @throws moodle_exception When the guest account asks for a real attempt.
+     * @throws moodle_exception When a visitor asks for a real attempt.
      */
-    public static function check_guest_demo_only(bool $isdemo, moodle_url $returnurl): void {
-        if (!$isdemo && isguestuser()) {
+    public static function check_guest_demo_only(bool $isdemo, moodle_url $returnurl, context $context): void {
+        if (!$isdemo && is_guest($context)) {
             throw new moodle_exception('guestdemoonly', 'mod_playerpuzzle', $returnurl);
         }
     }

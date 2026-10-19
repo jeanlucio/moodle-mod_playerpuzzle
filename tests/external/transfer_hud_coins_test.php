@@ -281,12 +281,13 @@ final class transfer_hud_coins_test extends \advanced_testcase {
     }
 
     /**
-     * Opens the course to guest access and logs in as the guest account, as a visitor to
-     * such a course would be.
+     * Opens the course to guest access and logs in as a visitor to such a course: the guest
+     * account, or a logged-in user who is not enrolled.
      *
+     * @param bool $realaccount Whether the visitor is a logged-in user rather than the guest account.
      * @return void
      */
-    private function log_in_as_course_guest(): void {
+    private function log_in_as_course_guest(bool $realaccount = false): void {
         global $DB;
 
         $plugin = enrol_get_plugin('guest');
@@ -296,7 +297,11 @@ final class transfer_hud_coins_test extends \advanced_testcase {
         } else {
             $plugin->add_instance($this->course, ['status' => ENROL_INSTANCE_ENABLED]);
         }
-        $this->setGuestUser();
+        if ($realaccount) {
+            $this->setUser($this->getDataGenerator()->create_user());
+        } else {
+            $this->setGuestUser();
+        }
     }
 
     /**
@@ -317,5 +322,24 @@ final class transfer_hud_coins_test extends \advanced_testcase {
         $this->assertTrue($result['error']);
         $this->assertSame('guestdemoonly', $result['exception']->errorcode);
         $this->assertFalse($DB->record_exists('playerpuzzle_user_stock', ['userid' => guest_user()->id]));
+    }
+
+    /**
+     * Regression test: a logged-in user entering through guest access is a visitor too, and
+     * isguestuser() is false for them.
+     *
+     * @return void
+     */
+    public function test_transfer_rejects_a_logged_in_visitor(): void {
+        global $DB, $USER;
+
+        $instance = $this->make_instance();
+        $this->log_in_as_course_guest(true);
+
+        $result = $this->call_transfer(['cmid' => $instance->cmid, 'amount' => 1]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('guestdemoonly', $result['exception']->errorcode);
+        $this->assertFalse($DB->record_exists('playerpuzzle_user_stock', ['userid' => $USER->id]));
     }
 }

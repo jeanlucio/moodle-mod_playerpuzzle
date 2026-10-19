@@ -70,6 +70,12 @@ class replay_diverged extends \core\event\base {
 
     #[\Override]
     public static function get_objectid_mapping(): array {
-        return ['db' => 'playerpuzzle_attempts', 'restore' => 'playerpuzzle_attempts'];
+        return ['db' => 'playerpuzzle_attempts', 'restore' => 'playerpuzzle_attempt'];
+    }
+
+    #[\Override]
+    public static function get_other_mapping(): array {
+        // Nothing in 'other' is an id that needs remapping on restore.
+        return [];
     }
 }

@@ -35,6 +35,10 @@ use mod_playerpuzzle\local\questions_repository;
  *
  * @covers \backup_playerpuzzle_activity_structure_step
  * @covers \restore_playerpuzzle_activity_structure_step
+ * @covers \mod_playerpuzzle\event\game_completed
+ * @covers \mod_playerpuzzle\event\game_started
+ * @covers \mod_playerpuzzle\event\replay_diverged
+ * @covers \mod_playerpuzzle\event\replay_inconclusive
  */
 final class backup_restore_test extends \advanced_testcase {
     #[\Override]
@@ -105,9 +109,10 @@ final class backup_restore_test extends \advanced_testcase {
      * test pattern.
      *
      * @param \stdClass $course Source course.
+     * @param bool $withlogs Whether the backup includes the course logs.
      * @return \stdClass The new course the backup was restored into.
      */
-    private function backup_and_restore_into_new_course(\stdClass $course): \stdClass {
+    private function backup_and_restore_into_new_course(\stdClass $course, bool $withlogs = false): \stdClass {
         global $CFG;
         require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
         require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
@@ -122,6 +127,9 @@ final class backup_restore_test extends \advanced_testcase {
             \backup::MODE_GENERAL,
             $admin->id
         );
+        if ($withlogs) {
+            $bc->get_plan()->get_setting('logs')->set_value(true);
+        }
         $bc->execute_plan();
         $backupfile = $bc->get_results()['backup_destination'];
         $bc->destroy();
@@ -144,6 +152,80 @@ final class backup_restore_test extends \advanced_testcase {
         $rc->destroy();
 
         return $newcourse;
+    }
+
+    /**
+     * Regression test: the attempt events declare a restore mapping for their objectid, and
+     * it must name the mapping the restore step registers for attempts. A mismatch leaves
+     * every restored log row pointing at NOT_FOUND instead of the restored attempt. Covers
+     * all four attempt events, not just the first.
+     *
+     * @return void
+     */
+    public function test_backup_restore_remaps_the_objectid_of_attempt_events(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/lib.php');
+        $this->preventResetByRollback();
+        set_config('enabled_stores', 'logstore_standard', 'tool_log');
+        set_config('buffersize', 0, 'logstore_standard');
+        get_log_manager(true);
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $attemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id,
+            'userid'         => $user->id,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'inprogress',
+            'timecreated'    => time(),
+        ]);
+        $context = \context_module::instance($cm->id);
+        $replayother = [
+            'claimeddamage' => 1,
+            'claimedplayergold' => 1,
+            'claimedbossgold' => 1,
+        ];
+        $eventdata = [
+            \mod_playerpuzzle\event\game_started::class => ['gamemode' => 'campaign', 'difficulty' => 'normal'],
+            \mod_playerpuzzle\event\game_completed::class => [
+                'gamemode' => 'campaign',
+                'status' => 'won',
+                'currentlevel' => 1,
+                'currentphase' => 1,
+                'score' => 50.0,
+            ],
+            \mod_playerpuzzle\event\replay_diverged::class => $replayother + [
+                'deriveddamage' => 2,
+                'derivedplayergold' => 2,
+                'derivedbossgold' => 2,
+            ],
+            \mod_playerpuzzle\event\replay_inconclusive::class => $replayother,
+        ];
+        foreach ($eventdata as $eventclass => $other) {
+            $eventclass::create([
+                'objectid' => $attemptid,
+                'context'  => $context,
+                'userid'   => $user->id,
+                'other'    => $other,
+            ])->trigger();
+        }
+
+        $newcourse = $this->backup_and_restore_into_new_course($course, true);
+
+        $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+        $newattempt = $DB->get_record('playerpuzzle_attempts', ['playerpuzzleid' => $newinstance->id], '*', MUST_EXIST);
+        foreach (array_keys($eventdata) as $eventclass) {
+            $restoredlog = $DB->get_record('logstore_standard_log', [
+                'eventname' => '\\' . $eventclass,
+                'courseid'  => $newcourse->id,
+            ], '*', MUST_EXIST);
+            $this->assertEquals($newattempt->id, $restoredlog->objectid, $eventclass);
+        }
     }
 
     /**

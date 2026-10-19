@@ -96,6 +96,25 @@ class game_page_service {
     }
 
     /**
+     * Runs every gate a real (non-Demo) attempt must pass before play.php creates it.
+     *
+     * The order is part of the contract: check_retry_cost() actually debits the PlayerHUD
+     * item, so it has to be the last gate. Any gate placed after it that throws would leave
+     * the student charged for an attempt that never starts.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @param moodle_url $returnurl URL to send the student back to on failure.
+     * @return void
+     * @throws moodle_exception When any of the gates rejects the new attempt.
+     */
+    public static function check_can_start_attempt(stdClass $instance, int $userid, moodle_url $returnurl): void {
+        self::check_attempt_limit($instance, $userid, $returnurl);
+        self::check_cooldown($instance, $userid, $returnurl);
+        self::check_retry_cost($instance, $userid, $returnurl);
+    }
+
+    /**
      * Charges the configured retry-cost item, from the 2nd attempt onwards, before a new
      * attempt is created — never for the very first attempt, and never for a play.php POST
      * that will only resume an already in-progress one (a plain reload, or the client's own

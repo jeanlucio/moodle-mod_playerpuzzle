@@ -50,9 +50,7 @@ $isdemo = optional_param('isdemo', 0, PARAM_BOOL);
 $returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
 \mod_playerpuzzle\local\game_page_service::check_guest_demo_only($isdemo, $returnurl);
 if (!$isdemo) {
-    \mod_playerpuzzle\local\game_page_service::check_attempt_limit($playerpuzzle, (int) $USER->id, $returnurl);
-    \mod_playerpuzzle\local\game_page_service::check_retry_cost($playerpuzzle, (int) $USER->id, $returnurl);
-    \mod_playerpuzzle\local\game_page_service::check_cooldown($playerpuzzle, (int) $USER->id, $returnurl);
+    \mod_playerpuzzle\local\game_page_service::check_can_start_attempt($playerpuzzle, (int) $USER->id, $returnurl);
 }
 
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);

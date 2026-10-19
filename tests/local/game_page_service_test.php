@@ -485,6 +485,49 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a student blocked by the cooldown is not charged the retry-cost item: the
+     * debit is the one gate with a side effect, so it must come after the cooldown check.
+     *
+     * @return void
+     */
+    public function test_check_can_start_attempt_does_not_charge_during_cooldown(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        [, $instance] = $this->make_cm_and_instance([
+            'gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'hud_retry_cost_item' => $itemid,
+            'hud_retry_cost_qty' => 3,
+        ]);
+        $instance->cooldown_seconds = 60;
+        $this->make_finished_attempt_at($instance->id, (int) $this->student->id, time() - 10);
+        $this->grant_hud_item($biid, $itemid, (int) $this->student->id, 5);
+
+        try {
+            game_page_service::check_can_start_attempt($instance, (int) $this->student->id, $this->returnurl);
+            $this->fail('The cooldown should have rejected the new attempt.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('cooldownactive', $e->errorcode);
+        }
+
+        $this->assertSame(5, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+    }
+
+    /**
+     * Tests that the retry cost is still charged once every other gate passes.
+     *
+     * @return void
+     */
+    public function test_check_can_start_attempt_charges_when_nothing_else_blocks(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        [, $instance] = $this->make_cm_and_instance(['hud_retry_cost_item' => $itemid, 'hud_retry_cost_qty' => 3]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        $this->grant_hud_item($biid, $itemid, (int) $this->student->id, 5);
+
+        game_page_service::check_can_start_attempt($instance, (int) $this->student->id, $this->returnurl);
+
+        $this->assertSame(2, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+    }
+
+    /**
      * Tests that a new match is allowed once the configured cooldown since the last
      * finished match has elapsed.
      *

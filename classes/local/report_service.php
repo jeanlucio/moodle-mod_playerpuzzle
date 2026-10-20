@@ -60,7 +60,8 @@ class report_service {
         // Demo attempts are excluded: they are disposable practice fights with fixed HP, and
         // must never appear in a teacher-facing report as if they were real submissions.
         $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.difficulty, a.status,
-                       a.bosshp_remaining, a.questions_correct, a.questions_total, a.timefinished
+                       a.bosshp_remaining, a.questions_correct, a.questions_total, a.timefinished,
+                       a.frozenbasebosshp
                   FROM {playerpuzzle_attempts} a
                  WHERE a.playerpuzzleid = :instanceid
                        AND a.isdemo = 0
@@ -118,9 +119,12 @@ class report_service {
         $totalsum = 0;
         $lastfinished = 0;
         foreach ($finished as $attempt) {
+            // The boss HP this phase was really fought at, frozen when it started — the
+            // teacher may have changed basebosshp since, which must not rewrite the damage
+            // of matches already played. Attempts from before the column existed have none.
             $bosshp = combat::apply_difficulty(
                 combat::calculate_boss_hp(
-                    (int) $instance->basebosshp,
+                    (int) $attempt->frozenbasebosshp ?: (int) $instance->basebosshp,
                     (int) $attempt->currentlevel,
                     (int) $attempt->currentphase
                 ),

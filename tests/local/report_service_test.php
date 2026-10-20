@@ -170,6 +170,33 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
+     * Regression test: the average damage is worked out against the boss HP the phase was
+     * fought at, not the activity's current base HP, so a later teacher edit does not
+     * rewrite the damage of matches already played.
+     *
+     * @return void
+     */
+    public function test_get_student_rows_uses_the_frozen_boss_hp_for_damage(): void {
+        global $DB;
+
+        $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        // Level 1 phase 1 scales by 1, so 1000 of base HP with 800 left means 20% damage.
+        $this->make_attempt($student, [
+            'status'           => 'lost',
+            'bosshp_remaining' => 800,
+            'frozenbasebosshp' => 1000,
+            'timefinished'     => time(),
+        ]);
+        $DB->set_field('playerpuzzle', 'basebosshp', 500, ['id' => $this->instance->id]);
+        $instance = $DB->get_record('playerpuzzle', ['id' => $this->instance->id], '*', MUST_EXIST);
+
+        $rows = report_service::get_student_rows($instance, $this->cm, $this->context, 0);
+
+        $this->assertSame(format_float(20.0, 1), $rows[0]['avgdamagepercent']);
+    }
+
+    /**
      * An attempt still 'inprogress' is not counted towards attemptsused or the damage/
      * question averages — only finished attempts represent something the student
      * actually completed.

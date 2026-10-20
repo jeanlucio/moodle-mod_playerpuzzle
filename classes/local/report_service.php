@@ -209,7 +209,10 @@ class report_service {
             $total = (int) $record->total;
             $errors = (int) $record->errors;
             $rows[] = [
-                'questiontext' => format_string($record->questiontext),
+                // The snapshot is already formatted HTML. Reducing it to plain text here, rather
+                // than passing it through format_string(), leaves entities decoded, so the
+                // template's single escaping is the only one.
+                'questiontext' => trim(content_to_text($record->questiontext, FORMAT_HTML)),
                 'errors'       => $errors,
                 'total'        => $total,
                 'errorrate'    => $total > 0 ? round(($errors / $total) * 100, 1) : 0.0,

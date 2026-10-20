@@ -342,6 +342,24 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
+     * Regression test: the logged question text is already formatted HTML, and the template
+     * escapes it once more, so entities used to show up as literal text ("2 &lt; 3",
+     * "O&nbsp;valor").
+     *
+     * @return void
+     */
+    public function test_get_most_missed_questions_returns_plain_text_for_the_template(): void {
+        $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        $attemptid = $this->make_attempt($student);
+        $this->log_question($attemptid, 1, '<p>How much is 2 &lt; 3 &amp; the&nbsp;rest?</p>', 0);
+
+        $rows = report_service::get_most_missed_questions($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertSame("How much is 2 < 3 & the\u{00A0}rest?", $rows[0]['questiontext']);
+    }
+
+    /**
      * With SEPARATEGROUPS, a viewer restricted to one group must never see error
      * statistics aggregated over a question only the other group answered.
      *

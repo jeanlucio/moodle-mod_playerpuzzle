@@ -95,6 +95,27 @@ final class lib_completion_info_test extends \advanced_testcase {
     }
 
     /**
+     * Regression test: with the callback defined, core does not build the course page
+     * description itself, so "Display description on course page" had no effect.
+     *
+     * @return void
+     */
+    public function test_get_coursemodule_info_shows_the_description_when_asked(): void {
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id, 'intro' => 'Defeat the slime.']);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $cm->showdescription = 1;
+        $shown = playerpuzzle_get_coursemodule_info($cm);
+        $this->assertStringContainsString('Defeat the slime.', $shown->content);
+
+        $cm->showdescription = 0;
+        $hidden = playerpuzzle_get_coursemodule_info($cm);
+        $this->assertNull($hidden->content);
+    }
+
+    /**
      * Tests that a missing instance returns false rather than fataling.
      *
      * @return void

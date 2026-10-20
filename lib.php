@@ -153,20 +153,22 @@ function playerpuzzle_supports(string $feature): mixed {
 }
 
 /**
- * Populates the course module info object with custom completion rule data.
+ * Populates the course module info object with the course page description and custom
+ * completion rule data.
  *
  * Called by Moodle when building cm_info. Stores the required attempt/win counts in
  * customdata so activity_custom_completion::get_available_custom_rules() can determine
  * whether each rule is enabled for this instance, and so
  * \mod_playerpuzzle\completion\custom_completion::get_state() can evaluate them.
  *
- * @param stdClass $coursemodule The raw course_modules row (id, instance, …).
+ * @param stdClass $coursemodule The raw course_modules row (id, instance, completion,
+ *  showdescription, …).
  * @return cached_cm_info|false A populated info object, or false on failure.
  */
 function playerpuzzle_get_coursemodule_info(stdClass $coursemodule): cached_cm_info|false {
     global $DB;
 
-    $fields = 'id, name, completionattempts, completionwins';
+    $fields = 'id, name, intro, introformat, completionattempts, completionwins';
     $playerpuzzle = $DB->get_record('playerpuzzle', ['id' => $coursemodule->instance], $fields);
     if (!$playerpuzzle) {
         return false;
@@ -174,6 +176,13 @@ function playerpuzzle_get_coursemodule_info(stdClass $coursemodule): cached_cm_i
 
     $info = new cached_cm_info();
     $info->name = $playerpuzzle->name;
+
+    // Once a module defines this callback, core no longer builds the course page description
+    // itself, so "Display description on course page" does nothing unless it is set here.
+    // Filters are skipped on purpose: this is cached, and they run when it is displayed.
+    if (!empty($coursemodule->showdescription)) {
+        $info->content = format_module_intro('playerpuzzle', $playerpuzzle, $coursemodule->id, false);
+    }
 
     if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
         $info->customdata['customcompletionrules']['completionattempts'] = (int) $playerpuzzle->completionattempts;

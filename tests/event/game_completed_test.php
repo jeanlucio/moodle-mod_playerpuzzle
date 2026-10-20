@@ -26,6 +26,7 @@
 namespace mod_playerpuzzle\event;
 
 use mod_playerpuzzle\external\save_progress;
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\move_log;
 
@@ -76,7 +77,7 @@ final class game_completed_test extends \advanced_testcase {
     public function test_victory_triggers_game_completed(): void {
         global $DB;
 
-        $instance = $this->make_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        $instance = $this->make_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
         // A win only counts once the server-side replay verifies it: seed 2's one-move kill,
@@ -101,7 +102,7 @@ final class game_completed_test extends \advanced_testcase {
 
         $event = $completed[0];
         $this->assertSame('won', $event->other['status']);
-        $this->assertSame(PLAYERPUZZLE_GAMEMODE_CAMPAIGN, $event->other['gamemode']);
+        $this->assertSame(constants::GAMEMODE_CAMPAIGN, $event->other['gamemode']);
         $this->assertSame('playerpuzzle_attempts', $event->objecttable);
     }
 

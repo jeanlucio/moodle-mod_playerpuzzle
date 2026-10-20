@@ -22,6 +22,8 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_playerpuzzle\local\constants;
+
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
@@ -65,7 +67,7 @@ $ismobile = optional_param('mobile', 0, PARAM_INT) === 1;
 // Student's difficulty choice from the Lobby. Only used when a fresh attempt is created —
 // resuming an in-progress Campaign run keeps that run's own locked difficulty. Coerced to
 // a known value inside security::clean_difficulty().
-$difficulty = optional_param('difficulty', PLAYERPUZZLE_DIFFICULTY_NORMAL, PARAM_ALPHA);
+$difficulty = optional_param('difficulty', constants::DIFFICULTY_NORMAL, PARAM_ALPHA);
 
 // Previously switched to a chromeless 'embedded' layout for mobile devices, opened in a new
 // tab by the Lobby's own form — removed because the game now always stays in the same window,

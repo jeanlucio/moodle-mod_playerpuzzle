@@ -26,6 +26,7 @@
 namespace mod_playerpuzzle;
 
 use core_courseformat\local\cmactions;
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\questions_repository;
 
 /**
@@ -599,8 +600,8 @@ final class backup_restore_test extends \advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance([
             'course'             => $course->id,
-            'gamemode'           => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod'        => PLAYERPUZZLE_GRADE_AVERAGE,
+            'gamemode'           => constants::GAMEMODE_SINGLE,
+            'grademethod'        => constants::GRADE_AVERAGE,
             'grade'              => 55,
             'gradepass'          => 20,
             'completionattempts' => 3,
@@ -637,8 +638,8 @@ final class backup_restore_test extends \advanced_testcase {
         $newcourse = $this->backup_and_restore_into_new_course($course);
 
         $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
-        $this->assertSame(PLAYERPUZZLE_GAMEMODE_SINGLE, $newinstance->gamemode);
-        $this->assertSame(PLAYERPUZZLE_GRADE_AVERAGE, (int) $newinstance->grademethod);
+        $this->assertSame(constants::GAMEMODE_SINGLE, $newinstance->gamemode);
+        $this->assertSame(constants::GRADE_AVERAGE, (int) $newinstance->grademethod);
         $this->assertEqualsWithDelta(55.0, (float) $newinstance->grade, 0.001);
         $this->assertEqualsWithDelta(20.0, (float) $newinstance->gradepass, 0.001);
         $this->assertSame(3, (int) $newinstance->completionattempts);

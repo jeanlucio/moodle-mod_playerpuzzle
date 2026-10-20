@@ -26,6 +26,7 @@
 require(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
 
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\report_service;
 
 $id = required_param('id', PARAM_INT);
@@ -68,7 +69,7 @@ $templatecontext = [
     'completedcount'        => $completion['completed'],
     'completedtotal'        => $completion['total'],
     'completedpercent'      => $completion['percent'],
-    'iscampaign'            => $instance->gamemode === PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+    'iscampaign'            => $instance->gamemode === constants::GAMEMODE_CAMPAIGN,
 ];
 
 echo $OUTPUT->header();

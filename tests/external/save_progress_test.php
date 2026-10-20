@@ -28,6 +28,7 @@ namespace mod_playerpuzzle\external;
 use context_course;
 use context_module;
 use core_external\external_api;
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
 use mod_playerpuzzle\local\move_log;
@@ -292,7 +293,7 @@ final class save_progress_test extends \advanced_testcase {
             'timemodified'    => time(),
         ]);
         $instance = $this->make_instance([
-            'gamemode'           => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'gamemode'           => constants::GAMEMODE_SINGLE,
             'max_single_matches' => 0,
             'hud_coin_item'      => $coinitemid,
             'hud_win_grant_item' => $grantitemid,

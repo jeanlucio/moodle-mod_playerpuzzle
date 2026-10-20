@@ -33,6 +33,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\attempt_questions;
 use mod_playerpuzzle\local\coin_ledger;
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
@@ -245,7 +246,7 @@ class save_progress extends external_api {
                 // infinite-round win grant.
                 $grantitem = (int) $playerpuzzle->hud_win_grant_item;
                 if ($grantitem > 0) {
-                    $relevantlimit = $playerpuzzle->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE
+                    $relevantlimit = $playerpuzzle->gamemode === constants::GAMEMODE_SINGLE
                         ? (int) $playerpuzzle->max_single_matches
                         : (int) $playerpuzzle->maxattempts;
                     hud_service::grant_item(

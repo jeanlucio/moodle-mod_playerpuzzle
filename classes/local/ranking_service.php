@@ -118,7 +118,7 @@ class ranking_service {
             $byuser[(int) $record->userid][] = $record;
         }
 
-        $single = $instance->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE;
+        $single = $instance->gamemode === constants::GAMEMODE_SINGLE;
         $entries = [];
         foreach ($byuser as $userid => $attempts) {
             $entry = $single ? self::score_single_match($instance, $attempts) : self::score_campaign($instance, $attempts);

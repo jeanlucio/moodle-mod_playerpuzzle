@@ -320,7 +320,7 @@ class report_service {
         [$insql, $inparams] = $DB->get_in_or_equal(array_keys($students), SQL_PARAMS_NAMED, 'stu');
         $params = array_merge(['instanceid' => (int) $instance->id], $inparams);
 
-        if ($instance->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE) {
+        if ($instance->gamemode === constants::GAMEMODE_SINGLE) {
             $params['inprogress'] = 'inprogress';
             $completed = (int) $DB->count_records_sql(
                 "SELECT COUNT(DISTINCT userid)

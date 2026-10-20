@@ -25,6 +25,7 @@
 
 namespace mod_playerpuzzle\event;
 
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\game_page_service;
 
 /**
@@ -53,7 +54,7 @@ final class game_started_test extends \advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance([
             'course'   => $course->id,
-            'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'gamemode' => constants::GAMEMODE_CAMPAIGN,
         ]);
         $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
         $context = \context_module::instance($cm->id);
@@ -68,7 +69,7 @@ final class game_started_test extends \advanced_testcase {
 
         $event = $gamestarted[0];
         $this->assertSame($context->id, $event->contextid);
-        $this->assertSame(PLAYERPUZZLE_GAMEMODE_CAMPAIGN, $event->other['gamemode']);
+        $this->assertSame(constants::GAMEMODE_CAMPAIGN, $event->other['gamemode']);
         $this->assertSame('hard', $event->other['difficulty']);
         $this->assertSame('playerpuzzle_attempts', $event->objecttable);
     }

@@ -187,9 +187,9 @@ final class game_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_check_attempt_limit_zero_is_unlimited(): void {
-        [, $campaign] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxattempts' => 0]);
+        [, $campaign] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxattempts' => 0]);
         [, $single] = $this->make_cm_and_instance([
-            'gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'gamemode' => constants::GAMEMODE_SINGLE,
             'max_single_matches' => 0,
         ]);
 
@@ -211,7 +211,7 @@ final class game_page_service_test extends \advanced_testcase {
      */
     public function test_check_attempt_limit_campaign_uses_maxattempts(): void {
         [, $instance] = $this->make_cm_and_instance([
-            'gamemode'    => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'gamemode'    => constants::GAMEMODE_CAMPAIGN,
             'maxattempts' => 2,
         ]);
         $this->make_finished_attempt($instance->id, (int) $this->student->id);
@@ -230,7 +230,7 @@ final class game_page_service_test extends \advanced_testcase {
      */
     public function test_check_attempt_limit_single_match_uses_max_single_matches(): void {
         [, $instance] = $this->make_cm_and_instance([
-            'gamemode'           => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'gamemode'           => constants::GAMEMODE_SINGLE,
             'max_single_matches' => 1,
             'maxattempts'        => 0,
         ]);
@@ -251,7 +251,7 @@ final class game_page_service_test extends \advanced_testcase {
         global $DB;
 
         [, $instance] = $this->make_cm_and_instance([
-            'gamemode'    => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'gamemode'    => constants::GAMEMODE_CAMPAIGN,
             'maxattempts' => 1,
         ]);
         $DB->insert_record('playerpuzzle_attempts', (object) [
@@ -274,7 +274,7 @@ final class game_page_service_test extends \advanced_testcase {
      */
     public function test_check_attempt_limit_ignores_demo_attempts(): void {
         [, $instance] = $this->make_cm_and_instance([
-            'gamemode'    => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'gamemode'    => constants::GAMEMODE_CAMPAIGN,
             'maxattempts' => 1,
         ]);
         for ($i = 0; $i < 5; $i++) {
@@ -409,7 +409,7 @@ final class game_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_check_cooldown_free_when_unconfigured(): void {
-        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
         $this->make_finished_attempt($instance->id, (int) $this->student->id);
 
         game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
@@ -423,7 +423,7 @@ final class game_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_check_cooldown_never_applies_to_campaign_mode(): void {
-        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
         $instance->cooldown_seconds = 3600;
         $this->make_finished_attempt($instance->id, (int) $this->student->id);
 
@@ -438,7 +438,7 @@ final class game_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_check_cooldown_free_on_first_attempt(): void {
-        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
         $instance->cooldown_seconds = 3600;
 
         game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
@@ -454,7 +454,7 @@ final class game_page_service_test extends \advanced_testcase {
     public function test_check_cooldown_skips_when_resuming_inprogress(): void {
         global $DB;
 
-        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
         $instance->cooldown_seconds = 3600;
         $this->make_finished_attempt($instance->id, (int) $this->student->id);
         $DB->insert_record('playerpuzzle_attempts', (object) [
@@ -476,7 +476,7 @@ final class game_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_check_cooldown_blocks_before_it_elapses(): void {
-        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
         $instance->cooldown_seconds = 60;
         $this->make_finished_attempt_at($instance->id, (int) $this->student->id, time() - 10);
 
@@ -493,7 +493,7 @@ final class game_page_service_test extends \advanced_testcase {
     public function test_check_can_start_attempt_does_not_charge_during_cooldown(): void {
         [$biid, $itemid] = $this->make_hud_item();
         [, $instance] = $this->make_cm_and_instance([
-            'gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'gamemode' => constants::GAMEMODE_SINGLE,
             'hud_retry_cost_item' => $itemid,
             'hud_retry_cost_qty' => 3,
         ]);
@@ -534,7 +534,7 @@ final class game_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_check_cooldown_allows_once_it_elapses(): void {
-        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
         $instance->cooldown_seconds = 60;
         $this->make_finished_attempt_at($instance->id, (int) $this->student->id, time() - 120);
 
@@ -550,7 +550,7 @@ final class game_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_check_cooldown_ignores_demo_attempts(): void {
-        [, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        [, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
         $instance->cooldown_seconds = 3600;
         $this->make_finished_demo_attempt($instance->id, (int) $this->student->id);
 
@@ -568,7 +568,7 @@ final class game_page_service_test extends \advanced_testcase {
         global $DB;
 
         [$cm, $instance] = $this->make_cm_and_instance([
-            'gamemode'      => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'gamemode'      => constants::GAMEMODE_CAMPAIGN,
             'basebosshp'    => 100,
             'basestudenthp' => 100,
             'bossdamage'    => 10,
@@ -602,7 +602,7 @@ final class game_page_service_test extends \advanced_testcase {
      */
     public function test_build_game_config_single_match_uses_base_hp(): void {
         [$cm, $instance] = $this->make_cm_and_instance([
-            'gamemode'      => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'gamemode'      => constants::GAMEMODE_SINGLE,
             'basebosshp'    => 250,
             'basestudenthp' => 80,
             'bossdamage'    => 15,
@@ -631,7 +631,7 @@ final class game_page_service_test extends \advanced_testcase {
      */
     public function test_build_game_config_applies_difficulty_to_boss_only(): void {
         [$cm, $instance] = $this->make_cm_and_instance([
-            'gamemode'      => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'gamemode'      => constants::GAMEMODE_SINGLE,
             'basebosshp'    => 200,
             'basestudenthp' => 100,
             'bossdamage'    => 10,
@@ -656,7 +656,7 @@ final class game_page_service_test extends \advanced_testcase {
      */
     public function test_build_game_config_demo_uses_fixed_hp(): void {
         [$cm, $instance] = $this->make_cm_and_instance([
-            'gamemode'      => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'gamemode'      => constants::GAMEMODE_CAMPAIGN,
             'basebosshp'    => 1000,
             'basestudenthp' => 250,
         ]);
@@ -674,7 +674,7 @@ final class game_page_service_test extends \advanced_testcase {
 
         $this->assertSame(50, $config['bosshp']);
         $this->assertSame(50, $config['studenthp']);
-        $this->assertSame(PLAYERPUZZLE_GAMEMODE_SINGLE, $config['gamemode']);
+        $this->assertSame(constants::GAMEMODE_SINGLE, $config['gamemode']);
         $this->assertSame(1, $config['currentlevel']);
         $this->assertSame(1, $config['currentphase']);
         $this->assertTrue($config['isdemo']);
@@ -689,7 +689,7 @@ final class game_page_service_test extends \advanced_testcase {
      */
     public function test_build_game_config_difficulty_is_kept_on_resume(): void {
         [$cm, $instance] = $this->make_cm_and_instance([
-            'gamemode'   => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'gamemode'   => constants::GAMEMODE_SINGLE,
             'basebosshp' => 200,
         ]);
         $context = \context_module::instance($cm->id);

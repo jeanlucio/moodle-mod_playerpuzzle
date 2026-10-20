@@ -22,6 +22,8 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_playerpuzzle\local\constants;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
@@ -51,12 +53,12 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             'gamemode',
             get_string('gamemode', 'mod_playerpuzzle'),
             [
-                PLAYERPUZZLE_GAMEMODE_CAMPAIGN => get_string('gamemode_campaign', 'mod_playerpuzzle'),
-                PLAYERPUZZLE_GAMEMODE_SINGLE   => get_string('gamemode_single', 'mod_playerpuzzle'),
+                constants::GAMEMODE_CAMPAIGN => get_string('gamemode_campaign', 'mod_playerpuzzle'),
+                constants::GAMEMODE_SINGLE   => get_string('gamemode_single', 'mod_playerpuzzle'),
             ]
         );
         $mform->setType('gamemode', PARAM_ALPHA);
-        $mform->setDefault('gamemode', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+        $mform->setDefault('gamemode', constants::GAMEMODE_CAMPAIGN);
         $mform->addHelpButton('gamemode', 'gamemode', 'mod_playerpuzzle');
 
         $this->standard_intro_elements();
@@ -77,7 +79,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('maxlevels', PARAM_INT);
         $mform->setDefault('maxlevels', 1);
         $mform->addHelpButton('maxlevels', 'maxlevels', 'mod_playerpuzzle');
-        $mform->hideIf('maxlevels', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
+        $mform->hideIf('maxlevels', 'gamemode', 'eq', constants::GAMEMODE_SINGLE);
 
         $singlematchoptions = [0 => get_string('unlimited', 'mod_playerpuzzle')];
         for ($i = 1; $i <= 10; $i++) {
@@ -92,7 +94,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('max_single_matches', PARAM_INT);
         $mform->setDefault('max_single_matches', 0);
         $mform->addHelpButton('max_single_matches', 'max_single_matches', 'mod_playerpuzzle');
-        $mform->hideIf('max_single_matches', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+        $mform->hideIf('max_single_matches', 'gamemode', 'eq', constants::GAMEMODE_CAMPAIGN);
 
         $cooldowngroup = [];
         $cooldowngroup[] = $mform->createElement('text', 'cooldown_amount', '', ['size' => 5]);
@@ -117,7 +119,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('cooldown_unit', PARAM_ALPHA);
         $mform->setDefault('cooldown_amount', 0);
         $mform->setDefault('cooldown_unit', 'minutes');
-        $mform->hideIf('cooldowngroup', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+        $mform->hideIf('cooldowngroup', 'gamemode', 'eq', constants::GAMEMODE_CAMPAIGN);
 
         $bossoptions = [
             'slime.png'  => get_string('bossavatar_slime', 'mod_playerpuzzle'),
@@ -172,7 +174,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('maxattempts', PARAM_INT);
         $mform->setDefault('maxattempts', 0);
         $mform->addHelpButton('maxattempts', 'maxattempts', 'mod_playerpuzzle');
-        $mform->hideIf('maxattempts', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_SINGLE);
+        $mform->hideIf('maxattempts', 'gamemode', 'eq', constants::GAMEMODE_SINGLE);
 
         $mform->addElement('advcheckbox', 'show_ranking', get_string('show_ranking', 'mod_playerpuzzle'));
         $mform->setType('show_ranking', PARAM_INT);
@@ -199,9 +201,9 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             playerpuzzle_get_grademethod_options()
         );
         $mform->setType('grademethod', PARAM_INT);
-        $mform->setDefault('grademethod', PLAYERPUZZLE_GRADE_HIGHEST);
+        $mform->setDefault('grademethod', constants::GRADE_HIGHEST);
         $mform->addHelpButton('grademethod', 'grademethod', 'mod_playerpuzzle');
-        $mform->hideIf('grademethod', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
+        $mform->hideIf('grademethod', 'gamemode', 'eq', constants::GAMEMODE_CAMPAIGN);
         $mform->hideIf('grademethod', 'grade[modgrade_type]', 'eq', 'none');
 
         $this->standard_coursemodule_elements();
@@ -332,7 +334,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             }
         }
 
-        $issingle = ($data['gamemode'] ?? PLAYERPUZZLE_GAMEMODE_CAMPAIGN) === PLAYERPUZZLE_GAMEMODE_SINGLE;
+        $issingle = ($data['gamemode'] ?? constants::GAMEMODE_CAMPAIGN) === constants::GAMEMODE_SINGLE;
         $nonnegative = ['coingain', $issingle ? 'max_single_matches' : 'maxattempts'];
         foreach ($nonnegative as $field) {
             if (isset($data[$field]) && (int) $data[$field] < 0) {

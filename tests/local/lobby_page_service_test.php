@@ -349,7 +349,7 @@ final class lobby_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_build_page_data_no_progress_in_single_match_mode(): void {
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
 
         \mod_playerpuzzle\local\engine\security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
 
@@ -371,7 +371,7 @@ final class lobby_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_build_page_data_no_progress_without_inprogress_attempt(): void {
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         $data = lobby_page_service::build_page_data(
             $cm,
@@ -425,7 +425,7 @@ final class lobby_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_build_page_data_ignores_an_inprogress_demo_attempt(): void {
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         \mod_playerpuzzle\local\engine\security::generate_attempt_token(
             (int) $instance->id,
@@ -460,7 +460,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         global $DB;
 
         [$cm, $instance] = $this->make_cm_and_instance([
-            'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'gamemode' => constants::GAMEMODE_CAMPAIGN,
             'maxlevels' => 10,
         ]);
 
@@ -500,7 +500,7 @@ final class lobby_page_service_test extends \advanced_testcase {
     public function test_build_page_data_no_resume_position_after_winning(): void {
         global $DB;
 
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         $won = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
             (int) $instance->id,
@@ -536,7 +536,7 @@ final class lobby_page_service_test extends \advanced_testcase {
     public function test_build_page_data_shows_most_recent_inprogress_attempt(): void {
         global $DB;
 
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         $oldtoken = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
             (int) $instance->id,
@@ -612,7 +612,7 @@ final class lobby_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_build_page_data_offers_difficulty_choices(): void {
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         $data = lobby_page_service::build_page_data(
             $cm,
@@ -627,7 +627,7 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $checked = array_values(array_filter($data['difficultychoices'], fn($c) => $c['checked']));
         $this->assertCount(1, $checked);
-        $this->assertSame(PLAYERPUZZLE_DIFFICULTY_NORMAL, $checked[0]['value']);
+        $this->assertSame(constants::DIFFICULTY_NORMAL, $checked[0]['value']);
 
         // The help text is a standard Moodle help icon (rendered HTML), not a permanently
         // visible paragraph — regression check for the icon actually being wired up, and
@@ -650,7 +650,7 @@ final class lobby_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_build_page_data_offers_difficulty_readout_alongside_the_picker(): void {
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         $data = lobby_page_service::build_page_data(
             $cm,
@@ -676,7 +676,7 @@ final class lobby_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_build_page_data_shows_current_difficulty_while_attempt_in_progress(): void {
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         \mod_playerpuzzle\local\engine\security::generate_attempt_token(
             (int) $instance->id,
@@ -712,7 +712,7 @@ final class lobby_page_service_test extends \advanced_testcase {
     public function test_build_page_data_falls_back_to_normal_for_invalid_stored_difficulty(): void {
         global $DB;
 
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN]);
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
             (int) $instance->id,

@@ -22,85 +22,36 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/**
- * Campaign game mode: levels/phases progression with server-scaled HP.
- */
-define('PLAYERPUZZLE_GAMEMODE_CAMPAIGN', 'campaign');
-
-/**
- * Single-match game mode: one self-contained, repeatable match.
- */
-define('PLAYERPUZZLE_GAMEMODE_SINGLE', 'single');
-
-/**
- * Grade method: highest score among all matches.
- */
-define('PLAYERPUZZLE_GRADE_HIGHEST', 1);
-
-/**
- * Grade method: average of the matches actually played.
- */
-define('PLAYERPUZZLE_GRADE_AVERAGE', 2);
-
-/**
- * Grade method: score of the first match only.
- */
-define('PLAYERPUZZLE_GRADE_FIRST', 3);
-
-/**
- * Grade method: score of the most recent match only.
- */
-define('PLAYERPUZZLE_GRADE_LAST', 4);
-
-/**
- * Grade method: sum of match scores divided by max_single_matches, so an unplayed match
- * counts as zero. Requires max_single_matches to not be unlimited.
- */
-define('PLAYERPUZZLE_GRADE_AVERAGE_ALL', 5);
-
-/**
- * Difficulty: halves the boss HP/damage and the coin reward.
- */
-define('PLAYERPUZZLE_DIFFICULTY_EASY', 'easy');
-
-/**
- * Difficulty: the configured boss HP/damage and coin reward, unchanged.
- */
-define('PLAYERPUZZLE_DIFFICULTY_NORMAL', 'normal');
-
-/**
- * Difficulty: doubles the boss HP/damage and triples the coin reward.
- */
-define('PLAYERPUZZLE_DIFFICULTY_HARD', 'hard');
+use mod_playerpuzzle\local\constants;
 
 /**
  * Returns the available grading method options for Single-match mode, keyed by their
- * PLAYERPUZZLE_GRADE_* constant. Mirrors mod_playerwords/mod_playercross so the same
+ * constants::GRADE_* constant. Mirrors mod_playerwords/mod_playercross so the same
  * mental model applies across the Player ecosystem.
  *
  * @return array<int, string>
  */
 function playerpuzzle_get_grademethod_options(): array {
     return [
-        PLAYERPUZZLE_GRADE_HIGHEST     => get_string('grademethod_highest', 'mod_playerpuzzle'),
-        PLAYERPUZZLE_GRADE_AVERAGE     => get_string('grademethod_average', 'mod_playerpuzzle'),
-        PLAYERPUZZLE_GRADE_FIRST       => get_string('grademethod_first', 'mod_playerpuzzle'),
-        PLAYERPUZZLE_GRADE_LAST        => get_string('grademethod_last', 'mod_playerpuzzle'),
-        PLAYERPUZZLE_GRADE_AVERAGE_ALL => get_string('grademethod_average_all', 'mod_playerpuzzle'),
+        constants::GRADE_HIGHEST     => get_string('grademethod_highest', 'mod_playerpuzzle'),
+        constants::GRADE_AVERAGE     => get_string('grademethod_average', 'mod_playerpuzzle'),
+        constants::GRADE_FIRST       => get_string('grademethod_first', 'mod_playerpuzzle'),
+        constants::GRADE_LAST        => get_string('grademethod_last', 'mod_playerpuzzle'),
+        constants::GRADE_AVERAGE_ALL => get_string('grademethod_average_all', 'mod_playerpuzzle'),
     ];
 }
 
 /**
  * Returns the difficulty options the student can pick in the Lobby, keyed by their
- * PLAYERPUZZLE_DIFFICULTY_* string constant, valued by the localised label.
+ * constants::DIFFICULTY_* string constant, valued by the localised label.
  *
  * @return array
  */
 function playerpuzzle_get_difficulty_options(): array {
     return [
-        PLAYERPUZZLE_DIFFICULTY_EASY   => get_string('difficulty_easy', 'mod_playerpuzzle'),
-        PLAYERPUZZLE_DIFFICULTY_NORMAL => get_string('difficulty_normal', 'mod_playerpuzzle'),
-        PLAYERPUZZLE_DIFFICULTY_HARD   => get_string('difficulty_hard', 'mod_playerpuzzle'),
+        constants::DIFFICULTY_EASY   => get_string('difficulty_easy', 'mod_playerpuzzle'),
+        constants::DIFFICULTY_NORMAL => get_string('difficulty_normal', 'mod_playerpuzzle'),
+        constants::DIFFICULTY_HARD   => get_string('difficulty_hard', 'mod_playerpuzzle'),
     ];
 }
 

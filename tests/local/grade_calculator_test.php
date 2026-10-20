@@ -47,8 +47,8 @@ final class grade_calculator_test extends \basic_testcase {
      */
     private function make_instance(array $overrides = []): \stdClass {
         return (object) array_merge([
-            'gamemode'           => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
-            'grademethod'        => PLAYERPUZZLE_GRADE_HIGHEST,
+            'gamemode'           => constants::GAMEMODE_CAMPAIGN,
+            'grademethod'        => constants::GRADE_HIGHEST,
             'grade'              => 100,
             'minquestions'       => 3,
             'considererrors'     => 0,
@@ -254,14 +254,14 @@ final class grade_calculator_test extends \basic_testcase {
     }
 
     /**
-     * Tests PLAYERPUZZLE_GRADE_HIGHEST picks the best-scoring finished match.
+     * Tests constants::GRADE_HIGHEST picks the best-scoring finished match.
      *
      * @return void
      */
     public function test_single_match_grade_highest(): void {
         $instance = $this->make_instance([
-            'gamemode'    => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod' => PLAYERPUZZLE_GRADE_HIGHEST,
+            'gamemode'    => constants::GAMEMODE_SINGLE,
+            'grademethod' => constants::GRADE_HIGHEST,
             'grade'       => 100,
         ]);
         $attempts = [
@@ -273,14 +273,14 @@ final class grade_calculator_test extends \basic_testcase {
     }
 
     /**
-     * Tests PLAYERPUZZLE_GRADE_AVERAGE averages only the matches actually played.
+     * Tests constants::GRADE_AVERAGE averages only the matches actually played.
      *
      * @return void
      */
     public function test_single_match_grade_average(): void {
         $instance = $this->make_instance([
-            'gamemode'    => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod' => PLAYERPUZZLE_GRADE_AVERAGE,
+            'gamemode'    => constants::GAMEMODE_SINGLE,
+            'grademethod' => constants::GRADE_AVERAGE,
             'grade'       => 100,
         ]);
         $attempts = [
@@ -292,15 +292,15 @@ final class grade_calculator_test extends \basic_testcase {
     }
 
     /**
-     * Tests PLAYERPUZZLE_GRADE_FIRST always uses the earliest finished match by
+     * Tests constants::GRADE_FIRST always uses the earliest finished match by
      * timefinished, regardless of array order.
      *
      * @return void
      */
     public function test_single_match_grade_first(): void {
         $instance = $this->make_instance([
-            'gamemode'    => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod' => PLAYERPUZZLE_GRADE_FIRST,
+            'gamemode'    => constants::GAMEMODE_SINGLE,
+            'grademethod' => constants::GRADE_FIRST,
             'grade'       => 100,
         ]);
         $attempts = [
@@ -312,14 +312,14 @@ final class grade_calculator_test extends \basic_testcase {
     }
 
     /**
-     * Tests PLAYERPUZZLE_GRADE_LAST always uses the most recently finished match.
+     * Tests constants::GRADE_LAST always uses the most recently finished match.
      *
      * @return void
      */
     public function test_single_match_grade_last(): void {
         $instance = $this->make_instance([
-            'gamemode'    => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod' => PLAYERPUZZLE_GRADE_LAST,
+            'gamemode'    => constants::GAMEMODE_SINGLE,
+            'grademethod' => constants::GRADE_LAST,
             'grade'       => 100,
         ]);
         $attempts = [
@@ -331,15 +331,15 @@ final class grade_calculator_test extends \basic_testcase {
     }
 
     /**
-     * Tests PLAYERPUZZLE_GRADE_AVERAGE_ALL divides by the configured max_single_matches
+     * Tests constants::GRADE_AVERAGE_ALL divides by the configured max_single_matches
      * — an unplayed match counts as zero, unlike a plain average.
      *
      * @return void
      */
     public function test_single_match_grade_average_all_with_configured_total(): void {
         $instance = $this->make_instance([
-            'gamemode'           => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod'        => PLAYERPUZZLE_GRADE_AVERAGE_ALL,
+            'gamemode'           => constants::GAMEMODE_SINGLE,
+            'grademethod'        => constants::GRADE_AVERAGE_ALL,
             'grade'              => 100,
             'max_single_matches' => 4,
         ]);
@@ -361,8 +361,8 @@ final class grade_calculator_test extends \basic_testcase {
      */
     public function test_single_match_grade_average_all_falls_back_when_unlimited(): void {
         $instance = $this->make_instance([
-            'gamemode'           => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod'        => PLAYERPUZZLE_GRADE_AVERAGE_ALL,
+            'gamemode'           => constants::GAMEMODE_SINGLE,
+            'grademethod'        => constants::GRADE_AVERAGE_ALL,
             'grade'              => 100,
             'max_single_matches' => 0,
         ]);
@@ -382,8 +382,8 @@ final class grade_calculator_test extends \basic_testcase {
      */
     public function test_single_match_grade_loss_scores_zero_even_with_considererrors(): void {
         $instance = $this->make_instance([
-            'gamemode'       => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod'    => PLAYERPUZZLE_GRADE_HIGHEST,
+            'gamemode'       => constants::GAMEMODE_SINGLE,
+            'grademethod'    => constants::GRADE_HIGHEST,
             'grade'          => 100,
             'considererrors' => 1,
             'minquestions'   => 3,
@@ -402,8 +402,8 @@ final class grade_calculator_test extends \basic_testcase {
      */
     public function test_single_match_grade_win_weighted_by_accuracy_with_considererrors(): void {
         $instance = $this->make_instance([
-            'gamemode'       => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod'    => PLAYERPUZZLE_GRADE_HIGHEST,
+            'gamemode'       => constants::GAMEMODE_SINGLE,
+            'grademethod'    => constants::GRADE_HIGHEST,
             'grade'          => 100,
             'considererrors' => 1,
             'minquestions'   => 3,
@@ -423,8 +423,8 @@ final class grade_calculator_test extends \basic_testcase {
      */
     public function test_single_match_grade_ignores_inprogress_attempts(): void {
         $instance = $this->make_instance([
-            'gamemode'    => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod' => PLAYERPUZZLE_GRADE_HIGHEST,
+            'gamemode'    => constants::GAMEMODE_SINGLE,
+            'grademethod' => constants::GRADE_HIGHEST,
             'grade'       => 100,
         ]);
         $attempts = [
@@ -442,7 +442,7 @@ final class grade_calculator_test extends \basic_testcase {
      * @return void
      */
     public function test_single_match_grade_null_when_nothing_finished(): void {
-        $instance = $this->make_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        $instance = $this->make_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
         $attempt = $this->make_attempt(['status' => 'inprogress', 'timefinished' => 0]);
 
         $this->assertNull(grade_calculator::calculate_user_grade($instance, [$attempt]));
@@ -505,14 +505,14 @@ final class grade_calculator_test extends \basic_testcase {
      */
     public static function single_match_datesubmitted_provider(): array {
         global $CFG;
-        // Providers run before setUp(), so the PLAYERPUZZLE_GRADE_* constants are not loaded yet.
+        // Providers run before setUp(), so the constants::GRADE_* constants are not loaded yet.
         require_once($CFG->dirroot . '/mod/playerpuzzle/lib.php');
         return [
-            'highest picks the earliest of the tied winning matches' => [PLAYERPUZZLE_GRADE_HIGHEST, 2000],
-            'first picks the first match' => [PLAYERPUZZLE_GRADE_FIRST, 1000],
-            'last picks the last match' => [PLAYERPUZZLE_GRADE_LAST, 4000],
-            'average depends on every match, so the last one' => [PLAYERPUZZLE_GRADE_AVERAGE, 4000],
-            'average over all matches also uses the last one' => [PLAYERPUZZLE_GRADE_AVERAGE_ALL, 4000],
+            'highest picks the earliest of the tied winning matches' => [constants::GRADE_HIGHEST, 2000],
+            'first picks the first match' => [constants::GRADE_FIRST, 1000],
+            'last picks the last match' => [constants::GRADE_LAST, 4000],
+            'average depends on every match, so the last one' => [constants::GRADE_AVERAGE, 4000],
+            'average over all matches also uses the last one' => [constants::GRADE_AVERAGE_ALL, 4000],
         ];
     }
 
@@ -521,13 +521,13 @@ final class grade_calculator_test extends \basic_testcase {
      * An unfinished match never counts.
      *
      * @dataProvider single_match_datesubmitted_provider
-     * @param int $grademethod PLAYERPUZZLE_GRADE_* constant.
+     * @param int $grademethod constants::GRADE_* constant.
      * @param int $expected Expected submission time.
      * @return void
      */
     public function test_single_match_datesubmitted(int $grademethod, int $expected): void {
         $instance = $this->make_instance([
-            'gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'gamemode' => constants::GAMEMODE_SINGLE,
             'grademethod' => $grademethod,
             'max_single_matches' => 5,
         ]);

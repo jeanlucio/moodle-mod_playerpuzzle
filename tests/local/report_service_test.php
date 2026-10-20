@@ -521,8 +521,8 @@ final class report_service_test extends \advanced_testcase {
      */
     public function test_get_completion_rate_single_match_counts_any_finished_attempt(): void {
         global $DB;
-        $DB->set_field('playerpuzzle', 'gamemode', PLAYERPUZZLE_GAMEMODE_SINGLE, ['id' => $this->instance->id]);
-        $this->instance->gamemode = PLAYERPUZZLE_GAMEMODE_SINGLE;
+        $DB->set_field('playerpuzzle', 'gamemode', constants::GAMEMODE_SINGLE, ['id' => $this->instance->id]);
+        $this->instance->gamemode = constants::GAMEMODE_SINGLE;
 
         $played = $this->getDataGenerator()->create_user();
         $neverplayed = $this->getDataGenerator()->create_user();

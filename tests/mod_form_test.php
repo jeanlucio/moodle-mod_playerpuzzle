@@ -25,6 +25,8 @@
 
 namespace mod_playerpuzzle;
 
+use mod_playerpuzzle\local\constants;
+
 /**
  * Tests for mod_playerpuzzle_mod_form.
  *
@@ -571,19 +573,19 @@ final class mod_form_test extends \advanced_testcase {
         [$form, $data] = $this->make_form_and_data();
 
         $campaign = $form->validation(
-            array_merge($data, ['gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxattempts' => -1]),
+            array_merge($data, ['gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxattempts' => -1]),
             []
         );
         $this->assertArrayHasKey('maxattempts', $campaign);
 
         $single = $form->validation(
-            array_merge($data, ['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE, 'max_single_matches' => -1]),
+            array_merge($data, ['gamemode' => constants::GAMEMODE_SINGLE, 'max_single_matches' => -1]),
             []
         );
         $this->assertArrayHasKey('max_single_matches', $single);
 
         $hidden = $form->validation(
-            array_merge($data, ['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE, 'maxattempts' => -1]),
+            array_merge($data, ['gamemode' => constants::GAMEMODE_SINGLE, 'maxattempts' => -1]),
             []
         );
         $this->assertArrayNotHasKey('maxattempts', $hidden);

@@ -156,7 +156,7 @@ class lobby_page_service {
         }
 
         $ranking = ranking_service::get_ranking($instance, $cm, $userid);
-        $single = $instance->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE;
+        $single = $instance->gamemode === constants::GAMEMODE_SINGLE;
 
         return [
             'showranking' => true,
@@ -286,7 +286,7 @@ class lobby_page_service {
      * @return array
      */
     private static function build_progress_context(stdClass $instance, ?stdClass $attempt, int $userid): array {
-        if ($instance->gamemode !== PLAYERPUZZLE_GAMEMODE_CAMPAIGN) {
+        if ($instance->gamemode !== constants::GAMEMODE_CAMPAIGN) {
             return [];
         }
 
@@ -333,7 +333,7 @@ class lobby_page_service {
         if ($attempt !== null) {
             $current = array_key_exists($attempt->difficulty, $options)
                 ? $attempt->difficulty
-                : PLAYERPUZZLE_DIFFICULTY_NORMAL;
+                : constants::DIFFICULTY_NORMAL;
             return [
                 'difficultycurrent' => get_string(
                     'lobby_difficulty_current',
@@ -348,7 +348,7 @@ class lobby_page_service {
             $choices[] = [
                 'value'   => $value,
                 'label'   => $label,
-                'checked' => $value === PLAYERPUZZLE_DIFFICULTY_NORMAL,
+                'checked' => $value === constants::DIFFICULTY_NORMAL,
             ];
         }
 
@@ -362,7 +362,7 @@ class lobby_page_service {
             'difficultyselectedtext' => get_string(
                 'lobby_difficulty_selected',
                 'mod_playerpuzzle',
-                $options[PLAYERPUZZLE_DIFFICULTY_NORMAL]
+                $options[constants::DIFFICULTY_NORMAL]
             ),
         ];
     }

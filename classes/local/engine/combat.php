@@ -24,6 +24,8 @@
 
 namespace mod_playerpuzzle\local\engine;
 
+use mod_playerpuzzle\local\constants;
+
 /**
  * Calculates boss/student HP scaling by level and phase (Campaign mode only).
  *
@@ -131,7 +133,7 @@ class combat {
      * Returns the boss HP/damage multiplier for a difficulty. Unknown values fall back to
      * 1.0 (Normal), so a malformed stored value never crashes combat.
      *
-     * @param string $difficulty One of the PLAYERPUZZLE_DIFFICULTY_* values.
+     * @param string $difficulty One of the constants::DIFFICULTY_* values.
      * @return float
      */
     public static function difficulty_boss_factor(string $difficulty): float {
@@ -141,7 +143,7 @@ class combat {
     /**
      * Returns the coin-reward multiplier for a difficulty. Unknown values fall back to 1.0.
      *
-     * @param string $difficulty One of the PLAYERPUZZLE_DIFFICULTY_* values.
+     * @param string $difficulty One of the constants::DIFFICULTY_* values.
      * @return float
      */
     public static function difficulty_coin_factor(string $difficulty): float {
@@ -153,7 +155,7 @@ class combat {
      * boss damage), rounding to an integer.
      *
      * @param int $scaledvalue A value already returned by calculate_boss_hp().
-     * @param string $difficulty One of the PLAYERPUZZLE_DIFFICULTY_* values.
+     * @param string $difficulty One of the constants::DIFFICULTY_* values.
      * @return int
      */
     public static function apply_difficulty(int $scaledvalue, string $difficulty): int {
@@ -165,7 +167,7 @@ class combat {
      * difficulty and question type. Unknown values fall back to the Normal / multichoice
      * cell, never above it.
      *
-     * @param string $difficulty One of the PLAYERPUZZLE_DIFFICULTY_* values.
+     * @param string $difficulty One of the constants::DIFFICULTY_* values.
      * @param string $qtype 'multichoice' or 'truefalse'.
      * @return float A probability in the 0..1 range.
      */

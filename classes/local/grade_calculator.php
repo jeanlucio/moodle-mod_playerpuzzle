@@ -50,7 +50,7 @@ class grade_calculator {
             return null;
         }
 
-        if ($instance->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE) {
+        if ($instance->gamemode === constants::GAMEMODE_SINGLE) {
             return self::calculate_single_match_grade($instance, $attempts);
         }
 
@@ -72,7 +72,7 @@ class grade_calculator {
             return null;
         }
 
-        if ($instance->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE) {
+        if ($instance->gamemode === constants::GAMEMODE_SINGLE) {
             return self::single_match_datesubmitted($instance, $attempts);
         }
 
@@ -138,11 +138,11 @@ class grade_calculator {
         usort($finished, fn(stdClass $a, stdClass $b): int => $a->timefinished <=> $b->timefinished);
 
         switch ((int) $instance->grademethod) {
-            case PLAYERPUZZLE_GRADE_FIRST:
+            case constants::GRADE_FIRST:
                 return (int) $finished[0]->timefinished;
-            case PLAYERPUZZLE_GRADE_LAST:
-            case PLAYERPUZZLE_GRADE_AVERAGE:
-            case PLAYERPUZZLE_GRADE_AVERAGE_ALL:
+            case constants::GRADE_LAST:
+            case constants::GRADE_AVERAGE:
+            case constants::GRADE_AVERAGE_ALL:
                 return (int) $finished[count($finished) - 1]->timefinished;
             default:
                 $best = $finished[0];
@@ -235,10 +235,10 @@ class grade_calculator {
         );
 
         return match ((int) $instance->grademethod) {
-            PLAYERPUZZLE_GRADE_AVERAGE => array_sum($scores) / count($scores),
-            PLAYERPUZZLE_GRADE_FIRST => $scores[array_key_first($scores)],
-            PLAYERPUZZLE_GRADE_LAST => $scores[array_key_last($scores)],
-            PLAYERPUZZLE_GRADE_AVERAGE_ALL => array_sum($scores) / self::average_all_divisor($instance, $scores),
+            constants::GRADE_AVERAGE => array_sum($scores) / count($scores),
+            constants::GRADE_FIRST => $scores[array_key_first($scores)],
+            constants::GRADE_LAST => $scores[array_key_last($scores)],
+            constants::GRADE_AVERAGE_ALL => array_sum($scores) / self::average_all_divisor($instance, $scores),
             default => max($scores),
         };
     }
@@ -268,7 +268,7 @@ class grade_calculator {
     }
 
     /**
-     * Divisor for PLAYERPUZZLE_GRADE_AVERAGE_ALL: max_single_matches when configured (an
+     * Divisor for constants::GRADE_AVERAGE_ALL: max_single_matches when configured (an
      * unplayed match counts as zero), or the number of matches actually played when
      * Unlimited (0) — there is no fixed total to divide by in that case.
      *

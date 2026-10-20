@@ -74,7 +74,7 @@ class game_page_service {
     public static function check_attempt_limit(stdClass $instance, int $userid, moodle_url $returnurl): void {
         global $DB;
 
-        if ($instance->gamemode === PLAYERPUZZLE_GAMEMODE_SINGLE) {
+        if ($instance->gamemode === constants::GAMEMODE_SINGLE) {
             $limit = (int) $instance->max_single_matches;
             $errorkey = 'maxsinglematchesreached';
         } else {
@@ -189,7 +189,7 @@ class game_page_service {
     public static function check_cooldown(stdClass $instance, int $userid, moodle_url $returnurl): void {
         global $DB;
 
-        if ($instance->gamemode !== PLAYERPUZZLE_GAMEMODE_SINGLE) {
+        if ($instance->gamemode !== constants::GAMEMODE_SINGLE) {
             return;
         }
 
@@ -344,7 +344,7 @@ class game_page_service {
             // instance's own configured gamemode: it is a one-shot fight (no advance_phase),
             // exactly the flow combat.js already has for Single Match — see
             // combat.js::hasNextPhase()'s gamemode gate.
-            'gamemode'             => $isdemo ? PLAYERPUZZLE_GAMEMODE_SINGLE : $instance->gamemode,
+            'gamemode'             => $isdemo ? constants::GAMEMODE_SINGLE : $instance->gamemode,
             'difficulty'           => $difficulty,
             // The client never counts its own answered questions for the "Perguntas: X/N" HUD
             // counter or the boss-revive rule — it only ever mirrors this server-reported total,

@@ -25,6 +25,8 @@
 
 namespace mod_playerpuzzle;
 
+use mod_playerpuzzle\local\constants;
+
 /**
  * Tests for playerpuzzle_update_grades() and the recompute triggered by playerpuzzle_update_instance().
  *
@@ -94,7 +96,7 @@ final class lib_update_grades_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance([
-            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
+            'course' => $course->id, 'grade' => 100, 'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
         ]);
         $user = $this->getDataGenerator()->create_user();
 
@@ -130,7 +132,7 @@ final class lib_update_grades_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance([
-            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
+            'course' => $course->id, 'grade' => 100, 'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
         ]);
         $user = $this->getDataGenerator()->create_user();
 
@@ -157,7 +159,7 @@ final class lib_update_grades_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance([
-            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
+            'course' => $course->id, 'grade' => 100, 'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
         ]);
         $user = $this->getDataGenerator()->create_user();
 
@@ -196,7 +198,7 @@ final class lib_update_grades_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance([
-            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
+            'course' => $course->id, 'grade' => 100, 'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
         ]);
         $usera = $this->getDataGenerator()->create_user();
         $userb = $this->getDataGenerator()->create_user();
@@ -222,7 +224,7 @@ final class lib_update_grades_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance([
-            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
+            'course' => $course->id, 'grade' => 100, 'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 1,
         ]);
         $user = $this->getDataGenerator()->create_user();
         $this->make_attempt($instance->id, $user->id, [
@@ -266,15 +268,15 @@ final class lib_update_grades_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance([
-            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE,
-            'grademethod' => PLAYERPUZZLE_GRADE_HIGHEST,
+            'course' => $course->id, 'grade' => 100, 'gamemode' => constants::GAMEMODE_SINGLE,
+            'grademethod' => constants::GRADE_HIGHEST,
         ]);
         $user = $this->getDataGenerator()->create_user();
         $this->make_attempt($instance->id, $user->id, ['status' => 'lost', 'timefinished' => 1700000000]);
         $this->make_attempt($instance->id, $user->id, ['status' => 'won', 'timefinished' => 1700003600]);
         playerpuzzle_update_grades($instance, $user->id);
 
-        $this->save_settings($instance, ['grademethod' => PLAYERPUZZLE_GRADE_FIRST]);
+        $this->save_settings($instance, ['grademethod' => constants::GRADE_FIRST]);
 
         $grade = $this->fetch_grade_item($instance)->get_grade($user->id, false);
         $this->assertEqualsWithDelta(0.0, (float) $grade->finalgrade, 0.001);
@@ -291,7 +293,7 @@ final class lib_update_grades_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance([
-            'course' => $course->id, 'grade' => 100, 'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN, 'maxlevels' => 2,
+            'course' => $course->id, 'grade' => 100, 'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 2,
         ]);
         $user = $this->getDataGenerator()->create_user();
         // Every phase of level 1 won: 10 of 20 phases.

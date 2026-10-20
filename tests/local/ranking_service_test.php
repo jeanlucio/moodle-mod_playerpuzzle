@@ -56,7 +56,7 @@ final class ranking_service_test extends \advanced_testcase {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
         $instance = $generator->create_instance(array_merge([
             'course' => $this->course->id,
-            'gamemode' => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'gamemode' => constants::GAMEMODE_CAMPAIGN,
             'maxlevels' => 1,
             'minquestions' => 0,
             'considererrors' => 0,
@@ -180,7 +180,7 @@ final class ranking_service_test extends \advanced_testcase {
      */
     public function test_single_match_sums_finished_matches(): void {
         [$instance, $cm] = $this->make_instance([
-            'gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE,
+            'gamemode' => constants::GAMEMODE_SINGLE,
             'minquestions' => 1,
             'considererrors' => 1,
         ]);
@@ -202,7 +202,7 @@ final class ranking_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_single_match_ties_go_to_fewer_matches_then_less_time(): void {
-        [$instance, $cm] = $this->make_instance(['gamemode' => PLAYERPUZZLE_GAMEMODE_SINGLE]);
+        [$instance, $cm] = $this->make_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
         $slow = $this->make_student('Aaron');
         $fast = $this->make_student('Bia');
         $busy = $this->make_student('Caio');

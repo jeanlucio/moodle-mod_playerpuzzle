@@ -29,6 +29,7 @@ use context_course;
 use context_module;
 use core_external\external_api;
 use mod_playerpuzzle\local\attempt_consumables;
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
 use mod_playerpuzzle\local\move_log;
@@ -71,7 +72,7 @@ final class advance_phase_test extends \advanced_testcase {
         // questions; test_minquestions_* below override it explicitly.
         $record = array_merge([
             'course'       => $this->course->id,
-            'gamemode'     => PLAYERPUZZLE_GAMEMODE_CAMPAIGN,
+            'gamemode'     => constants::GAMEMODE_CAMPAIGN,
             'maxlevels'    => 10,
             'minquestions' => 0,
         ], $overrides);

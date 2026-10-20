@@ -534,6 +534,23 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a scale is rejected as the grade type, while points and no grade are not.
+     * Both grade formulas work on a percentage of the maximum grade, so on a scale every
+     * student would get the lowest item.
+     *
+     * @return void
+     */
+    public function test_validation_rejects_a_scale_as_the_grade(): void {
+        [$form, $data] = $this->make_form_and_data();
+        // Core's own grade-to-pass check looks the scale up, so it has to exist.
+        $scale = $this->getDataGenerator()->create_scale(['scale' => 'Poor,Fair,Good']);
+
+        $this->assertArrayHasKey('grade', $form->validation(array_merge($data, ['grade' => -$scale->id]), []));
+        $this->assertArrayNotHasKey('grade', $form->validation(array_merge($data, ['grade' => 100]), []));
+        $this->assertArrayNotHasKey('grade', $form->validation(array_merge($data, ['grade' => 0]), []));
+    }
+
+    /**
      * Tests that a negative coin gain is rejected while zero stays allowed.
      *
      * @return void

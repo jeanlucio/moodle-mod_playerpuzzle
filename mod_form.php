@@ -303,6 +303,13 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             $errors['cooldowngroup'] = get_string('error_cooldown', 'mod_playerpuzzle');
         }
 
+        // The modgrade element stores a scale as the negative scale ID. Both grade formulas
+        // work out a percentage of the maximum grade, which has no meaning on a scale: every
+        // student would land on its lowest item.
+        if ((int) ($data['grade'] ?? 0) < 0) {
+            $errors['grade'] = get_string('error_gradescale', 'mod_playerpuzzle');
+        }
+
         return $errors + $this->validate_gameplay_ranges($data);
     }
 

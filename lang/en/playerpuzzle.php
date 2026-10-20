@@ -122,6 +122,7 @@ $string['error_completionattempts'] = 'Required attempts must be at least 1.';
 $string['error_completionwins'] = 'Required wins must be at least 1.';
 $string['error_cooldown'] = 'Cooldown must be 0 or a positive value.';
 $string['error_correctoptionempty'] = 'The option marked as correct cannot be empty.';
+$string['error_gradescale'] = 'Scales are not supported by this activity. Choose points or no grade.';
 $string['error_hud_cost_qty'] = 'The quantity must be at least 1 when an item is configured.';
 $string['error_nonnegative'] = 'Enter a whole number of 0 or more.';
 $string['event_game_completed'] = 'Game completed';

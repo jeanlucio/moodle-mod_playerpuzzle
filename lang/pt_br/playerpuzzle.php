@@ -122,6 +122,7 @@ $string['error_completionattempts'] = 'As tentativas exigidas devem ser no míni
 $string['error_completionwins'] = 'As vitórias exigidas devem ser no mínimo 1.';
 $string['error_cooldown'] = 'O cooldown deve ser 0 ou um valor positivo.';
 $string['error_correctoptionempty'] = 'A opção marcada como correta não pode estar vazia.';
+$string['error_gradescale'] = 'Escalas não são suportadas por esta atividade. Escolha pontos ou nenhuma nota.';
 $string['error_hud_cost_qty'] = 'A quantidade precisa ser pelo menos 1 quando um item está configurado.';
 $string['error_nonnegative'] = 'Digite um número inteiro igual ou maior que 0.';
 $string['event_game_completed'] = 'Jogo concluído';

@@ -2,14 +2,18 @@
 
 ## Source
 
-PlayerPuzzle reads questions from Moodle's own **Question Bank** (`core_question`) — the
-teacher picks an existing category in the activity's settings, and any Multiple Choice or
-True/False question in it can be served during combat. This means a teacher who already
-maintains a question bank for Quiz can point PlayerPuzzle at the same category and reuse it
-immediately, with no content migration.
+Each activity has its own question bank, filled from three sources on the *Manage questions*
+page:
 
-A second, PlayerPuzzle-owned question source (manual entry plus AI-assisted generation) is
-planned to coexist alongside the real Question Bank — see [Features](#features).
+* **Moodle's Question Bank** (`core_question`) — the teacher imports an existing category, and
+  any single-answer Multiple Choice or True/False question in it is copied into the activity.
+  A teacher who already maintains a question bank for Quiz can reuse it immediately, with no
+  content migration. Importing again refreshes the copies.
+* **Manual entry** — questions written directly in the activity.
+* **AI generation** — optional, always reviewed by the teacher before anything is saved, and
+  saved as pending until approved. See [Third-party Service Disclosure](#third-party).
+
+Only approved questions are ever drawn in a match.
 
 ## Blind JSON — the Answer Never Leaks
 

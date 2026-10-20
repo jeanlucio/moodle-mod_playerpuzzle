@@ -4,7 +4,9 @@
 
 1. Add a PlayerPuzzle activity to a course.
 2. Choose a **Game Mode** — Campaign or Single Match — see [Game Modes](#game-modes).
-3. Pick the Question Bank category the match will draw from.
+3. Open **Manage questions** to fill the activity's question bank: import a Question Bank
+   category, add questions by hand, or generate them with AI (pending questions need your
+   approval before they are drawn).
 4. Optionally set a **Minimum Questions per Match** and whether wrong answers should count
    against the grade.
 5. Optionally configure the [PlayerHUD Integration](#playerhud) items, if `block_playerhud` is

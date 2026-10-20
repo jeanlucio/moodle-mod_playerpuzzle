@@ -2,15 +2,19 @@
 
 ## Fonte
 
-O PlayerPuzzle lê as questões do próprio **Banco de Questões** do Moodle (`core_question`) — o
-professor escolhe uma categoria já existente nas configurações da atividade, e qualquer questão
-de Múltipla Escolha ou Verdadeiro/Falso nela pode ser usada durante o combate. Isso significa que
-um professor que já mantém um banco de questões pro Quiz pode apontar o PlayerPuzzle pra mesma
-categoria e reaproveitá-la na hora, sem migrar conteúdo nenhum.
+Cada atividade tem o seu próprio banco de questões, preenchido por três fontes na página
+*Gerenciar questões*:
 
-Uma segunda fonte de questões, própria do PlayerPuzzle (cadastro manual mais geração assistida
-por IA), está planejada pra coexistir ao lado do Banco de Questões real — veja
-[Funcionalidades](#features).
+* **Banco de Questões do Moodle** (`core_question`) — o professor importa uma categoria já
+  existente, e qualquer questão de Múltipla Escolha de resposta única ou de Verdadeiro/Falso nela
+  é copiada para a atividade. Um professor que já mantém um banco de questões pro Quiz reaproveita
+  na hora, sem migrar conteúdo nenhum. Importar de novo atualiza as cópias.
+* **Cadastro manual** — questões escritas direto na atividade.
+* **Geração por IA** — opcional, sempre revisada pelo professor antes de qualquer coisa ser
+  salva, e salva como pendente até ser aprovada. Veja
+  [Divulgação de Serviço de Terceiros](#third-party).
+
+Só questões aprovadas são sorteadas numa partida.
 
 ## JSON Cego — a Resposta Nunca Vaza
 

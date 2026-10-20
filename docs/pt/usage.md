@@ -4,7 +4,9 @@
 
 1. Adicione uma atividade PlayerPuzzle a um curso.
 2. Escolha um **Modo de Jogo** — Campanha ou Partida Única — veja [Modos de Jogo](#game-modes).
-3. Escolha a categoria do Banco de Questões de onde a partida vai puxar questões.
+3. Abra **Gerenciar questões** para montar o banco de questões da atividade: importe uma
+   categoria do Banco de Questões, cadastre questões à mão ou gere-as com IA (questões pendentes
+   precisam da sua aprovação antes de serem sorteadas).
 4. Opcionalmente, defina um **Mínimo de Questões por Partida** e se respostas erradas devem
    contar contra a nota.
 5. Opcionalmente, configure os itens de [Integração com o PlayerHUD](#playerhud), se o

@@ -1,16 +1,26 @@
 # 🔎 Third-party Service Disclosure
 
-**Not applicable today.** PlayerPuzzle does not currently call any external service — every
-question comes from Moodle's own Question Bank (see [Question Engine](#questions)), and no
-network request leaves the server as part of gameplay.
+PlayerPuzzle works without any external service. Gameplay never makes a network request, and the
+questions a student sees come from Moodle's own Question Bank (see
+[Question Engine](#questions)) or from the activity's own question bank.
 
-## Planned
+## Optional AI question generation
 
-A second question source — manual entry plus **optional** AI-assisted generation via the
-companion [local_aihub](https://github.com/jeanlucio/moodle-local_aihub) plugin, falling back to
-Moodle's own `core_ai` — is designed for a future phase (see [Features](#features)). When it
-ships, this section will disclose the exact providers, what data is transmitted, and any cost
-implications, following the same pattern already documented for
-[local_playergames](https://jeanlucio.github.io/moodle-local_playergames/#security) and
-[local_aihub](https://github.com/jeanlucio/moodle-local_aihub) itself. As with those plugins, AI
-generation will be entirely opt-in and will never include student data in a prompt.
+The only feature that reaches an external service is the **optional** AI question generator on
+the *Manage questions* page. It is available only to users who hold the
+`mod/playerpuzzle:managequestions` capability, and only when an AI source is available.
+
+* **What is sent:** a prompt made of the topic the teacher typed, the number of questions
+  requested (at most 10), the name of the interface language, and fixed formatting instructions.
+  No student data and no course content is included.
+* **Where it goes:** through the companion
+  [local_aihub](https://github.com/jeanlucio/moodle-local_aihub) plugin when it is installed and
+  has a key configured (bring your own key), otherwise through Moodle's own `core_ai` subsystem,
+  where the course or activity "Enable AI tools" setting is honoured. The provider is therefore
+  whichever one the administrator configured in the hub or in `core_ai`, and that provider's own
+  terms and cost apply.
+* **What happens to the answer:** it is treated as untrusted input. Every question is validated
+  and shaped, a malformed entry is dropped, and what is kept is saved as *pending*
+  (`approved = 0`). A pending question is never drawn in a match until the teacher approves it.
+* **Without an AI source:** the generator is not offered, and manual entry and Question Bank
+  import keep working.

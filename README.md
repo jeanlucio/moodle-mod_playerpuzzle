@@ -33,11 +33,16 @@ coverage, and third-party service disclosure.
 
 ### 🔎 Third-party Service Disclosure
 
-Not applicable today. PlayerPuzzle does not call any external service — every question comes
-from Moodle's own Question Bank. An optional, AI-assisted second question source is planned for
-a future release, routed through the companion
-[local_aihub](https://github.com/jeanlucio/moodle-local_aihub) plugin with a `core_ai` fallback,
-never including student data in a prompt.
+PlayerPuzzle works without any external service. The only feature that reaches one is the
+**optional** AI question generator on the *Manage questions* page, available to teachers who hold
+the `mod/playerpuzzle:managequestions` capability. When a teacher uses it, the plugin sends a
+prompt made of the topic they typed, the number of questions requested, the interface language and
+fixed formatting instructions. No student data and no course content is included. The request goes
+through the companion [local_aihub](https://github.com/jeanlucio/moodle-local_aihub) plugin when it
+is installed and has a key configured, otherwise through Moodle's own `core_ai` subsystem, so the
+provider is whichever one the administrator configured there. If neither is available the
+generator is simply not offered. Generated questions are saved as pending and never reach a
+student before the teacher approves them.
 
 Full disclosure:
 [Third-party Service Disclosure](https://jeanlucio.github.io/moodle-mod_playerpuzzle/#third-party).
@@ -46,8 +51,8 @@ Full disclosure:
 
 | Component | Version |
 |-----------|---------|
-| Moodle    | 4.5 – 5.2 |
-| PHP       | 8.2+    |
+| Moodle    | 4.5 – 5.3 |
+| PHP       | 8.1+    |
 | PlayerHUD *(optional)* | v1.7.1+ |
 
 ### 🛠️ Installation & Configuration
@@ -62,8 +67,9 @@ Full disclosure:
 4. Visit **Site administration > Notifications** to complete installation.
 5. Optional: install **[block_playerhud](https://github.com/jeanlucio/moodle-block_playerhud)**
    for the optional coin/upgrade economy.
-6. Add a PlayerPuzzle activity to any course, pick a **Game Mode**, a Question Bank category, and
-   (optionally) which PlayerHUD items to use.
+6. Add a PlayerPuzzle activity to any course, pick a **Game Mode** and (optionally) which
+   PlayerHUD items to use. Then open **Manage questions** to import a Question Bank category, add
+   questions by hand or generate them with AI.
 
 ### 🆘 Support
 
@@ -103,11 +109,16 @@ pilares, a suíte de 104 testes com cobertura, e a divulgação de serviço de t
 
 ### 🔎 Divulgação de Serviço de Terceiros
 
-Não aplicável hoje. O PlayerPuzzle não chama nenhum serviço externo — toda questão vem do
-próprio Banco de Questões do Moodle. Uma segunda fonte de questões, opcional e assistida por IA,
-está planejada para uma versão futura, roteada pelo plugin companheiro
-[local_aihub](https://github.com/jeanlucio/moodle-local_aihub) com fallback pro `core_ai`, nunca
-incluindo dados de estudante num prompt.
+O PlayerPuzzle funciona sem nenhum serviço externo. O único recurso que chega a um é o gerador
+de questões por IA, **opcional**, na página *Gerenciar questões*, disponível a quem tem a
+capability `mod/playerpuzzle:managequestions`. Quando o professor o usa, o plugin envia um prompt
+composto pelo tema digitado, pela quantidade de questões pedida, pelo idioma da interface e por
+instruções fixas de formato. Nenhum dado de estudante nem conteúdo do curso é incluído. O pedido
+passa pelo plugin companheiro [local_aihub](https://github.com/jeanlucio/moodle-local_aihub)
+quando ele está instalado e tem uma chave configurada, e senão pelo subsistema `core_ai` do próprio
+Moodle, de modo que o provedor é o que o administrador configurou ali. Se nenhum dos dois estiver
+disponível, o gerador simplesmente não é oferecido. As questões geradas ficam pendentes e nunca
+chegam a um estudante antes de o professor aprová-las.
 
 Divulgação completa:
 [Divulgação de Serviço de Terceiros](https://jeanlucio.github.io/moodle-mod_playerpuzzle/pt.html#third-party).
@@ -116,8 +127,8 @@ Divulgação completa:
 
 | Componente | Versão |
 |------------|--------|
-| Moodle     | 4.5 – 5.2 |
-| PHP        | 8.2+   |
+| Moodle     | 4.5 – 5.3 |
+| PHP        | 8.1+   |
 | PlayerHUD *(opcional)* | v1.7.1+ |
 
 ### 🛠️ Instalação e Configuração
@@ -132,8 +143,9 @@ Divulgação completa:
 4. Acesse **Administração do site > Notificações** para concluir a instalação.
 5. Opcional: instale o **[block_playerhud](https://github.com/jeanlucio/moodle-block_playerhud)**
    pra economia opcional de moedas/upgrades.
-6. Adicione uma atividade PlayerPuzzle a qualquer curso, escolha um **Modo de Jogo**, uma
-   categoria do Banco de Questões, e (opcionalmente) quais itens do PlayerHUD usar.
+6. Adicione uma atividade PlayerPuzzle a qualquer curso, escolha um **Modo de Jogo** e
+   (opcionalmente) quais itens do PlayerHUD usar. Depois abra **Gerenciar questões** para importar
+   uma categoria do Banco de Questões, cadastrar questões à mão ou gerá-las com IA.
 
 ### 🆘 Suporte
 

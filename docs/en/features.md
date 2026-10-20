@@ -1,79 +1,90 @@
 # ✨ Features
 
-## ✅ Implemented
+## ⚔️ Gameplay
 
-* ⚔️ **Match-3 Turn-Based Combat:** An 8×8 board (Phaser 3) where the student swaps pieces to
-  attack a boss. Combining Question Orb pieces charges a question challenge; a correct answer
-  deals extra damage. See [How Combat Works](#combat).
-* 🔄 **Symmetric Boss AI:** All seven pieces resolve exactly the same way on the boss's own turn
-  as they do on the student's — the boss deals damage, stacks a critical-hit multiplier, poisons
-  the student, shields itself, heals, and banks its own gold to compensate the student's final
-  balance, instead of most pieces being inert whenever the AI happens to match them.
-* 🎮 **Two Game Modes:** **Campaign** (a continuous run through up to 10 levels × 10 phases each,
-  where winning never costs a new attempt — only losing does) and **Single Match** (a self-
-  contained round reusing the `grademethod` pattern from the PlayerGames ecosystem). See
+* **Match-3 turn-based combat:** an 8×8 board (Phaser) where the student swaps pieces to attack a
+  boss. Seven piece types, each with its own effect — see [How Combat Works](#combat).
+* **Symmetric boss AI:** every piece resolves exactly the same way on the boss's turn as on the
+  student's — the boss deals damage, stacks a critical-hit multiplier, poisons, shields itself,
+  heals and banks its own gold.
+* **Question challenges:** filling the Mana Orb meter opens a question; a correct answer is a
+  critical hit, a wrong one costs HP. See [Question Engine](#questions).
+* **Two game modes:** **Campaign** (up to 10 levels × 10 phases, where winning never costs an
+  attempt) and **Single Match** (a self-contained, repeatable round). See
   [Game Modes](#game-modes).
-* 📈 **Linear HP Scaling:** Boss and student HP scale with the current level/phase using a fixed
-  formula (`base × (1 + rate × (level−1) + rate × (phase−1))`), computed once server-side and
-  never recalculated in the client.
-* 🔄 **Campaign Resume:** Closing the browser mid-campaign and coming back resumes the same
-  level/phase instead of restarting at Level 1 — the server rotates the anti-replay token and
-  preserves progress transparently.
-* 🎯 **Real Question Bank Integration:** Questions are pulled from Moodle's own Question Bank
-  (`core_question`), reusing categories the teacher already has in the course — see
-  [Question Engine](#questions).
-* 🛡️ **Three-Pillar Anti-Cheat:** Blind JSON (the correct answer never reaches the client until
-  the server validates it), server-side damage clamping against the phase-scaled boss HP, and
-  single-use anti-replay tokens rotated on every state-changing call.
-* 🗨️ **Accessible Question Modal:** The question challenge renders as a native HTML `<dialog>` —
-  focus trapping, ESC handling and centering all come from the browser itself, with focus
-  saved and restored to whatever triggered it.
-* 📊 **HUD Progress Indicator:** "Level X — Phase Y of 10" shown during Campaign combat.
-* 💰 **PlayerHUD Economy Integration:** Fully optional. When
-  [block_playerhud](#ecosystem) is present in the course, the teacher picks which of the block's
-  own items represent coins, sword level and shield level — winning a match credits coins, and a
-  configurable item can be granted on every victory (with XP suppressed once the attempt limit is
-  set to unlimited, to prevent farming). Without PlayerHUD, the plugin still works standalone with
-  no permanent progression.
-* 🏛️ **Lobby:** Shows the student's PlayerHUD balance (only the items the teacher configured),
-  current Campaign progress, and the configured minimum-questions notice before the match starts.
-* 🔐 **Privacy (GDPR):** Complete Privacy Provider — metadata declaration, export and deletion of
-  all stored personal data.
-* 🧪 **Automated Tests:** 104-case PHPUnit suite, green across the CI matrix (Moodle 4.5 → 5.2) —
-  see the [Automated Tests](#testing) section.
+* **Three difficulties,** chosen by the student, that never change the grade: Easy, Normal and
+  Hard scale the boss, the coin reward and how often the boss answers correctly.
+* **Minimum questions per match:** the boss revives at half HP if it falls before the student has
+  answered the required number of questions.
+* **Resume anywhere:** the board and the fight are saved while playing, so closing the tab or
+  reloading picks the fight up where it was.
+* **Demo match:** a guided practice fight, always available from the Lobby, that never counts for
+  grade, coins or attempts.
+* **Review after the match:** every question answered, with the student's answer and the correct
+  one.
 
-## ⏳ In Development / Planned
+## 🏛️ Lobby and economy
 
-* 🧮 **PlayerHUD Combat Multiplier:** `hud_service::get_upgrade_level()` already reads the
-  student's sword/shield level, but `combat.js` does not yet apply it as a damage/defense
-  multiplier during a match.
-* 🎬 **Post-Match Debrief:** A non-automatic review screen after winning a phase — every question
-  answered, correct vs. chosen, damage dealt, coins earned — with "Play Next Phase" / "Exit"
-  buttons. The `advance_phase` endpoint that powers the "next phase" transition already exists;
-  the screen itself does not yet.
-* 🛍️ **In-Combat Consumables:** Shield, Quick Magic, Hint and Potion, purchasable mid-match with a
-  session-local coin balance (Potion will also be consumable from a permanent PlayerHUD stock).
-* ❤️‍🩹 **Boss Revive / Minimum Questions Enforcement:** The "minimum questions per match" setting
-  already exists in the activity form and shows a notice in the Lobby, but the actual gameplay
-  rule (reviving the boss at 50% HP if the minimum hasn't been reached yet) is not wired up yet.
-* 🎓 **Gradebook Integration:** `grade_item_update()`/`update_grades()`, scaled by the configured
-  Maximum Grade — the two grading formulas (progress-based for Campaign, `grademethod`-based for
-  Single Match) are designed but not yet pushed to the Moodle gradebook.
-* ✅ **Custom Completion Rules:** `FEATURE_COMPLETION_HAS_RULES` is currently declared `false`
-  (honestly, rather than advertising a broken feature) until the real implementation lands.
-* 💾 **Backup & Restore:** `FEATURE_BACKUP_MOODLE2` is currently `false` for the same reason.
-* 📋 **Teacher Report:** A dedicated report page summarizing class performance.
-* ♿ **Full Accessibility Layer:** A parallel, always-present HTML layer (a visually-hidden
-  `<table role="grid">` mirroring the board, `aria-live` turn-by-turn announcements, number-key
-  input `1`–`9`) for screen-reader play without touching the Canvas. The question dialog already
-  follows this design; the rest of the combat loop does not yet.
-* 📚 **Own Question Bank + AI Generation:** A second, PlayerPuzzle-owned question source
-  (manual entry or AI-assisted generation via `local_aihub`), coexisting with the real Question
-  Bank rather than replacing it.
-* 🏆 **Ranking:** A separate leaderboard (not tied to the configured grade), with its own
-  aggregation per game mode.
-* 🥊 **Dispute Mode (V2):** A future head-to-head mode — architecture not finalized yet.
+* **Lobby as a home screen:** progress, difficulty, the minimum-questions notice and **Play**, with
+  buttons for the **Shop**, the **Ranking** and **Settings**.
+* **PuzzleCoin:** the plugin's own persistent currency, earned by winning phases and matches.
+* **Loadout shop:** before a match, the student spends PuzzleCoin on consumables — Potion, Shield,
+  Quick Magic, Sword and Question Hint — and uses them during the fight, within a fixed limit per
+  phase. See [Combat](#combat).
+* **Optional PlayerHUD link:** with [block_playerhud](#playerhud) in the course, students can
+  transfer PlayerHUD coins into PuzzleCoin, a retry can cost a PlayerHUD item, and a victory can
+  award one. Without it, everything above still works.
+* **Class ranking:** an optional leaderboard, independent of the grade, that respects separate
+  groups.
 
-<p class="page-hint">The plugin is Alpha-stage software: everything in "Implemented" above works
-today and is covered by the automated test suite; everything in "Planned" is designed (see the
-project's internal roadmap) but not yet built.</p>
+## 📚 Questions
+
+* **Three sources per activity:** import from Moodle's Question Bank, write questions by hand, or
+  generate them with AI. Multiple choice and True/False.
+* **Teacher review:** AI-generated questions are shown as a preview first and saved as pending;
+  none is ever drawn in a match before it is approved. Bulk approve and delete.
+* **Hints:** an optional hint per question, usable through the Hint consumable.
+
+## 📊 Grading and teacher tools
+
+* **Gradebook:** a real grade item, scaled by the configured Maximum Grade (points, or no grade),
+  with a pass grade and an optional "consider errors" variant. See [Game Modes](#game-modes).
+* **Custom completion:** require a number of attempts and/or wins.
+* **Teacher report:** per-student progress, average boss damage and accuracy, the most missed
+  questions, the score distribution and the completion rate, respecting separate groups.
+* **Backup and restore,** including duplicating the activity, with attempts, the loadout stock and
+  logs carried across.
+
+## 🛡️ Integrity
+
+* **Blind JSON:** the correct answer never reaches the browser before the server judges it.
+* **Server replay:** the server re-plays the student's logged moves from a seed it issued and
+  works out the real outcome, instead of trusting what the client reports.
+* **Single-use tokens and atomic locks** against replayed or parallel requests.
+
+See [Security & Anti-Cheat](#security).
+
+## ♿ Accessibility
+
+A parallel, always-present HTML layer for the board (a hidden grid with arrow-key navigation,
+number-key moves, and `aria-live` turn announcements), a native `<dialog>` for questions, and an
+optional spoken narration. See [Accessibility](#accessibility).
+
+## 🔐 Privacy and quality
+
+* **Privacy provider:** metadata, export and deletion for every table that holds personal data,
+  plus the sound and narration preferences.
+* **Automated tests:** PHPUnit, headless JavaScript unit tests and Behat, green across the CI
+  matrix (Moodle 4.5 → 5.3). See [Automated Tests](#testing).
+
+## ⏳ Not in this release
+
+* 🥊 **Dispute Mode (V2):** a head-to-head mode on a shared board. It depends on a real-time
+  transport that is not available yet, so it is designed but not built.
+* ⏱️ **Time limit per match:** removed from the form because nothing enforced it. If it comes
+  back, it will be designed to be checked on the server.
+* 💲 **Shop prices that mirror a PlayerHUD trade:** prices are fixed today (see
+  [Combat](#combat)); following a trade configured in PlayerHUD is a possible future step.
+
+<p class="page-hint">The plugin has not been published on the Moodle Plugin Directory yet.
+Everything listed above works today and is covered by the automated test suite.</p>

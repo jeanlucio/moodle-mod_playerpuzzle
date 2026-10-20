@@ -1,86 +1,94 @@
 # ✨ Funcionalidades
 
-## ✅ Implementado
+## ⚔️ Jogabilidade
 
-* ⚔️ **Combate por Turnos em Match-3:** Um tabuleiro 8×8 (Phaser 3) onde o estudante troca peças
-  para atacar um chefe. Combinar peças de Orbe de Interrogação carrega um desafio de pergunta;
-  uma resposta correta causa dano extra. Veja [Como o Combate Funciona](#combat).
-* 🔄 **IA do Chefe Simétrica:** as sete peças resolvem exatamente do mesmo jeito no turno do
-  chefe que no turno do estudante — o chefe causa dano, acumula multiplicador de crítico,
-  envenena o estudante, se protege, se cura e acumula sua própria moeda pra compensar o saldo
-  final do estudante, em vez da maioria das peças ficar inerte quando a IA as combina.
-* 🎮 **Dois Modos de Jogo:** **Campanha** (uma jornada contínua por até 10 níveis × 10 fases
-  cada, onde vencer nunca consome uma nova tentativa — só perder consome) e **Partida Única**
-  (uma rodada autocontida reaproveitando o padrão `grademethod` do ecossistema PlayerGames). Veja
+* **Combate Match-3 por turnos:** um tabuleiro 8×8 (Phaser) onde o estudante troca peças para
+  atacar um chefe. Sete tipos de peça, cada uma com seu efeito — veja
+  [Como o Combate Funciona](#combat).
+* **IA do chefe simétrica:** toda peça resolve exatamente do mesmo jeito no turno do chefe e no do
+  estudante — o chefe causa dano, acumula multiplicador de crítico, envenena, se protege, se cura e
+  acumula a própria moeda.
+* **Desafios de pergunta:** encher a barra do Orbe de Mana abre uma pergunta; acertar é um ataque
+  crítico, errar custa HP. Veja [Motor de Questões](#questions).
+* **Dois modos de jogo:** **Campanha** (até 10 níveis × 10 fases, onde vencer nunca gasta uma
+  tentativa) e **Partida Única** (uma rodada autocontida e repetível). Veja
   [Modos de Jogo](#game-modes).
-* 📈 **Escala Linear de HP:** o HP do chefe e do estudante escalam com o nível/fase atual usando
-  uma fórmula linear fixa (`base × (1 + taxa × (nível−1) + taxa × (fase−1))`), calculada uma vez
-  no servidor e nunca recalculada no cliente.
-* 🔄 **Retomada de Campanha:** fechar o navegador no meio de uma campanha e voltar retoma
-  exatamente o nível/fase em que o estudante estava — o servidor rotaciona o token anti-replay e
-  preserva o progresso de forma transparente.
-* 🎯 **Integração com o Banco de Questões Real:** as questões vêm do próprio Banco de Questões do
-  Moodle (`core_question`), reaproveitando categorias que o professor já tem no curso — veja
-  [Motor de Questões](#questions).
-* 🛡️ **Anti-Trapaça em Três Pilares:** JSON Cego (a resposta correta nunca chega ao cliente antes
-  do servidor validar), clamp de dano no servidor contra o HP do chefe escalado pela fase, e
-  tokens anti-replay de uso único, rotacionados a cada chamada que altera estado.
-* 🗨️ **Modal de Pergunta Acessível:** o desafio de pergunta é renderizado como um `<dialog>` HTML
-  nativo — captura de foco, tratamento de ESC e centralização vêm todos do próprio navegador,
-  com o foco salvo e restaurado pro elemento que abriu o modal.
-* 📊 **Indicador de Progresso no HUD:** "Nível X — Fase Y de 10" exibido durante o combate da
-  Campanha.
-* 💰 **Integração de Economia com o PlayerHUD:** totalmente opcional. Quando o
-  [block_playerhud](#ecosystem) está presente no curso, o professor escolhe quais itens do
-  próprio bloco representam moedas, nível de espada e nível de escudo — vencer uma partida
-  credita moedas, e um item configurável pode ser concedido a cada vitória (com o XP suprimido
-  quando o limite de tentativas está ilimitado, pra evitar farming). Sem o PlayerHUD, o plugin
-  continua funcionando sozinho, sem nenhuma progressão permanente.
-* 🏛️ **Lobby:** mostra o saldo do estudante no PlayerHUD (só os itens que o professor
-  configurou), o progresso atual da Campanha, e o aviso configurado de mínimo de questões antes
-  da partida começar.
-* 🔐 **Privacidade (LGPD/GDPR):** Privacy Provider completo — declaração de metadados,
-  exportação e exclusão de todos os dados pessoais armazenados.
-* 🧪 **Testes Automatizados:** suíte PHPUnit com 104 casos, verde em toda a matriz de CI — veja a
-  seção [Testes Automatizados](#testing).
+* **Três dificuldades,** escolhidas pelo estudante, que nunca mudam a nota: Fácil, Normal e Difícil
+  escalam o chefe, a recompensa em moedas e a frequência com que o chefe acerta a pergunta.
+* **Mínimo de questões por partida:** o chefe revive com metade do HP se cair antes de o estudante
+  ter respondido o número exigido de perguntas.
+* **Retome de onde parou:** o tabuleiro e a luta são salvos durante o jogo, então fechar a aba ou
+  recarregar a página retoma a luta de onde estava.
+* **Partida Demo:** uma luta de prática guiada, sempre disponível no Lobby, que nunca conta para
+  nota, moedas ou tentativas.
+* **Revisão após a partida:** cada pergunta respondida, com a resposta do estudante e a correta.
 
-## ⏳ Em Desenvolvimento / Planejado
+## 🏛️ Lobby e economia
 
-* 🧮 **Multiplicador de Combate do PlayerHUD:** `hud_service::get_upgrade_level()` já lê o nível
-  de espada/escudo do estudante, mas o `combat.js` ainda não aplica isso como multiplicador de
-  dano/defesa durante a partida.
-* 🎬 **Debrief Pós-Partida:** uma tela de revisão não-automática ao vencer uma fase — todas as
-  perguntas respondidas, certo vs. escolhido, dano causado, moedas ganhas — com botões "Jogar
-  Próxima Fase" / "Sair". O endpoint `advance_phase` que alimenta a transição de "próxima fase"
-  já existe; a tela em si ainda não.
-* 🛍️ **Consumíveis Durante o Combate:** Escudo, Magia Rápida, Dica e Poção, compráveis no meio da
-  partida com um saldo de moedas local à sessão (a Poção também poderá ser consumida de um
-  estoque permanente do PlayerHUD).
-* ❤️‍🩹 **Revive do Chefe / Aplicação do Mínimo de Questões:** a configuração de "mínimo de
-  questões por partida" já existe no formulário da atividade e mostra um aviso no Lobby, mas a
-  regra de jogo em si (reviver o chefe com metade do HP se o mínimo ainda não foi atingido) ainda
-  não está implementada.
-* 🎓 **Integração com o Livro de Notas:** `grade_item_update()`/`update_grades()`, escaladas pela
-  Nota Máxima configurada — as duas fórmulas de nota (baseada em progresso pra Campanha,
-  baseada em `grademethod` pra Partida Única) já estão desenhadas, mas ainda não são enviadas
-  pro livro de notas do Moodle.
-* ✅ **Regras de Conclusão Customizadas:** `FEATURE_COMPLETION_HAS_RULES` hoje é declarada
-  `false` (honestamente, em vez de anunciar uma funcionalidade quebrada) até a implementação
-  real existir.
-* 💾 **Backup e Restauração:** `FEATURE_BACKUP_MOODLE2` hoje é `false` pelo mesmo motivo.
-* 📋 **Relatório do Professor:** uma página de relatório dedicada resumindo o desempenho da
-  turma.
-* ♿ **Camada Completa de Acessibilidade:** uma camada HTML paralela, sempre presente (uma
-  `<table role="grid">` visualmente oculta espelhando o tabuleiro, anúncios `aria-live` jogada a
-  jogada, entrada por teclas numéricas `1`–`9`) pra jogar via leitor de tela sem tocar no
-  Canvas. O modal de pergunta já segue esse desenho; o resto do loop de combate ainda não.
-* 📚 **Banco de Questões Próprio + Geração com IA:** uma segunda fonte de questões, própria do
-  PlayerPuzzle (cadastro manual ou geração assistida por IA via `local_aihub`), coexistindo com
-  o Banco de Questões real em vez de substituí-lo.
-* 🏆 **Ranking:** um placar separado (não vinculado à nota configurada), com agregação própria
-  por modo de jogo.
-* 🥊 **Modo Disputa (V2):** um futuro modo de confronto direto — arquitetura ainda não fechada.
+* **Lobby como tela inicial:** progresso, dificuldade, o aviso de mínimo de questões e **Jogar**,
+  com botões para a **Loja**, o **Ranking** e as **Configurações**.
+* **PuzzleCoin:** a moeda persistente do próprio plugin, ganha ao vencer fases e partidas.
+* **Loja de loadout:** antes da partida, o estudante gasta PuzzleCoin em consumíveis — Poção,
+  Escudo, Magia Rápida, Espada e Dica da Questão — e os usa durante a luta, dentro de um limite
+  fixo por fase. Veja [Combate](#combat).
+* **Vínculo opcional com o PlayerHUD:** com o [block_playerhud](#playerhud) no curso, os
+  estudantes podem transferir moedas do PlayerHUD para PuzzleCoin, uma nova tentativa pode custar
+  um item do PlayerHUD, e uma vitória pode conceder um. Sem ele, tudo isso acima continua
+  funcionando.
+* **Ranking da turma:** um placar opcional, independente da nota, que respeita grupos separados.
 
-<p class="page-hint">O plugin é um software em estágio Alpha: tudo em "Implementado" acima
-funciona hoje e é coberto pela suíte de testes automatizados; tudo em "Planejado" está
-desenhado (ver o roteiro interno do projeto), mas ainda não construído.</p>
+## 📚 Questões
+
+* **Três fontes por atividade:** importar do Banco de Questões do Moodle, escrever à mão ou gerar
+  com IA. Múltipla escolha e Verdadeiro/Falso.
+* **Revisão do professor:** as questões geradas por IA aparecem primeiro numa prévia e são salvas
+  como pendentes; nenhuma é sorteada numa partida antes de ser aprovada. Aprovar e excluir em lote.
+* **Dicas:** uma dica opcional por questão, usada pelo consumível Dica.
+
+## 📊 Notas e ferramentas do professor
+
+* **Livro de notas:** um item de nota de verdade, escalado pela Nota Máxima configurada (pontos, ou
+  sem nota), com nota para aprovação e uma variante opcional "considerar erros". Veja
+  [Modos de Jogo](#game-modes).
+* **Conclusão personalizada:** exija um número de tentativas e/ou vitórias.
+* **Relatório do professor:** progresso por estudante, dano médio ao chefe e taxa de acerto, as
+  questões mais erradas, a distribuição das notas e a taxa de conclusão, respeitando grupos
+  separados.
+* **Backup e restauração,** incluindo duplicar a atividade, levando junto as tentativas, o estoque
+  do loadout e os logs.
+
+## 🛡️ Integridade
+
+* **JSON Cego:** a resposta correta nunca chega ao navegador antes de o servidor julgá-la.
+* **Reprodução no servidor:** o servidor refaz as jogadas registradas pelo estudante a partir de
+  uma semente que ele mesmo emitiu e calcula o resultado real, em vez de confiar no que o cliente
+  reporta.
+* **Tokens de uso único e travas atômicas** contra requisições repetidas ou paralelas.
+
+Veja [Segurança e Anti-Trapaça](#security).
+
+## ♿ Acessibilidade
+
+Uma camada HTML paralela e sempre presente para o tabuleiro (uma grade oculta com navegação por
+setas, jogadas por teclas numéricas e anúncios `aria-live` a cada turno), um `<dialog>` nativo
+para as perguntas e uma narração falada opcional. Veja [Acessibilidade](#accessibility).
+
+## 🔐 Privacidade e qualidade
+
+* **Provedor de privacidade:** metadados, exportação e exclusão de toda tabela que guarda dado
+  pessoal, mais as preferências de som e de narração.
+* **Testes automatizados:** PHPUnit, testes unitários de JavaScript sem navegador e Behat, verdes
+  em toda a matriz de CI (Moodle 4.5 → 5.3). Veja [Testes Automatizados](#testing).
+
+## ⏳ Fora desta versão
+
+* 🥊 **Modo Disputa (V2):** um modo frente a frente num tabuleiro compartilhado. Depende de um
+  transporte em tempo real que ainda não está disponível, então está desenhado, mas não
+  construído.
+* ⏱️ **Tempo limite por partida:** removido do formulário porque nada o aplicava. Se voltar, será
+  desenhado para ser conferido no servidor.
+* 💲 **Preços da loja espelhando uma troca do PlayerHUD:** os preços são fixos hoje (veja
+  [Combate](#combat)); seguir uma troca configurada no PlayerHUD é um passo futuro possível.
+
+<p class="page-hint">O plugin ainda não foi publicado no Diretório de Plugins do Moodle. Tudo o que
+está listado acima funciona hoje e é coberto pela suíte de testes automatizados.</p>

@@ -38,6 +38,6 @@ throughout this page.
   👉 [github.com/jeanlucio/moodle-mod_playergroup](https://github.com/jeanlucio/moodle-mod_playergroup)
 
 * **AI Hub:** Shared BYOK (bring your own key) broker for AI features across the ecosystem.
-  PlayerPuzzle's planned question-generation feature will consume it as a soft dependency,
-  falling back to Moodle's own `core_ai` — see [Features](#features).
+  PlayerPuzzle's question generator uses it as a soft dependency when it is installed and has a
+  key, falling back to Moodle's own `core_ai` — see [Third-party Service Disclosure](#third-party).
   👉 [github.com/jeanlucio/moodle-local_aihub](https://github.com/jeanlucio/moodle-local_aihub)

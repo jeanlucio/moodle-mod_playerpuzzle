@@ -10,18 +10,18 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | Arquivo de teste | Casos |
 |-------------------|------:|
 | `access_test.php` | 1 |
-| `backup_restore_test.php` | 13 |
+| `backup_restore_test.php` | 14 |
 | `generator_test.php` | 1 |
-| `lib_completion_info_test.php` | 6 |
-| `lib_crud_test.php` | 8 |
-| `lib_grade_item_update_test.php` | 4 |
+| `lib_completion_info_test.php` | 7 |
+| `lib_crud_test.php` | 10 |
+| `lib_grade_item_update_test.php` | 5 |
 | `lib_pluginfile_test.php` | 5 |
 | `lib_supports_test.php` | 2 |
-| `lib_update_grades_test.php` | 4 |
-| `mod_form_test.php` | 11 |
+| `lib_update_grades_test.php` | 7 |
+| `mod_form_test.php` | 21 |
 | `phaser_loading_test.php` | 2 |
 | `uninstall_test.php` | 2 |
-| **Subtotal** | **59** |
+| **Subtotal** | **77** |
 
 ### Testes de Conclusão (`tests/completion/`)
 
@@ -34,27 +34,28 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 
 | Arquivo de teste | Casos |
 |-------------------|------:|
+| `course_module_viewed_test.php` | 2 |
 | `game_completed_test.php` | 3 |
 | `game_started_test.php` | 2 |
-| **Subtotal** | **5** |
+| **Subtotal** | **7** |
 
 ### Testes de Web Services (`tests/external/`)
 
 | Arquivo de teste | Casos |
 |-------------------|------:|
-| `advance_phase_test.php` | 26 |
-| `buy_stock_test.php` | 10 |
-| `draw_question_test.php` | 8 |
+| `advance_phase_test.php` | 28 |
+| `buy_stock_test.php` | 12 |
+| `draw_question_test.php` | 9 |
 | `generate_questions_test.php` | 2 |
 | `get_phase_questionlog_test.php` | 5 |
 | `save_combat_state_test.php` | 14 |
 | `save_generated_questions_test.php` | 4 |
-| `save_progress_test.php` | 29 |
+| `save_progress_test.php` | 31 |
 | `set_sound_preference_test.php` | 5 |
-| `transfer_hud_coins_test.php` | 8 |
-| `use_stock_test.php` | 15 |
+| `transfer_hud_coins_test.php` | 9 |
+| `use_stock_test.php` | 16 |
 | `validate_answer_test.php` | 19 |
-| **Subtotal** | **145** |
+| **Subtotal** | **154** |
 
 ### Testes de Formulário (`tests/form/`)
 
@@ -73,21 +74,22 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `attempt_questions_test.php` | 1 |
 | `coin_ledger_test.php` | 4 |
 | `combat_state_test.php` | 5 |
-| `game_page_service_test.php` | 27 |
-| `grade_calculator_test.php` | 21 |
-| `hud_service_test.php` | 18 |
-| `lobby_page_service_test.php` | 22 |
+| `game_page_service_test.php` | 37 |
+| `grade_calculator_test.php` | 29 |
+| `hud_service_test.php` | 15 |
+| `instance_list_service_test.php` | 3 |
+| `lobby_page_service_test.php` | 26 |
 | `move_log_test.php` | 20 |
 | `question_bank_sync_test.php` | 13 |
 | `question_editor_files_test.php` | 3 |
 | `question_list_service_test.php` | 3 |
-| `questions_repository_test.php` | 21 |
+| `questions_repository_test.php` | 23 |
 | `ranking_service_test.php` | 9 |
 | `replay_credit_test.php` | 8 |
-| `report_service_test.php` | 17 |
+| `report_service_test.php` | 19 |
 | `sound_preferences_test.php` | 7 |
 | `user_stock_test.php` | 10 |
-| **Subtotal** | **235** |
+| **Subtotal** | **261** |
 
 ### Testes do Motor de Combate (`tests/local/engine/`)
 
@@ -110,14 +112,13 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 36 |
 | **Subtotal** | **36** |
 
-| **Total Geral** | **669** |
+| **Total Geral** | **724** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
 ```
 
-**Cobertura** (`moodle-coverage`, PHPUnit + Xdebug): **86,79%** de linhas, 74,03% de métodos
-(21/47 classes totalmente cobertas).
+**Cobertura** (`moodle-coverage`, PHPUnit + Xdebug): **87,8%** das linhas do plugin (4511/5135).
 
 [Detalhamento completo teste a teste e tabela de cobertura →]({{ '/testing-pt.html' | relative_url }})
 

@@ -1,54 +1,41 @@
 # 💰 Integração com o PlayerHUD
 
-O PlayerPuzzle **não tem nenhuma economia própria permanente**. Moedas e níveis de upgrade vivem
-inteiramente no [block_playerhud](#ecosystem), e o PlayerPuzzle só lê/escreve nele quando o
-bloco está presente no curso — o plugin funciona sozinho, sem nenhuma configuração, se ele não
-estiver.
+O PlayerPuzzle tem uma moeda persistente própria, o **PuzzleCoin**, então funciona por completo
+sem mais nada instalado. O [block_playerhud](#ecosystem) é um companheiro **opcional**: quando ele
+está no curso, o professor pode ligar três coisas a ele. O plugin só lê ou escreve no bloco quando
+uma delas está configurada.
 
-## Itens Escolhidos pelo Professor, Nunca Auto-Detectados
+## PuzzleCoin
 
-Pra cada curso, o professor escolhe explicitamente quais itens do próprio bloco representam:
+As moedas são coletadas no tabuleiro com a peça Moeda. Uma combinação de 3 peças rende o **Ganho de
+moeda** configurado (10 por padrão), uma de 4 peças rende 1,5× isso, e uma de 5 peças 2× — a mesma
+curva que o dano de Espada usa. Diferente de todo outro valor de combate, o ganho de moeda
+deliberadamente **não** escala por nível ou fase, para que os preços fixos da loja continuem
+equilibrados durante toda a campanha.
 
-* **Moedas** — creditadas quando uma partida é vencida (o ouro coletado durante o combate é
-  depositado aqui).
-* **Nível de espada** — lido como um nível de upgrade pro dano do estudante.
-* **Nível de escudo** — lido como um nível de upgrade pra defesa do estudante.
-* **Poção** — opcional; também pode ser consumida de um estoque permanente do PlayerHUD, em vez
-  de (ou junto com) a compra local por moeda de sessão.
-* **Custo de retentativa** — opcional; cobrado a partir da 2ª tentativa do estudante, sem nunca
-  ampliar o limite de tentativas configurado. Pensado pra ser conquistado através de conteúdo de
-  reforço fora do jogo (um vídeo, outra atividade), não jogando o PlayerPuzzle em si — assim o
-  estudante que mais precisa de tentativas não é também o que menos consegue pagar por elas.
-* **Prêmio de vitória** — opcional; um item fixo concedido a cada vitória, além das moedas.
+O chefe acumula as próprias moedas quando combina a peça Moeda no turno dele. Ele não tem loja e
+nunca as gasta; elas só se compensam com as do estudante: o valor guardado é
+`max(0, moedas do estudante − moedas do chefe)`, e só numa **vitória** (cada fase vencida, na
+Campanha). Uma derrota não guarda nada, e uma partida Demo nunca guarda. O resultado soma-se ao
+saldo de PuzzleCoin do estudante, gasto na [loja de loadout](#combat).
 
-Cada um desses é um simples dropdown dos itens já configurados no bloco — o mesmo padrão já
-usado pelas atividades irmãs `mod_playerwords`/`mod_playercross` — então adicionar essa
-integração nunca exigiu nenhuma mudança no `block_playerhud` em si.
+## O Que o Professor Pode Ligar
 
-## Ganho de Moeda e a Compensação do Chefe
+Cada um destes é uma lista simples dos itens configurados no próprio bloco — o mesmo padrão que as
+atividades irmãs `mod_playerwords`/`mod_playercross` usam — então a integração nunca exigiu
+mudança no `block_playerhud`.
 
-Combinar a peça Moeda (veja [Como o Combate Funciona](#combat)) rende moedas numa curva de
-combo: uma combinação de 3 rende o valor base configurado em "Ganho de Moeda", uma de 4 rende
-1,5x esse valor, e uma de 5 rende 2x — a mesma curva que o dano da Espada usa. Diferente de todo
-o resto do combate, o Ganho de Moeda deliberadamente **não** escala por nível ou fase, então o
-professor pode configurar preços fixos de consumíveis (Poção, Escudo, Magia Rápida, Dica) que
-continuam equilibrados durante toda a campanha, em vez de ficarem proporcionalmente mais baratos
-conforme ela avança.
+* **Item que representa moedas** — permite que um estudante *transfira* unidades desse item para
+  PuzzleCoin a partir do Lobby, escolhendo quantas (1:1). Normalmente a PlayerCoin do próprio
+  PlayerHUD, mas qualquer item serve. É a única forma de as moedas do PlayerHUD chegarem ao
+  PuzzleCoin: as vitórias não são mais creditadas automaticamente no PlayerHUD.
+* **Custo de nova tentativa** — opcional; um item (e quantidade) cobrado a partir da 2ª tentativa,
+  sem nunca ampliar o limite de tentativas configurado. É pensado para ser conquistado com conteúdo
+  de reforço fora do jogo, para que o estudante que mais sofre não seja o que menos pode pagar por
+  outra tentativa. Um estudante que só está retomando uma luta nunca é cobrado.
+* **Prêmio de vitória** — opcional; um item fixo concedido a cada vitória, além das moedas. Quando
+  o limite de tentativas relevante é ilimitado, o item ainda é concedido, mas sem o XP dele, para
+  evitar farm de XP.
 
-O chefe também acumula sua própria conta de Moeda quando combina a peça no próprio turno — ele
-não tem loja e nunca gasta esse valor. Seu único propósito é compensar o saldo do estudante ao
-fim da partida: a contagem final de moedas do estudante é `max(0, moedas do estudante − moedas
-do chefe)`, creditada via PlayerHUD só em vitória. Isso dá à IA do chefe um motivo pra "competir"
-pela mesma peça que o estudante quer, em vez de ela ficar inerte sempre que a IA combiná-la.
-
-## O Que Já Está Ligado Hoje
-
-* ✅ Creditar moedas na vitória.
-* ✅ Ler o nível de upgrade de espada/escudo do estudante
-  (`hud_service::get_upgrade_level()`).
-* ⏳ Aplicar esse nível de upgrade como um multiplicador de dano/defesa de verdade durante o
-  combate — o leitor existe e está testado; o `combat.js` ainda não o consome.
-* ⏳ Itens de Poção/custo de retentativa/prêmio de vitória — configuráveis hoje, ainda não
-  consumidos pela jogabilidade.
-
-Veja [Funcionalidades](#features) pra a divisão completa entre implementado e planejado.
+Se o `block_playerhud` não estiver instalado, ou for mais antigo que a versão que esta integração
+exige (v1.7.1), o formulário avisa e as três opções simplesmente não são oferecidas.

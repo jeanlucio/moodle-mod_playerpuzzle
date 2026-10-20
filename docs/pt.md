@@ -15,17 +15,18 @@ lang: pt
 [![Último Commit](https://img.shields.io/github/last-commit/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/commits)
 [![Issues Abertas](https://img.shields.io/github/issues/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/issues)
 
-> ⚠️ **Este plugin está em desenvolvimento ativo.** Ainda não foi publicado no Diretório de
-> Plugins do Moodle. Algumas funcionalidades descritas abaixo são planejadas e ainda não estão
-> implementadas — veja [Funcionalidades](#features) pra saber exatamente quais são quais.
+> ⚠️ **Este plugin é uma pré-versão.** Ainda não foi publicado no Diretório de Plugins do Moodle.
+> Tudo o que está descrito abaixo está implementado — veja [Funcionalidades](#features) para o que
+> fica para uma versão futura.
 
 O **PlayerPuzzle** (`mod_playerpuzzle`) é uma atividade gamificada Match-3 RPG por turnos para o
 Moodle: o estudante combina peças num tabuleiro 8×8 para atacar um chefe controlado por uma IA
-simples, respondendo questões puxadas do próprio Banco de Questões do Moodle no curso pra
-desferir ataques críticos. O professor escolhe entre uma **Partida Única** autocontida ou uma
-**Campanha** de até 10 níveis (10 fases cada); a progressão permanente opcional (moedas, nível
-de espada/escudo) é resolvida inteiramente pelo [block_playerhud](#playerhud) companheiro,
-quando presente no curso — o PlayerPuzzle não mantém economia própria.
+simples, respondendo questões para desferir ataques críticos. As questões vêm do banco da própria
+atividade — importadas do Banco de Questões do Moodle do curso, escritas à mão, ou geradas por IA
+e aprovadas pelo professor. O professor escolhe entre uma **Partida Única** autocontida ou uma
+**Campanha** de até 10 níveis (10 fases cada). Vencer rende **PuzzleCoin**, gasto numa loja de
+loadout antes da próxima partida, e o [block_playerhud](#playerhud) companheiro, opcional, pode
+alimentar moedas, cobrar por uma nova tentativa ou conceder um item.
 
 <p class="page-hint">👈 Use a barra lateral para ir direto a qualquer seção desta página.</p>
 

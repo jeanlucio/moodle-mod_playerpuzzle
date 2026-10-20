@@ -9,9 +9,10 @@ O PlayerPuzzle é pensado para:
 * Manter o rigor da avaliação intacto por baixo do jogo — tentativas são limitadas, respostas
   são validadas no servidor, e a nota é desenhada pra refletir progresso/desempenho real (veja
   [Modos de Jogo](#game-modes)), nunca números reportados pelo cliente
-* Recompensar engajamento sustentado, escopado por curso, através da
-  [integração opcional com o PlayerHUD](#playerhud), sem exigir nenhuma economia permanente pra
-  um curso que não quer uma
+* Recompensar engajamento sustentado com o PuzzleCoin e a loja de loadout, escopados à atividade,
+  e, opcionalmente, ligá-la à economia do curso pela [integração com o PlayerHUD](#playerhud)
+* Manter o professor no controle do conteúdo: questões escritas por IA são só um rascunho até o
+  professor aprová-las
 
 Adequado para:
 

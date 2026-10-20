@@ -24,9 +24,39 @@ the real record in the database and returns only a boolean plus (on a wrong answ
 option — so nothing in the page source or network traffic ever reveals the answer in advance.
 This is the first of the plugin's [three anti-cheat pillars](#security).
 
+## Managing Questions
+
+Teachers (users with the *Manage the PlayerPuzzle question bank* capability) get a **Manage
+questions** page in the activity. It lists every question with its source, its status and how
+many times it has been drawn, and offers:
+
+* **Import from the Question Bank** — pick a category and import its approved, single-answer
+  Multiple Choice and True/False questions. Importing again refreshes the copies; a question that
+  left the category is disabled rather than deleted, because past attempts may still refer to it.
+  Embedded images and files are copied along.
+* **Add a question** by hand, with an optional hint.
+* **Generate with AI** — see below.
+* **Approve, reactivate, edit or delete** questions, one by one or in bulk.
+
+Only **approved** questions are ever drawn in a match.
+
+## AI Generation
+
+When an AI source is available (the AI Hub plugin with a key, or Moodle's own `core_ai`), the
+teacher can type a topic and a number of questions (up to 10). The result is shown as a
+**preview** the teacher can edit, and only the questions they select are saved — as *pending*.
+Nothing the AI wrote reaches a student before the teacher approves it. See
+[Third-party Service Disclosure](#third-party) for what is sent.
+
+## Hints
+
+A question can carry a hint. It is shown only to a student who spends a Hint consumable while that
+question is open, and a teacher can turn hints off for the whole activity.
+
 ## Minimum Questions Per Match
 
-The activity settings let a teacher require a minimum number of questions to be answered before
-a match can end in victory, and the Lobby shows this requirement to the student before they
-start. The gameplay rule that enforces it — reviving the boss at half HP if the minimum hasn't
-been reached yet — is not wired up yet; see [Features](#features).
+The activity settings let a teacher require a minimum number of questions to be answered before a
+match can end in victory (3 by default). The Lobby shows the requirement before the match starts,
+a counter shows the progress during it, and the boss revives at half HP if it falls too early —
+see [How Combat Works](#combat). The count is kept by the server on every answer, never reported
+by the client.

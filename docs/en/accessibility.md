@@ -3,30 +3,28 @@
 ## The Design
 
 Match-3 gameplay lives on a Canvas, which is opaque to screen readers by design. PlayerPuzzle's
-accessibility approach is a parallel, always-present HTML layer rather than an afterthought bolt-
-on:
+accessibility approach is a parallel, always-present HTML layer rather than an afterthought bolt-on:
 
-* A visually-hidden `<table role="grid">` mirrors the board state, navigable cell by cell.
-* Turn-by-turn events (available moves, damage dealt, boss HP remaining, energy bar full, a
-  question answered) are announced through an `aria-live="polite"` region, so a screen reader
-  user gets the same information a sighted player reads from the HUD.
-* Number keys `1`–`9` execute the correspondingly-announced move; `Space` re-reads the list of
+* A visually-hidden `<table role="grid">` mirrors the 8×8 board, navigable cell by cell with the
+  arrow keys; each cell is read with its piece name.
+* At the start of the student's turn, the available moves are announced through an
+  `aria-live="polite"` region, which also carries the other turn-by-turn events — damage dealt and
+  taken, energy bar full, a question answered, the boss reviving, a phase advanced.
+* Number keys `1`–`9` execute the correspondingly-announced move, and `Space` re-reads the list of
   available moves.
-* `aria-live="assertive"` is reserved for events that interrupt the turn (e.g. taking damage from
-  a poison tick).
+* The question challenge is a native HTML `<dialog>`: focus is trapped and centred by the browser,
+  and restored to whatever triggered it when it closes.
+* The Lobby, shop, ranking and report are ordinary Moodle pages and forms, so they follow the
+  theme's own accessibility behaviour.
 
-## What's Implemented Today
+## Spoken Narration
 
-* ✅ **The question dialog** — the moment gameplay most needs to be accessible — is a native
-  HTML `<dialog>`, not a Canvas overlay. Opening it traps focus and centers it using the
-  browser's own behavior; closing it restores focus to whatever element triggered it.
+The announcements can also be spoken through the browser's Web Speech API, with a **Speak game
+announcements aloud** switch in the Lobby settings. It is off by default, so it never competes with
+the screen reader a student is already running, and the choice is remembered per user.
 
-## What's Planned
+## Testing
 
-* ⏳ The parallel HTML board (`<table role="grid">`), the `aria-live` turn announcements, and the
-  number-key input scheme described above are designed but not built yet.
-* ⏳ A phase-advance announcement ("You advanced to Level 5, Phase 2") once the post-match
-  debrief screen exists — see [Features](#features).
-
-`speechSynthesis` is never used as the default announcement channel, to avoid conflicting with
-whatever screen reader the student already has running.
+A Behat feature reads the announcements and plays through the keyboard using only Moodle's
+standard steps. It proves the mechanism; checking with a real screen reader (NVDA, JAWS,
+VoiceOver) is still worthwhile for timing and pronunciation, which no test framework captures.

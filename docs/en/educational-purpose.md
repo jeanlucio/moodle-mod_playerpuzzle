@@ -9,9 +9,10 @@ PlayerPuzzle is designed to:
 * Keep the rigor of assessment intact underneath the game — attempts are limited, answers are
   validated server-side, and the grade is designed to reflect genuine progress/performance (see
   [Game Modes](#game-modes)), never client-reported numbers
-* Reward sustained engagement in a course-scoped way through the optional
-  [PlayerHUD integration](#playerhud), without requiring any permanent economy for a course that
-  doesn't want one
+* Reward sustained engagement with PuzzleCoin and the loadout shop, scoped to the activity, and
+  optionally connect it to the course's economy through the [PlayerHUD integration](#playerhud)
+* Keep the teacher in control of the content: questions written by AI are only a draft until the
+  teacher approves them
 
 Suitable for:
 

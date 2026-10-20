@@ -11,7 +11,7 @@
 [![Last Commit](https://img.shields.io/github/last-commit/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/commits)
 [![Open Issues](https://img.shields.io/github/issues/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/issues)
 
-> ⚠️ **This plugin is under active development.** It is not yet published on the Moodle Plugin Directory. Some features described in the full documentation are planned and not yet implemented.
+> ⚠️ **This plugin is a pre-release.** It is not yet published on the Moodle Plugin Directory.
 
 [English](#english) | [Português](#português)
 
@@ -20,15 +20,16 @@
 ## English
 
 **PlayerPuzzle** is a turn-based Match-3 RPG gamified activity for Moodle: the student combines
-pieces on an 8×8 board to attack a boss controlled by a simple AI, answering questions pulled
-from the course's own Moodle Question Bank to land critical hits. The teacher chooses between a
-self-contained **Single Match** or a **Campaign** of up to 10 levels (10 phases each); optional
-permanent progression (coins, sword/shield level) is handled entirely by the companion
-`block_playerhud` when present in the course — PlayerPuzzle keeps no economy of its own.
+pieces on an 8×8 board to attack a boss controlled by a simple AI, answering questions to land
+critical hits. The questions come from the activity's own bank — imported from the course's Moodle
+Question Bank, written by hand, or generated with AI and approved by the teacher. The teacher
+chooses between a self-contained **Single Match** or a **Campaign** of up to 10 levels (10 phases
+each). Winning earns **PuzzleCoin**, spent in a loadout shop before the next match; the optional
+companion `block_playerhud` can feed coins in, charge for a retry or award an item.
 
 📚 **[Full documentation](https://jeanlucio.github.io/moodle-mod_playerpuzzle/)** — features
-(implemented vs. planned), how combat and the question engine work, game modes, the PlayerHUD
-integration, accessibility, the three-pillar anti-cheat design, the 104-case test suite with
+how combat and the question engine work, game modes and grading, the loadout shop and the
+PlayerHUD integration, accessibility, the anti-cheat design, the automated test suite with
 coverage, and third-party service disclosure.
 
 ### 🔎 Third-party Service Disclosure
@@ -92,20 +93,21 @@ Maintained by [Jean Lúcio](https://github.com/jeanlucio).
 
 ## Português
 
-> ⚠️ **Este plugin está em desenvolvimento ativo.** Ainda não foi publicado no Diretório de Plugins do Moodle. Algumas funcionalidades descritas na documentação completa são planejadas e ainda não estão implementadas.
+> ⚠️ **Este plugin é uma pré-versão.** Ainda não foi publicado no Diretório de Plugins do Moodle.
 
 O **PlayerPuzzle** é uma atividade gamificada Match-3 RPG por turnos para o Moodle: o estudante
 combina peças num tabuleiro 8×8 para atacar um chefe controlado por uma IA simples, respondendo
-questões puxadas do próprio Banco de Questões do Moodle no curso pra desferir ataques críticos.
-O professor escolhe entre uma **Partida Única** autocontida ou uma **Campanha** de até 10 níveis
-(10 fases cada); a progressão permanente opcional (moedas, nível de espada/escudo) é resolvida
-inteiramente pelo `block_playerhud` companheiro, quando presente no curso — o PlayerPuzzle não
-mantém economia própria.
+questões para desferir ataques críticos. As questões vêm do banco da própria atividade —
+importadas do Banco de Questões do Moodle do curso, escritas à mão, ou geradas por IA e aprovadas
+pelo professor. O professor escolhe entre uma **Partida Única** autocontida ou uma **Campanha** de
+até 10 níveis (10 fases cada). Vencer rende **PuzzleCoin**, gasto numa loja de loadout antes da
+próxima partida; o `block_playerhud` companheiro, opcional, pode alimentar moedas, cobrar por uma
+nova tentativa ou conceder um item.
 
 📚 **[Documentação completa](https://jeanlucio.github.io/moodle-mod_playerpuzzle/pt.html)** —
-funcionalidades (implementadas vs. planejadas), como o combate e o motor de questões funcionam,
-modos de jogo, a integração com o PlayerHUD, acessibilidade, o desenho anti-trapaça em três
-pilares, a suíte de 104 testes com cobertura, e a divulgação de serviço de terceiros.
+como o combate e o motor de questões funcionam, modos de jogo e nota, a loja de loadout e a
+integração com o PlayerHUD, acessibilidade, o desenho anti-trapaça, a suíte de testes automatizados
+com cobertura, e a divulgação de serviço de terceiros.
 
 ### 🔎 Divulgação de Serviço de Terceiros
 

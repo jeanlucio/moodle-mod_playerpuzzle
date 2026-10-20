@@ -39,7 +39,7 @@ libera as integrações documentadas ao longo desta página.
   👉 [github.com/jeanlucio/moodle-mod_playergroup](https://github.com/jeanlucio/moodle-mod_playergroup)
 
 * **AI Hub:** corretor compartilhado de BYOK (traga sua própria chave) pra funcionalidades de IA
-  em todo o ecossistema. A funcionalidade planejada de geração de questões do PlayerPuzzle vai
-  consumi-lo como dependência opcional, recorrendo ao próprio `core_ai` do Moodle — veja
-  [Funcionalidades](#features).
+  em todo o ecossistema. O gerador de questões do PlayerPuzzle o usa como dependência opcional
+  quando ele está instalado e tem uma chave, recorrendo ao próprio `core_ai` do Moodle — veja
+  [Divulgação de Serviço de Terceiros](#third-party).
   👉 [github.com/jeanlucio/moodle-local_aihub](https://github.com/jeanlucio/moodle-local_aihub)

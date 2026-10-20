@@ -2,34 +2,30 @@
 
 ## O Desenho
 
-A jogabilidade Match-3 vive num Canvas, que é opaco pra leitores de tela por natureza. A
-abordagem de acessibilidade do PlayerPuzzle é uma camada HTML paralela, sempre presente, em vez
-de um complemento pensado depois:
+O gameplay Match-3 vive num Canvas, que é opaco para leitores de tela por natureza. A abordagem de
+acessibilidade do PlayerPuzzle é uma camada HTML paralela e sempre presente, e não um remendo de
+última hora:
 
-* Uma `<table role="grid">` visualmente oculta espelha o estado do tabuleiro, navegável célula a
-  célula.
-* Eventos jogada a jogada (jogadas disponíveis, dano causado, HP restante do chefe, barra de
-  energia cheia, uma pergunta respondida) são anunciados por uma região `aria-live="polite"`,
-  então um usuário de leitor de tela recebe a mesma informação que um jogador vidente lê no HUD.
-* As teclas numéricas `1`–`9` executam a jogada correspondentemente anunciada; `Espaço` relê a
-  lista de jogadas disponíveis.
-* `aria-live="assertive"` é reservado pra eventos que interrompem o turno (por exemplo, sofrer
-  dano de uma carga de veneno).
+* Uma `<table role="grid">` visualmente oculta espelha o tabuleiro 8×8, navegável célula a célula
+  com as setas; cada célula é lida com o nome da peça.
+* No início do turno do estudante, as jogadas disponíveis são anunciadas por uma região
+  `aria-live="polite"`, que também carrega os demais eventos do turno — dano causado e recebido,
+  barra de energia cheia, uma pergunta respondida, o chefe revivendo, uma fase avançada.
+* As teclas numéricas `1`–`9` executam a jogada anunciada correspondente, e `Espaço` relê a lista
+  de jogadas disponíveis.
+* O desafio de pergunta é um `<dialog>` HTML nativo: o foco é preso e centralizado pelo próprio
+  navegador, e devolvido ao elemento que o disparou quando ele fecha.
+* O Lobby, a loja, o ranking e o relatório são páginas e formulários comuns do Moodle, então
+  seguem o comportamento de acessibilidade do próprio tema.
 
-## O Que Já Está Implementado Hoje
+## Narração Falada
 
-* ✅ **O modal de pergunta** — o momento em que a jogabilidade mais precisa ser acessível — é um
-  `<dialog>` HTML nativo, não uma sobreposição de Canvas. Abri-lo captura o foco e centraliza
-  usando o próprio comportamento do navegador; fechá-lo restaura o foco pro elemento que o
-  abriu.
+Os anúncios também podem ser falados pela Web Speech API do navegador, com a opção **Narrar os
+anúncios do jogo em voz alta** nas configurações do Lobby. Ela vem desligada por padrão, para
+nunca competir com o leitor de tela que o estudante já usa, e a escolha é lembrada por usuário.
 
-## O Que Está Planejado
+## Testes
 
-* ⏳ O tabuleiro HTML paralelo (`<table role="grid">`), os anúncios `aria-live` jogada a jogada,
-  e o esquema de entrada por teclas numéricas descritos acima estão desenhados, mas ainda não
-  construídos.
-* ⏳ Um anúncio de avanço de fase ("Você avançou para o Nível 5, Fase 2") assim que a tela de
-  debrief pós-partida existir — veja [Funcionalidades](#features).
-
-O `speechSynthesis` nunca é usado como canal padrão de anúncio, pra evitar conflito com
-qualquer leitor de tela que o estudante já esteja usando.
+Uma feature Behat lê os anúncios e joga pelo teclado usando apenas os passos padrão do Moodle. Ela
+prova o mecanismo; conferir com um leitor de tela de verdade (NVDA, JAWS, VoiceOver) continua
+valendo a pena para o timing e a pronúncia, que nenhum framework de teste captura.

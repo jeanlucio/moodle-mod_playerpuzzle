@@ -15,17 +15,18 @@ lang: en
 [![Last Commit](https://img.shields.io/github/last-commit/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/commits)
 [![Open Issues](https://img.shields.io/github/issues/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/issues)
 
-> ⚠️ **This plugin is under active development.** It is not yet published on the Moodle Plugin
-> Directory. Some features described below are planned and not yet implemented — see
-> [Features](#features) for exactly which is which.
+> ⚠️ **This plugin is a pre-release.** It is not yet published on the Moodle Plugin Directory.
+> Everything described below is implemented — see [Features](#features) for what is left for a
+> future version.
 
 **PlayerPuzzle** (`mod_playerpuzzle`) is a turn-based Match-3 RPG gamified activity for Moodle:
 the student combines pieces on an 8×8 board to attack a boss controlled by a simple AI, answering
-questions pulled from the course's own Moodle Question Bank to land critical hits. The teacher
-chooses between a self-contained **Single Match** or a **Campaign** of up to 10 levels (10 phases
-each); optional permanent progression (coins, sword/shield level) is handled entirely by the
-companion [block_playerhud](#playerhud) when it's present in the course — PlayerPuzzle keeps no
-economy of its own.
+questions to land critical hits. The questions come from the activity's own bank — imported from
+the course's Moodle Question Bank, written by hand, or generated with AI and approved by the
+teacher. The teacher chooses between a self-contained **Single Match** or a **Campaign** of up to
+10 levels (10 phases each). Winning earns **PuzzleCoin**, spent in a loadout shop before the next
+match, and the optional companion [block_playerhud](#playerhud) can feed coins in, charge for a
+retry or award an item.
 
 <p class="page-hint">👈 Use the sidebar to jump to any section on this page.</p>
 

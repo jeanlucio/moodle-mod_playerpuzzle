@@ -308,6 +308,23 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the activity name field carries Moodle's own "Name" label. It once read
+     * "Phase name", a leftover from the game's phase naming, which is not what that field
+     * holds.
+     *
+     * @return void
+     */
+    public function test_the_name_field_is_labelled_name(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $element = $this->build_form($instance, $cm)->getElement('name');
+
+        $this->assertSame(get_string('name'), $element->getLabel());
+    }
+
+    /**
      * Tests that gamemode defaults to Campaign — preserves the behaviour documented
      * before the two-mode split existed.
      *

@@ -36,7 +36,9 @@ require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/playerpuzzle:view', $context);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+// Every form that reaches this page is a POST carrying the sesskey; anything else is a plain
+// visit (a bookmark, a reload of the address) and goes back to the Lobby.
+if (!data_submitted()) {
     redirect(new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]));
 }
 require_sesskey();

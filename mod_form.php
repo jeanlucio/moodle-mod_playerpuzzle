@@ -120,9 +120,9 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->hideIf('cooldowngroup', 'gamemode', 'eq', PLAYERPUZZLE_GAMEMODE_CAMPAIGN);
 
         $bossoptions = [
-            'slime.png'  => 'Slime',
-            'goblin.png' => 'Goblin',
-            'dragon.png' => 'Dragon',
+            'slime.png'  => get_string('bossavatar_slime', 'mod_playerpuzzle'),
+            'goblin.png' => get_string('bossavatar_goblin', 'mod_playerpuzzle'),
+            'dragon.png' => get_string('bossavatar_dragon', 'mod_playerpuzzle'),
         ];
         $mform->addElement('select', 'bossavatar', get_string('bossavatar', 'mod_playerpuzzle'), $bossoptions);
         $mform->setType('bossavatar', PARAM_FILE);

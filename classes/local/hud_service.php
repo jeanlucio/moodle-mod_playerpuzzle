@@ -150,25 +150,6 @@ class hud_service {
     }
 
     /**
-     * Grants $qty units of the configured "coin" item to $userid — the leftover per-attempt
-     * balance banked on victory. Returns false without granting anything when the item is
-     * unconfigured, PlayerHUD is unavailable, or there is nothing to grant.
-     *
-     * @param int $blockinstanceid Block instance ID the item must belong to.
-     * @param int $userid User ID.
-     * @param int $itemid PlayerHUD item ID configured as the coin item.
-     * @param int $qty Number of coins to grant.
-     * @return bool Whether the coins were actually banked.
-     */
-    public static function credit_coins(int $blockinstanceid, int $userid, int $itemid, int $qty): bool {
-        if (!self::is_installed() || $itemid <= 0 || $qty <= 0) {
-            return false;
-        }
-        \block_playerhud\local\external_items::grant($blockinstanceid, $itemid, $userid, $qty, 'playerpuzzle', false);
-        return true;
-    }
-
-    /**
      * Consumes $qty units of a configured PlayerHUD item — the `source=hud` path of a
      * consumable purchase, spending stock instead of local session coins. Delegates to
      * external_items::consume(), which holds the same atomic per-item/user lock grant() uses.

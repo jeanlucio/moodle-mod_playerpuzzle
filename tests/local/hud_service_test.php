@@ -240,7 +240,7 @@ final class hud_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that get_upgrade_level reflects the quantity credited via credit_coins,
+     * Tests that get_upgrade_level reflects the quantity granted via grant_item,
      * proving the two methods read/write the same underlying balance.
      *
      * @return void
@@ -252,55 +252,9 @@ final class hud_service_test extends \advanced_testcase {
         $biid = $this->make_block_instance($course);
         $itemid = $this->make_item($biid, 'Sword Level');
 
-        hud_service::credit_coins($biid, $user->id, $itemid, 3);
+        hud_service::grant_item($biid, $user->id, $itemid, 3, false);
 
         $this->assertSame(3, hud_service::get_upgrade_level($biid, $user->id, $itemid));
-    }
-
-    /**
-     * Tests that credit_coins grants the exact quantity requested and returns true.
-     *
-     * @return void
-     */
-    public function test_credit_coins_success(): void {
-        $this->skip_if_no_playerhud();
-        $user = $this->getDataGenerator()->create_user();
-        $course = $this->getDataGenerator()->create_course();
-        $biid = $this->make_block_instance($course);
-        $itemid = $this->make_item($biid);
-
-        $result = hud_service::credit_coins($biid, $user->id, $itemid, 5);
-
-        $this->assertTrue($result);
-        $this->assertSame(5, hud_service::get_upgrade_level($biid, $user->id, $itemid));
-    }
-
-    /**
-     * Tests that credit_coins is a no-op returning false when the item is
-     * unconfigured (id 0).
-     *
-     * @return void
-     */
-    public function test_credit_coins_false_when_item_unconfigured(): void {
-        $this->skip_if_no_playerhud();
-        $user = $this->getDataGenerator()->create_user();
-        $this->assertFalse(hud_service::credit_coins(1, $user->id, 0, 5));
-    }
-
-    /**
-     * Tests that credit_coins is a no-op returning false when the quantity is not
-     * positive.
-     *
-     * @return void
-     */
-    public function test_credit_coins_false_when_qty_not_positive(): void {
-        $this->skip_if_no_playerhud();
-        $user = $this->getDataGenerator()->create_user();
-        $course = $this->getDataGenerator()->create_course();
-        $biid = $this->make_block_instance($course);
-        $itemid = $this->make_item($biid);
-
-        $this->assertFalse(hud_service::credit_coins($biid, $user->id, $itemid, 0));
     }
 
     /**

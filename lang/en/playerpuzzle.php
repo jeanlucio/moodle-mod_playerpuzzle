@@ -80,7 +80,6 @@ $string['cooldown_unit_hours'] = 'Hours';
 $string['cooldown_unit_minutes'] = 'Minutes';
 $string['cooldownactive'] = 'You can start a new match in {$a}.';
 $string['correctanswerhint'] = 'Pick the correct answer using the radio button next to it.';
-$string['courseinstanceslist'] = 'All PlayerPuzzle activities in this course will be listed here.';
 $string['damagedealt'] = 'You dealt {$a->damage} damage. Boss HP: {$a->hp}.';
 $string['damagetaken'] = 'You took {$a->damage} damage. Your HP: {$a->hp}.';
 $string['debriefcorrectanswer'] = 'Correct answer:';

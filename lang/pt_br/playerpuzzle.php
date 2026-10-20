@@ -80,7 +80,6 @@ $string['cooldown_unit_hours'] = 'Horas';
 $string['cooldown_unit_minutes'] = 'Minutos';
 $string['cooldownactive'] = 'Você pode começar uma nova partida em {$a}.';
 $string['correctanswerhint'] = 'Marque a resposta correta usando o botão de opção ao lado dela.';
-$string['courseinstanceslist'] = 'Todas as atividades PlayerPuzzle deste curso serão listadas aqui.';
 $string['damagedealt'] = 'Você causou {$a->damage} de dano. HP do chefe: {$a->hp}.';
 $string['damagetaken'] = 'Você sofreu {$a->damage} de dano. Seu HP: {$a->hp}.';
 $string['debriefcorrectanswer'] = 'Resposta correta:';

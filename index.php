@@ -29,13 +29,20 @@ $id = required_param('id', PARAM_INT);
 $course = $DB->get_record('course', ['id' => $id], '*', MUST_EXIST);
 require_course_login($course);
 
+$event = \mod_playerpuzzle\event\course_module_instance_list_viewed::create([
+    'context' => context_course::instance($course->id),
+]);
+$event->add_record_snapshot('course', $course);
+$event->trigger();
+
 $PAGE->set_url('/mod/playerpuzzle/index.php', ['id' => $id]);
 $PAGE->set_title(format_string($course->fullname));
 $PAGE->set_heading(format_string($course->fullname));
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('modulenameplural', 'mod_playerpuzzle'));
-
-echo html_writer::tag('p', get_string('courseinstanceslist', 'mod_playerpuzzle'));
-
+echo $OUTPUT->render_from_template(
+    'mod_playerpuzzle/instance_list',
+    \mod_playerpuzzle\local\instance_list_service::build_page_data($course)
+);
 echo $OUTPUT->footer();

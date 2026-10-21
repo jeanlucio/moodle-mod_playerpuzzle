@@ -143,6 +143,8 @@ final class replay_credit_test extends \advanced_testcase {
             $inconclusive[0]->other
         );
         $this->assertCount(0, $this->events_of($sink, replay_diverged::class));
+        // The log must say what really happened to the claim: nothing of it was credited.
+        $this->assertStringContainsString('were not credited', $inconclusive[0]->get_description());
     }
 
     /**

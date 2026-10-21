@@ -27,9 +27,10 @@ namespace mod_playerpuzzle\event;
 /**
  * Fired by save_progress::execute()/advance_phase::execute() whenever
  * \mod_playerpuzzle\local\engine\replay::derive() cannot reach a conclusive result for a
- * real (non-Demo) match, so the client's own claim is what gets credited, clamped by the
- * boss-HP cap and the coin ceiling. Purely observational: it measures how often honest play
- * still ends up unverified, before verification is ever made mandatory for a match to count.
+ * real (non-Demo) match. Nothing the client claimed is credited: a claimed victory restarts the
+ * phase (or counts as a defeat once the restarts are used up) and only the damage the replay can
+ * vouch for counts, with no gold — see replay_credit::verdict(). The event records the claim that
+ * was refused, so the teacher can tell how often honest play still ends up unverified.
  *
  * Expected data:
  *   objectid  — id of the playerpuzzle_attempts record that could not be verified
@@ -58,7 +59,8 @@ class replay_inconclusive extends \core\event\base {
         return "The server-side replay could not verify the playerpuzzle_attempts record with id " .
             "'{$this->objectid}'. The claimed values (damage {$this->other['claimeddamage']}, " .
             "player gold {$this->other['claimedplayergold']}, boss gold {$this->other['claimedbossgold']}) " .
-            "were credited, within the usual caps.";
+            "were not credited: a claimed victory restarts the phase, or counts as a defeat once the " .
+            "restarts are used up, and only the damage the replay can verify is kept.";
     }
 
     #[\Override]

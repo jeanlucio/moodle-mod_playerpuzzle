@@ -203,7 +203,15 @@ class security {
     ): \stdClass {
         global $DB;
 
-        $existing = $DB->get_records(
+        // The guest account is one user record shared by every visitor, so a Demo "in progress" under
+        // it may belong to another person: resuming it would hand this visitor someone else's fight
+        // and rotate the token that visitor is still using. Each visitor therefore gets a fresh Demo.
+        $guestdemo = $isdemo && isguestuser($userid);
+        if ($guestdemo) {
+            self::purge_stale_guest_demos($playerpuzzleid, $userid);
+        }
+
+        $existing = $guestdemo ? [] : $DB->get_records(
             'playerpuzzle_attempts',
             [
                 'playerpuzzleid' => $playerpuzzleid,
@@ -321,6 +329,29 @@ class security {
             'isdemo' => (bool) $newrow->isdemo,
             'isnew' => true,
         ];
+    }
+
+    /**
+     * Deletes the guest account's Demos that nobody has touched for a day.
+     *
+     * Every visit of a guest creates a Demo of its own (see resume_or_create_attempt_token()), and the
+     * visitors cannot be told apart, so nobody can resume or finish an abandoned one. A Demo counts for
+     * nothing, so the old ones are simply dropped, with the rows that hang from them, whenever a guest
+     * starts a new one.
+     *
+     * @param int $playerpuzzleid Activity instance ID.
+     * @param int $guestid The guest account's user ID.
+     * @return void
+     */
+    private static function purge_stale_guest_demos(int $playerpuzzleid, int $guestid): void {
+        global $DB;
+
+        $stale = 'playerpuzzleid = :ppid AND userid = :uid AND isdemo = 1 AND timemodified < :cutoff';
+        $params = ['ppid' => $playerpuzzleid, 'uid' => $guestid, 'cutoff' => time() - DAYSECS];
+        $ids = "SELECT id FROM {playerpuzzle_attempts} WHERE $stale";
+        $DB->delete_records_select('playerpuzzle_attempt_questions', "attemptid IN ($ids)", $params);
+        $DB->delete_records_select('playerpuzzle_attempt_consumables', "attemptid IN ($ids)", $params);
+        $DB->delete_records_select('playerpuzzle_attempts', $stale, $params);
     }
 
     /**

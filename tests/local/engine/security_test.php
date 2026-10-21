@@ -389,6 +389,78 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that two visitors never share a Demo. The guest account is a single user record, so a Demo in
+     * progress under it may belong to another person: resuming it would hand the second visitor the first
+     * one's fight and rotate the token the first is still using.
+     *
+     * @return void
+     */
+    public function test_a_guest_demo_is_never_resumed_by_another_visitor(): void {
+        global $DB;
+
+        $guestid = (int) guest_user()->id;
+
+        $first = security::resume_or_create_attempt_token($this->playerpuzzleid, $guestid, 'normal', 10, true);
+        $second = security::resume_or_create_attempt_token($this->playerpuzzleid, $guestid, 'normal', 10, true);
+
+        $this->assertTrue($first->isnew);
+        $this->assertTrue($second->isnew, 'The second visitor starts a Demo of their own.');
+        $this->assertNotSame($first->attemptid, $second->attemptid);
+        $this->assertSame($first->token, $DB->get_field('playerpuzzle_attempts', 'token', ['id' => $first->attemptid]));
+        $this->assertSame('inprogress', $DB->get_field('playerpuzzle_attempts', 'status', ['id' => $first->attemptid]));
+    }
+
+    /**
+     * Tests that a logged-in user still resumes their own Demo: only the shared guest account is excluded.
+     *
+     * @return void
+     */
+    public function test_a_real_users_demo_is_still_resumed(): void {
+        $first = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true);
+        $again = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true);
+
+        $this->assertFalse($again->isnew);
+        $this->assertSame($first->attemptid, $again->attemptid);
+    }
+
+    /**
+     * Tests that the guest Demos nobody has touched for a day are dropped, with the rows hanging from
+     * them, when a guest starts a new one, and that nothing else is: not a recent guest Demo, not a real
+     * user's old Demo, not an old guest Demo of another activity.
+     *
+     * @return void
+     */
+    public function test_stale_guest_demos_are_purged_when_a_guest_starts_a_demo(): void {
+        global $DB;
+
+        $guestid = (int) guest_user()->id;
+        $stale = security::resume_or_create_attempt_token($this->playerpuzzleid, $guestid, 'normal', 10, true);
+        $recent = security::resume_or_create_attempt_token($this->playerpuzzleid, $guestid, 'normal', 10, true);
+        $realuser = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true);
+        $otherinstance = security::resume_or_create_attempt_token($this->otherplayerpuzzleid, $guestid, 'normal', 10, true);
+        $DB->insert_record('playerpuzzle_attempt_questions', (object) [
+            'attemptid' => $stale->attemptid, 'questionid' => 0, 'attemptlevel' => 1, 'attemptphase' => 1,
+            'questiontext' => 'Q?', 'chosenanswer' => 'A', 'correctanswer' => 'A', 'iscorrect' => 1,
+            'timecreated' => time(),
+        ]);
+        $DB->insert_record('playerpuzzle_attempt_consumables', (object) [
+            'attemptid' => $stale->attemptid, 'consumabletype' => 'sword', 'timesused' => 1,
+        ]);
+        $DB->set_field('playerpuzzle_attempts', 'timemodified', time() - 2 * DAYSECS, ['id' => $stale->attemptid]);
+        $DB->set_field('playerpuzzle_attempts', 'timemodified', time() - 2 * DAYSECS, ['id' => $realuser->attemptid]);
+        $DB->set_field('playerpuzzle_attempts', 'timemodified', time() - 2 * DAYSECS, ['id' => $otherinstance->attemptid]);
+
+        security::resume_or_create_attempt_token($this->playerpuzzleid, $guestid, 'normal', 10, true);
+
+        $this->assertFalse($DB->record_exists('playerpuzzle_attempts', ['id' => $stale->attemptid]));
+        $this->assertFalse($DB->record_exists('playerpuzzle_attempt_questions', ['attemptid' => $stale->attemptid]));
+        $this->assertFalse($DB->record_exists('playerpuzzle_attempt_consumables', ['attemptid' => $stale->attemptid]));
+        $this->assertTrue($DB->record_exists('playerpuzzle_attempts', ['id' => $recent->attemptid]));
+        $this->assertTrue($DB->record_exists('playerpuzzle_attempts', ['id' => $realuser->attemptid]));
+        $this->assertTrue($DB->record_exists('playerpuzzle_attempts', ['id' => $otherinstance->attemptid]));
+    }
+
+    /**
      * Tests that a Demo attempt always starts at Level 1/Phase 1, ignoring any inherited
      * resume position a real attempt might otherwise carry from a prior loss.
      *

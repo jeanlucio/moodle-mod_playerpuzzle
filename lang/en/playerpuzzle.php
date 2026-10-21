@@ -378,6 +378,7 @@ $string['shoperror'] = 'Error buying this item.';
 $string['show_ranking'] = 'Show ranking';
 $string['show_ranking_help'] = 'When enabled, students can open a ranking of the class from the activity page. The ranking uses its own 100-point scale, independent of the grade, and respects separate groups.';
 $string['shuffling'] = 'SHUFFLING...';
+$string['singlematchnoadvance'] = 'A Single Match has no next phase — it always ends in a single fight.';
 $string['skip'] = 'Skip';
 $string['source'] = 'Source';
 $string['source_ai'] = 'AI';

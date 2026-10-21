@@ -31,6 +31,7 @@ use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\attempt_consumables;
 use mod_playerpuzzle\local\coin_ledger;
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
@@ -143,6 +144,14 @@ class advance_phase extends external_api {
                     throw new moodle_exception('demoattemptnoadvance', 'mod_playerpuzzle');
                 }
 
+                // Only a Campaign has phases to advance through. combat.js stops at its own gamemode gate
+                // in a Single Match, so the server must refuse too: advancing would reward every phase
+                // win while the attempt stays 'inprogress', and check_attempt_limit() and
+                // check_cooldown() only look at finished attempts, so neither would ever count it.
+                if ($playerpuzzle->gamemode !== constants::GAMEMODE_CAMPAIGN) {
+                    throw new moodle_exception('singlematchnoadvance', 'mod_playerpuzzle');
+                }
+
                 $currentlevel = (int) $attempt->currentlevel;
                 $currentphase = (int) $attempt->currentphase;
 
@@ -232,7 +241,7 @@ class advance_phase extends external_api {
                 // not only the campaign's final one, mirroring hud_win_grant_item's own help
                 // text. XP is withheld when maxattempts is Unlimited (0), the same
                 // anti-farming rule mod_playerwords already applies to its own infinite-round
-                // win grant.
+                // win grant. maxattempts is the right limit here: only a Campaign reaches this point.
                 $grantitem = (int) $playerpuzzle->hud_win_grant_item;
                 if ($grantitem > 0 && $blockinstanceid !== null) {
                     hud_service::grant_item(

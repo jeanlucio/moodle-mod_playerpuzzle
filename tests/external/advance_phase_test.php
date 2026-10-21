@@ -784,6 +784,40 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a Single Match attempt cannot be advanced: only a Campaign has phases, and the
+     * client stops at its own gamemode gate. Advancing would pay every phase win while the attempt
+     * stays 'inprogress', which neither the match limit nor the cooldown ever counts.
+     *
+     * @return void
+     */
+    public function test_advance_phase_rejects_a_single_match_attempt(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'basebosshp' => 100]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+
+        $result = $this->call_advance_phase([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'damage'               => 1000,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('singlematchnoadvance', $result['exception']->errorcode);
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame('inprogress', $attempt->status);
+        $this->assertSame(1, (int) $attempt->currentphase);
+        $this->assertSame(
+            0,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
+    }
+
+    /**
      * Tests that the mod/playerpuzzle:view capability is actually enforced — same
      * mechanism already verified for save_progress/validate_answer (cm_info's own
      * visibility computation reads this capability before execute()'s own

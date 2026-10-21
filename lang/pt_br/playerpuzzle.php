@@ -378,6 +378,7 @@ $string['shoperror'] = 'Erro ao comprar este item.';
 $string['show_ranking'] = 'Mostrar ranking';
 $string['show_ranking_help'] = 'Quando ativado, os estudantes podem abrir um ranking da turma na página da atividade. O ranking usa uma escala própria de 100 pontos, independente da nota, e respeita os grupos separados.';
 $string['shuffling'] = 'EMBARALHANDO...';
+$string['singlematchnoadvance'] = 'Uma Partida Única não tem próxima fase — ela sempre termina numa única luta.';
 $string['skip'] = 'Pular';
 $string['source'] = 'Fonte';
 $string['source_ai'] = 'IA';

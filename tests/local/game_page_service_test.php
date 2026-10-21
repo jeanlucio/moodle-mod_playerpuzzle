@@ -1035,4 +1035,135 @@ final class game_page_service_test extends \advanced_testcase {
         game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
         $this->expectNotToPerformAssertions();
     }
+
+    /**
+     * Starts a match for the student the way play.php does.
+     *
+     * @param \stdClass $cm Course module.
+     * @param \stdClass $instance Activity instance.
+     * @param bool $isdemo Whether the match is a Demo.
+     * @return array The game config.
+     */
+    private function start_game(\stdClass $cm, \stdClass $instance, bool $isdemo = false): array {
+        return game_page_service::start_game(
+            $cm,
+            $instance,
+            \context_module::instance($cm->id),
+            (int) $this->student->id,
+            false,
+            'normal',
+            $isdemo,
+            $this->returnurl
+        );
+    }
+
+    /**
+     * Tests that a real start runs its gates and creates the attempt inside one lock per student and
+     * activity. PHPUnit runs one request at a time, so it cannot race two starts; what it can show is that
+     * the check and the creation sit between the acquire and the release of that lock, which is what makes
+     * a second simultaneous start wait for the first one's row before it counts the attempts.
+     *
+     * @return void
+     */
+    public function test_a_real_start_takes_the_start_lock_around_the_gates_and_the_creation(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
+        \mod_playerpuzzle_recording_lock_factory::install();
+
+        $this->start_game($cm, $instance);
+
+        $start = 'start_' . $this->student->id . '_' . $instance->id;
+        $events = \mod_playerpuzzle_recording_lock_factory::events_for('mod_playerpuzzle');
+        $this->assertSame("acquire {$start}", reset($events));
+        $this->assertSame("release {$start}", end($events));
+        $this->assertSame(1, $DB->count_records('playerpuzzle_attempts', ['userid' => $this->student->id]));
+    }
+
+    /**
+     * Tests that when another start of the same student holds the lock, nothing happens: no attempt is
+     * created and the retry cost is not charged, and the same start works once the lock is free.
+     *
+     * @return void
+     */
+    public function test_a_busy_start_lock_creates_nothing_and_charges_nothing(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        [$biid, $itemid] = $this->make_hud_item();
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_SINGLE,
+            'hud_retry_cost_item' => $itemid,
+            'hud_retry_cost_qty' => 2,
+        ]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        $this->grant_hud_item($biid, $itemid, (int) $this->student->id, 5);
+        $before = $DB->count_records('playerpuzzle_attempts');
+        \mod_playerpuzzle_recording_lock_factory::install(
+            ['mod_playerpuzzle/start_' . $this->student->id . '_' . $instance->id]
+        );
+
+        try {
+            $this->start_game($cm, $instance);
+            $this->fail('A start that cannot take the lock must be refused.');
+        } catch (\moodle_exception $exception) {
+            $this->assertSame('startbusy', $exception->errorcode);
+        }
+
+        $this->assertSame($before, $DB->count_records('playerpuzzle_attempts'));
+        $this->assertSame(5, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+
+        \mod_playerpuzzle_recording_lock_factory::install();
+        $this->start_game($cm, $instance);
+        $this->assertSame($before + 1, $DB->count_records('playerpuzzle_attempts'));
+        $this->assertSame(3, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+    }
+
+    /**
+     * Tests the outcome of two starts that reach the server one after the other, the case the lock turns
+     * the simultaneous one into: the second finds the first one's attempt and resumes it, so there is a
+     * single attempt in progress and the retry cost is charged once.
+     *
+     * @return void
+     */
+    public function test_a_second_start_resumes_the_attempt_instead_of_creating_another(): void {
+        global $DB;
+
+        [$biid, $itemid] = $this->make_hud_item();
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_SINGLE,
+            'hud_retry_cost_item' => $itemid,
+            'hud_retry_cost_qty' => 2,
+        ]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        $this->grant_hud_item($biid, $itemid, (int) $this->student->id, 5);
+
+        $first = $this->start_game($cm, $instance);
+        $second = $this->start_game($cm, $instance);
+
+        $this->assertNotSame($first['token'], $second['token'], 'The resumed attempt gets a fresh token.');
+        $this->assertSame(
+            1,
+            $DB->count_records('playerpuzzle_attempts', ['userid' => $this->student->id, 'status' => 'inprogress'])
+        );
+        $this->assertSame(3, hud_service::get_upgrade_level($biid, $this->student->id, $itemid));
+    }
+
+    /**
+     * Tests that a Demo takes no start lock: it has no limit, cooldown or cost to protect.
+     *
+     * @return void
+     */
+    public function test_a_demo_start_takes_no_start_lock(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/tests/fixtures/recording_lock_factory.php');
+
+        [$cm, $instance] = $this->make_cm_and_instance();
+        \mod_playerpuzzle_recording_lock_factory::install();
+
+        $this->start_game($cm, $instance, true);
+
+        $this->assertSame([], \mod_playerpuzzle_recording_lock_factory::events_for('mod_playerpuzzle'));
+    }
 }

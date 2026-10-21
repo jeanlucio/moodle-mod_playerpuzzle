@@ -48,14 +48,12 @@ require_sesskey();
 // The Lobby's "Play Demo" button: a disposable, on-demand practice fight
 // with fixed HP, never counted for grade/coins/completion/attempt-limit — see
 // game_page_service::build_game_config()'s own $isdemo branch. The attempt-limit and
-// retry-cost gates below are for real progress only, so both are skipped for it entirely.
+// retry-cost gates of game_page_service::start_game() are for real progress only, so both are
+// skipped for it entirely.
 $isdemo = optional_param('isdemo', 0, PARAM_BOOL);
 
 $returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
 \mod_playerpuzzle\local\game_page_service::check_guest_demo_only($isdemo, $returnurl, $context);
-if (!$isdemo) {
-    \mod_playerpuzzle\local\game_page_service::check_can_start_attempt($playerpuzzle, (int) $USER->id, $returnurl);
-}
 
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));
@@ -78,14 +76,17 @@ $difficulty = optional_param('difficulty', constants::DIFFICULTY_NORMAL, PARAM_A
 $PAGE->set_pagelayout('incourse');
 $PAGE->blocks->show_only_fake_blocks();
 
-$jsconfig = \mod_playerpuzzle\local\game_page_service::build_game_config(
+// For a real attempt this also runs the gates that decide whether a new one may begin (attempt limit,
+// cooldown, retry cost), under the lock that stops two simultaneous requests from both passing them.
+$jsconfig = \mod_playerpuzzle\local\game_page_service::start_game(
     $cm,
     $playerpuzzle,
     $context,
     (int) $USER->id,
     $ismobile,
     $difficulty,
-    $isdemo
+    $isdemo,
+    $returnurl
 );
 
 // Phaser itself is loaded dynamically from inside game_boot.js (mirrors

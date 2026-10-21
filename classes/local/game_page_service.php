@@ -221,6 +221,54 @@ class game_page_service {
     }
 
     /**
+     * Starts a match for the Lobby's Play button: for a real attempt, runs the gates that decide whether
+     * a new one may begin and then resumes or creates the attempt, all under one lock per student and
+     * activity. Two requests of the same student arriving together (two tabs, a double click, a repeated
+     * request) would otherwise both pass the limit, the cooldown and the retry cost before either created
+     * its row, and both would create an attempt. A Demo has nothing at stake and takes no lock.
+     *
+     * @param stdClass $cm Course module.
+     * @param stdClass $instance Activity instance.
+     * @param context_module $context Module context.
+     * @param int $userid Current user ID.
+     * @param bool $ismobile Whether the request is from a mobile device.
+     * @param string $difficulty Student-chosen difficulty for a fresh attempt.
+     * @param bool $isdemo Whether this is a disposable Demo attempt.
+     * @param moodle_url $returnurl URL to send the student back to when a gate rejects the attempt.
+     * @return array JS game config for game_boot.js, see build_game_config().
+     * @throws moodle_exception When a gate rejects the attempt, or another start of the same student
+     *  does not finish in time.
+     */
+    public static function start_game(
+        stdClass $cm,
+        stdClass $instance,
+        context_module $context,
+        int $userid,
+        bool $ismobile,
+        string $difficulty,
+        bool $isdemo,
+        moodle_url $returnurl
+    ): array {
+        if ($isdemo) {
+            return self::build_game_config($cm, $instance, $context, $userid, $ismobile, $difficulty, true);
+        }
+
+        $config = security::with_locked_attempt_start(
+            $userid,
+            (int) $instance->id,
+            function () use ($cm, $instance, $context, $userid, $ismobile, $difficulty, $returnurl): array {
+                self::check_can_start_attempt($instance, $userid, $returnurl);
+                return self::build_game_config($cm, $instance, $context, $userid, $ismobile, $difficulty, false);
+            }
+        );
+        if ($config === false) {
+            throw new moodle_exception('startbusy', 'mod_playerpuzzle', $returnurl);
+        }
+
+        return $config;
+    }
+
+    /**
      * Resumes or creates the attempt, and assembles the full JS game config: the scaled
      * boss/student HP and combat damage for the attempt's current level/phase (Single Match
      * always resolves to the base values unchanged, since its attempts stay at Level 1,

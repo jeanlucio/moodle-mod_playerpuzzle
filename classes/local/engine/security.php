@@ -601,6 +601,34 @@ class security {
     }
 
     /**
+     * Runs a callback with exclusive access to one user's start of a real attempt in an instance.
+     *
+     * Starting an attempt checks the limits, the cooldown and the retry cost and then creates the row.
+     * Without a lock two requests of the same student racing each other both pass the checks before
+     * either creates its row, so both create an attempt (and both charge the retry cost): the student
+     * plays more matches than the activity allows. There is no attempt or token to key a lock off yet,
+     * so this locks by userid+playerpuzzleid, like with_locked_user_stock().
+     *
+     * @param int $userid The user ID.
+     * @param int $playerpuzzleid The instance ID.
+     * @param callable $callback Returns whatever the caller wants back.
+     * @return mixed|false The callback's return value, or false if the lock could not be acquired in time.
+     */
+    public static function with_locked_attempt_start(int $userid, int $playerpuzzleid, callable $callback): mixed {
+        $factory = \core\lock\lock_config::get_lock_factory('mod_playerpuzzle');
+        $lock = $factory->get_lock('start_' . $userid . '_' . $playerpuzzleid, self::LOCK_TIMEOUT_SECONDS);
+        if (!$lock) {
+            return false;
+        }
+
+        try {
+            return $callback();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
      * Runs a callback with exclusive access to one user's loadout stock for an instance,
      * closing the same TOCTOU window with_locked_attempt() closes for an in-progress
      * attempt — but a pre-match purchase has no attempt/token to key the lock off, so this

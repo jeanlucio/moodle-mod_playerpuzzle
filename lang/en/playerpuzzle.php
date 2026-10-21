@@ -385,6 +385,7 @@ $string['source'] = 'Source';
 $string['source_ai'] = 'AI';
 $string['source_bank'] = 'Question bank';
 $string['source_manual'] = 'Manual';
+$string['startbusy'] = 'Your previous request to start a match is still being processed; please try again in a moment.';
 $string['statuscolumnlabel'] = 'Status';
 $string['stockbusy'] = 'Your coins and items are being updated by another action; please try again.';
 $string['stockpurchaselocked'] = 'Another purchase is already in progress; please try again.';

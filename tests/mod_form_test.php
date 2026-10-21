@@ -695,4 +695,124 @@ final class mod_form_test extends \advanced_testcase {
         $this->assertNotEmpty($limits, 'The name field has no maxlength rule.');
         $this->assertLessThanOrEqual(255, min($limits));
     }
+
+    /**
+     * A rule whose box was unticked is stored as 0.
+     *
+     * A browser sends neither an unticked box nor the disabled count next to it, so the form hands back
+     * the count it loaded from the database. Unless the form clears it, the update keeps the old count
+     * and the teacher can never remove the rule.
+     *
+     * @return void
+     */
+    public function test_an_unticked_completion_rule_is_submitted_as_zero(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $formobj = $this->build_form_object($instance, $cm);
+
+        $data = (object) [
+            'completionunlocked' => 1,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionattempts' => 3,
+            'completionwins' => 2,
+            'completionwinsenabled' => 1,
+        ];
+        $formobj->data_postprocessing($data);
+
+        $this->assertSame(0, (int) $data->completionattempts);
+        $this->assertSame(2, (int) $data->completionwins);
+    }
+
+    /**
+     * Both rules go off when the tracking is not automatic, and stay untouched when the form locks them.
+     *
+     * @return void
+     */
+    public function test_completion_rules_only_stay_on_with_automatic_tracking(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $formobj = $this->build_form_object($instance, $cm);
+
+        $manual = (object) [
+            'completionunlocked' => 1,
+            'completion' => COMPLETION_TRACKING_MANUAL,
+            'completionattempts' => 3,
+            'completionattemptsenabled' => 1,
+            'completionwins' => 2,
+            'completionwinsenabled' => 1,
+        ];
+        $formobj->data_postprocessing($manual);
+        $this->assertSame(0, (int) $manual->completionattempts);
+        $this->assertSame(0, (int) $manual->completionwins);
+
+        $locked = (object) [
+            'completion' => COMPLETION_TRACKING_MANUAL,
+            'completionattempts' => 3,
+            'completionwins' => 2,
+        ];
+        $formobj->data_postprocessing($locked);
+        $this->assertSame(3, (int) $locked->completionattempts);
+        $this->assertSame(2, (int) $locked->completionwins);
+    }
+
+    /**
+     * The whole save: a rule that was configured really goes to 0 in the database once its box is unticked.
+     *
+     * @return void
+     */
+    public function test_saving_with_a_rule_unticked_clears_it_in_the_database(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/mod/playerpuzzle/lib.php');
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $instance = $this->getDataGenerator()->create_module('playerpuzzle', [
+            'course' => $course->id,
+            'completion' => COMPLETION_TRACKING_AUTOMATIC,
+            'completionattempts' => 3,
+            'completionwins' => 2,
+        ]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $this->course = $course;
+        $formobj = $this->build_form_object($instance, $cm);
+
+        // What the form returns after the teacher unticked "attempts": the count falls back to the stored 3.
+        $data = $DB->get_record('playerpuzzle', ['id' => $instance->id], '*', MUST_EXIST);
+        $data->instance = $instance->id;
+        $data->completionunlocked = 1;
+        $data->completion = COMPLETION_TRACKING_AUTOMATIC;
+        $data->completionwinsenabled = 1;
+
+        $formobj->data_postprocessing($data);
+        playerpuzzle_update_instance($data, $formobj);
+
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle', 'completionattempts', ['id' => $instance->id]));
+        $this->assertSame(2, (int) $DB->get_field('playerpuzzle', 'completionwins', ['id' => $instance->id]));
+    }
+
+    /**
+     * The rule elements carry the form's suffix.
+     *
+     * The core shows the form on the "Default activity completion" page with a suffix and removes any
+     * custom rule whose name lacks it, which would erase the rule from the defaults of every new activity.
+     *
+     * @return void
+     */
+    public function test_completion_rule_elements_carry_the_form_suffix(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $formobj = $this->build_form_object($instance, $cm);
+        $mform = (new \ReflectionProperty(\mod_playerpuzzle_mod_form::class, '_form'))->getValue($formobj);
+
+        $formobj->set_suffix('_playerpuzzle');
+        $names = $formobj->add_completion_rules();
+
+        $this->assertSame(['completionattemptsgroup_playerpuzzle', 'completionwinsgroup_playerpuzzle'], $names);
+        foreach ($names as $name) {
+            $this->assertTrue($mform->elementExists($name));
+        }
+        $this->assertFalse($mform->elementExists('completionattemptsgroup'));
+    }
 }

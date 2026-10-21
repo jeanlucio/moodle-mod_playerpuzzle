@@ -293,12 +293,13 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             $errors['hud_win_grant_qty'] = get_string('error_hud_cost_qty', 'mod_playerpuzzle');
         }
 
-        if (!empty($data['completionattemptsenabled']) && (int) $data['completionattempts'] < 1) {
-            $errors['completionattemptsgroup'] = get_string('error_completionattempts', 'mod_playerpuzzle');
+        $suffix = $this->get_suffix();
+        if (!empty($data['completionattemptsenabled' . $suffix]) && (int) $data['completionattempts' . $suffix] < 1) {
+            $errors['completionattemptsgroup' . $suffix] = get_string('error_completionattempts', 'mod_playerpuzzle');
         }
 
-        if (!empty($data['completionwinsenabled']) && (int) $data['completionwins'] < 1) {
-            $errors['completionwinsgroup'] = get_string('error_completionwins', 'mod_playerpuzzle');
+        if (!empty($data['completionwinsenabled' . $suffix]) && (int) $data['completionwins' . $suffix] < 1) {
+            $errors['completionwinsgroup' . $suffix] = get_string('error_completionwins', 'mod_playerpuzzle');
         }
 
         if ((int) ($data['cooldown_amount'] ?? 0) < 0) {
@@ -348,40 +349,45 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
     /**
      * Adds custom completion rules to Moodle completion section.
      *
+     * The element names carry the form's suffix. The core shows this form on the "Default activity
+     * completion" page with the suffix "_playerpuzzle" and drops any custom rule whose name lacks it,
+     * which would also erase the rule from the defaults of every new activity.
+     *
      * @return array
      */
     public function add_completion_rules(): array {
         $mform = $this->_form;
+        $suffix = $this->get_suffix();
 
         $attemptsgroup = [];
-        $attemptsgroup[] = $mform->createElement('checkbox', 'completionattemptsenabled', '', '');
-        $attemptsgroup[] = $mform->createElement('text', 'completionattempts', '', ['size' => 3]);
+        $attemptsgroup[] = $mform->createElement('checkbox', 'completionattemptsenabled' . $suffix, '', '');
+        $attemptsgroup[] = $mform->createElement('text', 'completionattempts' . $suffix, '', ['size' => 3]);
         $mform->addGroup(
             $attemptsgroup,
-            'completionattemptsgroup',
+            'completionattemptsgroup' . $suffix,
             get_string('completionattemptsgroup', 'mod_playerpuzzle'),
             [' '],
             false
         );
-        $mform->setType('completionattempts', PARAM_INT);
-        $mform->setDefault('completionattempts', 1);
-        $mform->disabledIf('completionattempts', 'completionattemptsenabled', 'notchecked');
+        $mform->setType('completionattempts' . $suffix, PARAM_INT);
+        $mform->setDefault('completionattempts' . $suffix, 1);
+        $mform->disabledIf('completionattempts' . $suffix, 'completionattemptsenabled' . $suffix, 'notchecked');
 
         $winsgroup = [];
-        $winsgroup[] = $mform->createElement('checkbox', 'completionwinsenabled', '', '');
-        $winsgroup[] = $mform->createElement('text', 'completionwins', '', ['size' => 3]);
+        $winsgroup[] = $mform->createElement('checkbox', 'completionwinsenabled' . $suffix, '', '');
+        $winsgroup[] = $mform->createElement('text', 'completionwins' . $suffix, '', ['size' => 3]);
         $mform->addGroup(
             $winsgroup,
-            'completionwinsgroup',
+            'completionwinsgroup' . $suffix,
             get_string('completionwinsgroup', 'mod_playerpuzzle'),
             [' '],
             false
         );
-        $mform->setType('completionwins', PARAM_INT);
-        $mform->setDefault('completionwins', 1);
-        $mform->disabledIf('completionwins', 'completionwinsenabled', 'notchecked');
+        $mform->setType('completionwins' . $suffix, PARAM_INT);
+        $mform->setDefault('completionwins' . $suffix, 1);
+        $mform->disabledIf('completionwins' . $suffix, 'completionwinsenabled' . $suffix, 'notchecked');
 
-        return ['completionattemptsgroup', 'completionwinsgroup'];
+        return ['completionattemptsgroup' . $suffix, 'completionwinsgroup' . $suffix];
     }
 
     /**
@@ -391,8 +397,39 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
      * @return bool
      */
     public function completion_rule_enabled($data): bool {
-        return (!empty($data['completionattemptsenabled']) && (int) $data['completionattempts'] > 0)
-            || (!empty($data['completionwinsenabled']) && (int) $data['completionwins'] > 0);
+        $suffix = $this->get_suffix();
+
+        return (!empty($data['completionattemptsenabled' . $suffix]) && (int) $data['completionattempts' . $suffix] > 0)
+            || (!empty($data['completionwinsenabled' . $suffix]) && (int) $data['completionwins' . $suffix] > 0);
+    }
+
+    /**
+     * Stores a rule that was switched off as 0.
+     *
+     * A browser does not send an unticked checkbox or a disabled field, and the form then falls back to
+     * the value that was loaded from the database, so the update would keep the old count and the teacher
+     * could never remove the rule. The rules only apply with automatic tracking, so they are also cleared
+     * when the teacher switches to another tracking mode.
+     *
+     * @param \stdClass $data Submitted data.
+     * @return void
+     */
+    public function data_postprocessing($data): void {
+        parent::data_postprocessing($data);
+
+        if (empty($data->completionunlocked)) {
+            return;
+        }
+
+        $suffix = $this->get_suffix();
+        $automatic = !empty($data->{'completion' . $suffix})
+            && (int) $data->{'completion' . $suffix} === COMPLETION_TRACKING_AUTOMATIC;
+
+        foreach (['completionattempts', 'completionwins'] as $rule) {
+            if (!$automatic || empty($data->{$rule . 'enabled' . $suffix})) {
+                $data->{$rule . $suffix} = 0;
+            }
+        }
     }
 
     /**
@@ -406,11 +443,11 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
     public function data_preprocessing(&$defaultvalues): void {
         parent::data_preprocessing($defaultvalues);
 
-        if (!empty($defaultvalues['completionattempts'])) {
-            $defaultvalues['completionattemptsenabled'] = 1;
-        }
-        if (!empty($defaultvalues['completionwins'])) {
-            $defaultvalues['completionwinsenabled'] = 1;
+        $suffix = $this->get_suffix();
+        foreach (['completionattempts', 'completionwins'] as $rule) {
+            if (!empty($defaultvalues[$rule . $suffix])) {
+                $defaultvalues[$rule . 'enabled' . $suffix] = 1;
+            }
         }
 
         if (isset($defaultvalues['cooldown_seconds'])) {

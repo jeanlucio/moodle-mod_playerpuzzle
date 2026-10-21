@@ -921,4 +921,99 @@ final class backup_restore_test extends \advanced_testcase {
         $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
         $this->assertSame(0, (int) $newinstance->hud_win_grant_item);
     }
+
+    /**
+     * The links inside a bank question's text, hint and answers survive a backup and restore.
+     *
+     * The backup transformer encodes every link in the text columns it writes (a link to a course
+     * becomes a placeholder), so the restore has to decode each column a student reads. Only the intro
+     * was registered, which left the placeholder itself in the restored question.
+     *
+     * @return void
+     */
+    public function test_backup_restore_decodes_links_in_bank_question_text(): void {
+        global $CFG;
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $link = $CFG->wwwroot . '/course/view.php?id=' . $course->id;
+        questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Read <a href="' . $link . '">the course</a> first.',
+            'Hint: <a href="' . $link . '">the course</a>.',
+            [
+                ['text' => 'See <a href="' . $link . '">the course</a>', 'iscorrect' => true],
+                ['text' => 'None', 'iscorrect' => false],
+            ],
+            2,
+            'manual',
+            true,
+            FORMAT_HTML
+        );
+
+        $newcourse = $this->backup_and_restore_into_new_course($course);
+
+        $newinstance = $this->get_restored_instance($newcourse);
+        $newquestions = questions_repository::get_questions_for_instance((int) $newinstance->id);
+        $newquestion = reset($newquestions);
+        $newlink = $CFG->wwwroot . '/course/view.php?id=' . $newcourse->id;
+        $this->assertStringContainsString($newlink, $newquestion->questiontext);
+        $this->assertStringContainsString($newlink, $newquestion->hint);
+        foreach ($newquestion->answers as $answer) {
+            $this->assertStringNotContainsString('$@', $answer->answertext);
+        }
+        $correct = array_values(array_filter($newquestion->answers, fn($a) => (int) $a->iscorrect === 1));
+        $this->assertStringContainsString($newlink, $correct[0]->answertext);
+        $this->assertStringNotContainsString('$@', $newquestion->questiontext . $newquestion->hint);
+    }
+
+    /**
+     * The links in the question text a student's attempt logged for the post-game review are decoded
+     * too, since that is the text the review shows.
+     *
+     * @return void
+     */
+    public function test_backup_restore_decodes_links_in_the_logged_attempt_question(): void {
+        global $CFG, $DB;
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $link = $CFG->wwwroot . '/course/view.php?id=' . $course->id;
+        $attemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id,
+            'userid'         => $user->id,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'won',
+            'timecreated'    => time(),
+            'timefinished'   => time(),
+        ]);
+        $logid = $this->make_question_log($attemptid);
+        $DB->set_field('playerpuzzle_attempt_questions', 'questiontext', 'Read <a href="' . $link . '">this</a>', ['id' => $logid]);
+
+        $newcourse = $this->backup_and_restore_into_new_course($course);
+
+        $newinstance = $this->get_restored_instance($newcourse);
+        $newattempt = $DB->get_record('playerpuzzle_attempts', ['playerpuzzleid' => $newinstance->id], '*', MUST_EXIST);
+        $newlog = $DB->get_record('playerpuzzle_attempt_questions', ['attemptid' => $newattempt->id], '*', MUST_EXIST);
+        $this->assertStringContainsString($CFG->wwwroot . '/course/view.php?id=' . $newcourse->id, $newlog->questiontext);
+        $this->assertStringNotContainsString('$@', $newlog->questiontext);
+    }
+
+    /**
+     * The activity a course restore created in the new course.
+     *
+     * @param \stdClass $newcourse The course the backup was restored into.
+     * @return \stdClass The playerpuzzle record.
+     */
+    private function get_restored_instance(\stdClass $newcourse): \stdClass {
+        global $DB;
+        return $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+    }
 }

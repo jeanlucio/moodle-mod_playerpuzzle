@@ -58,6 +58,19 @@ class restore_playerpuzzle_activity_task extends restore_activity_task {
     public static function define_decode_contents(): array {
         return [
             new restore_decode_content('playerpuzzle', ['intro'], 'playerpuzzle'),
+            // The backup transformer encodes the links inside every text column it writes, so each
+            // column a student reads has to be decoded back, under the mapping its restore step registers.
+            new restore_decode_content(
+                'playerpuzzle_questions',
+                ['questiontext', 'generalfeedback', 'hint'],
+                'playerpuzzle_bankquestion'
+            ),
+            new restore_decode_content('playerpuzzle_question_answers', ['answertext'], 'playerpuzzle_bankanswer'),
+            new restore_decode_content(
+                'playerpuzzle_attempt_questions',
+                ['questiontext', 'chosenanswer', 'correctanswer'],
+                'playerpuzzle_attempt_question'
+            ),
         ];
     }
 

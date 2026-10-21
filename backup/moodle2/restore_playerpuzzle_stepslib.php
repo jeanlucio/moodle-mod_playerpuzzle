@@ -256,6 +256,7 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         global $DB;
 
         $data = (object) $data;
+        $oldid = $data->id;
 
         $data->attemptid = $this->get_new_parentid('playerpuzzle_attempt');
         // Questionid points at this activity's own bank (see the Wave 1 revert to a single
@@ -264,7 +265,9 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         $data->questionid = (int) $this->get_mappingid('playerpuzzle_bankquestion', $data->questionid, 0);
         $data->timecreated = $this->apply_date_offset($data->timecreated);
 
-        $DB->insert_record('playerpuzzle_attempt_questions', $data);
+        $newitemid = $DB->insert_record('playerpuzzle_attempt_questions', $data);
+        // Registered so the activity task can decode the links in the snapshot text of this row.
+        $this->set_mapping('playerpuzzle_attempt_question', $oldid, $newitemid);
     }
 
     /**

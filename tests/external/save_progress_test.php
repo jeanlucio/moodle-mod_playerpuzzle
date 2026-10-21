@@ -109,8 +109,15 @@ final class save_progress_test extends \advanced_testcase {
         // existing test in this file, none of which exercises the minimum-questions
         // backstop, keeps banking a reported victory without first answering any
         // questions; test_minquestions_* below override it explicitly.
+        // Single Match by default: a victory is reported to save_progress only when there is no next
+        // phase, which a Campaign attempt reaches at its last phase (see the useadvancephase tests).
         $record = array_merge(
-            ['course' => $this->course->id, 'basebosshp' => 1000, 'minquestions' => 0],
+            [
+                'course' => $this->course->id,
+                'basebosshp' => 1000,
+                'minquestions' => 0,
+                'gamemode' => constants::GAMEMODE_SINGLE,
+            ],
             $overrides
         );
         $instance = $generator->create_instance($record);
@@ -1205,5 +1212,131 @@ final class save_progress_test extends \advanced_testcase {
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
         $this->assertNotSame('won', $attempt->status);
         $this->assertSame(0, (int) $attempt->timephasewon);
+    }
+
+    /**
+     * Creates a Campaign attempt on the given level and phase whose phase the replay verifies as won, and
+     * reports a victory for it through save_progress.
+     *
+     * @param array $instanceoverrides Instance overrides.
+     * @param int $level The attempt's level.
+     * @param int $phase The attempt's phase.
+     * @param bool $isdemo Whether the attempt is a Demo.
+     * @return array [instance, token, response]
+     */
+    private function report_campaign_victory(array $instanceoverrides, int $level, int $phase, bool $isdemo = false): array {
+        $instance = $this->make_instance(array_merge(
+            ['gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 3],
+            $instanceoverrides
+        ));
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'normal',
+            $level,
+            $phase,
+            $isdemo
+        );
+        $this->make_verified_phase($token);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => 500,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        return [$instance, $token, $result];
+    }
+
+    /**
+     * A genuine win of a mid-Campaign phase cannot close the attempt as 'won' through save_progress: it has
+     * to go through advance_phase. Closing it would satisfy the "wins" completion rule and the report's
+     * completion count without the Campaign being played.
+     *
+     * @return void
+     */
+    public function test_a_mid_campaign_victory_is_refused_and_the_attempt_stays_resumable(): void {
+        global $DB;
+
+        [$instance, $token, $result] = $this->report_campaign_victory([], 1, 1);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('useadvancephase', $result['exception']->errorcode);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame('inprogress', $attempt->status);
+        $this->assertSame(
+            0,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
+    }
+
+    /**
+     * Phase 10 of a level that is not the last one still has a next level, and the last level still has
+     * phases left before the 10th.
+     *
+     * @return void
+     */
+    public function test_a_victory_is_refused_while_either_a_phase_or_a_level_remains(): void {
+        [, , $lastphase] = $this->report_campaign_victory([], 1, 10);
+        $this->assertSame('useadvancephase', $lastphase['exception']->errorcode);
+
+        [, , $lastlevel] = $this->report_campaign_victory([], 3, 9);
+        $this->assertSame('useadvancephase', $lastlevel['exception']->errorcode);
+    }
+
+    /**
+     * The victory that ends the whole Campaign, on the last phase of the last level, is the one this
+     * endpoint records as 'won'.
+     *
+     * @return void
+     */
+    public function test_the_victory_that_ends_the_campaign_is_accepted(): void {
+        global $DB;
+
+        [, $token, $result] = $this->report_campaign_victory([], 3, 10);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame('won', $DB->get_field('playerpuzzle_attempts', 'status', ['token' => $token]));
+    }
+
+    /**
+     * Losing in the middle of a Campaign is a legitimate way to end the attempt, so only a victory is held
+     * back.
+     *
+     * @return void
+     */
+    public function test_a_defeat_in_the_middle_of_a_campaign_is_accepted(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 3]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 2, 4);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame('lost', $DB->get_field('playerpuzzle_attempts', 'status', ['token' => $token]));
+    }
+
+    /**
+     * A Demo on a Campaign instance is a one-shot fight, so its victory is never held back.
+     *
+     * @return void
+     */
+    public function test_a_demo_victory_on_a_campaign_instance_is_accepted(): void {
+        [, , $result] = $this->report_campaign_victory([], 1, 1, true);
+
+        $this->assertFalse($result['error']);
     }
 }

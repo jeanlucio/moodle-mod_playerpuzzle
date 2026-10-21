@@ -77,9 +77,10 @@ final class game_completed_test extends \advanced_testcase {
     public function test_victory_triggers_game_completed(): void {
         global $DB;
 
-        $instance = $this->make_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        $instance = $this->make_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 2]);
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        // A Campaign victory is recorded by save_progress only on the last phase of the last level.
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 2, 10);
         // A win only counts once the server-side replay verifies it: seed 2's one-move kill,
         // with boss HP and combo damage frozen equal (see tests/local/engine/replay_test.php).
         $DB->update_record('playerpuzzle_attempts', (object) [
@@ -133,7 +134,7 @@ final class game_completed_test extends \advanced_testcase {
      * @return void
      */
     public function test_replayed_token_does_not_trigger_a_second_event(): void {
-        $instance = $this->make_instance();
+        $instance = $this->make_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
         save_progress::execute($instance->cmid, $token, 1, 500, 0, 0);

@@ -399,6 +399,7 @@ $string['tutorialballoon_star'] = 'Estrela: aumenta seu multiplicador de ataque 
 $string['tutorialballoon_sword'] = 'Espada: causa dano direto no chefe.';
 $string['tutorialquestioninstruction'] = 'Responda certo pra causar um golpe crítico. Se errar, você é quem sofre dano — pense bem antes de escolher!';
 $string['unlimited'] = 'Ilimitado';
+$string['useadvancephase'] = 'Esta vitória não encerra a Campanha — avance para a próxima fase.';
 $string['victory'] = '🌟 VITÓRIA! 🌟';
 $string['victoryunverifiedlost'] = 'Não foi possível confirmar sua vitória com o servidor, e os reinícios desta fase acabaram, então a partida conta como derrota.';
 $string['victoryunverifiedrestart'] = 'Não foi possível confirmar sua vitória com o servidor, então esta fase vai recomeçar. Sua tentativa continua valendo.';

@@ -35,6 +35,7 @@ use mod_playerpuzzle\local\attempt_questions;
 use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\engine\combat;
+use mod_playerpuzzle\local\engine\combat_engine;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
 use mod_playerpuzzle\local\move_log;
@@ -137,6 +138,25 @@ class save_progress extends external_api {
                         '',
                         (int) $playerpuzzle->minquestions
                     );
+                }
+
+                // In a Campaign a win only ends the attempt on the last phase of the last level; before
+                // that it has to go through advance_phase. combat.js calls this endpoint only when there
+                // is no next phase, but a forged call could close a mid-Campaign attempt as 'won' after a
+                // single genuine phase, which satisfies the "wins" completion rule and the report's
+                // completion count without the Campaign being played. A Demo is always reported to the
+                // client as a one-shot fight, so it never has a next phase.
+                if (
+                    $claimedvictory
+                    && !(bool) $attempt->isdemo
+                    && combat_engine::has_next_phase([
+                        'gamemode'     => $playerpuzzle->gamemode,
+                        'currentphase' => $attempt->currentphase,
+                        'currentlevel' => $attempt->currentlevel,
+                        'maxlevels'    => $playerpuzzle->maxlevels,
+                    ])
+                ) {
+                    throw new moodle_exception('useadvancephase', 'mod_playerpuzzle');
                 }
 
                 // The phase's last events (the final move and whatever it triggered) usually

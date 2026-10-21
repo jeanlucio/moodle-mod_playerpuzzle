@@ -399,6 +399,7 @@ $string['tutorialballoon_star'] = 'Star: boosts your attack multiplier for the r
 $string['tutorialballoon_sword'] = 'Sword: deals direct damage to the boss.';
 $string['tutorialquestioninstruction'] = 'Answer correctly to deal a critical hit. Answer wrong and you take damage instead — think it through before choosing!';
 $string['unlimited'] = 'Unlimited';
+$string['useadvancephase'] = 'This victory is not the end of the Campaign — advance to the next phase instead.';
 $string['victory'] = '🌟 VICTORY! 🌟';
 $string['victoryunverifiedlost'] = 'Your victory could not be confirmed by the server, and this phase has no restarts left, so this match counts as a defeat.';
 $string['victoryunverifiedrestart'] = 'Your victory could not be confirmed by the server, so this phase will restart. Your attempt still counts.';

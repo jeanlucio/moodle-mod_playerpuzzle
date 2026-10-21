@@ -364,6 +364,7 @@ $string['report_student'] = 'Student';
 $string['report_studenttable'] = 'Students';
 $string['report_title'] = 'Report';
 $string['requirejserror'] = 'Critical error: could not load the game engine.';
+$string['resetplayerpuzzleuserdata'] = 'Delete the students\' attempts, PuzzleCoin and consumables';
 $string['saveerror'] = 'Error saving to server.';
 $string['savegeneratedquestions'] = 'Save selected';
 $string['savingprogress'] = 'Saving progress...';

@@ -364,6 +364,7 @@ $string['report_student'] = 'Estudante';
 $string['report_studenttable'] = 'Estudantes';
 $string['report_title'] = 'Relatório';
 $string['requirejserror'] = 'Erro crítico: não foi possível carregar o motor do jogo.';
+$string['resetplayerpuzzleuserdata'] = 'Excluir as tentativas, os PuzzleCoin e os consumíveis dos estudantes';
 $string['saveerror'] = 'Erro ao salvar no servidor.';
 $string['savegeneratedquestions'] = 'Salvar selecionadas';
 $string['savingprogress'] = 'Salvando progresso...';

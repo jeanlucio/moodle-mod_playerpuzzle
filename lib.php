@@ -427,6 +427,75 @@ function playerpuzzle_delete_instance(int $id): bool {
 }
 
 /**
+ * Adds the PlayerPuzzle section to the course reset form.
+ *
+ * @param MoodleQuickForm $mform The course reset form.
+ * @return void
+ */
+function playerpuzzle_reset_course_form_definition(MoodleQuickForm $mform): void {
+    $mform->addElement('header', 'playerpuzzleheader', get_string('modulenameplural', 'mod_playerpuzzle'));
+    $mform->addElement(
+        'advcheckbox',
+        'reset_playerpuzzle_userdata',
+        get_string('resetplayerpuzzleuserdata', 'mod_playerpuzzle')
+    );
+}
+
+/**
+ * Returns the default values for the PlayerPuzzle course reset form.
+ *
+ * @param stdClass $course The course being reset.
+ * @return array
+ */
+function playerpuzzle_reset_course_form_defaults(stdClass $course): array {
+    return ['reset_playerpuzzle_userdata' => 1];
+}
+
+/**
+ * Removes what the students accumulated in the course's PlayerPuzzle activities when it is reset.
+ *
+ * Core clears the completion and the grades by itself but only asks the activities that define this
+ * function to clear their own data. Left behind, the attempts would satisfy the completion rule again,
+ * spend the attempt limit and bring the old grade back for a student enrolled again, and the stock of
+ * PuzzleCoin and consumables would stay with them. The questions, being the teacher's content, stay.
+ *
+ * @param stdClass $data Reset form data, must contain courseid.
+ * @return array Status rows for the course reset report.
+ */
+function playerpuzzle_reset_userdata(stdClass $data): array {
+    global $DB;
+
+    $status = [];
+    if (empty($data->reset_playerpuzzle_userdata)) {
+        return $status;
+    }
+
+    $instances = $DB->get_records('playerpuzzle', ['course' => $data->courseid]);
+    if (empty($instances)) {
+        return $status;
+    }
+
+    [$insql, $inparams] = $DB->get_in_or_equal(array_keys($instances), SQL_PARAMS_NAMED, 'ppid');
+    $attempts = "SELECT id FROM {playerpuzzle_attempts} WHERE playerpuzzleid $insql";
+    $DB->delete_records_select('playerpuzzle_attempt_questions', "attemptid IN ($attempts)", $inparams);
+    $DB->delete_records_select('playerpuzzle_attempt_consumables', "attemptid IN ($attempts)", $inparams);
+    $DB->delete_records_select('playerpuzzle_attempts', "playerpuzzleid $insql", $inparams);
+    $DB->delete_records_select('playerpuzzle_user_stock', "playerpuzzleid $insql", $inparams);
+
+    foreach ($instances as $instance) {
+        playerpuzzle_grade_item_update($instance, 'reset');
+    }
+
+    $status[] = [
+        'component' => get_string('modulenameplural', 'mod_playerpuzzle'),
+        'item'      => get_string('resetplayerpuzzleuserdata', 'mod_playerpuzzle'),
+        'error'     => false,
+    ];
+
+    return $status;
+}
+
+/**
  * Adds a link to the teacher report in the activity administration navigation.
  *
  * @param settings_navigation $settings The settings navigation object.

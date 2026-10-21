@@ -163,7 +163,10 @@ class game_page_service {
         }
 
         $qty = max(1, (int) $instance->hud_retry_cost_qty);
-        if (!hud_service::consume_item($blockinstanceid, $userid, $itemid, $qty)) {
+        $consumed = hud_service::consume_item($blockinstanceid, $userid, $itemid, $qty);
+        // Null means the item is gone from PlayerHUD (deleted, or the block was replaced): the cost
+        // can never be paid, so it is waived. Only a genuine shortfall blocks the retry.
+        if ($consumed === false) {
             throw new moodle_exception('insufficientretrycost', 'mod_playerpuzzle', $returnurl);
         }
     }

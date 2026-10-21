@@ -97,7 +97,13 @@ class transfer_hud_coins extends external_api {
                     throw new moodle_exception('hudeconomyunavailable', 'mod_playerpuzzle');
                 }
 
-                if (!hud_service::consume_item($blockinstanceid, (int) $USER->id, $itemid, $params['amount'])) {
+                $consumed = hud_service::consume_item($blockinstanceid, (int) $USER->id, $itemid, $params['amount']);
+                // Null means the coin item is gone from PlayerHUD: nothing was spent, so nothing may
+                // be credited either.
+                if ($consumed === null) {
+                    throw new moodle_exception('hudeconomyunavailable', 'mod_playerpuzzle');
+                }
+                if ($consumed === false) {
                     throw new moodle_exception('insufficienthudstock', 'mod_playerpuzzle');
                 }
 

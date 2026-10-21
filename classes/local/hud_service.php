@@ -158,14 +158,16 @@ class hud_service {
      * @param int $userid User ID.
      * @param int $itemid PlayerHUD item ID configured for this consumable.
      * @param int $qty Number of units to consume.
-     * @return bool Whether the units were actually consumed (false: unconfigured, PlayerHUD
-     *  unavailable, item does not belong to this block, or insufficient stock).
+     * @return bool|null True when the units were consumed; false when they could not be
+     *  (unconfigured, PlayerHUD unavailable, or insufficient stock); null when the item no
+     *  longer belongs to this block (deleted, or the block was replaced), which can never be
+     *  paid, so the caller should waive the cost instead of blocking the student forever.
      */
-    public static function consume_item(int $blockinstanceid, int $userid, int $itemid, int $qty): bool {
+    public static function consume_item(int $blockinstanceid, int $userid, int $itemid, int $qty): ?bool {
         if (!self::is_installed() || $itemid <= 0 || $qty <= 0) {
             return false;
         }
-        return (bool) \block_playerhud\local\external_items::consume($blockinstanceid, $itemid, $userid, $qty, 'playerpuzzle');
+        return \block_playerhud\local\external_items::consume($blockinstanceid, $itemid, $userid, $qty, 'playerpuzzle');
     }
 
     /**

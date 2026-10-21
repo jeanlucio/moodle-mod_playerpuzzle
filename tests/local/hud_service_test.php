@@ -305,4 +305,29 @@ final class hud_service_test extends \advanced_testcase {
         hud_service::grant_item($biid, $user->id, $itemid, 0, false);
         $this->assertSame(0, hud_service::get_upgrade_level($biid, $user->id, $itemid));
     }
+
+    /**
+     * Tests that consume_item() tells the three outcomes apart: true when the stock was spent, false
+     * for a genuine shortfall, and null when the item no longer belongs to the block. A caller that
+     * folded null into false would tell the student the balance is too low for an item that can never
+     * be paid.
+     *
+     * @return void
+     */
+    public function test_consume_item_distinguishes_spent_short_and_invalid_item(): void {
+        global $DB;
+        $this->skip_if_no_playerhud();
+        $user = $this->getDataGenerator()->create_user();
+        $course = $this->getDataGenerator()->create_course();
+        $biid = $this->make_block_instance($course);
+        $itemid = $this->make_item($biid);
+        hud_service::grant_item($biid, $user->id, $itemid, 3, false);
+
+        $this->assertTrue(hud_service::consume_item($biid, $user->id, $itemid, 2));
+        $this->assertSame(1, hud_service::get_upgrade_level($biid, $user->id, $itemid));
+        $this->assertFalse(hud_service::consume_item($biid, $user->id, $itemid, 5));
+
+        $DB->delete_records('block_playerhud_items', ['id' => $itemid]);
+        $this->assertNull(hud_service::consume_item($biid, $user->id, $itemid, 1));
+    }
 }

@@ -342,4 +342,28 @@ final class transfer_hud_coins_test extends \advanced_testcase {
         $this->assertSame('guestdemoonly', $result['exception']->errorcode);
         $this->assertFalse($DB->record_exists('playerpuzzle_user_stock', ['userid' => $USER->id]));
     }
+
+    /**
+     * Tests that a transfer whose coin item was deleted from PlayerHUD is refused as an unavailable
+     * economy, crediting nothing: no stock was spent, so no PuzzleCoin may be created.
+     *
+     * @return void
+     */
+    public function test_transfer_rejects_when_the_coin_item_was_deleted_from_playerhud(): void {
+        global $DB;
+
+        [, $coinitemid] = $this->make_hud_item();
+        $instance = $this->make_instance(['hud_coin_item' => $coinitemid]);
+        $this->setUser($this->student);
+        $DB->delete_records('block_playerhud_items', ['id' => $coinitemid]);
+
+        $result = $this->call_transfer(['cmid' => $instance->cmid, 'amount' => 10]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('hudeconomyunavailable', $result['exception']->errorcode);
+        $this->assertSame(
+            0,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
+    }
 }

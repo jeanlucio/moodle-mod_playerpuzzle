@@ -1017,4 +1017,22 @@ final class game_page_service_test extends \advanced_testcase {
             $this->assertSame('guestdemoonly', $e->errorcode);
         }
     }
+
+    /**
+     * Tests that a retry cost whose item was deleted from PlayerHUD is waived instead of blocking
+     * every student who has already played, with a message that claims their balance is too low.
+     *
+     * @return void
+     */
+    public function test_check_retry_cost_is_waived_when_the_item_was_deleted_from_playerhud(): void {
+        global $DB;
+
+        [, $itemid] = $this->make_hud_item();
+        [, $instance] = $this->make_cm_and_instance(['hud_retry_cost_item' => $itemid, 'hud_retry_cost_qty' => 3]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        $DB->delete_records('block_playerhud_items', ['id' => $itemid]);
+
+        game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+        $this->expectNotToPerformAssertions();
+    }
 }

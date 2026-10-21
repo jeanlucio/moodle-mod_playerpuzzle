@@ -595,6 +595,42 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a resumed phase is configured from the boss-side values it was started with, not from
+     * the activity's current ones. The server replay verifies the phase against the frozen copy, so a
+     * teacher editing the activity mid-phase must not make the resumed client calculate other damage,
+     * HP and coins than the server will.
+     *
+     * @return void
+     */
+    public function test_build_game_config_resumes_with_the_values_the_phase_started_with(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode'   => constants::GAMEMODE_SINGLE,
+            'basebosshp' => 200,
+            'bossdamage' => 10,
+            'coingain'   => 10,
+        ]);
+        $context = \context_module::instance($cm->id);
+        $studentid = (int) $this->student->id;
+
+        $first = game_page_service::build_game_config($cm, $instance, $context, $studentid, false);
+        $this->assertSame(10, $first['coingain']);
+
+        // The teacher edits the activity while the student is in the middle of the phase.
+        $DB->update_record('playerpuzzle', (object) [
+            'id' => $instance->id, 'basebosshp' => 900, 'bossdamage' => 40, 'coingain' => 50,
+        ]);
+        $edited = $DB->get_record('playerpuzzle', ['id' => $instance->id], '*', MUST_EXIST);
+
+        $resumed = game_page_service::build_game_config($cm, $edited, $context, $studentid, false);
+
+        $this->assertSame(200, $resumed['bosshp']);
+        $this->assertSame(10, $resumed['bossdamage']);
+        $this->assertSame(10, $resumed['coingain']);
+    }
+
+    /**
      * Tests that Single Match mode always resolves to the base HP unchanged, since its
      * attempts stay at Level 1, Phase 1 — no special-casing needed in the service.
      *

@@ -189,9 +189,10 @@ class security {
      *  attempt, and vice versa — the two are entirely separate resume namespaces.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned,
-     *  ->combatstate, ->rngseed, ->moveseq, ->isdemo, ->isnew (true when a brand new
-     *  attempt row was just created, so the caller can trigger a game_started event
-     *  exactly once per attempt).
+     *  ->combatstate, ->rngseed, ->moveseq, ->frozenbasebosshp, ->frozenbossdamage,
+     *  ->frozencoingain (the boss-side config the phase was started with, which the server
+     *  replay verifies against), ->isdemo, ->isnew (true when a brand new attempt row was
+     *  just created, so the caller can trigger a game_started event exactly once per attempt).
      */
     public static function resume_or_create_attempt_token(
         int $playerpuzzleid,
@@ -264,6 +265,9 @@ class security {
                 'combatstate' => $combatstate,
                 'rngseed' => (int) $attempt->rngseed,
                 'moveseq' => (int) $attempt->moveseq,
+                'frozenbasebosshp' => (int) $attempt->frozenbasebosshp,
+                'frozenbossdamage' => (int) $attempt->frozenbossdamage,
+                'frozencoingain' => (int) $attempt->frozencoingain,
                 'isdemo' => (bool) $attempt->isdemo,
                 'isnew' => false,
             ];
@@ -295,7 +299,7 @@ class security {
         $newrow = $DB->get_record(
             'playerpuzzle_attempts',
             ['token' => $token],
-            'id, isdemo, rngseed, moveseq',
+            'id, isdemo, rngseed, moveseq, frozenbasebosshp, frozenbossdamage, frozencoingain',
             MUST_EXIST
         );
 
@@ -311,6 +315,9 @@ class security {
             'combatstate' => null,
             'rngseed' => (int) $newrow->rngseed,
             'moveseq' => (int) $newrow->moveseq,
+            'frozenbasebosshp' => (int) $newrow->frozenbasebosshp,
+            'frozenbossdamage' => (int) $newrow->frozenbossdamage,
+            'frozencoingain' => (int) $newrow->frozencoingain,
             'isdemo' => (bool) $newrow->isdemo,
             'isnew' => true,
         ];

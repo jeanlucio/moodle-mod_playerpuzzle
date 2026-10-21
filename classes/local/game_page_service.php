@@ -278,14 +278,23 @@ class game_page_service {
                 $attemptinfo->currentlevel,
                 $attemptinfo->currentphase
             );
+            $coingain = (int) $instance->coingain;
         } else {
+            // The boss side is read from the config the phase was started with, not from the
+            // instance: the server replay verifies the phase against that frozen copy, so a
+            // teacher editing the activity mid-phase must not change what a resumed client
+            // calculates. A row that predates the frozen columns falls back to the instance.
+            $basebosshp = $attemptinfo->frozenbasebosshp ?: (int) $instance->basebosshp;
+            $basebossdamage = $attemptinfo->frozenbossdamage ?: (int) $instance->bossdamage;
+            $coingain = $attemptinfo->frozencoingain;
+
             // Boss HP and boss damage carry the level/phase scaling and then the difficulty
             // factor on top (Easy halves, Hard doubles). Student HP is never touched by
             // difficulty. save_progress/advance_phase apply the same factor to their own
             // clamp, so the grade a run produces is unaffected by the difficulty chosen.
             $bosshp = combat::apply_difficulty(
                 combat::calculate_boss_hp(
-                    (int) $instance->basebosshp,
+                    $basebosshp,
                     $attemptinfo->currentlevel,
                     $attemptinfo->currentphase
                 ),
@@ -301,7 +310,7 @@ class game_page_service {
             // level/phase.
             $bossdamage = combat::apply_difficulty(
                 combat::calculate_boss_hp(
-                    (int) $instance->bossdamage,
+                    $basebossdamage,
                     $attemptinfo->currentlevel,
                     $attemptinfo->currentphase
                 ),
@@ -387,7 +396,7 @@ class game_page_service {
             // Deliberately not scaled by level/phase, unlike bossdamage above: a teacher's
             // fixed-price consumable shop would otherwise get proportionally cheaper as a
             // campaign progresses.
-            'coingain'             => (int) $instance->coingain,
+            'coingain'             => $coingain,
             'bossavatar'           => $instance->bossavatar,
             'bossurl'              => $bossurl,
             'playerurl'            => $playerurl,

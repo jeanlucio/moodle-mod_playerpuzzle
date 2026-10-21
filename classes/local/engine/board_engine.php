@@ -41,6 +41,23 @@ namespace mod_playerpuzzle\local\engine;
  */
 class board_engine {
     /**
+     * Whether two cells are orthogonal neighbours, the only swap the board lets a player make.
+     *
+     * Mirrors the isAdjacent test of amd/src/board.js. The interface enforces it, so the server must
+     * too: a recorded log with a swap between distant cells would otherwise replay as a legitimate
+     * match and verify a win the rules do not allow.
+     *
+     * @param int $r1 Row of the first cell.
+     * @param int $c1 Column of the first cell.
+     * @param int $r2 Row of the second cell.
+     * @param int $c2 Column of the second cell.
+     * @return bool
+     */
+    public static function is_adjacent_swap(int $r1, int $c1, int $r2, int $c2): bool {
+        return abs($r1 - $r2) + abs($c1 - $c2) === 1;
+    }
+
+    /**
      * Swaps two cells' values in place.
      *
      * @param array $grid The board grid (mutated in place).

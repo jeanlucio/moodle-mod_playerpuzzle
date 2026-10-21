@@ -386,6 +386,25 @@ final class replay_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a swap between cells that are not neighbours is not replayed as a game. On seed 2
+     * the swap (0,3)-(3,1) forms a Sword match that kills a 10 HP boss, so a replay that applied it
+     * would verify a win the board does not let anyone play: board.js only swaps adjacent pieces.
+     *
+     * @return void
+     */
+    public function test_derive_returns_null_when_a_recorded_swap_is_between_distant_cells(): void {
+        $attempt = $this->make_attempt([
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 3, 'c2' => 1]]),
+            'frozenbasebosshp' => 10,
+            'frozenbossdamage' => 10,
+            'frozencoingain' => 10,
+        ]);
+
+        $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle()));
+    }
+
+    /**
      * Tests that a genuinely broken stored event (a 'move' entry missing the coordinate
      * fields it needs — something save_combat_state.php's own validation should always
      * prevent, but a corrupted row could not) is rejected cleanly rather than reaching

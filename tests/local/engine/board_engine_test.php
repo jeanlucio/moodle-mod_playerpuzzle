@@ -209,6 +209,23 @@ final class board_engine_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that only orthogonal neighbours are an allowed swap, as board.js lets the player make.
+     *
+     * @return void
+     */
+    public function test_is_adjacent_swap_only_accepts_orthogonal_neighbours(): void {
+        $this->assertTrue(board_engine::is_adjacent_swap(3, 3, 3, 4));
+        $this->assertTrue(board_engine::is_adjacent_swap(3, 3, 3, 2));
+        $this->assertTrue(board_engine::is_adjacent_swap(3, 3, 2, 3));
+        $this->assertTrue(board_engine::is_adjacent_swap(0, 7, 1, 7));
+
+        $this->assertFalse(board_engine::is_adjacent_swap(3, 3, 4, 4), 'A diagonal is not a neighbour.');
+        $this->assertFalse(board_engine::is_adjacent_swap(3, 3, 3, 3), 'A cell swapped with itself is not a move.');
+        $this->assertFalse(board_engine::is_adjacent_swap(3, 3, 3, 5));
+        $this->assertFalse(board_engine::is_adjacent_swap(0, 0, 7, 0));
+    }
+
+    /**
      * Tests that swap_in_grid exchanges two cells and is its own inverse.
      *
      * @return void

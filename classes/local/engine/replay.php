@@ -280,6 +280,11 @@ class replay {
                 if (($event['type'] ?? null) !== 'move' || !isset($event['r1'], $event['c1'], $event['r2'], $event['c2'])) {
                     return null;
                 }
+                // The board only lets a player swap neighbours (board.js), and move_log refuses any other
+                // swap; a stored log that still holds one is not a game the rules allow.
+                if (!board_engine::is_adjacent_swap($event['r1'], $event['c1'], $event['r2'], $event['c2'])) {
+                    return null;
+                }
                 $sim['eventindex']++;
 
                 board_engine::swap_in_grid($grid, $event['r1'], $event['c1'], $event['r2'], $event['c2']);

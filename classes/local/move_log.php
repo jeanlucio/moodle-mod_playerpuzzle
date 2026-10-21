@@ -24,6 +24,8 @@
 
 namespace mod_playerpuzzle\local;
 
+use mod_playerpuzzle\local\engine\board_engine;
+
 /**
  * Reads and writes the JSON array stored in playerpuzzle_attempts.movelog: an ordered log of
  * combat events for the whole current phase, kept cumulative across every checkpoint (never
@@ -121,7 +123,12 @@ class move_log {
                     return false;
                 }
             }
-            return true;
+            return board_engine::is_adjacent_swap(
+                (int) $event['r1'],
+                (int) $event['c1'],
+                (int) $event['r2'],
+                (int) $event['c2']
+            );
         }
 
         if ($event['type'] === 'consumable') {

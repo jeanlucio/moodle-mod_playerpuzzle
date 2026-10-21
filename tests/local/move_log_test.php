@@ -151,8 +151,27 @@ final class move_log_test extends \advanced_testcase {
      * @return void
      */
     public function test_is_valid_rejects_a_coordinate_at_or_past_the_board_edge(): void {
-        $this->assertFalse(move_log::is_valid([['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 8, 'c2' => 0]]));
-        $this->assertTrue(move_log::is_valid([['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 7, 'c2' => 0]]));
+        $this->assertFalse(move_log::is_valid([['type' => 'move', 'r1' => 7, 'c1' => 0, 'r2' => 8, 'c2' => 0]]));
+        $this->assertTrue(move_log::is_valid([['type' => 'move', 'r1' => 6, 'c1' => 0, 'r2' => 7, 'c2' => 0]]));
+    }
+
+    /**
+     * Tests that a swap between cells that are not neighbours is rejected: board.js only lets the
+     * player swap adjacent pieces, so a log with any other swap was not produced by the game.
+     *
+     * @return void
+     */
+    public function test_is_valid_rejects_a_swap_between_cells_that_are_not_neighbours(): void {
+        $this->assertFalse(move_log::is_valid([['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 3, 'c2' => 1]]));
+        $this->assertFalse(move_log::is_valid([['type' => 'move', 'r1' => 2, 'c1' => 2, 'r2' => 3, 'c2' => 3]]));
+        $this->assertFalse(move_log::is_valid([['type' => 'move', 'r1' => 2, 'c1' => 2, 'r2' => 2, 'c2' => 2]]));
+        $this->assertFalse(move_log::is_valid([
+            ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1],
+            ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 5],
+        ]), 'One bad swap makes the whole batch invalid.');
+
+        $this->assertTrue(move_log::is_valid([['type' => 'move', 'r1' => 2, 'c1' => 2, 'r2' => 2, 'c2' => 3]]));
+        $this->assertTrue(move_log::is_valid([['type' => 'move', 'r1' => 2, 'c1' => 2, 'r2' => 1, 'c2' => 2]]));
     }
 
     /**

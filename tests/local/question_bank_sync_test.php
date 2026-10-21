@@ -341,6 +341,82 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that importing a second category leaves the questions of the first one alone: they are not
+     * "no longer in the category", they were never in this one.
+     *
+     * @return void
+     */
+    public function test_syncing_another_category_does_not_disable_the_first_ones_questions(): void {
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $first = $this->make_category();
+        $second = $this->make_category();
+        $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $first->id]);
+        $questiongenerator->create_question('truefalse', 'true', ['category' => $second->id]);
+
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $first->id);
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $second->id);
+
+        $this->assertSame(1, $stats->imported);
+        $this->assertSame(0, $stats->disabled);
+        $approved = array_filter(
+            questions_repository::get_questions_for_instance((int) $this->instance->id),
+            static fn($row): bool => (int) $row->approved === 1
+        );
+        $this->assertCount(2, $approved);
+    }
+
+    /**
+     * Tests that a copy the teacher reactivated (detached from the bank, sourceid cleared) stays approved
+     * through the next sync of the category it came from. A null sourceid used to become the array key 0,
+     * which no entry ever matched, so the copy was disabled again every time.
+     *
+     * @return void
+     */
+    public function test_a_reactivated_copy_stays_approved_on_the_next_sync(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $question = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+        $copyid = (int) questions_repository::get_questions_for_instance((int) $this->instance->id)[0]->id;
+        $DB->set_field('question_versions', 'status', 'draft', ['questionid' => $question->id]);
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+        questions_repository::approve_question($copyid);
+
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(0, $stats->disabled);
+        $this->assertSame(1, (int) questions_repository::get_question($copyid, (int) $this->instance->id)->approved);
+    }
+
+    /**
+     * Tests that a question whose bank entry was deleted outright is still disabled, whichever category is
+     * synced next: it exists nowhere any more.
+     *
+     * @return void
+     */
+    public function test_an_entry_deleted_from_the_bank_is_disabled_by_any_sync(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $first = $this->make_category();
+        $second = $this->make_category();
+        $question = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $first->id]);
+        $questiongenerator->create_question('truefalse', 'true', ['category' => $second->id]);
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $first->id);
+        $copyid = (int) questions_repository::get_questions_for_instance((int) $this->instance->id)[0]->id;
+        $entryid = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $question->id]);
+        $DB->delete_records('question_versions', ['questionbankentryid' => $entryid]);
+        $DB->delete_records('question_bank_entries', ['id' => $entryid]);
+
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $second->id);
+
+        $this->assertSame(1, $stats->disabled);
+        $this->assertSame(0, (int) questions_repository::get_question($copyid, (int) $this->instance->id)->approved);
+    }
+
+    /**
      * Tests the intentional consequence of approve_question() detaching a reactivated bank
      * question from sync (clearing sourceid): if the source entry later comes back and the
      * teacher resyncs, it is imported again as a brand new row, not re-linked to the one the

@@ -82,9 +82,11 @@ class question_bank_sync {
      *
      * Re-executable: a bank-sourced row already imported from the same question_bank_entries
      * id is updated in place (text/qtype/answers refreshed, hint/approved/addedby left
-     * alone); a new entry is inserted approved; an entry that disappeared from the category
-     * since the last sync (deleted, moved, or no longer version 'ready') is soft-disabled
-     * (approved = 0), never deleted. A manual or AI-sourced question is never touched.
+     * alone); a new entry is inserted approved; an entry of this category that is no longer
+     * importable (no longer version 'ready'), or that was deleted from the bank, is
+     * soft-disabled (approved = 0), never deleted. A manual or AI-sourced question is never
+     * touched, nor is one imported from another category (until that category is synced) or a
+     * copy the teacher detached from the bank.
      *
      * @param stdClass $cm Course module record for the PlayerPuzzle instance.
      * @param int $playerpuzzleid The instance id.
@@ -138,12 +140,20 @@ class question_bank_sync {
             $params
         );
 
-        $existingrows = $DB->get_records_select(
-            'playerpuzzle_questions',
-            'playerpuzzleid = :ppid AND source = :src',
-            ['ppid' => $playerpuzzleid, 'src' => 'bank'],
-            '',
-            'id, sourceid, approved'
+        // The rows this run is allowed to reconcile: the ones whose bank entry now sits in this category,
+        // and the ones whose entry no longer exists anywhere. An entry that lives in another category
+        // belongs to that category's own sync, and a copy the teacher detached from the bank (sourceid
+        // cleared by approve_question()) is no longer linked to any entry, so neither may be disabled
+        // just because it did not show up here.
+        $existingrows = $DB->get_records_sql(
+            "SELECT pq.id, pq.sourceid, pq.approved
+               FROM {playerpuzzle_questions} pq
+          LEFT JOIN {question_bank_entries} qbe ON qbe.id = pq.sourceid
+              WHERE pq.playerpuzzleid = :ppid
+                AND pq.source = :src
+                AND pq.sourceid IS NOT NULL
+                AND (qbe.id IS NULL OR qbe.questioncategoryid = :existingcategory)",
+            ['ppid' => $playerpuzzleid, 'src' => 'bank', 'existingcategory' => $categoryid]
         );
         $existingmap = [];
         foreach ($existingrows as $rec) {

@@ -155,6 +155,25 @@ class questions_repository {
     }
 
     /**
+     * How many AI-generated questions of the activity are waiting for the teacher's approval.
+     *
+     * Only the AI source reaches approved = 0 through a review queue; a bank question at 0 was
+     * disabled by the sync, and a manual one is approved on entry.
+     *
+     * @param int $playerpuzzleid Activity instance ID.
+     * @return int
+     */
+    public static function count_pending_ai_questions(int $playerpuzzleid): int {
+        global $DB;
+
+        return $DB->count_records('playerpuzzle_questions', [
+            'playerpuzzleid' => $playerpuzzleid,
+            'source' => 'ai',
+            'approved' => 0,
+        ]);
+    }
+
+    /**
      * Flips a question's approved flag without touching anything else — used by the bank
      * sync to soft-disable a question whose bank entry has since disappeared (deleted,
      * moved to a different category, or no longer version 'ready'), and to re-enable one

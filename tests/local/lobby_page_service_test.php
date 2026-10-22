@@ -889,4 +889,49 @@ final class lobby_page_service_test extends \advanced_testcase {
         $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id, $context);
         $this->assertArrayNotHasKey('noquestions', $data);
     }
+
+    /**
+     * Tests that whoever manages the questions is told to add some, not to ask the teacher.
+     *
+     * @return void
+     */
+    public function test_the_lobby_tells_a_teacher_to_add_questions(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id, 'minquestions' => 3]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $context = \context_module::instance($cm->id);
+        $teacher = $this->getDataGenerator()->create_and_enrol($this->course, 'editingteacher');
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $teacher->id, $context);
+
+        $this->assertTrue($data['noquestions']);
+        $this->assertSame(get_string('lobby_noquestions_teacher', 'mod_playerpuzzle'), $data['noquestionstext']);
+        $this->assertTrue($data['canmanagequestions']);
+    }
+
+    /**
+     * Tests that the teacher is told how many AI-generated questions wait for approval, and that a
+     * student still gets the plain notice while they wait.
+     *
+     * @return void
+     */
+    public function test_the_lobby_tells_a_teacher_how_many_ai_questions_wait_for_approval(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id, 'minquestions' => 3]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $context = \context_module::instance($cm->id);
+        $teacher = $this->getDataGenerator()->create_and_enrol($this->course, 'editingteacher');
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        foreach (['ai', 'ai'] as $source) {
+            questions_repository::add_question((int) $instance->id, 'multichoice', 'Q?', '', $answers, 2, $source, false);
+        }
+        // Neither a disabled bank question nor an unapproved manual one is in the AI review queue.
+        questions_repository::add_question((int) $instance->id, 'multichoice', 'Q?', '', $answers, 2, 'bank', false);
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $teacher->id, $context);
+        $this->assertSame(get_string('lobby_noquestions_teacherpending', 'mod_playerpuzzle', 2), $data['noquestionstext']);
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id, $context);
+        $this->assertSame(get_string('lobby_noquestions_notice', 'mod_playerpuzzle'), $data['noquestionstext']);
+    }
 }

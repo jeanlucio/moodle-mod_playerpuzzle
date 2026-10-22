@@ -123,7 +123,7 @@ class lobby_page_service {
         $data += self::build_shop_context((int) $course->id, $instance, $userid);
         $data += self::build_progress_context($instance, $attempt, $userid);
         $data += self::build_minquestions_context($instance);
-        $data += self::build_noquestions_context($instance);
+        $data += self::build_noquestions_context($instance, !empty($data['canmanagequestions']));
         $data += self::build_difficulty_context($attempt);
         $data += self::build_sound_context($userid);
         $data += self::build_ranking_context($instance, $cm, $userid, $context);
@@ -372,17 +372,29 @@ class lobby_page_service {
      * Builds the context for an activity that requires answering questions but has none approved yet: the
      * Lobby then offers no match (see game_page_service::lacks_questions()) and says why.
      *
+     * A student is told to ask the teacher. Whoever manages the questions is told what to do instead:
+     * review the AI-generated questions already waiting, or add some.
+     *
      * @param stdClass $instance Activity instance.
+     * @param bool $canmanage Whether the viewer may manage the activity's questions.
      * @return array
      */
-    private static function build_noquestions_context(stdClass $instance): array {
+    private static function build_noquestions_context(stdClass $instance, bool $canmanage): array {
         if (!game_page_service::lacks_questions($instance)) {
             return [];
         }
 
+        $text = get_string('lobby_noquestions_notice', 'mod_playerpuzzle');
+        if ($canmanage) {
+            $pending = questions_repository::count_pending_ai_questions((int) $instance->id);
+            $text = $pending > 0
+                ? get_string('lobby_noquestions_teacherpending', 'mod_playerpuzzle', $pending)
+                : get_string('lobby_noquestions_teacher', 'mod_playerpuzzle');
+        }
+
         return [
             'noquestions' => true,
-            'noquestionstext' => get_string('lobby_noquestions_notice', 'mod_playerpuzzle'),
+            'noquestionstext' => $text,
         ];
     }
 

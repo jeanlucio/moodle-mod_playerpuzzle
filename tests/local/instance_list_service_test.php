@@ -107,4 +107,27 @@ final class instance_list_service_test extends \advanced_testcase {
             $events[0]->get_url()
         );
     }
+
+
+    /**
+     * Tests that a name with "&" or "<" is escaped once in the rendered list, not twice: the service hands
+     * plain text to the template, which does the escaping.
+     *
+     * @return void
+     */
+    public function test_a_name_with_special_characters_is_escaped_only_once(): void {
+        global $OUTPUT;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $generator->create_instance(['course' => $course->id, 'name' => 'Questions & Answers > 3']);
+        $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
+
+        $data = instance_list_service::build_page_data($course);
+        $html = $OUTPUT->render_from_template('mod_playerpuzzle/instance_list', $data);
+
+        $this->assertSame('Questions & Answers > 3', $data['instances'][0]['name']);
+        $this->assertStringContainsString('Questions &amp; Answers &gt; 3', $html);
+        $this->assertStringNotContainsString('&amp;amp;', $html);
+    }
 }

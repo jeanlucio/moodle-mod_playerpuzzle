@@ -57,7 +57,7 @@ foreach ($distribution as &$bucket) {
 unset($bucket);
 
 $templatecontext = [
-    'activityname'          => format_string($instance->name, true, ['context' => $context]),
+    'activityname'          => \mod_playerpuzzle\local\report_service::activity_name($instance, $context),
     'activityurl'           => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
     'backlabel'             => get_string('report_backtoactivity', 'mod_playerpuzzle'),
     'reporttitle'           => get_string('report_title', 'mod_playerpuzzle'),

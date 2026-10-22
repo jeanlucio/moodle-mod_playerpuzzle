@@ -567,4 +567,26 @@ final class report_service_test extends \advanced_testcase {
         $this->assertSame(0, $completion['total']);
         $this->assertSame(0.0, $completion['percent']);
     }
+
+    /**
+     * Tests that the activity name given to the report template is plain text, so the template's own
+     * escaping is the only one: "Questions & Answers" must not come out as "&amp;amp;".
+     *
+     * @return void
+     */
+    public function test_the_activity_name_for_the_template_is_not_escaped_twice(): void {
+        global $OUTPUT;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id, 'name' => 'Questions & Answers > 3']);
+        $context = \context_module::instance($instance->cmid);
+
+        $name = report_service::activity_name($instance, $context);
+        $html = $OUTPUT->render_from_template('mod_playerpuzzle/report', ['activityname' => $name]);
+
+        $this->assertSame('Questions & Answers > 3', $name);
+        $this->assertStringContainsString('Questions &amp; Answers &gt; 3', $html);
+        $this->assertStringNotContainsString('&amp;amp;', $html);
+    }
 }

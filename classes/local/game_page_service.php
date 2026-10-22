@@ -99,6 +99,33 @@ class game_page_service {
     }
 
     /**
+     * Refuses a match that cannot be won: when the activity requires answering a minimum of questions
+     * before a victory counts and has no approved question to draw, the boss is revived every time its HP
+     * reaches zero and the server refuses the victory, so the student could only lose, spending an attempt
+     * and the retry cost. A zero minimum needs no question and is never refused.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param moodle_url $returnurl URL to send the student back to on failure.
+     * @return void
+     * @throws moodle_exception When the activity has a minimum of questions but none to draw.
+     */
+    public static function check_has_questions(stdClass $instance, moodle_url $returnurl): void {
+        if (self::lacks_questions($instance)) {
+            throw new moodle_exception('noapprovedquestions', 'mod_playerpuzzle', $returnurl);
+        }
+    }
+
+    /**
+     * Whether the activity requires answering questions but has none approved to draw.
+     *
+     * @param stdClass $instance Activity instance.
+     * @return bool
+     */
+    public static function lacks_questions(stdClass $instance): bool {
+        return (int) $instance->minquestions > 0 && !questions_repository::has_approved_question((int) $instance->id);
+    }
+
+    /**
      * Runs every gate a real (non-Demo) attempt must pass before play.php creates it.
      *
      * The order is part of the contract: check_retry_cost() actually debits the PlayerHUD
@@ -112,6 +139,7 @@ class game_page_service {
      * @throws moodle_exception When any of the gates rejects the new attempt.
      */
     public static function check_can_start_attempt(stdClass $instance, int $userid, moodle_url $returnurl): void {
+        self::check_has_questions($instance, $returnurl);
         self::check_attempt_limit($instance, $userid, $returnurl);
         self::check_cooldown($instance, $userid, $returnurl);
         self::check_retry_cost($instance, $userid, $returnurl);
@@ -250,6 +278,7 @@ class game_page_service {
         moodle_url $returnurl
     ): array {
         if ($isdemo) {
+            self::check_has_questions($instance, $returnurl);
             return self::build_game_config($cm, $instance, $context, $userid, $ismobile, $difficulty, true);
         }
 

@@ -861,4 +861,32 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertArrayNotHasKey('showranking', $data);
         $this->assertArrayNotHasKey('rankingrows', $data);
     }
+
+    /**
+     * Tests that the Lobby offers no match, and says why, when the activity requires questions and has
+     * none approved; and that it offers it again once a question is approved.
+     *
+     * @return void
+     */
+    public function test_the_lobby_offers_no_match_without_questions(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id, 'minquestions' => 3]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+        $context = \context_module::instance($cm->id);
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id, $context);
+        $this->assertTrue($data['noquestions']);
+        $this->assertSame(get_string('lobby_noquestions_notice', 'mod_playerpuzzle'), $data['noquestionstext']);
+
+        questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Q?',
+            '',
+            [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]],
+            2
+        );
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id, $context);
+        $this->assertArrayNotHasKey('noquestions', $data);
+    }
 }

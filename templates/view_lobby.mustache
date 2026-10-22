@@ -170,6 +170,10 @@
                 <p class="pp-lobby-note">{{difficultycurrent}}</p>
                 {{/difficultycurrent}}
 
+                {{#noquestions}}
+                <p class="pp-lobby-note" role="status">{{noquestionstext}}</p>
+                {{/noquestions}}
+                {{^noquestions}}
                 {{^isguest}}
                 <form method="post" action="{{{playurl}}}" id="pp-lobby-playform">
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
@@ -182,6 +186,7 @@
                     <input type="hidden" name="isdemo" value="1">
                     <button type="submit" class="pp-lobby-playdemo">{{playdemotext}}</button>
                 </form>
+                {{/noquestions}}
 
                 {{#minquestionstext}}
                 <p class="pp-lobby-note">{{minquestionstext}}</p>

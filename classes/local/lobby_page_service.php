@@ -123,6 +123,7 @@ class lobby_page_service {
         $data += self::build_shop_context((int) $course->id, $instance, $userid);
         $data += self::build_progress_context($instance, $attempt, $userid);
         $data += self::build_minquestions_context($instance);
+        $data += self::build_noquestions_context($instance);
         $data += self::build_difficulty_context($attempt);
         $data += self::build_sound_context($userid);
         $data += self::build_ranking_context($instance, $cm, $userid, $context);
@@ -364,6 +365,24 @@ class lobby_page_service {
                 'mod_playerpuzzle',
                 $options[constants::DIFFICULTY_NORMAL]
             ),
+        ];
+    }
+
+    /**
+     * Builds the context for an activity that requires answering questions but has none approved yet: the
+     * Lobby then offers no match (see game_page_service::lacks_questions()) and says why.
+     *
+     * @param stdClass $instance Activity instance.
+     * @return array
+     */
+    private static function build_noquestions_context(stdClass $instance): array {
+        if (!game_page_service::lacks_questions($instance)) {
+            return [];
+        }
+
+        return [
+            'noquestions' => true,
+            'noquestionstext' => get_string('lobby_noquestions_notice', 'mod_playerpuzzle'),
         ];
     }
 

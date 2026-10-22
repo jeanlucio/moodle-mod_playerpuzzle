@@ -143,6 +143,18 @@ class questions_repository {
     }
 
     /**
+     * Whether the activity has at least one approved question for the game to draw.
+     *
+     * @param int $playerpuzzleid Activity instance ID.
+     * @return bool
+     */
+    public static function has_approved_question(int $playerpuzzleid): bool {
+        global $DB;
+
+        return $DB->record_exists('playerpuzzle_questions', ['playerpuzzleid' => $playerpuzzleid, 'approved' => 1]);
+    }
+
+    /**
      * Flips a question's approved flag without touching anything else — used by the bank
      * sync to soft-disable a question whose bank entry has since disappeared (deleted,
      * moved to a different category, or no longer version 'ready'), and to re-enable one

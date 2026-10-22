@@ -60,7 +60,9 @@ final class game_page_service_test extends \advanced_testcase {
      */
     private function make_cm_and_instance(array $overrides = []): array {
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
-        $record = array_merge(['course' => $this->course->id], $overrides);
+        // No minimum of questions by default: the generator's own default (3) would need approved
+        // questions for every match these tests start (see the check_has_questions tests below).
+        $record = array_merge(['course' => $this->course->id, 'minquestions' => 0], $overrides);
         $instance = $generator->create_instance($record);
         $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
 
@@ -1165,5 +1167,67 @@ final class game_page_service_test extends \advanced_testcase {
         $this->start_game($cm, $instance, true);
 
         $this->assertSame([], \mod_playerpuzzle_recording_lock_factory::events_for('mod_playerpuzzle'));
+    }
+
+    /**
+     * Tests that a match is refused when the activity requires answering questions and has none approved:
+     * the boss would be revived every time and the victory refused, so the student could only lose.
+     *
+     * @return void
+     */
+    public function test_a_match_is_refused_when_there_is_a_minimum_but_no_approved_question(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 3]);
+
+        try {
+            $this->start_game($cm, $instance);
+            $this->fail('A match that cannot be won must not start.');
+        } catch (\moodle_exception $exception) {
+            $this->assertSame('noapprovedquestions', $exception->errorcode);
+        }
+
+        $this->assertSame(0, $DB->count_records('playerpuzzle_attempts'));
+    }
+
+    /**
+     * Tests that the Demo is refused for the same reason: it uses the same minimum.
+     *
+     * @return void
+     */
+    public function test_a_demo_is_refused_for_the_same_reason(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 3]);
+
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage(get_string('noapprovedquestions', 'mod_playerpuzzle'));
+        $this->start_game($cm, $instance, true);
+    }
+
+    /**
+     * Tests what does not count as lacking questions: a zero minimum, an approved question, and (the other
+     * way round) a question that exists but was not approved.
+     *
+     * @return void
+     */
+    public function test_only_an_approved_question_lifts_the_refusal(): void {
+        [, $nominimum] = $this->make_cm_and_instance(['minquestions' => 0]);
+        [, $withminimum] = $this->make_cm_and_instance(['minquestions' => 2]);
+        $this->assertFalse(game_page_service::lacks_questions($nominimum));
+        $this->assertTrue(game_page_service::lacks_questions($withminimum));
+
+        $questionid = questions_repository::add_question(
+            (int) $withminimum->id,
+            'multichoice',
+            'Q?',
+            '',
+            [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]],
+            2,
+            'manual',
+            false
+        );
+        $this->assertTrue(game_page_service::lacks_questions($withminimum), 'An unapproved question is not drawn.');
+
+        questions_repository::set_approved($questionid, true);
+        $this->assertFalse(game_page_service::lacks_questions($withminimum));
     }
 }

@@ -123,11 +123,27 @@ final class instance_list_service_test extends \advanced_testcase {
         $generator->create_instance(['course' => $course->id, 'name' => 'Questions & Answers > 3']);
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
-        $data = instance_list_service::build_page_data($course);
-        $html = $OUTPUT->render_from_template('mod_playerpuzzle/instance_list', $data);
+        // The site setting changes what format_string() returns: with the tags no longer stripped the
+        // result goes through the HTML cleaner and keeps its "&amp;" even when asked not to escape.
+        foreach ([1, 0] as $striptags) {
+            $this->set_striptags($striptags);
+            $data = instance_list_service::build_page_data($course);
+            $html = $OUTPUT->render_from_template('mod_playerpuzzle/instance_list', $data);
 
-        $this->assertSame('Questions & Answers > 3', $data['instances'][0]['name']);
-        $this->assertStringContainsString('Questions &amp; Answers &gt; 3', $html);
-        $this->assertStringNotContainsString('&amp;amp;', $html);
+            $this->assertSame('Questions & Answers > 3', $data['instances'][0]['name'], "striptags={$striptags}");
+            $this->assertStringContainsString('Questions &amp; Answers &gt; 3', $html, "striptags={$striptags}");
+            $this->assertStringNotContainsString('&amp;amp;', $html, "striptags={$striptags}");
+        }
+    }
+
+    /**
+     * Sets the formatstringstriptags site setting and makes format_string() read it again.
+     *
+     * @param int $value 1 to strip the tags, 0 to keep them.
+     * @return void
+     */
+    private function set_striptags(int $value): void {
+        set_config('formatstringstriptags', $value);
+        \core\di::reset_container();
     }
 }

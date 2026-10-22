@@ -582,11 +582,16 @@ final class report_service_test extends \advanced_testcase {
         $instance = $generator->create_instance(['course' => $course->id, 'name' => 'Questions & Answers > 3']);
         $context = \context_module::instance($instance->cmid);
 
-        $name = report_service::activity_name($instance, $context);
-        $html = $OUTPUT->render_from_template('mod_playerpuzzle/report', ['activityname' => $name]);
+        foreach ([1, 0] as $striptags) {
+            set_config('formatstringstriptags', $striptags);
+            \core\di::reset_container();
 
-        $this->assertSame('Questions & Answers > 3', $name);
-        $this->assertStringContainsString('Questions &amp; Answers &gt; 3', $html);
-        $this->assertStringNotContainsString('&amp;amp;', $html);
+            $name = report_service::activity_name($instance, $context);
+            $html = $OUTPUT->render_from_template('mod_playerpuzzle/report', ['activityname' => $name]);
+
+            $this->assertSame('Questions & Answers > 3', $name, "striptags={$striptags}");
+            $this->assertStringContainsString('Questions &amp; Answers &gt; 3', $html, "striptags={$striptags}");
+            $this->assertStringNotContainsString('&amp;amp;', $html, "striptags={$striptags}");
+        }
     }
 }

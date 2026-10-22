@@ -35,16 +35,14 @@ class report_service {
     /**
      * The activity's name as plain text, for a Mustache `{{ }}` tag.
      *
-     * format_string() escapes the result by default, and the template escapes it again, so a name with
-     * "&", "<" or ">" would show as "&amp;amp;". Without the escaping, the filters and the tag stripping
-     * still apply and the template does the single escape.
+     * See text::plain_string() for why format_string() cannot be passed to the template as it is.
      *
      * @param stdClass $instance The activity record.
      * @param context $context The activity's context, for the filters.
      * @return string
      */
     public static function activity_name(stdClass $instance, context $context): string {
-        return format_string($instance->name, true, ['context' => $context, 'escape' => false]);
+        return text::plain_string($instance->name, $context);
     }
 
     /**

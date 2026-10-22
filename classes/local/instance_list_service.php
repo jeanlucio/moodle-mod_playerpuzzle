@@ -44,8 +44,7 @@ class instance_list_service {
         $instances = [];
         foreach (get_all_instances_in_course('playerpuzzle', $course) as $instance) {
             $instances[] = [
-                // Plain text: the template escapes it, and format_string() would escape it a second time.
-                'name' => format_string($instance->name, true, ['escape' => false]),
+                'name' => text::plain_string($instance->name),
                 'url' => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $instance->coursemodule]))->out(false),
                 'section' => get_section_name($course, $instance->section),
                 'dimmed' => empty($instance->visible),

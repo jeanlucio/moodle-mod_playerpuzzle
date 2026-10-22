@@ -95,7 +95,11 @@ class save_progress extends external_api {
         int $eventoffset = 0,
         array $movelog = []
     ): array {
-        global $DB, $USER;
+        global $CFG, $DB, $USER;
+        // Not loaded by the web service stack, and playerpuzzle_update_grades() only brings it in
+        // through the gradebook when the activity is graded: with grade type "None" the class below
+        // would not exist and the call would end in a fatal error after the attempt was finalized.
+        require_once($CFG->libdir . '/completionlib.php');
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid'                 => $cmid,

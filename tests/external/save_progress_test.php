@@ -969,6 +969,44 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that an activity with grade type "None" still recomputes its completion when an attempt ends.
+     * Without a grade the gradebook is never reached, so the completion library is only available if
+     * save_progress loads it itself (tests/external/core_libraries_test.php guards the require).
+     *
+     * @return void
+     */
+    public function test_an_ungraded_activity_still_updates_completion(): void {
+        global $CFG;
+        $CFG->enablecompletion = true;
+
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $this->getDataGenerator()->enrol_user($this->student->id, $course->id, 'student');
+        $instance = $this->make_instance([
+            'course'                    => $course->id,
+            'grade'                     => 0,
+            'completion'                => COMPLETION_TRACKING_AUTOMATIC,
+            'completionattemptsenabled' => true,
+            'completionattempts'        => 1,
+        ]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 10,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $cm = get_coursemodule_from_id('playerpuzzle', $instance->cmid, 0, false, MUST_EXIST);
+        $data = (new \completion_info($course))->get_data($cm, false, (int) $this->student->id);
+        $this->assertEquals(COMPLETION_COMPLETE, $data->completionstate);
+    }
+
+    /**
      * Tests the anti-cheat replay end to end, through the real web service: a known seed and
      * a known recorded event log, re-simulated server-side, drive what gets persisted and
      * banked — never the client's own wildly inflated claim. The seed/move pair is the same

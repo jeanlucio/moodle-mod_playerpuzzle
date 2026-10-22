@@ -15,8 +15,8 @@ Feature: PlayerPuzzle accessible board
       | user     | course | role    |
       | student1 | C1     | student |
     And the following "activities" exist:
-      | activity     | course | name         |
-      | playerpuzzle | C1     | Dungeon Quiz |
+      | activity     | course | name         | minquestions |
+      | playerpuzzle | C1     | Dungeon Quiz | 0            |
     And I log in as "student1"
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
     And I click on "Play Game" "button"

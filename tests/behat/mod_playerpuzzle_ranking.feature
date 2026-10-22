@@ -24,8 +24,8 @@ Feature: PlayerPuzzle class ranking in the Lobby
 
   Scenario: The ranking opens in place of the Lobby's panel and closes back to it
     Given the following "activities" exist:
-      | activity     | course | name         | maxlevels |
-      | playerpuzzle | C1     | Dungeon Quiz | 1         |
+      | activity     | course | name         | maxlevels | minquestions |
+      | playerpuzzle | C1     | Dungeon Quiz | 1         | 0            |
     And the following "mod_playerpuzzle > attempts" exist:
       | playerpuzzle | user     | rngseed | currentphase |
       | Dungeon Quiz | student1 | 1       | 4            |
@@ -45,8 +45,8 @@ Feature: PlayerPuzzle class ranking in the Lobby
 
   Scenario: A teacher can turn the ranking off
     Given the following "activities" exist:
-      | activity     | course | name         | show_ranking |
-      | playerpuzzle | C1     | Dungeon Quiz | 0            |
+      | activity     | course | name         | show_ranking | minquestions |
+      | playerpuzzle | C1     | Dungeon Quiz | 0            | 0            |
     And I log in as "student1"
     When I am on the "Dungeon Quiz" "playerpuzzle activity" page
     Then "Ranking" "button" should not exist
@@ -63,8 +63,8 @@ Feature: PlayerPuzzle class ranking in the Lobby
       | student2 | GA    |
       | student3 | GB    |
     And the following "activities" exist:
-      | activity     | course | name         | maxlevels | groupmode |
-      | playerpuzzle | C1     | Dungeon Quiz | 1         | 1         |
+      | activity     | course | name         | maxlevels | groupmode | minquestions |
+      | playerpuzzle | C1     | Dungeon Quiz | 1         | 1         | 0            |
     And the following "mod_playerpuzzle > attempts" exist:
       | playerpuzzle | user     | rngseed | currentphase |
       | Dungeon Quiz | student1 | 1       | 4            |

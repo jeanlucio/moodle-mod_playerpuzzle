@@ -111,13 +111,21 @@ class use_stock extends external_api {
                     throw new moodle_exception('consumablelimitreached', 'mod_playerpuzzle');
                 }
 
-                // Instance isolation, validated before any read of the hint itself: the
-                // question must belong to this instance, be approved, and actually have a
-                // hint — never trusted from the client.
+                // The hint belongs to the question draw_question left open on this attempt, never to
+                // one the client names: validate_answer and draw_question already refuse a client's
+                // question id for the same reason, and without this a Demo (which debits nothing) would
+                // hand out the hint of every question of the activity, drawn or not. The client's id is
+                // only a cross-check. Then the usual isolation: the question must belong to this
+                // instance, be approved and actually have a hint.
                 $hinttext = '';
                 if ($params['type'] === 'hint') {
+                    $openquestionid = (int) $attempt->currentquestionid;
+                    if ($openquestionid <= 0 || $openquestionid !== (int) $params['questionid']) {
+                        throw new moodle_exception('hintnotavailable', 'mod_playerpuzzle');
+                    }
+
                     $hinttext = question_fetcher::get_hint_text(
-                        $params['questionid'],
+                        $openquestionid,
                         (int) $playerpuzzle->id,
                         $context
                     );

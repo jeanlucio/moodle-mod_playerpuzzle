@@ -184,6 +184,18 @@ final class use_stock_test extends \advanced_testcase {
     }
 
     /**
+     * Leaves a question open on the attempt, as mod_playerpuzzle_draw_question does when it hands one out.
+     *
+     * @param string $token The attempt's token.
+     * @param int $questionid The question to leave open.
+     * @return void
+     */
+    private function open_question(string $token, int $questionid): void {
+        global $DB;
+        $DB->set_field('playerpuzzle_attempts', 'currentquestionid', $questionid, ['token' => $token]);
+    }
+
+    /**
      * Tests a successful hint use: debits 1 unit of hint stock, records the use, and
      * returns the question's own hint text, formatted. Hint has no fixed phase limit, so
      * many uses within the same phase are all allowed, bounded only by owned stock.
@@ -196,6 +208,7 @@ final class use_stock_test extends \advanced_testcase {
         $this->setUser($this->student);
         user_stock::credit((int) $this->student->id, (int) $instance->id, 'hint', 2);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->open_question($token, $questionid);
 
         $result = $this->call_use_stock([
             'cmid'       => $instance->cmid,
@@ -247,6 +260,7 @@ final class use_stock_test extends \advanced_testcase {
         $this->setUser($this->student);
         user_stock::credit((int) $this->student->id, (int) $instance->id, 'hint', 2);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->open_question($token, $questionid);
 
         $result = $this->call_use_stock([
             'cmid'       => $instance->cmid,
@@ -278,6 +292,61 @@ final class use_stock_test extends \advanced_testcase {
             'token'      => $token,
             'type'       => 'hint',
             'questionid' => $questionid,
+        ]);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('hintnotavailable', $result['exception']->errorcode);
+    }
+
+    /**
+     * Tests that the hint comes only from the question left open on the attempt: asking for another
+     * question of the same activity, or for any hint while none is open, is refused and costs nothing.
+     *
+     * @return void
+     */
+    public function test_use_hint_only_serves_the_open_question(): void {
+        $instance = $this->make_instance();
+        $open = $this->make_question((int) $instance->id, 'The open one.');
+        $other = $this->make_question((int) $instance->id, 'Not drawn yet.');
+        $this->setUser($this->student);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, 'hint', 2);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $args = ['cmid' => $instance->cmid, 'token' => $token, 'type' => 'hint', 'questionid' => $other];
+
+        $noneopen = $this->call_use_stock($args);
+        $this->open_question($token, $open);
+        $wrong = $this->call_use_stock($args);
+        $right = $this->call_use_stock(array_merge($args, ['questionid' => $open]));
+
+        $this->assertSame('hintnotavailable', $noneopen['exception']->errorcode);
+        $this->assertSame('hintnotavailable', $wrong['exception']->errorcode);
+        $this->assertStringContainsString('The open one.', $right['data']['hinttext']);
+        $this->assertSame(1, user_stock::get_quantity((int) $this->student->id, (int) $instance->id, 'hint'));
+    }
+
+    /**
+     * Tests the same rule on a Demo, which debits nothing: it must not become a free way to read the hint
+     * of every question of the activity.
+     *
+     * @return void
+     */
+    public function test_a_demo_hint_only_serves_the_open_question_too(): void {
+        $instance = $this->make_instance();
+        $open = $this->make_question((int) $instance->id, 'The open one.');
+        $other = $this->make_question((int) $instance->id, 'Not drawn yet.');
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'normal',
+            1,
+            1,
+            true
+        );
+        $this->open_question($token, $open);
+
+        $result = $this->call_use_stock([
+            'cmid' => $instance->cmid, 'token' => $token, 'type' => 'hint', 'questionid' => $other,
         ]);
 
         $this->assertTrue($result['error']);

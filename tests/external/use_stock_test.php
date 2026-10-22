@@ -354,6 +354,34 @@ final class use_stock_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a hint with quotes, an ampersand and a line break comes back as HTML (format_text escapes
+     * it and turns the break into a tag), and that the client inserts it as HTML: inserted as text, the
+     * student would read "&quot;" and "<br />" in the hint.
+     *
+     * @return void
+     */
+    public function test_the_hint_is_returned_as_html_and_the_client_inserts_it_as_html(): void {
+        global $CFG;
+
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id, "Think of the \"cycle\" & the phase\nthen rule out options");
+        $this->setUser($this->student);
+        user_stock::credit((int) $this->student->id, (int) $instance->id, 'hint', 1);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $this->open_question($token, $questionid);
+
+        $result = $this->call_use_stock([
+            'cmid' => $instance->cmid, 'token' => $token, 'type' => 'hint', 'questionid' => $questionid,
+        ]);
+
+        $this->assertStringContainsString('&amp;', $result['data']['hinttext']);
+        $this->assertStringContainsString('<br />', $result['data']['hinttext']);
+        $client = file_get_contents($CFG->dirroot . '/mod/playerpuzzle/amd/src/combat.js');
+        $this->assertStringContainsString("\$('#playerpuzzle-hint-text').html(res.hinttext)", $client);
+        $this->assertStringNotContainsString(".text(res.hinttext)", $client);
+    }
+
+    /**
      * Tests that a Demo attempt can use a consumable for free, without touching the real
      * stock table at all — playerpuzzle_user_stock is keyed by user+instance, not by
      * attempt, so debiting it during a disposable practice fight would eat into the same

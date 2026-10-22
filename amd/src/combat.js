@@ -868,7 +868,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 }
                 this.consumableStock.hint = res.newquantity;
                 this.consumableUses.hint = (this.consumableUses.hint || 0) + 1;
-                $('#playerpuzzle-hint-text').text(res.hinttext).show();
+                $('#playerpuzzle-hint-text').html(res.hinttext).show();
                 $('#playerpuzzle-btn-hint').hide().prop('disabled', true).off('click');
                 this.updateUI();
             }).fail(error => {

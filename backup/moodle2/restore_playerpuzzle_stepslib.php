@@ -167,6 +167,7 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         // Fall back to 0 (anonymous) when unmapped — addedby is content metadata, not
         // personal data itself, so it is always present here regardless of $userinfo.
         $data->addedby = (int) $this->get_mappingid('user', $data->addedby, 0);
+        $data->sourceid = $this->resolve_bank_entry($data->sourceid ?? null, (int) $data->playerpuzzleid);
 
         $newitemid = $DB->insert_record('playerpuzzle_questions', $data);
         // Registered under the same name as the path element, so process_playerpuzzle_
@@ -181,6 +182,41 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         // never restored, mirroring mod_glossary's own set_mapping('glossary_entry', ...,
         // true) for glossary_entries.
         $this->set_mapping('playerpuzzle_bankquestion', $oldid, $newitemid, true);
+    }
+
+    /**
+     * Resolves the question bank entry an imported question points at, in the restored activity.
+     *
+     * Core's question restore step registers a question_bank_entry mapping for the entries it creates
+     * or finds, which covers a restore into another course. A "Duplicate activity" in the same course
+     * registers none, but the old entry is still the right one when it sits in the category the
+     * restored activity is bound to. Anything else names an entry of another course or site, so the
+     * question is detached from the bank, as approve_question() leaves it, instead of staying linked
+     * to a stranger.
+     *
+     * @param int|string|null $oldentryid The entry id stored in the backup.
+     * @param int $playerpuzzleid The restored activity's id.
+     * @return int|null The entry id to store, or null.
+     */
+    private function resolve_bank_entry(int|string|null $oldentryid, int $playerpuzzleid): ?int {
+        global $DB;
+
+        if (empty($oldentryid)) {
+            return null;
+        }
+
+        $mapped = $this->get_mappingid('question_bank_entry', $oldentryid);
+        if ($mapped) {
+            return (int) $mapped;
+        }
+
+        $category = (int) $DB->get_field('playerpuzzle', 'questioncategory', ['id' => $playerpuzzleid]);
+        $inplace = $category > 0 && $DB->record_exists(
+            'question_bank_entries',
+            ['id' => $oldentryid, 'questioncategoryid' => $category]
+        );
+
+        return $inplace ? (int) $oldentryid : null;
     }
 
     /**

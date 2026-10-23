@@ -27,6 +27,7 @@ namespace mod_playerpuzzle;
 
 use core_courseformat\local\cmactions;
 use mod_playerpuzzle\local\constants;
+use mod_playerpuzzle\local\question_bank_sync;
 use mod_playerpuzzle\local\questions_repository;
 
 /**
@@ -1015,5 +1016,76 @@ final class backup_restore_test extends \advanced_testcase {
     private function get_restored_instance(\stdClass $newcourse): \stdClass {
         global $DB;
         return $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+    }
+
+    /**
+     * A question imported from the question bank keeps its link to the bank entry through a restore into
+     * another course: the link follows the entry the restore created, so syncing the restored category
+     * recognises the copies instead of importing them a second time.
+     *
+     * @return void
+     */
+    public function test_backup_restore_remaps_the_bank_entry_of_an_imported_question(): void {
+        global $DB;
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $coursecontext = \context_course::instance($course->id);
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $questiongenerator->create_question_category(['contextid' => $coursecontext->id]);
+        $bankquestion = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+        $oldentryid = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $bankquestion->id]);
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id, 'questioncategory' => $category->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id, $course->id, false, MUST_EXIST);
+        question_bank_sync::sync_from_category($cm, (int) $instance->id, (int) $category->id);
+
+        $newcourse = $this->backup_and_restore_into_new_course($course);
+
+        $newinstance = $this->get_restored_instance($newcourse);
+        $restored = array_values($DB->get_records('playerpuzzle_questions', ['playerpuzzleid' => $newinstance->id]));
+        $this->assertCount(1, $restored);
+        $newentryid = (int) $restored[0]->sourceid;
+        $this->assertNotSame(0, $newentryid);
+        $this->assertNotSame($oldentryid, $newentryid);
+        $this->assertSame(
+            (int) $newinstance->questioncategory,
+            (int) $DB->get_field('question_bank_entries', 'questioncategoryid', ['id' => $newentryid])
+        );
+
+        $newcm = get_coursemodule_from_instance('playerpuzzle', $newinstance->id, $newcourse->id, false, MUST_EXIST);
+        $stats = question_bank_sync::sync_from_category($newcm, (int) $newinstance->id, (int) $newinstance->questioncategory);
+
+        $this->assertSame(0, $stats->imported);
+        $this->assertCount(1, $DB->get_records('playerpuzzle_questions', ['playerpuzzleid' => $newinstance->id]));
+    }
+
+    /**
+     * Duplicating the activity in its own course keeps each copy linked to the same bank entry.
+     *
+     * @return void
+     */
+    public function test_duplicate_activity_keeps_the_bank_entry_of_an_imported_question(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/course/lib.php');
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $questiongenerator->create_question_category([
+            'contextid' => \context_course::instance($course->id)->id,
+        ]);
+        $bankquestion = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+        $entryid = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $bankquestion->id]);
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id, 'questioncategory' => $category->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id, $course->id, false, MUST_EXIST);
+        question_bank_sync::sync_from_category($cm, (int) $instance->id, (int) $category->id);
+
+        $newcm = $this->duplicate_cm($course, $cm);
+
+        $copies = array_values($DB->get_records('playerpuzzle_questions', ['playerpuzzleid' => $newcm->instance]));
+        $this->assertCount(1, $copies);
+        $this->assertSame($entryid, (int) $copies[0]->sourceid);
     }
 }

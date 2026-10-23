@@ -46,7 +46,7 @@ class instance_list_service {
             $instances[] = [
                 'name' => text::plain_string($instance->name),
                 'url' => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $instance->coursemodule]))->out(false),
-                'section' => get_section_name($course, $instance->section),
+                'section' => text::from_html(get_section_name($course, $instance->section)),
                 'dimmed' => empty($instance->visible),
             ];
         }

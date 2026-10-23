@@ -116,11 +116,15 @@ final class instance_list_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_a_name_with_special_characters_is_escaped_only_once(): void {
-        global $OUTPUT;
+        global $DB, $OUTPUT;
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
-        $generator->create_instance(['course' => $course->id, 'name' => 'Questions & Answers > 3']);
+        $instance = $generator->create_instance(['course' => $course->id, 'name' => 'Questions & Answers > 3']);
+        // The section name is core's format_string() output, which the service must also hand over as plain text.
+        $sectionid = (int) $DB->get_field('course_modules', 'section', ['id' => $instance->cmid], MUST_EXIST);
+        $DB->set_field('course_sections', 'name', 'Physics & "Chemistry"', ['id' => $sectionid]);
+        rebuild_course_cache($course->id, true);
         $this->setUser($this->getDataGenerator()->create_and_enrol($course, 'student'));
 
         // The site setting changes what format_string() returns: with the tags no longer stripped the
@@ -131,7 +135,9 @@ final class instance_list_service_test extends \advanced_testcase {
             $html = $OUTPUT->render_from_template('mod_playerpuzzle/instance_list', $data);
 
             $this->assertSame('Questions & Answers > 3', $data['instances'][0]['name'], "striptags={$striptags}");
+            $this->assertSame('Physics & "Chemistry"', $data['instances'][0]['section'], "striptags={$striptags}");
             $this->assertStringContainsString('Questions &amp; Answers &gt; 3', $html, "striptags={$striptags}");
+            $this->assertStringContainsString('Physics &amp; &quot;Chemistry&quot;', $html, "striptags={$striptags}");
             $this->assertStringNotContainsString('&amp;amp;', $html, "striptags={$striptags}");
         }
     }

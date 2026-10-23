@@ -426,4 +426,93 @@ final class ai_question_generator_test extends \basic_testcase {
         $this->assertStringContainsString('multichoice', $prompt);
         $this->assertStringContainsString('truefalse', $prompt);
     }
+
+    /**
+     * True/false answers and multiple choice flags written as text keep their meaning.
+     *
+     * Regression test: the strings "false" and "0" are truthy in PHP, so a question whose answer the
+     * model wrote as "false" was stored with true as the right answer, and graded wrongly for every
+     * student who played it.
+     *
+     * @return void
+     */
+    public function test_parse_and_validate_does_not_invert_answers_written_as_text(): void {
+        $response = json_encode(['questions' => [
+            ['type' => 'truefalse', 'question' => 'Is it false?', 'answer' => 'false'],
+            ['type' => 'truefalse', 'question' => 'Is it true?', 'answer' => 'true'],
+            ['type' => 'truefalse', 'question' => 'Zero?', 'answer' => 0],
+            ['type' => 'truefalse', 'question' => 'Unreadable?', 'answer' => 'maybe'],
+            ['type' => 'truefalse', 'question' => 'A list?', 'answer' => ['true']],
+            ['type' => 'multichoice', 'question' => 'Pick', 'options' => [
+                ['text' => 'a', 'correct' => 'false'],
+                ['text' => 'b', 'correct' => 'true'],
+                ['text' => 'c', 'correct' => '0'],
+            ]],
+        ]]);
+
+        $questions = $this->parse_and_validate($response);
+
+        $this->assertCount(4, $questions);
+        $correct = static fn(array $q): array => array_column(
+            array_filter($q['answers'], static fn($a) => $a['iscorrect']),
+            'text'
+        );
+        $this->assertSame([get_string('false', 'qtype_truefalse')], $correct($questions[0]));
+        $this->assertSame([get_string('true', 'qtype_truefalse')], $correct($questions[1]));
+        $this->assertSame([get_string('false', 'qtype_truefalse')], $correct($questions[2]));
+        $this->assertSame(['b'], $correct($questions[3]));
+    }
+
+    /**
+     * Fields that are not text are empty instead of the word "Array".
+     *
+     * @return void
+     */
+    public function test_parse_and_validate_treats_fields_of_the_wrong_type_as_empty(): void {
+        $response = json_encode(['questions' => [
+            ['type' => ['multichoice'], 'question' => 'Type as a list'],
+            ['type' => 'truefalse', 'question' => ['x'], 'answer' => true],
+            ['type' => 'truefalse', 'question' => 'Hint as a list', 'hint' => ['x'], 'answer' => true],
+            ['type' => 'multichoice', 'question' => 'Options with lists', 'options' => [
+                ['text' => ['a'], 'correct' => true],
+                ['text' => 'b', 'correct' => true],
+                ['text' => 'c'],
+            ]],
+        ]]);
+
+        $questions = $this->parse_and_validate($response);
+
+        $this->assertCount(2, $questions);
+        $this->assertSame('', $questions[0]['hint']);
+        $this->assertSame(['b', 'c'], array_column($questions[1]['answers'], 'text'));
+        $this->assertStringNotContainsString('Array', json_encode($questions));
+    }
+
+    /**
+     * A resubmitted question with fields of the wrong type is rejected or cleaned, never thrown on.
+     *
+     * @return void
+     */
+    public function test_validate_shaped_question_survives_fields_of_the_wrong_type(): void {
+        $this->assertNull(ai_question_generator::validate_shaped_question(
+            ['qtype' => ['multichoice'], 'questiontext' => 'Q', 'answers' => []]
+        ));
+        $this->assertNull(ai_question_generator::validate_shaped_question(
+            ['qtype' => 'multichoice', 'questiontext' => ['Q'], 'answers' => []]
+        ));
+
+        $shaped = ai_question_generator::validate_shaped_question([
+            'qtype' => 'multichoice',
+            'questiontext' => 'Q',
+            'hint' => ['x'],
+            'answers' => [
+                ['text' => ['a'], 'iscorrect' => true],
+                ['text' => 'b', 'iscorrect' => 'true'],
+                ['text' => 'c', 'iscorrect' => 'false'],
+            ],
+        ]);
+
+        $this->assertSame('', $shaped['hint']);
+        $this->assertSame([['text' => 'b', 'iscorrect' => true], ['text' => 'c', 'iscorrect' => false]], $shaped['answers']);
+    }
 }

@@ -105,12 +105,12 @@ class ai_question_generator {
      * @return array|null The validated/shaped question, or null if it must be rejected.
      */
     public static function validate_shaped_question(array $question): ?array {
-        $qtype = (string) ($question['qtype'] ?? '');
+        $qtype = self::scalar_text($question['qtype'] ?? null);
         if (!in_array($qtype, questions_repository::QTYPES, true)) {
             return null;
         }
 
-        $questiontext = trim(strip_tags((string) ($question['questiontext'] ?? '')));
+        $questiontext = trim(strip_tags(self::scalar_text($question['questiontext'] ?? null)));
         if ($questiontext === '') {
             return null;
         }
@@ -122,11 +122,11 @@ class ai_question_generator {
             if (!is_array($answer)) {
                 continue;
             }
-            $text = trim(strip_tags((string) ($answer['text'] ?? '')));
+            $text = trim(strip_tags(self::scalar_text($answer['text'] ?? null)));
             if ($text === '') {
                 continue;
             }
-            $iscorrect = !empty($answer['iscorrect']);
+            $iscorrect = self::flag($answer['iscorrect'] ?? null) === true;
             if ($iscorrect) {
                 $correctcount++;
             }
@@ -149,7 +149,7 @@ class ai_question_generator {
         return [
             'qtype' => $qtype,
             'questiontext' => $questiontext,
-            'hint' => trim(strip_tags((string) ($question['hint'] ?? ''))),
+            'hint' => trim(strip_tags(self::scalar_text($question['hint'] ?? null))),
             'answers' => $shapedanswers,
         ];
     }
@@ -356,18 +356,19 @@ class ai_question_generator {
             return null;
         }
 
-        $qtype = (string) ($entry['type'] ?? '');
-        $questiontext = trim(strip_tags((string) ($entry['question'] ?? '')));
+        $qtype = self::scalar_text($entry['type'] ?? null);
+        $questiontext = trim(strip_tags(self::scalar_text($entry['question'] ?? null)));
         if ($questiontext === '') {
             return null;
         }
-        $hint = trim(strip_tags((string) ($entry['hint'] ?? '')));
+        $hint = trim(strip_tags(self::scalar_text($entry['hint'] ?? null)));
 
         if ($qtype === 'truefalse') {
-            if (!array_key_exists('answer', $entry)) {
+            // The answer must be a boolean the model really gave: a cast would make the string "false" true.
+            $answer = self::flag($entry['answer'] ?? null);
+            if ($answer === null) {
                 return null;
             }
-            $answer = (bool) $entry['answer'];
             return [
                 'qtype' => 'truefalse',
                 'questiontext' => $questiontext,
@@ -394,11 +395,36 @@ class ai_question_generator {
             'hint' => $hint,
             'answers' => array_map(
                 static fn($option): array => [
-                    'text' => (string) ($option['text'] ?? ''),
-                    'iscorrect' => !empty($option['correct']),
+                    'text' => self::scalar_text($option['text'] ?? null),
+                    'iscorrect' => self::flag($option['correct'] ?? null) === true,
                 ],
                 array_filter($options, 'is_array')
             ),
         ]);
+    }
+
+    /**
+     * Returns a field of the model's JSON as text, or '' when it is not a string, number or boolean.
+     *
+     * A (string) cast would turn a list into the word "Array".
+     *
+     * @param mixed $value Field of the decoded response.
+     * @return string
+     */
+    private static function scalar_text(mixed $value): string {
+        return is_scalar($value) ? (string) $value : '';
+    }
+
+    /**
+     * Reads a boolean written as a boolean, a number or text, or returns null when it is none of those.
+     *
+     * A cast or a truthiness test would make the string "false" true, and a question with its answer
+     * inverted is graded wrongly for every student.
+     *
+     * @param mixed $value Field of the decoded response.
+     * @return bool|null
+     */
+    private static function flag(mixed $value): ?bool {
+        return is_scalar($value) ? filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null;
     }
 }

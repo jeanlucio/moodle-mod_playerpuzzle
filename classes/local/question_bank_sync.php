@@ -409,7 +409,9 @@ class question_bank_sync {
      * category. Returns null when the question must be skipped: a multichoice question
      * configured to accept more than one correct answer
      * (qtype_multichoice_options.single = 0) — the game only knows how to grade a single
-     * correct choice — or a question with no answer rows at all.
+     * correct choice — a question with no answer rows at all, or one whose rows do not mark
+     * exactly one answer correct (the single-answer form accepts two at 100%, and an
+     * imported XML/GIFT question can have none), the same rule the AI generator enforces.
      *
      * Each entry also carries 'sourceanswerid' (the bank's own question_answers.id) —
      * questions_repository ignores the unknown key when writing the row, and
@@ -453,6 +455,11 @@ class question_bank_sync {
                 'iscorrect' => (float) $row->fraction >= 0.999999,
                 'sourceanswerid' => (int) $row->id,
             ];
+        }
+
+        $correctcount = count(array_filter($answers, static fn(array $answer): bool => $answer['iscorrect']));
+        if ($correctcount !== 1) {
+            return null;
         }
 
         return $answers;

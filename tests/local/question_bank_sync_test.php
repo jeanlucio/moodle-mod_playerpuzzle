@@ -216,6 +216,84 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a single-answer multichoice question with two alternatives at 100% is skipped, since the
+     * game grades one correct answer and would count the second as a mistake. The core form accepts it.
+     *
+     * @return void
+     */
+    public function test_sync_skips_a_question_with_two_correct_answers(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $question = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+        $wrong = $DB->get_records_select(
+            'question_answers',
+            'question = :q AND fraction = 0',
+            ['q' => $question->id],
+            'id ASC',
+            'id',
+            0,
+            1
+        );
+        $DB->set_field('question_answers', 'fraction', 1, ['id' => key($wrong)]);
+
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(0, $stats->imported);
+        $this->assertSame(1, $stats->skipped);
+        $this->assertSame([], questions_repository::get_questions_for_instance((int) $this->instance->id));
+    }
+
+    /**
+     * Tests that a question with no alternative at 100% is skipped, since nobody could ever answer it
+     * correctly. An XML or GIFT import can produce one without going through the core form.
+     *
+     * @return void
+     */
+    public function test_sync_skips_a_question_with_no_correct_answer(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $question = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+        $DB->set_field('question_answers', 'fraction', 0.5, ['question' => $question->id]);
+
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(0, $stats->imported);
+        $this->assertSame(1, $stats->skipped);
+        $this->assertSame([], questions_repository::get_questions_for_instance((int) $this->instance->id));
+    }
+
+    /**
+     * Tests that a question imported while it was valid is disabled on the next sync once the bank edits it
+     * into one the game cannot grade, instead of staying in the draw.
+     *
+     * @return void
+     */
+    public function test_sync_disables_an_imported_question_that_became_ungradable(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $question = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+        $questionid = (int) questions_repository::get_questions_for_instance((int) $this->instance->id)[0]->id;
+
+        $DB->set_field('question_answers', 'fraction', 1, ['question' => $question->id]);
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(1, $stats->skipped);
+        $this->assertSame(1, $stats->disabled);
+        $this->assertSame(
+            0,
+            (int) questions_repository::get_question($questionid, (int) $this->instance->id)->approved
+        );
+    }
+
+    /**
      * Tests that a source multichoice question with more than 5 options is still imported in
      * full, never truncated — question_form.php's manual editor is a growable
      * repeat_elements() control with no fixed ceiling, so there is nothing here that would

@@ -84,7 +84,9 @@ class question_bank_sync {
      * id is updated in place (text/qtype/answers refreshed, hint/approved/addedby left
      * alone); a new entry is inserted approved; an entry of this category that is no longer
      * importable (no longer version 'ready'), or that was deleted from the bank, is
-     * soft-disabled (approved = 0), never deleted. A manual or AI-sourced question is never
+     * soft-disabled (approved = 0), never deleted — except when the user holds only
+     * moodle/question:usemine on the category, who sees just their own questions and so
+     * disables nothing. A manual or AI-sourced question is never
      * touched, nor is one imported from another category (until that category is synced) or a
      * copy the teacher detached from the bank.
      *
@@ -229,10 +231,15 @@ class question_bank_sync {
 
         self::copy_answer_files($fs, $sourcecontextid, $destcontext->id, $processed);
 
-        foreach ($existingmap as $entryid => $existing) {
-            if (!isset($seenentryids[$entryid]) && (int) $existing->approved === 1) {
-                questions_repository::set_approved((int) $existing->id, false);
-                $stats->disabled++;
+        // A user limited to their own questions only saw their own slice of the category: an entry
+        // missing from that slice may belong to someone else and still be in the bank, so nothing can
+        // be concluded about it. Disabling is left to a sync by someone who sees the whole category.
+        if (!$onlyown) {
+            foreach ($existingmap as $entryid => $existing) {
+                if (!isset($seenentryids[$entryid]) && (int) $existing->approved === 1) {
+                    questions_repository::set_approved((int) $existing->id, false);
+                    $stats->disabled++;
+                }
             }
         }
 

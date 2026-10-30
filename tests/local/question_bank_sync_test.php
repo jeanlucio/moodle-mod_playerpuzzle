@@ -75,6 +75,30 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
+     * Creates a teacher who may manage questions and holds moodle/question:usemine but not
+     * moodle/question:useall on the course, the shape that limits a sync to their own questions.
+     *
+     * @return \stdClass The user.
+     */
+    private function make_usemine_only_teacher(): \stdClass {
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $this->course->id, 'editingteacher');
+
+        $role = $this->getDataGenerator()->create_role();
+        $coursecontext = \context_course::instance($this->course->id);
+        assign_capability('mod/playerpuzzle:managequestions', CAP_ALLOW, $role, $coursecontext);
+        assign_capability('moodle/question:usemine', CAP_ALLOW, $role, $coursecontext);
+        // The editingteacher enrolment already carries useall/usemine on this course context;
+        // prohibiting useall through the same restricted role leaves the net permission as
+        // "usemine only".
+        assign_capability('moodle/question:useall', CAP_PROHIBIT, $role, $coursecontext);
+        role_assign($role, $teacher->id, $coursecontext);
+        accesslib_clear_all_caches_for_unit_testing();
+
+        return $teacher;
+    }
+
+    /**
      * Tests that a single-answer multichoice and a truefalse question both import, with
      * their text/answers/correctness copied and sourceid set to the question bank entry id.
      *
@@ -577,9 +601,8 @@ final class question_bank_sync_test extends \advanced_testcase {
         $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $category = $this->make_category();
 
-        $restrictedteacher = $this->getDataGenerator()->create_user();
+        $restrictedteacher = $this->make_usemine_only_teacher();
         $otherauthor = $this->getDataGenerator()->create_user();
-        $this->getDataGenerator()->enrol_user($restrictedteacher->id, $this->course->id, 'editingteacher');
 
         $ownquestion = $questiongenerator->create_question('truefalse', 'true', [
             'category' => $category->id,
@@ -589,17 +612,6 @@ final class question_bank_sync_test extends \advanced_testcase {
             'category' => $category->id,
             'createdby' => $otherauthor->id,
         ]);
-
-        $restrictedrole = $this->getDataGenerator()->create_role();
-        $coursecontext = \context_course::instance($this->course->id);
-        assign_capability('mod/playerpuzzle:managequestions', CAP_ALLOW, $restrictedrole, $coursecontext);
-        assign_capability('moodle/question:usemine', CAP_ALLOW, $restrictedrole, $coursecontext);
-        // The editingteacher role enrolment above already carries useall/usemine on this
-        // category's course context; prohibit useall through the same restricted role so the
-        // net permission stays "usemine only", the exact shape the finding describes.
-        assign_capability('moodle/question:useall', CAP_PROHIBIT, $restrictedrole, $coursecontext);
-        role_assign($restrictedrole, $restrictedteacher->id, $coursecontext);
-        accesslib_clear_all_caches_for_unit_testing();
 
         $this->setUser($restrictedteacher);
         $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
@@ -617,6 +629,70 @@ final class question_bank_sync_test extends \advanced_testcase {
         $imported = reset($rows);
         $this->assertSame($ownentryid, (int) $imported->sourceid);
         $this->assertNotSame($otherentryid, (int) $imported->sourceid);
+    }
+
+    /**
+     * Tests that a sync by a user limited to their own questions leaves the questions other authors
+     * already had imported from that category approved: the user only saw their own slice, so the
+     * rest did not leave the bank.
+     *
+     * @return void
+     */
+    public function test_sync_without_useall_does_not_disable_other_authors_imported_questions(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $restrictedteacher = $this->make_usemine_only_teacher();
+        $otherauthor = $this->getDataGenerator()->create_user();
+        $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => $restrictedteacher->id,
+        ]);
+        $other = $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => $otherauthor->id,
+        ]);
+
+        $this->setAdminUser();
+        $first = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+        $this->assertSame(2, $first->imported);
+
+        $this->setUser($restrictedteacher);
+        $second = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(1, $second->updated);
+        $this->assertSame(0, $second->disabled);
+        $otherentryid = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $other->id]);
+        $this->assertSame(
+            1,
+            (int) $DB->get_field('playerpuzzle_questions', 'approved', ['sourceid' => $otherentryid])
+        );
+    }
+
+    /**
+     * Control for the test above: the same re-sync by a user who sees the whole category still disables a
+     * question that left it, so the reconciliation itself is intact.
+     *
+     * @return void
+     */
+    public function test_sync_with_useall_still_disables_a_question_that_left_the_category(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $otherauthor = $this->getDataGenerator()->create_user();
+        $other = $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => $otherauthor->id,
+        ]);
+
+        $this->setAdminUser();
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+        $DB->set_field('question_versions', 'status', 'draft', ['questionid' => $other->id]);
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(1, $stats->disabled);
     }
 
     /**

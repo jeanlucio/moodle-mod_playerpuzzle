@@ -31,6 +31,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\engine\question_fetcher;
+use mod_playerpuzzle\local\engine\replay;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\move_log;
 use moodle_exception;
@@ -119,7 +120,7 @@ class draw_question extends external_api {
                     ? question_fetcher::get_single_question($questionid, (int) $playerpuzzle->id, $context)
                     : null;
 
-                if ($current === null) {
+                if ($current === null && self::is_question_due($attempt, $playerpuzzle)) {
                     $questionid = question_fetcher::draw_random_question_id((int) $playerpuzzle->id);
                     $attempt->currentquestionid = $questionid ?? 0;
                     $current = $questionid !== null
@@ -166,6 +167,28 @@ class draw_question extends external_api {
             'hashint'   => $current['hashint'],
             'options'   => $current['options'],
         ];
+    }
+
+    /**
+     * Whether the attempt's stored event log, replayed by the server, has reached a point where
+     * a question opens for the player or the boss. A fresh draw is granted only then: the
+     * question counters feed the grade, so a client calling draw_question and validate_answer
+     * in a loop, without playing, must not be able to raise them. A Demo is exempt, since it
+     * counts for nothing and keeps the client's own checkpoint.
+     *
+     * @param \stdClass $attempt The locked attempt, with the client's pending events already merged in.
+     * @param \stdClass $playerpuzzle The instance record.
+     * @return bool
+     */
+    private static function is_question_due(\stdClass $attempt, \stdClass $playerpuzzle): bool {
+        if (!empty($attempt->isdemo)) {
+            return true;
+        }
+
+        $snapshot = replay::snapshot($attempt, $playerpuzzle);
+        // An outcome the replay did not reach (e.g. a boss answer stored while the log shows
+        // a player question) leaves that question looking open forever, so it never counts.
+        return $snapshot !== null && $snapshot['pendingquestion'] !== null && $snapshot['unusedoutcomes'] === 0;
     }
 
     /**

@@ -306,6 +306,11 @@ class question_fetcher {
         string $filearea,
         int $itemid
     ): string {
+        global $CFG;
+        // Not loaded by lib/setup.php; play.php gets it as a side effect of rendering Mustache,
+        // but the AJAX web service path (draw_question, validate_answer) does not.
+        require_once($CFG->libdir . '/filelib.php');
+
         $text = file_rewrite_pluginfile_urls($text, 'pluginfile.php', $context->id, 'mod_playerpuzzle', $filearea, $itemid);
 
         return format_text($text, $format, ['context' => $context]);

@@ -607,6 +607,34 @@ final class replay_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the snapshot reports a recorded outcome it could not account for: a boss
+     * answer stored while the log shows a player question leaves that outcome unused, so the
+     * question never looks settled.
+     *
+     * @return void
+     */
+    public function test_snapshot_reports_an_outcome_the_log_does_not_account_for(): void {
+        $pp = $this->make_playerpuzzle(['basestudenthp' => 100]);
+        $movelog = move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]);
+
+        $clean = replay::snapshot($this->make_attempt([
+            'rngseed' => 56,
+            'movelog' => $movelog,
+            'frozenbasebosshp' => 100000,
+        ]), $pp);
+        $stray = replay::snapshot($this->make_attempt([
+            'rngseed' => 56,
+            'movelog' => $movelog,
+            'questionresults' => question_results::append(null, 'boss', true, false),
+            'frozenbasebosshp' => 100000,
+        ]), $pp);
+
+        $this->assertSame(0, $clean['unusedoutcomes']);
+        $this->assertSame('player', $stray['pendingquestion']);
+        $this->assertSame(1, $stray['unusedoutcomes']);
+    }
+
+    /**
      * Tests that rebuilding a phase with nothing logged yet gives the fresh board and hands
      * over the PRNG exactly where generating it left off: the next draw from the returned
      * state is the next draw of the original sequence.

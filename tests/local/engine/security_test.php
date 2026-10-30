@@ -818,13 +818,30 @@ final class security_test extends \advanced_testcase {
      * @return void
      */
     public function test_determine_start_level_ignores_demo_attempts(): void {
-        $demotoken = security::generate_attempt_token($this->playerpuzzleid, 2, 'normal', 1, 1, true);
+        $demotoken = security::generate_attempt_token($this->playerpuzzleid, 2, 'normal', 3, 7, true);
         security::validate_and_consume_token($demotoken, $this->playerpuzzleid, 2, 'lost');
 
-        [$level, $phase] = security::determine_start_level(1, 2, 10);
+        [$level, $phase] = security::determine_start_level($this->playerpuzzleid, 2, 10);
 
         $this->assertSame(1, $level);
         $this->assertSame(1, $phase);
+    }
+
+    /**
+     * Control for the Demo test above: the same scenario built with a real attempt must
+     * resume at the position it was lost on, proving the Demo test is sensitive to the
+     * isdemo filter instead of passing on the no-prior-attempt default.
+     *
+     * @return void
+     */
+    public function test_determine_start_level_resumes_after_real_loss(): void {
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2, 'normal', 3, 7, false);
+        security::validate_and_consume_token($token, $this->playerpuzzleid, 2, 'lost');
+
+        [$level, $phase] = security::determine_start_level($this->playerpuzzleid, 2, 10);
+
+        $this->assertSame(3, $level);
+        $this->assertSame(7, $phase);
     }
 
     /**

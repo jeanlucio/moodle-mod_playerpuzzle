@@ -175,13 +175,13 @@
                 {{/noquestions}}
                 {{^noquestions}}
                 {{^isguest}}
-                <form method="post" action="{{{playurl}}}" id="pp-lobby-playform">
+                <form method="post" action="{{playurl}}" id="pp-lobby-playform">
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
                     <button type="submit" class="pp-lobby-play">{{playtext}}</button>
                 </form>
                 {{/isguest}}
 
-                <form method="post" action="{{{demourl}}}">
+                <form method="post" action="{{demourl}}">
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
                     <input type="hidden" name="isdemo" value="1">
                     <button type="submit" class="pp-lobby-playdemo">{{playdemotext}}</button>

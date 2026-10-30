@@ -125,8 +125,10 @@ class replay {
      * @return array|null ['grid' => (int|null)[] (flat, row-major; null = a cell emptied by
      *  the pending question's match), 'rngstate' => int, 'turn' => string,
      *  'pendingquestion' => string|null, 'terminal' => bool, 'state' => array,
-     *  'eventcount' => int, 'appendedevents' => array], or null when the log does not replay
-     *  consistently.
+     *  'eventcount' => int, 'appendedevents' => array, 'unusedoutcomes' => int], or null when
+     *  the log does not replay consistently. 'unusedoutcomes' counts the server's recorded
+     *  question outcomes the replay did not reach: non-zero means an answer exists that the
+     *  log never accounts for.
      */
     public static function snapshot(\stdClass $attempt, \stdClass $playerpuzzle): ?array {
         if ((int) $attempt->engineversion !== (int) get_config('mod_playerpuzzle', 'version')) {
@@ -586,6 +588,7 @@ class replay {
             'state' => $state,
             'eventcount' => count($sim['events']),
             'appendedevents' => $sim['appended'],
+            'unusedoutcomes' => count($sim['outcomes']) - $sim['outcomeindex'],
         ];
     }
 

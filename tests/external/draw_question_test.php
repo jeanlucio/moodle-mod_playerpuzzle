@@ -27,6 +27,7 @@ namespace mod_playerpuzzle\external;
 
 use context_module;
 use core_external\external_api;
+use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\move_log;
 use mod_playerpuzzle\local\questions_repository;
@@ -37,6 +38,9 @@ use mod_playerpuzzle\local\questions_repository;
  * @covers \mod_playerpuzzle\external\draw_question
  */
 final class draw_question_test extends \advanced_testcase {
+    /** @var array The first event of a seed-56 phase: a match that opens the player's question. */
+    private const DUE_MOVE = ['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7];
+
     /** @var \stdClass Course used by every test. */
     private \stdClass $course;
 
@@ -98,6 +102,43 @@ final class draw_question_test extends \advanced_testcase {
     }
 
     /**
+     * Creates an attempt whose replayed log opens a player question: with this seed, swapping
+     * the cells below is a match that fills the player's mana meter (see DUE_MOVE).
+     *
+     * @param int $playerpuzzleid The instance id.
+     * @param bool $isdemo Whether the attempt is a Demo.
+     * @return string The attempt token.
+     */
+    private function make_attempt_token(int $playerpuzzleid, bool $isdemo = false): string {
+        global $DB;
+
+        $token = security::generate_attempt_token($playerpuzzleid, (int) $this->student->id, 'normal', 1, 1, $isdemo);
+        $DB->set_field('playerpuzzle_attempts', 'rngseed', 56, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'frozenbasebosshp', 100000, ['token' => $token]);
+
+        return $token;
+    }
+
+    /**
+     * Calls validate_answer through the real dispatch path.
+     *
+     * @param int $cmid Course module id.
+     * @param string $token Attempt token.
+     * @param int $answerid Chosen answer id.
+     * @param string $forwhom 'player' or 'boss'.
+     * @return array The dispatch response.
+     */
+    private function call_validate_answer(int $cmid, string $token, int $answerid, string $forwhom): array {
+        $_POST['sesskey'] = sesskey();
+        return external_api::call_external_function('mod_playerpuzzle_validate_answer', [
+            'cmid' => $cmid,
+            'token' => $token,
+            'answerid' => $answerid,
+            'forwhom' => $forwhom,
+        ]);
+    }
+
+    /**
      * Tests that a fresh attempt with no question open yet draws one, persisting it as the
      * attempt's own currentquestionid.
      *
@@ -110,9 +151,13 @@ final class draw_question_test extends \advanced_testcase {
         $questionid = $this->make_question((int) $instance->id);
 
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $token = $this->make_attempt_token((int) $instance->id);
 
-        $result = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token]);
+        $result = $this->call_draw_question([
+            'cmid' => $instance->cmid,
+            'token' => $token,
+            'movelog' => [self::DUE_MOVE],
+        ]);
 
         $this->assertFalse($result['error']);
         $this->assertTrue($result['data']['available']);
@@ -135,10 +180,15 @@ final class draw_question_test extends \advanced_testcase {
         $this->make_question((int) $instance->id);
 
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $token = $this->make_attempt_token((int) $instance->id);
 
-        $result = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token]);
+        $result = $this->call_draw_question([
+            'cmid' => $instance->cmid,
+            'token' => $token,
+            'movelog' => [self::DUE_MOVE],
+        ]);
 
+        $this->assertNotEmpty($result['data']['options']);
         foreach ($result['data']['options'] as $option) {
             $this->assertSame(['id', 'text'], array_keys($option));
         }
@@ -169,41 +219,112 @@ final class draw_question_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a fresh question is drawn once the previous one is consumed (a real answer
-     * via validate_answer), proving the "re-serve while open" behaviour above is not a
-     * permanent lock — the flow is meant to advance once a question is genuinely resolved.
+     * Tests that once the open question is answered, no further question is drawn until the
+     * replayed log reaches another one: answering is what consumes the draw, and the log — not
+     * the client's say-so — decides when the next is due.
      *
      * @return void
      */
-    public function test_draws_a_new_question_once_the_open_one_is_consumed(): void {
+    public function test_does_not_draw_again_until_the_log_reaches_another_question(): void {
         global $DB;
 
         $instance = $this->make_instance();
-        $questionid = $this->make_question((int) $instance->id);
+        $this->make_question((int) $instance->id);
 
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $token = $this->make_attempt_token((int) $instance->id);
 
-        $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token]);
-        $this->assertSame(
-            $questionid,
-            (int) $DB->get_field('playerpuzzle_attempts', 'currentquestionid', ['token' => $token])
-        );
-
-        $_POST['sesskey'] = sesskey();
-        external_api::call_external_function('mod_playerpuzzle_validate_answer', [
-            'cmid'     => $instance->cmid,
-            'token'    => $token,
-            'answerid' => 0,
-            'forwhom'  => 'boss',
+        $drawn = $this->call_draw_question([
+            'cmid' => $instance->cmid,
+            'token' => $token,
+            'movelog' => [self::DUE_MOVE],
         ]);
+        $this->assertTrue($drawn['data']['available']);
+        $answerid = (int) question_fetcher::get_correct_answer_id((int) $drawn['data']['id']);
+        $answered = $this->call_validate_answer((int) $instance->cmid, $token, $answerid, 'player');
+        $this->assertTrue($answered['data']['correct']);
+
+        $again = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 1]);
+
+        $this->assertFalse($again['error']);
+        $this->assertFalse($again['data']['available']);
         $this->assertSame(
             0,
             (int) $DB->get_field('playerpuzzle_attempts', 'currentquestionid', ['token' => $token])
         );
+    }
 
-        $second = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token]);
-        $this->assertSame($questionid, $second['data']['id']);
+    /**
+     * Tests that calling draw_question and validate_answer in a loop, with no combat played,
+     * cannot raise the question counters that feed the grade: no question is due until the
+     * replayed log says so.
+     *
+     * @return void
+     */
+    public function test_a_draw_validate_loop_without_playing_cannot_inflate_the_counters(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->make_question((int) $instance->id);
+
+        $this->setUser($this->student);
+        $token = $this->make_attempt_token((int) $instance->id);
+
+        for ($i = 0; $i < 5; $i++) {
+            $drawn = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token]);
+            $this->assertFalse($drawn['data']['available']);
+            $this->call_validate_answer((int) $instance->cmid, $token, 0, 'player');
+        }
+
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame(0, (int) $attempt->questions_total);
+        $this->assertSame(0, (int) $attempt->questions_correct);
+    }
+
+    /**
+     * Tests that peeking at the open question with a boss validation, which stores an outcome
+     * on the wrong side, does not leave the player's question looking open for a second draw:
+     * the loop would otherwise raise the counters one pass at a time.
+     *
+     * @return void
+     */
+    public function test_a_stray_boss_outcome_does_not_keep_the_question_due(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $this->make_question((int) $instance->id);
+
+        $this->setUser($this->student);
+        $token = $this->make_attempt_token((int) $instance->id);
+
+        $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token, 'movelog' => [self::DUE_MOVE]]);
+        $this->call_validate_answer((int) $instance->cmid, $token, 0, 'boss');
+        $second = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 1]);
+
+        $this->assertFalse($second['data']['available']);
+        $this->assertSame(
+            0,
+            (int) $DB->get_field('playerpuzzle_attempts', 'questions_total', ['token' => $token])
+        );
+    }
+
+    /**
+     * Tests that a Demo attempt keeps drawing freely: it counts for nothing, and its replay is
+     * not trusted at all.
+     *
+     * @return void
+     */
+    public function test_a_demo_attempt_draws_without_a_due_question(): void {
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+
+        $this->setUser($this->student);
+        $token = $this->make_attempt_token((int) $instance->id, true);
+
+        $result = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token]);
+
+        $this->assertTrue($result['data']['available']);
+        $this->assertSame($questionid, $result['data']['id']);
     }
 
     /**
@@ -219,9 +340,13 @@ final class draw_question_test extends \advanced_testcase {
         $this->make_question((int) $instance->id, 'A real hint.');
 
         $this->setUser($this->student);
-        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $token = $this->make_attempt_token((int) $instance->id);
 
-        $result = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token]);
+        $result = $this->call_draw_question([
+            'cmid' => $instance->cmid,
+            'token' => $token,
+            'movelog' => [self::DUE_MOVE],
+        ]);
 
         $this->assertFalse($result['error']);
         $this->assertTrue($result['data']['available']);

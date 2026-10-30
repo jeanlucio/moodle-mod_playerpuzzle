@@ -150,16 +150,13 @@ class save_progress extends external_api {
                 // single genuine phase, which satisfies the "wins" completion rule and the report's
                 // completion count without the Campaign being played. A Demo is always reported to the
                 // client as a one-shot fight, so it never has a next phase.
-                if (
-                    $claimedvictory
-                    && !(bool) $attempt->isdemo
-                    && combat_engine::has_next_phase([
-                        'gamemode'     => $playerpuzzle->gamemode,
-                        'currentphase' => $attempt->currentphase,
-                        'currentlevel' => $attempt->currentlevel,
-                        'maxlevels'    => $playerpuzzle->maxlevels,
-                    ])
-                ) {
+                $hasnextphase = !(bool) $attempt->isdemo && combat_engine::has_next_phase([
+                    'gamemode'     => $playerpuzzle->gamemode,
+                    'currentphase' => $attempt->currentphase,
+                    'currentlevel' => $attempt->currentlevel,
+                    'maxlevels'    => $playerpuzzle->maxlevels,
+                ]);
+                if ($claimedvictory && $hasnextphase) {
                     throw new moodle_exception('useadvancephase', 'mod_playerpuzzle');
                 }
 
@@ -180,6 +177,14 @@ class save_progress extends external_api {
                     $params['coinsearnedsofar'],
                     $params['bosscoinsearnedsofar']
                 );
+
+                // The status written below comes from the replay, not from the claim, so the check
+                // above is not enough: a client reporting a defeat for a phase the replay shows won
+                // would otherwise close the Campaign as 'won' mid-way. Nothing has been persisted yet,
+                // so the attempt stays resumable and the client can still call advance_phase.
+                if ($verdict['outcome'] === 'won' && $hasnextphase) {
+                    throw new moodle_exception('useadvancephase', 'mod_playerpuzzle');
+                }
 
                 if ($verdict['outcome'] === 'restart') {
                     replay_credit::restart_phase($attempt, $playerpuzzle);

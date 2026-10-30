@@ -1260,9 +1260,16 @@ final class save_progress_test extends \advanced_testcase {
      * @param int $level The attempt's level.
      * @param int $phase The attempt's phase.
      * @param bool $isdemo Whether the attempt is a Demo.
+     * @param bool $claimvictory Whether the client reports the win; false reports a defeat for the same phase.
      * @return array [instance, token, response]
      */
-    private function report_campaign_victory(array $instanceoverrides, int $level, int $phase, bool $isdemo = false): array {
+    private function report_campaign_victory(
+        array $instanceoverrides,
+        int $level,
+        int $phase,
+        bool $isdemo = false,
+        bool $claimvictory = true
+    ): array {
         $instance = $this->make_instance(array_merge(
             ['gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 3],
             $instanceoverrides
@@ -1281,7 +1288,7 @@ final class save_progress_test extends \advanced_testcase {
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
             'token'                => $token,
-            'victory'              => 1,
+            'victory'              => $claimvictory ? 1 : 0,
             'damage'               => 500,
             'coinsearnedsofar'     => 0,
             'bosscoinsearnedsofar' => 0,
@@ -1310,6 +1317,42 @@ final class save_progress_test extends \advanced_testcase {
             0,
             user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
         );
+    }
+
+    /**
+     * The same refusal holds when the client reports a defeat for a phase the replay verifies as won:
+     * the status comes from the replay, so a claimed defeat must not be a way around advance_phase.
+     *
+     * @return void
+     */
+    public function test_a_mid_campaign_win_reported_as_a_defeat_is_refused_too(): void {
+        global $DB;
+
+        [$instance, $token, $result] = $this->report_campaign_victory([], 1, 1, false, false);
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('useadvancephase', $result['exception']->errorcode);
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertSame('inprogress', $attempt->status);
+        $this->assertSame(
+            0,
+            user_stock::get_quantity((int) $this->student->id, (int) $instance->id, user_stock::CURRENCY_TYPE)
+        );
+    }
+
+    /**
+     * Control for the test above: on the last phase of the last level there is nothing to advance to,
+     * so the replay's win is recorded even when the client reported a defeat.
+     *
+     * @return void
+     */
+    public function test_the_final_win_is_recorded_even_when_reported_as_a_defeat(): void {
+        global $DB;
+
+        [, $token, $result] = $this->report_campaign_victory([], 3, 10, false, false);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame('won', $DB->get_field('playerpuzzle_attempts', 'status', ['token' => $token]));
     }
 
     /**

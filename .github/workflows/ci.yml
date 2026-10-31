@@ -158,7 +158,7 @@ jobs:
       - name: JS unit tests
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}
         working-directory: plugin
-        run: node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
+        run: node --test tests/js/engine/*.test.js
 
       - name: PHPUnit tests
         if: ${{ !cancelled() }}

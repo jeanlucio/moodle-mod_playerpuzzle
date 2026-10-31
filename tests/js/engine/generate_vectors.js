@@ -20,10 +20,12 @@
  *
  *     node tests/js/engine/generate_vectors.js
  *
- * It rewrites tests/fixtures/replay_vectors.json. Never edit that file by hand:
- * tests/js/engine/vectors.test.js fails when it no longer matches what this script builds,
- * and tests/local/engine/replay_vectors_test.php fails when the PHP engine disagrees with it.
- * Regenerate only after understanding why the expected values moved.
+ * It rewrites tests/fixtures/combat_vectors.json (calls to combat_rules.js and what they
+ * returned) and tests/fixtures/replay_vectors.json (whole recorded phases). Never edit either
+ * by hand: tests/js/engine/vectors.test.js fails when they no longer match what this script
+ * builds, and tests/local/engine/combat_vectors_test.php and replay_vectors_test.php fail when
+ * the PHP engine disagrees with them. Regenerate only after understanding why the expected
+ * values moved.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -38,8 +40,10 @@ const fs = require('fs');
 const path = require('path');
 const BoardRules = require('../../../amd/src/engine/board_rules.js');
 const CombatRules = require('../../../amd/src/engine/combat_rules.js');
+const Prng = require('../../../amd/src/engine/prng.js');
 const ReplayMirror = require('./replay_mirror.js');
 
+const COMBAT_FIXTURE = path.join(__dirname, '..', '..', 'fixtures', 'combat_vectors.json');
 const REPLAY_FIXTURE = path.join(__dirname, '..', '..', 'fixtures', 'replay_vectors.json');
 
 // Piece types the recording policy prefers in turn (Sword, Coin, Orb, Star, Grimoire,
@@ -139,6 +143,123 @@ const REPLAY_CASES = [
 ];
 
 /**
+ * A small helper over a seeded PRNG for building varied, reproducible arguments.
+ *
+ * @param {number} seed PRNG seed.
+ * @return {object} int(min, max), pick(list), chance(p) and step(min, max, step).
+ */
+function randomSource(seed) {
+    const next = Prng.create(seed);
+    const int = (min, max) => min + Math.floor(next() * (max - min + 1));
+    return {
+        int,
+        pick: list => list[int(0, list.length - 1)],
+        chance: p => next() < p,
+        step: (min, max, step) => min + (step * int(0, Math.floor((max - min) / step))),
+    };
+}
+
+/**
+ * A combat state with plausible values, sometimes with a meter already past 100 so the
+ * threshold rules fire.
+ *
+ * @param {object} rand See randomSource().
+ * @return {object}
+ */
+function randomState(rand) {
+    const maxPlayerHp = rand.int(50, 600);
+    const maxBossHp = rand.int(50, 3000);
+    const meter = () => (rand.chance(0.2) ? rand.step(100, 190, 10) : rand.step(0, 90, 10));
+    return {
+        currentPlayerHp: rand.step(0, maxPlayerHp * 4, 1) / 4, maxPlayerHp,
+        currentHp: rand.step(0, maxBossHp * 4, 1) / 4, maxBossHp,
+        playerMultiplier: rand.step(10, 30, 1) / 10, bossMultiplier: rand.step(10, 30, 1) / 10,
+        playerShieldMeter: meter(), playerShieldReady: rand.chance(0.3),
+        bossShieldMeter: meter(), bossShieldReady: rand.chance(0.3),
+        playerPoisonMeter: meter(), playerPoisonRounds: rand.int(0, 6),
+        bossPoisonMeter: meter(), bossPoisonRounds: rand.int(0, 6),
+        playerMana: rand.chance(0.2) ? rand.step(100, 160, 20) : rand.step(0, 80, 20),
+        bossMana: rand.chance(0.2) ? rand.step(100, 160, 20) : rand.step(0, 80, 20),
+        playerGold: rand.step(0, 400, 1) / 2, bossGold: rand.step(0, 400, 1) / 2,
+    };
+}
+
+/**
+ * Calls one combat_rules.js function and records the call. The arguments are copied first, so
+ * a function that mutates its input still records what it was given.
+ *
+ * @param {string} fn The function name.
+ * @param {Array} args The arguments, in call order.
+ * @return {object} {fn, args, result}.
+ */
+function recordCall(fn, args) {
+    const given = JSON.parse(JSON.stringify(args));
+    return {fn, args: given, result: CombatRules[fn](...args)};
+}
+
+/**
+ * Calls every pure combat rule over fixed edge cases and seeded random arguments.
+ *
+ * @return {Array} The combat vectors, in fixture shape.
+ */
+function buildCombatVectors() {
+    const rand = randomSource(20261031);
+    const cases = [];
+
+    for (let size = 3; size <= 8; size++) {
+        cases.push(recordCall('comboMultiplier', [size]));
+    }
+    ['shield', 'magic', 'potion', 'sword'].forEach(type => cases.push(recordCall('phaseLimit', [type])));
+    [[0, 0], [3, 2], [3, 3], [5, 9]].forEach(args => cases.push(recordCall('needsRevive', args)));
+    [1, 15, 99, 1000, 2501].forEach(max => cases.push(recordCall('reviveHp', [max])));
+    [
+        {gamemode: 'single', currentphase: 3, currentlevel: 1, maxlevels: 1},
+        {gamemode: 'campaign', currentphase: 9, currentlevel: 1, maxlevels: 1},
+        {gamemode: 'campaign', currentphase: 10, currentlevel: 1, maxlevels: 1},
+        {gamemode: 'campaign', currentphase: 10, currentlevel: 2, maxlevels: 3},
+        {gamemode: 'campaign', currentphase: 10, currentlevel: 3, maxlevels: 3},
+    ].forEach(config => cases.push(recordCall('hasNextPhase', [config])));
+
+    for (let i = 0; i < 40; i++) {
+        const state = randomState(rand);
+        cases.push(recordCall('resolvePoisonMeters', [state]));
+        cases.push(recordCall('resolveShieldMeters', [randomState(rand)]));
+        cases.push(recordCall('resolveDamage', [rand.step(0, 4000, 1) / 4, rand.chance(0.3), rand.step(0, 800, 1) / 4]));
+        cases.push(recordCall('resolvePoisonTick', [rand.step(0, 4000, 1) / 4, rand.int(0, 4), rand.int(1, 60)]));
+    }
+
+    for (let i = 0; i < 150; i++) {
+        const destroyedTypes = [];
+        const count = rand.int(3, 14);
+        for (let j = 0; j < count; j++) {
+            destroyedTypes.push(rand.int(0, 6));
+        }
+        const matchGroups = [];
+        const groups = rand.int(1, 3);
+        for (let j = 0; j < groups; j++) {
+            matchGroups.push({type: rand.int(0, 6), size: rand.int(3, 7)});
+        }
+        cases.push(recordCall('resolveMatchEffects', [{
+            currentTurn: rand.pick(['player', 'boss']),
+            destroyedTypes,
+            matchGroups,
+            state: randomState(rand),
+            config: {baseDamage: rand.int(1, 60), coinGain: rand.int(0, 25), coinFactor: rand.pick([0.5, 1, 3])},
+        }]));
+    }
+
+    for (let i = 0; i < 40; i++) {
+        cases.push(recordCall('resolveConsumableEffect', [
+            rand.pick(['potion', 'shield', 'magic', 'sword']),
+            randomState(rand),
+            {baseDamage: rand.int(1, 60)},
+        ]));
+    }
+
+    return cases;
+}
+
+/**
  * Records every replay case.
  *
  * @return {Array} The replay vectors, in fixture shape.
@@ -176,8 +297,18 @@ function buildReplayVectors() {
 }
 
 /**
- * Serialises a fixture with one event or outcome per line, so a regenerated file diffs
- * readably.
+ * Serialises the combat fixture with one call per line, so a regenerated file diffs readably.
+ *
+ * @param {Array} vectors The vectors.
+ * @return {string} The file contents.
+ */
+function serialiseCalls(vectors) {
+    return `[\n${vectors.map(vector => `    ${JSON.stringify(vector)}`).join(',\n')}\n]\n`;
+}
+
+/**
+ * Serialises the replay fixture with one event or outcome per line, so a regenerated file
+ * diffs readably.
  *
  * @param {Array} vectors The vectors.
  * @return {string} The file contents.
@@ -200,9 +331,10 @@ function serialise(vectors) {
     return `${lines.join('\n')}\n`;
 }
 
-module.exports = {REPLAY_FIXTURE, buildReplayVectors, serialise};
+module.exports = {COMBAT_FIXTURE, REPLAY_FIXTURE, buildCombatVectors, buildReplayVectors, serialise, serialiseCalls};
 
 if (require.main === module) {
+    fs.writeFileSync(COMBAT_FIXTURE, serialiseCalls(buildCombatVectors()));
     fs.writeFileSync(REPLAY_FIXTURE, serialise(buildReplayVectors()));
-    process.stdout.write(`Wrote ${REPLAY_FIXTURE}\n`);
+    process.stdout.write(`Wrote ${COMBAT_FIXTURE} and ${REPLAY_FIXTURE}\n`);
 }

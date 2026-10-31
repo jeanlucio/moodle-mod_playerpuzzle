@@ -20,7 +20,7 @@
 ## English
 
 **PlayerPuzzle** is a turn-based Match-3 RPG gamified activity for Moodle: the student combines
-pieces on an 8×8 board to attack a boss controlled by a simple AI, answering questions to land
+pieces on an 8×8 board to attack an opponent controlled by a simple AI, answering questions to land
 critical hits. The questions come from the activity's own bank — imported from the course's Moodle
 Question Bank, written by hand, or generated with AI and approved by the teacher. The teacher
 chooses between a self-contained **Single Match** or a **Campaign** of up to 10 levels (10 phases
@@ -96,7 +96,7 @@ Maintained by [Jean Lúcio](https://github.com/jeanlucio).
 > ⚠️ **Este plugin é uma pré-versão.** Ainda não foi publicado no Diretório de Plugins do Moodle.
 
 O **PlayerPuzzle** é uma atividade gamificada Match-3 RPG por turnos para o Moodle: o estudante
-combina peças num tabuleiro 8×8 para atacar um chefe controlado por uma IA simples, respondendo
+combina peças num tabuleiro 8×8 para atacar um adversário controlado por uma IA simples, respondendo
 questões para desferir ataques críticos. As questões vêm do banco da própria atividade —
 importadas do Banco de Questões do Moodle do curso, escritas à mão, ou geradas por IA e aprovadas
 pelo professor. O professor escolhe entre uma **Partida Única** autocontida ou uma **Campanha** de

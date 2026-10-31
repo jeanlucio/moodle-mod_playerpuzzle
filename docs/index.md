@@ -20,7 +20,7 @@ lang: en
 > future version.
 
 **PlayerPuzzle** (`mod_playerpuzzle`) is a turn-based Match-3 RPG gamified activity for Moodle:
-the student combines pieces on an 8×8 board to attack a boss controlled by a simple AI, answering
+the student combines pieces on an 8×8 board to attack an opponent controlled by a simple AI, answering
 questions to land critical hits. The questions come from the activity's own bank — imported from
 the course's Moodle Question Bank, written by hand, or generated with AI and approved by the
 teacher. The teacher chooses between a self-contained **Single Match** or a **Campaign** of up to

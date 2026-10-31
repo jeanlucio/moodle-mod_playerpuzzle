@@ -59,6 +59,6 @@ enquanto aquela questão está aberta, e o professor pode desligar as dicas em t
 
 As configurações da atividade permitem que o professor exija um número mínimo de perguntas
 respondidas antes que uma partida possa terminar em vitória (3 por padrão). O Lobby mostra a
-exigência antes de a partida começar, um contador mostra o progresso durante ela, e o chefe revive
+exigência antes de a partida começar, um contador mostra o progresso durante ela, e o adversário revive
 com metade do HP se cair cedo demais — veja [Como o Combate Funciona](#combat). A contagem é feita
 pelo servidor a cada resposta, nunca reportada pelo cliente.

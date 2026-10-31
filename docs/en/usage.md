@@ -4,7 +4,7 @@
 
 1. Add a PlayerPuzzle activity to a course.
 2. Choose a **Game Mode** — Campaign or Single Match — see [Game Modes](#game-modes) — and the
-   boss, its HP and damage, and how many levels a Campaign has.
+   opponent, its HP and damage, and how many levels a Campaign has.
 3. Open **Manage questions** to fill the activity's question bank: import a Question Bank
    category, add questions by hand, or generate them with AI (pending questions need your
    approval before they are drawn). See [Question Engine](#questions).
@@ -26,7 +26,7 @@
    connected PlayerHUD — to transfer coins in. **Settings** holds music, sound effects and spoken
    narration, and **Ranking** shows the class standings.
 4. Select **Play Game** to start (or resume) a match.
-5. Match pieces to attack the boss, fill the Mana Orb bar to trigger a
+5. Match pieces to attack the opponent, fill the Mana Orb bar to trigger a
    [Question Challenge](#questions), and answer correctly for a critical hit.
 6. After a phase or match, review the questions you answered. In Campaign mode, winning a phase
    never costs a new attempt — only losing does.

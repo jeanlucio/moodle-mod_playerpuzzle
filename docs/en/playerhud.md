@@ -12,9 +12,9 @@ gain** (10 by default), a 4-piece match 1.5× that, and a 5-piece match 2× — 
 damage uses. Unlike every other combat value, coin gain deliberately does **not** scale by level
 or phase, so the fixed shop prices stay balanced for the whole campaign.
 
-The boss banks its own coins when it matches the Coin piece on its turn. It has no shop and never
+The opponent banks its own coins when it matches the Coin piece on its turn. It has no shop and never
 spends them; they only net against the student's: the amount banked is
-`max(0, student's coins − boss's coins)`, and only on a **victory** (every phase won, in
+`max(0, student's coins − opponent's coins)`, and only on a **victory** (every phase won, in
 Campaign). A defeat banks nothing, and a Demo match never does. The result is added to the
 student's PuzzleCoin balance, spent in the [loadout shop](#combat).
 

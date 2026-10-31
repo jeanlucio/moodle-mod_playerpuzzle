@@ -9,7 +9,7 @@ accessibility approach is a parallel, always-present HTML layer rather than an a
   arrow keys; each cell is read with its piece name.
 * At the start of the student's turn, the available moves are announced through an
   `aria-live="polite"` region, which also carries the other turn-by-turn events — damage dealt and
-  taken, energy bar full, a question answered, the boss reviving, a phase advanced.
+  taken, energy bar full, a question answered, the opponent reviving, a phase advanced.
 * Number keys `1`–`9` execute the correspondingly-announced move, and `Space` re-reads the list of
   available moves.
 * The question challenge is a native HTML `<dialog>`: focus is trapped and centred by the browser,

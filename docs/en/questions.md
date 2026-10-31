@@ -57,6 +57,6 @@ question is open, and a teacher can turn hints off for the whole activity.
 
 The activity settings let a teacher require a minimum number of questions to be answered before a
 match can end in victory (3 by default). The Lobby shows the requirement before the match starts,
-a counter shows the progress during it, and the boss revives at half HP if it falls too early —
+a counter shows the progress during it, and the opponent revives at half HP if it falls too early —
 see [How Combat Works](#combat). The count is kept by the server on every answer, never reported
 by the client.

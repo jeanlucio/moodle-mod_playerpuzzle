@@ -5,7 +5,7 @@ none of it as trustworthy until the server confirms it, through three pillars:
 
 ## 1. Server as the Source of Truth
 
-Boss and student HP for the current level/phase are computed once, server-side
+Opponent and student HP for the current level/phase are computed once, server-side
 (`combat::calculate_boss_hp()`/`calculate_student_hp()`), and handed to the client as read-only
 configuration. The client never recalculates them.
 
@@ -25,7 +25,7 @@ copy of the rules and derives the real damage, HP, coins and result.
 * Whether each question was answered correctly always comes from the server's own judgement,
   never from the client's log.
 * Coins are tracked in a server-side ledger, with a plausibility ceiling tied to the damage dealt.
-* Advancing a phase additionally requires the reported damage to clear that phase's boss HP.
+* Advancing a phase additionally requires the reported damage to clear that phase's opponent HP.
 * Visitors (the guest account, or a logged-in user who is in the course only through guest access)
   can play the Demo only: nothing they do is graded or banked.
 

@@ -3,9 +3,9 @@
 ## ⚔️ Gameplay
 
 * **Match-3 turn-based combat:** an 8×8 board (Phaser) where the student swaps pieces to attack a
-  boss. Seven piece types, each with its own effect — see [How Combat Works](#combat).
-* **Symmetric boss AI:** every piece resolves exactly the same way on the boss's turn as on the
-  student's — the boss deals damage, stacks a critical-hit multiplier, poisons, shields itself,
+  opponent. Seven piece types, each with its own effect — see [How Combat Works](#combat).
+* **Symmetric opponent AI:** every piece resolves exactly the same way on the opponent's turn as on the
+  student's — the opponent deals damage, stacks a critical-hit multiplier, poisons, shields itself,
   heals and banks its own gold.
 * **Question challenges:** filling the Mana Orb meter opens a question; a correct answer is a
   critical hit, a wrong one costs HP. See [Question Engine](#questions).
@@ -13,8 +13,8 @@
   attempt) and **Single Match** (a self-contained, repeatable round). See
   [Game Modes](#game-modes).
 * **Three difficulties,** chosen by the student, that never change the grade: Easy, Normal and
-  Hard scale the boss, the coin reward and how often the boss answers correctly.
-* **Minimum questions per match:** the boss revives at half HP if it falls before the student has
+  Hard scale the opponent, the coin reward and how often the opponent answers correctly.
+* **Minimum questions per match:** the opponent revives at half HP if it falls before the student has
   answered the required number of questions.
 * **Resume anywhere:** the board and the fight are saved while playing, so closing the tab or
   reloading picks the fight up where it was.
@@ -50,7 +50,7 @@
 * **Gradebook:** a real grade item, scaled by the configured Maximum Grade (points, or no grade),
   with a pass grade and an optional "consider errors" variant. See [Game Modes](#game-modes).
 * **Custom completion:** require a number of attempts and/or wins.
-* **Teacher report:** per-student progress, average boss damage and accuracy, the most missed
+* **Teacher report:** per-student progress, average opponent damage and accuracy, the most missed
   questions, the score distribution and the completion rate, respecting separate groups.
 * **Backup and restore,** including duplicating the activity, with attempts, the loadout stock and
   logs carried across.

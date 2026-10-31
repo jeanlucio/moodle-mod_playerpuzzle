@@ -11,19 +11,19 @@ counts only attempts that ended in defeat, never a phase won along the way.
 * **Resuming:** closing the browser mid-campaign and coming back resumes the exact level and
   phase the student was on. After a defeat, the next attempt resumes on that same level and phase
   rather than starting over.
-* **HP scaling:** both the boss's and the student's maximum HP grow with the current level and
+* **HP scaling:** both the opponent's and the student's maximum HP grow with the current level and
   phase, using a fixed linear formula computed once on the server:
 
   | | Formula |
   |---|---|
-  | Boss HP | `base × (1 + 0.5 × (level − 1) + 0.1 × (phase − 1))` |
+  | Opponent HP | `base × (1 + 0.5 × (level − 1) + 0.1 × (phase − 1))` |
   | Student HP | `base × (1 + 0.3 × (level − 1) + 0.05 × (phase − 1))` |
 
-  The boss scales faster than the student — later phases are meant to feel harder, not just
-  longer. The boss's damage scales the same way; the coin reward does not (see
+  The opponent scales faster than the student — later phases are meant to feel harder, not just
+  longer. The opponent's damage scales the same way; the coin reward does not (see
   [Combat](#combat)).
 * **Advancing:** after winning a phase, the server checks that the reported fight really cleared
-  that phase's boss HP, rotates the token, and the student continues to the next phase. The same
+  that phase's opponent HP, rotates the token, and the student continues to the next phase. The same
   request cannot be replayed to skip several phases off one victory.
 * **Difficulty per phase:** the student picks a difficulty in the Lobby for the first phase and
   again on each "Phase complete" screen for the next one.

@@ -3,10 +3,10 @@
 ## ⚔️ Jogabilidade
 
 * **Combate Match-3 por turnos:** um tabuleiro 8×8 (Phaser) onde o estudante troca peças para
-  atacar um adversário. Sete tipos de peça, cada uma com seu efeito — veja
+  atacar um oponente. Sete tipos de peça, cada uma com seu efeito — veja
   [Como o Combate Funciona](#combat).
-* **IA do adversário simétrica:** toda peça resolve exatamente do mesmo jeito no turno do adversário e no do
-  estudante — o adversário causa dano, acumula multiplicador de crítico, envenena, se protege, se cura e
+* **IA do oponente simétrica:** toda peça resolve exatamente do mesmo jeito no turno do oponente e no do
+  estudante — o oponente causa dano, acumula multiplicador de crítico, envenena, se protege, se cura e
   acumula a própria moeda.
 * **Desafios de pergunta:** encher a barra do Orbe de Mana abre uma pergunta; acertar é um ataque
   crítico, errar custa HP. Veja [Motor de Questões](#questions).
@@ -14,8 +14,8 @@
   tentativa) e **Partida Única** (uma rodada autocontida e repetível). Veja
   [Modos de Jogo](#game-modes).
 * **Três dificuldades,** escolhidas pelo estudante, que nunca mudam a nota: Fácil, Normal e Difícil
-  escalam o adversário, a recompensa em moedas e a frequência com que o adversário acerta a pergunta.
-* **Mínimo de questões por partida:** o adversário revive com metade do HP se cair antes de o estudante
+  escalam o oponente, a recompensa em moedas e a frequência com que o oponente acerta a pergunta.
+* **Mínimo de questões por partida:** o oponente revive com metade do HP se cair antes de o estudante
   ter respondido o número exigido de perguntas.
 * **Retome de onde parou:** o tabuleiro e a luta são salvos durante o jogo, então fechar a aba ou
   recarregar a página retoma a luta de onde estava.
@@ -51,7 +51,7 @@
   sem nota), com nota para aprovação e uma variante opcional "considerar erros". Veja
   [Modos de Jogo](#game-modes).
 * **Conclusão personalizada:** exija um número de tentativas e/ou vitórias.
-* **Relatório do professor:** progresso por estudante, dano médio ao adversário e taxa de acerto, as
+* **Relatório do professor:** progresso por estudante, dano médio ao oponente e taxa de acerto, as
   questões mais erradas, a distribuição das notas e a taxa de conclusão, respeitando grupos
   separados.
 * **Backup e restauração,** incluindo duplicar a atividade, levando junto as tentativas, o estoque

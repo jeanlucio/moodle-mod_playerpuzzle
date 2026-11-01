@@ -6,7 +6,7 @@ pilares:
 
 ## 1. Servidor Como Fonte da Verdade
 
-O HP do adversário e do estudante pro nível/fase atuais são calculados uma única vez, no servidor
+O HP do oponente e do estudante pro nível/fase atuais são calculados uma única vez, no servidor
 (`combat::calculate_boss_hp()`/`calculate_student_hp()`), e entregues ao cliente como
 configuração somente-leitura. O cliente nunca os recalcula.
 
@@ -29,7 +29,7 @@ resultado reais.
   do registro do cliente.
 * As moedas são controladas por um livro-razão no servidor, com um teto de plausibilidade ligado ao
   dano causado.
-* Avançar de fase exige, além disso, que o dano reportado zere o HP do adversário daquela fase.
+* Avançar de fase exige, além disso, que o dano reportado zere o HP do oponente daquela fase.
 * Visitantes (a conta de visitante, ou um usuário logado que está no curso apenas por acesso de
   visitante) só podem jogar a Demo: nada do que fazem é avaliado ou guardado.
 

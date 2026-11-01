@@ -7,9 +7,9 @@ adaptando a um layout paisagem em telas mais largas.
 
 1. O estudante faz uma jogada no tabuleiro.
 2. Combos e cascatas mantêm o turno do estudante rolando.
-3. Quando o tabuleiro estabiliza, é o **Turno do Adversário**: uma IA simples varre o tabuleiro e
+3. Quando o tabuleiro estabiliza, é o **Turno do Oponente**: uma IA simples varre o tabuleiro e
    executa uma troca válida. O que ela combina resolve pelas mesmas sete peças e os mesmos
-   efeitos do turno do estudante (veja abaixo) — o adversário pode causar dano, acumular
+   efeitos do turno do estudante (veja abaixo) — o oponente pode causar dano, acumular
    multiplicador, envenenar o estudante, se proteger, se curar e acumular moeda, exatamente como
    o estudante faz no próprio turno.
 
@@ -22,7 +22,7 @@ muda é só quem ganha o efeito (quem estiver no turno atual).
 |------|--------|
 | ⭐ Estrela | Soma +0,1 a um multiplicador de dano, acumulando entre turnos; consumido no acerto crítico daquele lado e resetado a 1 quando esse lado erra uma pergunta |
 | 📖 Grimório | Enche um medidor de veneno próprio de 0–100 (+10 por peça); ao chegar em 100, arma 3 rodadas de dano contra o **oponente** (uma por turno dele) e reseta, preservando o excedente |
-| ❓ Orbe de Interrogação | Enche uma barra de energia de 100 pontos própria de cada lado; ao chegar em 100, pausa o combate e abre o [Desafio de Pergunta](#questions) — o estudante responde de verdade, o adversário "responde" escolhendo uma opção ao acaso, validada do mesmo jeito no servidor |
+| ❓ Orbe de Interrogação | Enche uma barra de energia de 100 pontos própria de cada lado; ao chegar em 100, pausa o combate e abre o [Desafio de Pergunta](#questions) — o estudante responde de verdade, o oponente "responde" escolhendo uma opção ao acaso, validada do mesmo jeito no servidor |
 | ⚔️ Espadas | Dano direto no **oponente** — sem precisar de pergunta. Escala com nível/fase, e uma combinação de 4 ou 5 peças causa 1,5x/2x o dano de uma combinação de 3 |
 | 🛡️ Escudo | Enche um medidor próprio de 0–100 (+10 por peça); ao chegar em 100, nega por completo o **próximo** golpe recebido por esse lado, não importa o valor, e reseta |
 | 🧪 Poção | Cura o HP do próprio lado em um quarto do dano base por peça, então uma combinação de 3 cura três quartos do que uma combinação de 3 Espadas causa — o dano sempre pesa mais que a cura |
@@ -37,19 +37,19 @@ abre o [modal de pergunta](#questions):
   Estrela que esse lado acumulou.
 * **Resposta errada** — esse lado sofre dano, e seu multiplicador de Estrela volta pra 1.
 
-O adversário também "responde" quando a própria barra de Orbe de Mana enche, mas nunca vê a resposta
-certa: é o servidor que decide se o adversário acertou, com uma probabilidade que depende da
+O oponente também "responde" quando a própria barra de Orbe de Mana enche, mas nunca vê a resposta
+certa: é o servidor que decide se o oponente acertou, com uma probabilidade que depende da
 dificuldade (veja abaixo).
 
 É o momento em que o plugin conecta a habilidade no Match-3 com o conhecimento real de
 conteúdo: combinar peças bem enche a barra e acumula o multiplicador, mas o retorno de verdade
 só vem se o estudante também responder certo.
 
-## Mínimo de Questões e a Revivência do Adversário
+## Mínimo de Questões e a Revivência do Oponente
 
 O professor pode exigir um número mínimo de perguntas respondidas por partida (3 por padrão). O
 Lobby avisa o estudante antes de a partida começar, e um contador mostra o progresso durante ela.
-Se o adversário fosse cair antes de esse número ser atingido, ele volta com metade do HP — quantas
+Se o oponente fosse cair antes de esse número ser atingido, ele volta com metade do HP — quantas
 vezes for preciso —, então uma partida nunca pode ser vencida sem o estudante realmente encarar as
 perguntas.
 
@@ -57,7 +57,7 @@ perguntas.
 
 O estudante escolhe Fácil, Normal ou Difícil. A escolha muda a luta, nunca a nota:
 
-| | HP e dano do adversário | Moedas ganhas | Adversário acerta uma Múltipla Escolha | Adversário acerta um Verdadeiro/Falso |
+| | HP e dano do oponente | Moedas ganhas | Oponente acerta uma Múltipla Escolha | Oponente acerta um Verdadeiro/Falso |
 |---|:---:|:---:|:---:|:---:|
 | Fácil | ×0,5 | ×0,5 | 33% | 50% |
 | Normal | ×1 | ×1 | 66% | 75% |
@@ -76,14 +76,14 @@ partida:
 |---|---|:---:|:---:|
 | 🧪 Poção | Cura 1,25× o dano base | 8 | 3 |
 | 🛡️ Escudo | Enche o medidor de Escudo de uma vez, armando o bloqueio do próximo golpe | 10 | 1 |
-| 🔮 Magia Rápida | Enche o medidor do Grimório de uma vez, armando três rodadas de veneno no adversário | 12 | 1 |
+| 🔮 Magia Rápida | Enche o medidor do Grimório de uma vez, armando três rodadas de veneno no oponente | 12 | 1 |
 | ⚔️ Espada | Um ataque extra de um dano base, sem encerrar o turno | 10 | 3 |
 | 💡 Dica | Mostra a dica da pergunta aberta, quando ela tem uma | 5 | sem limite fixo |
 
 Os preços e limites são fixos, iguais para todos. A primeira partida de um estudante normalmente
 começa com o loadout vazio: o PuzzleCoin se ganha vencendo, ou transferindo do PlayerHUD. As moedas
 são coletadas no tabuleiro com a peça Moeda — veja [Integração com o PlayerHUD](#playerhud) para
-como são compensadas com as do adversário e guardadas. O professor pode desligar as dicas em toda a
+como são compensadas com as do oponente e guardadas. O professor pode desligar as dicas em toda a
 atividade.
 
 ## Progresso Salvo
@@ -94,7 +94,7 @@ do registro de jogadas do próprio servidor, e não do que o navegador diz.
 
 ## Verdade do Servidor
 
-Todo número que governa o combate — o HP máximo do adversário e do estudante, e o valor base de dano
+Todo número que governa o combate — o HP máximo do oponente e do estudante, e o valor base de dano
 do qual Espada/Estrela/Grimório/Poção escalam — é calculado uma única vez no servidor pro nível e
 fase atuais (veja [Modos de Jogo](#game-modes) pra como esses valores escalam) e entregue ao
 cliente como configuração; o cliente nunca recalcula nada disso. O servidor também refaz as

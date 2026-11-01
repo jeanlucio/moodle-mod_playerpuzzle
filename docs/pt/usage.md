@@ -4,7 +4,7 @@
 
 1. Adicione uma atividade PlayerPuzzle a um curso.
 2. Escolha um **Modo de Jogo** — Campanha ou Partida Única — veja [Modos de Jogo](#game-modes) — e
-   o adversário, o HP e o dano dele, e quantos níveis tem uma Campanha.
+   o oponente, o HP e o dano dele, e quantos níveis tem uma Campanha.
 3. Abra **Gerenciar questões** para montar o banco de questões da atividade: importe uma
    categoria do Banco de Questões, cadastre questões à mão ou gere-as com IA (questões pendentes
    precisam da sua aprovação antes de serem sorteadas). Veja [Motor de Questões](#questions).
@@ -26,7 +26,7 @@
    ligou o PlayerHUD — para transferir moedas para cá. **Configurações** guarda música, efeitos
    sonoros e narração falada, e **Ranking** mostra a classificação da turma.
 4. Selecione **Jogar** para começar (ou retomar) uma partida.
-5. Combine peças para atacar o adversário, encha a barra do Orbe de Mana para disparar um
+5. Combine peças para atacar o oponente, encha a barra do Orbe de Mana para disparar um
    [Desafio de Pergunta](#questions), e responda certo para um acerto crítico.
 6. Depois de uma fase ou partida, revise as perguntas que respondeu. No modo Campanha, vencer uma
    fase nunca consome uma nova tentativa — só perder consome.

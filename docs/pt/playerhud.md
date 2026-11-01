@@ -13,9 +13,9 @@ curva que o dano de Espada usa. Diferente de todo outro valor de combate, o ganh
 deliberadamente **não** escala por nível ou fase, para que os preços fixos da loja continuem
 equilibrados durante toda a campanha.
 
-O adversário acumula as próprias moedas quando combina a peça Moeda no turno dele. Ele não tem loja e
+O oponente acumula as próprias moedas quando combina a peça Moeda no turno dele. Ele não tem loja e
 nunca as gasta; elas só se compensam com as do estudante: o valor guardado é
-`max(0, moedas do estudante − moedas do adversário)`, e só numa **vitória** (cada fase vencida, na
+`max(0, moedas do estudante − moedas do oponente)`, e só numa **vitória** (cada fase vencida, na
 Campanha). Uma derrota não guarda nada, e uma partida Demo nunca guarda. O resultado soma-se ao
 saldo de PuzzleCoin do estudante, gasto na [loja de loadout](#combat).
 

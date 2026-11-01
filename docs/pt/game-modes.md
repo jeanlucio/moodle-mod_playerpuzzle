@@ -11,19 +11,19 @@ conta apenas as tentativas que terminaram em derrota, nunca uma fase vencida pel
 * **Retomada:** fechar o navegador no meio da campanha e voltar retoma exatamente o nível e a fase
   em que o estudante estava. Depois de uma derrota, a próxima tentativa retoma nesse mesmo nível e
   fase, em vez de recomeçar do zero.
-* **Escalonamento de HP:** o HP máximo do adversário e do estudante cresce com o nível e a fase atuais,
+* **Escalonamento de HP:** o HP máximo do oponente e do estudante cresce com o nível e a fase atuais,
   por uma fórmula linear fixa calculada uma única vez no servidor:
 
   | | Fórmula |
   |---|---|
-  | HP do adversário | `base × (1 + 0,5 × (nível − 1) + 0,1 × (fase − 1))` |
+  | HP do oponente | `base × (1 + 0,5 × (nível − 1) + 0,1 × (fase − 1))` |
   | HP do estudante | `base × (1 + 0,3 × (nível − 1) + 0,05 × (fase − 1))` |
 
-  O adversário escala mais rápido que o estudante — as fases finais devem parecer mais difíceis, não só
-  mais longas. O dano do adversário escala do mesmo jeito; a recompensa em moedas não (veja
+  O oponente escala mais rápido que o estudante — as fases finais devem parecer mais difíceis, não só
+  mais longas. O dano do oponente escala do mesmo jeito; a recompensa em moedas não (veja
   [Combate](#combat)).
 * **Avanço:** depois de vencer uma fase, o servidor confere se a luta reportada realmente zerou o
-  HP do adversário daquela fase, rotaciona o token, e o estudante segue para a próxima. A mesma
+  HP do oponente daquela fase, rotaciona o token, e o estudante segue para a próxima. A mesma
   requisição não pode ser reproduzida para pular várias fases a partir de uma vitória.
 * **Dificuldade por fase:** o estudante escolhe a dificuldade no Lobby para a primeira fase e de
   novo, a cada tela "Fase concluída", para a seguinte.

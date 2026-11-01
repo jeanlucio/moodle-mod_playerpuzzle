@@ -18,7 +18,7 @@
   caption_pt: "O desafio de pergunta como um diálogo HTML nativo — centralizado, com gerenciamento de foco, com Pular, uma Dica do loadout e Atacar"
 - file: settings-form.png
   caption_en: "Teacher-facing activity settings: game mode, opponent, HP and damage, coin gain, minimum questions, attempts, ranking and hints"
-  caption_pt: "Configurações da atividade para o professor: modo de jogo, adversário, HP e dano, ganho de moeda, mínimo de questões, tentativas, ranking e dicas"
+  caption_pt: "Configurações da atividade para o professor: modo de jogo, oponente, HP e dano, ganho de moeda, mínimo de questões, tentativas, ranking e dicas"
 - file: manage-questions.png
   caption_en: "Manage questions: import from the Question Bank, add by hand or generate with AI, with each question's source, status and how often it was drawn"
   caption_pt: "Gerenciar questões: importar do Banco de Questões, adicionar à mão ou gerar com IA, com a origem, o status e a frequência de sorteio de cada questão"

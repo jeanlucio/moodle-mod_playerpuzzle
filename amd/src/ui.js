@@ -166,23 +166,23 @@ define(
                 this.playerLogLines = this.createHistoryLog(L.playerUiX);
                 this.bossLogLines = this.createHistoryLog(L.bossUiX);
             } else {
-                me.add.image(L.bgX, L.bgY, 'bg').setDisplaySize(L.bgW, L.bgH);
+                // The stage band: the wide stage scaled to the band's height, keeping its own
+                // proportions, and centred, so the canvas edges crop its two sides.
+                me.add.rectangle(L.w / 2, L.h / 2, L.w, L.h, L.backdropColor);
+                const stage = me.add.image(L.w / 2, L.stageBandH / 2, 'stagebg');
+                const source = stage.texture.getSourceImage();
+                stage.setDisplaySize(L.stageBandH * source.width / source.height, L.stageBandH);
 
                 // Simplified panel backing — a plain translucent rounded rect per cluster, not
-                // panel_stone.png/scroll_banner.png (those are sized for the desktop's wide
-                // 16:9 stage band, which this 9:16 column doesn't have — every extra px of
-                // chrome here is a px stolen from the board). Decided after prototyping the
-                // whole column as an interactive artifact.
+                // panel_stone.png/scroll_banner.png (every extra px of chrome here is a px
+                // stolen from the board).
                 this.drawSimplePanel(L.panelTopBoss, L.panelBottomBoss);
                 this.drawSimplePanel(L.panelTopPlayer, L.panelBottomPlayer);
 
-                this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
-                    .setDisplaySize(L.bossScale, L.bossScale);
-                // Beside the bar/resource/ring stack, in the panel's own left margin — not
-                // centered above like the boss's sprite (see playerX/Y/Scale's own comment in
-                // game_boot.js for why).
                 this.playerSprite = me.add.image(L.playerX, L.playerY, 'player')
                     .setDisplaySize(L.playerScale, L.playerScale);
+                this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
+                    .setDisplaySize(L.bossScale, L.bossScale);
 
                 // Icon chips (reused from the desktop redesign), not raw emoji text — the old
                 // "🪙: 0" read poorly against the sky background at this size. Also fixes a
@@ -248,7 +248,7 @@ define(
 
             const L = this.L;
             this.questionsCounterText = this.scene.add.text(
-                L.playerUiX + (L.hpBarW / 2), L.playerHpY + L.hpBarH + 14, '',
+                L.playerUiX + (L.hpBarW / 2), L.questionsCounterY || (L.playerHpY + L.hpBarH + 14), '',
                 {fontSize: '13px', fill: '#e9e6dd'}
             ).setOrigin(0.5, 0);
         }

@@ -426,9 +426,6 @@ class game_page_service {
         $bossurl = opponents::sprite_url($opponent)->out(false);
         $playerurl = $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false);
         $stagebgurl = opponents::stage_url($opponent)->out(false);
-        // Mobile's own layout (game_boot.js's 9:16 L object) still fills its full canvas with
-        // this same background image; desktop moved to the stage band + panels instead.
-        $bgurl = $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false);
 
         return [
             'cmid'                 => $cm->id,
@@ -485,7 +482,6 @@ class game_page_service {
             'bossurl'              => $bossurl,
             'playerurl'            => $playerurl,
             'stagebgurl'           => $stagebgurl,
-            'bgurl'                => $bgurl,
             'spriteurls'           => $spriteurls,
             'mobile'               => $ismobile,
             'viewurl'              => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),

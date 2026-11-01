@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20261021" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20261101" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -13,7 +13,7 @@
         <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Format of the intro field"/>
         <FIELD NAME="maxlevels" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Number of levels enabled (1-10); each level has 10 phases"/>
         <FIELD NAME="basestudenthp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Base student HP at Level 1 Phase 1; scales automatically per phase"/>
-        <FIELD NAME="bossavatar" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="slime.png" SEQUENCE="false" COMMENT="Boss image filename"/>
+        <FIELD NAME="bossavatar" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="slime" SEQUENCE="false" COMMENT="Single Match opponent: one of the keys in classes/local/opponents.php"/>
         <FIELD NAME="basebosshp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Base boss HP at Level 1 Phase 1; scales automatically per phase"/>
         <FIELD NAME="bossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Damage dealt by boss per turn"/>
         <FIELD NAME="coingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Base coins per 3-piece Coin match; combo curve applies, does not scale by level/phase"/>
@@ -71,6 +71,7 @@
         <FIELD NAME="frozenbasebosshp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Instance basebosshp snapshotted at the start of this phase, so a later teacher edit never desyncs a replay of an already-played phase"/>
         <FIELD NAME="frozenbossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Instance bossdamage snapshotted at the start of this phase, same reasoning as frozenbasebosshp"/>
         <FIELD NAME="frozencoingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Instance coingain snapshotted at the start of this phase, same reasoning as frozenbasebosshp"/>
+        <FIELD NAME="frozenopponent" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Opponent key fought this phase, fixed at its start: it depends on maxlevels and bossavatar, which a teacher may edit mid-phase"/>
         <FIELD NAME="questionresults" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of this phase's question outcomes as decided server-side by validate_answer ({side, correct, counted}), in order; the replay takes outcomes from here, never from the client's own event log. Reset alongside rngseed"/>
         <FIELD NAME="phaserestarts" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="How many times the current phase was restarted because its claimed victory could not be verified; capped, reset when the attempt advances to a new phase"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" DECIMALS="5" SEQUENCE="false" COMMENT="Final calculated grade"/>

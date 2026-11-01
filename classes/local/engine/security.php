@@ -25,6 +25,7 @@
 namespace mod_playerpuzzle\local\engine;
 
 use mod_playerpuzzle\local\combat_state;
+use mod_playerpuzzle\local\opponents;
 
 /**
  * Security class to handle tokens and anti-cheat validations.
@@ -87,7 +88,7 @@ class security {
         $playerpuzzle = $DB->get_record(
             'playerpuzzle',
             ['id' => $playerpuzzleid],
-            'basebosshp, bossdamage, coingain',
+            'basebosshp, bossdamage, coingain, gamemode, maxlevels, bossavatar',
             MUST_EXIST
         );
         self::seed_replay_state($attempt, $playerpuzzle);
@@ -106,10 +107,12 @@ class security {
      * its own board from scratch and reusing a seed would make every phase's board
      * identical.
      *
-     * @param \stdClass $attempt Attempt object to populate (mutated in place, not yet saved).
+     * @param \stdClass $attempt Attempt object to populate (mutated in place, not yet saved);
+     *  its currentlevel/currentphase must already name the phase about to start.
      * @param \stdClass $playerpuzzle The instance record — basebosshp/bossdamage/coingain
      *  are read from it and frozen for this phase, so a later teacher edit mid-match cannot
-     *  desync a replay of an already-played phase.
+     *  desync a replay of an already-played phase; gamemode/maxlevels/bossavatar decide the
+     *  phase's opponent, frozen for the same reason.
      * @return void
      */
     public static function seed_replay_state(\stdClass $attempt, \stdClass $playerpuzzle): void {
@@ -121,6 +124,11 @@ class security {
         $attempt->frozenbasebosshp = (int) $playerpuzzle->basebosshp;
         $attempt->frozenbossdamage = (int) $playerpuzzle->bossdamage;
         $attempt->frozencoingain = (int) $playerpuzzle->coingain;
+        $attempt->frozenopponent = opponents::for_phase(
+            $playerpuzzle,
+            (int) $attempt->currentlevel,
+            (int) $attempt->currentphase
+        );
     }
 
     /**
@@ -191,8 +199,9 @@ class security {
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned,
      *  ->combatstate, ->rngseed, ->moveseq, ->frozenbasebosshp, ->frozenbossdamage,
      *  ->frozencoingain (the boss-side config the phase was started with, which the server
-     *  replay verifies against), ->isdemo, ->isnew (true when a brand new attempt row was
-     *  just created, so the caller can trigger a game_started event exactly once per attempt).
+     *  replay verifies against), ->frozenopponent (the phase's opponent key), ->isdemo,
+     *  ->isnew (true when a brand new attempt row was just created, so the caller can trigger
+     *  a game_started event exactly once per attempt).
      */
     public static function resume_or_create_attempt_token(
         int $playerpuzzleid,
@@ -276,6 +285,7 @@ class security {
                 'frozenbasebosshp' => (int) $attempt->frozenbasebosshp,
                 'frozenbossdamage' => (int) $attempt->frozenbossdamage,
                 'frozencoingain' => (int) $attempt->frozencoingain,
+                'frozenopponent' => (string) ($attempt->frozenopponent ?? ''),
                 'isdemo' => (bool) $attempt->isdemo,
                 'isnew' => false,
             ];
@@ -307,7 +317,7 @@ class security {
         $newrow = $DB->get_record(
             'playerpuzzle_attempts',
             ['token' => $token],
-            'id, isdemo, rngseed, moveseq, frozenbasebosshp, frozenbossdamage, frozencoingain',
+            'id, isdemo, rngseed, moveseq, frozenbasebosshp, frozenbossdamage, frozencoingain, frozenopponent',
             MUST_EXIST
         );
 
@@ -326,6 +336,7 @@ class security {
             'frozenbasebosshp' => (int) $newrow->frozenbasebosshp,
             'frozenbossdamage' => (int) $newrow->frozenbossdamage,
             'frozencoingain' => (int) $newrow->frozencoingain,
+            'frozenopponent' => (string) ($newrow->frozenopponent ?? ''),
             'isdemo' => (bool) $newrow->isdemo,
             'isnew' => true,
         ];

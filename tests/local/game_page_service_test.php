@@ -1230,4 +1230,30 @@ final class game_page_service_test extends \advanced_testcase {
         questions_repository::set_approved($questionid, true);
         $this->assertFalse(game_page_service::lacks_questions($withminimum));
     }
+
+    /**
+     * Tests that a match shows its opponent and that opponent's stage: the teacher's pick in a
+     * Single Match, kept for the whole match even if the teacher changes the pick meanwhile, and
+     * the phase's opponent in a Campaign.
+     *
+     * @return void
+     */
+    public function test_the_game_shows_the_phases_opponent_and_its_stage(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'bossavatar' => 'spider']);
+        $config = $this->start_game($cm, $instance);
+        $this->assertSame('spider', $config['bossavatar']);
+        $this->assertStringEndsWith('/mod/playerpuzzle/pix/opponents/spider.webp', $config['bossurl']);
+        $this->assertStringEndsWith('/mod/playerpuzzle/pix/stages/cave.webp', $config['stagebgurl']);
+
+        $DB->set_field('playerpuzzle', 'bossavatar', 'wolf', ['id' => $instance->id]);
+        $resumed = $this->start_game($cm, $DB->get_record('playerpuzzle', ['id' => $instance->id]));
+        $this->assertSame('spider', $resumed['bossavatar'], 'the match keeps the opponent it started with');
+
+        [$cm, $campaign] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'bossavatar' => 'wolf']);
+        $config = $this->start_game($cm, $campaign);
+        $this->assertSame('slime', $config['bossavatar'], 'a Campaign starts on phase 1, whatever the pick');
+        $this->assertStringEndsWith('/mod/playerpuzzle/pix/stages/ruins.webp', $config['stagebgurl']);
+    }
 }

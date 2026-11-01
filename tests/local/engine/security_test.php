@@ -153,6 +153,8 @@ final class security_test extends \advanced_testcase {
         ]);
 
         $attempt = (object) [
+            'currentlevel' => 1,
+            'currentphase' => 2,
             'rngseed' => 999999999,
             'moveseq' => 42,
             'movelog' => '[{"r1":0,"c1":0,"r2":0,"c2":1}]',
@@ -173,6 +175,28 @@ final class security_test extends \advanced_testcase {
         $this->assertSame(55, $attempt->frozenbasebosshp);
         $this->assertSame(6, $attempt->frozenbossdamage);
         $this->assertSame(7, $attempt->frozencoingain);
+        $this->assertSame('goblin', $attempt->frozenopponent, 'the Campaign opponent of the attempt\'s own phase');
+    }
+
+    /**
+     * Tests that a new attempt freezes the opponent the teacher picked for a Single Match.
+     *
+     * @return void
+     */
+    public function test_a_new_attempt_freezes_the_single_match_opponent(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $instance = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')->create_instance([
+            'course' => $course->id,
+            'gamemode' => 'single',
+            'bossavatar' => 'ghost',
+        ]);
+        $user = $this->getDataGenerator()->create_user();
+
+        $token = security::generate_attempt_token((int) $instance->id, (int) $user->id);
+
+        $this->assertSame('ghost', $DB->get_field('playerpuzzle_attempts', 'frozenopponent', ['token' => $token]));
     }
 
     /**

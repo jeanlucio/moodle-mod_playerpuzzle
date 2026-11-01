@@ -710,5 +710,25 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026100200, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026110100) {
+        // Each phase now has its own opponent, fixed when the phase starts.
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('frozenopponent', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'frozencoingain');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // The Single Match opponent is now stored as an opponent key, no longer as the image
+        // filename of one of the three original opponents.
+        $table = new xmldb_table('playerpuzzle');
+        $field = new xmldb_field('bossavatar', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, 'slime', 'basestudenthp');
+        $dbman->change_field_default($table, $field);
+        $DB->set_field('playerpuzzle', 'bossavatar', 'slime', ['bossavatar' => 'slime.png']);
+        $DB->set_field('playerpuzzle', 'bossavatar', 'goblin', ['bossavatar' => 'goblin.png']);
+        $DB->set_field('playerpuzzle', 'bossavatar', 'dragon', ['bossavatar' => 'dragon.png']);
+
+        upgrade_mod_savepoint(true, 2026110100, 'playerpuzzle');
+    }
+
     return true;
 }

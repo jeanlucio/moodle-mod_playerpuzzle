@@ -418,10 +418,14 @@ class game_page_service {
             $spriteurls[] = $OUTPUT->image_url('sprites/item' . $i, 'mod_playerpuzzle')->out(false);
         }
 
-        $bossbasename = str_replace('.png', '', $instance->bossavatar);
-        $bossurl = $OUTPUT->image_url('bosses/' . $bossbasename, 'mod_playerpuzzle')->out(false);
+        // The opponent was fixed when the phase started; a row from before opponents were frozen
+        // falls back to the one the phase would get today.
+        $opponent = $attemptinfo->frozenopponent !== ''
+            ? $attemptinfo->frozenopponent
+            : opponents::for_phase($instance, $attemptinfo->currentlevel, $attemptinfo->currentphase);
+        $bossurl = opponents::sprite_url($opponent)->out(false);
         $playerurl = $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false);
-        $stagebgurl = $OUTPUT->image_url('stage_bg', 'mod_playerpuzzle')->out(false);
+        $stagebgurl = opponents::stage_url($opponent)->out(false);
         // Mobile's own layout (game_boot.js's 9:16 L object) still fills its full canvas with
         // this same background image; desktop moved to the stage band + panels instead.
         $bgurl = $OUTPUT->image_url('bg_landscape', 'mod_playerpuzzle')->out(false);
@@ -477,7 +481,7 @@ class game_page_service {
             // fixed-price consumable shop would otherwise get proportionally cheaper as a
             // campaign progresses.
             'coingain'             => $coingain,
-            'bossavatar'           => $instance->bossavatar,
+            'bossavatar'           => $opponent,
             'bossurl'              => $bossurl,
             'playerurl'            => $playerurl,
             'stagebgurl'           => $stagebgurl,

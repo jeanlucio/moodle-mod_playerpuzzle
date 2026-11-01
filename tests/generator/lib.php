@@ -40,7 +40,7 @@ class mod_playerpuzzle_generator extends testing_module_generator {
         $defaults = [
             'maxlevels'           => 1,
             'basestudenthp'       => 100,
-            'bossavatar'          => 'slime.png',
+            'bossavatar'          => 'slime',
             'basebosshp'          => 1000,
             'bossdamage'          => 10,
             'coingain'            => 10,

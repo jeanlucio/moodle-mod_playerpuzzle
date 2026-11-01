@@ -187,6 +187,8 @@ final class advance_phase_test extends \advanced_testcase {
      * @return void
      */
     public function test_advance_phase_increments_phase_within_level(): void {
+        global $DB;
+
         $instance = $this->make_instance(['basebosshp' => 100]);
         $this->setUser($this->student);
         $token = $this->put_attempt_at((int) $instance->id, 2, 3);
@@ -203,6 +205,11 @@ final class advance_phase_test extends \advanced_testcase {
         $this->assertFalse($result['error']);
         $this->assertSame(2, $result['data']['currentlevel']);
         $this->assertSame(4, $result['data']['currentphase']);
+        $this->assertSame(
+            'mummy',
+            $DB->get_field('playerpuzzle_attempts', 'frozenopponent', ['token' => $result['data']['token']]),
+            'the opponent of the phase just reached, not of the one won'
+        );
     }
 
     /**
@@ -728,6 +735,36 @@ final class advance_phase_test extends \advanced_testcase {
         $this->assertSame(100, (int) $updated->frozenbasebosshp);
         $this->assertSame(15, (int) $updated->frozenbossdamage);
         $this->assertSame(20, (int) $updated->frozencoingain);
+    }
+
+    /**
+     * Tests that reaching the last phase of the last level freezes the final boss, while the same
+     * phase of an earlier level keeps the dragon.
+     *
+     * @return void
+     */
+    public function test_advance_phase_freezes_the_final_boss_only_on_the_last_level(): void {
+        global $DB;
+
+        $this->setUser($this->student);
+        $reached = [];
+        foreach ([1 => 'onelevel', 2 => 'twolevels'] as $maxlevels => $label) {
+            $instance = $this->make_instance(['basebosshp' => 100, 'maxlevels' => $maxlevels]);
+            $token = $this->put_attempt_at((int) $instance->id, 1, 9);
+
+            $result = $this->call_advance_phase([
+                'cmid'                 => $instance->cmid,
+                'token'                => $token,
+                'damage'               => 100,
+                'coinsearnedsofar'     => 0,
+                'bosscoinsearnedsofar' => 0,
+            ]);
+            $this->assertFalse($result['error']);
+            $this->assertSame(10, $result['data']['currentphase']);
+            $reached[$label] = $DB->get_field('playerpuzzle_attempts', 'frozenopponent', ['token' => $result['data']['token']]);
+        }
+
+        $this->assertSame(['onelevel' => 'vampire', 'twolevels' => 'dragon'], $reached);
     }
 
     /**

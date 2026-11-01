@@ -23,6 +23,7 @@
  */
 
 use mod_playerpuzzle\local\constants;
+use mod_playerpuzzle\local\opponents;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -121,14 +122,11 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setDefault('cooldown_unit', 'minutes');
         $mform->hideIf('cooldowngroup', 'gamemode', 'eq', constants::GAMEMODE_CAMPAIGN);
 
-        $bossoptions = [
-            'slime.png'  => get_string('bossavatar_slime', 'mod_playerpuzzle'),
-            'goblin.png' => get_string('bossavatar_goblin', 'mod_playerpuzzle'),
-            'dragon.png' => get_string('bossavatar_dragon', 'mod_playerpuzzle'),
-        ];
-        $mform->addElement('select', 'bossavatar', get_string('bossavatar', 'mod_playerpuzzle'), $bossoptions);
-        $mform->setType('bossavatar', PARAM_FILE);
-        $mform->setDefault('bossavatar', 'slime.png');
+        // A Campaign meets every opponent in turn, one per phase, so only a Single Match picks one.
+        $mform->addElement('select', 'bossavatar', get_string('bossavatar', 'mod_playerpuzzle'), opponents::options());
+        $mform->setType('bossavatar', PARAM_ALPHA);
+        $mform->setDefault('bossavatar', opponents::DEFAULT);
+        $mform->hideIf('bossavatar', 'gamemode', 'eq', constants::GAMEMODE_CAMPAIGN);
 
         $mform->addElement('text', 'basebosshp', get_string('basebosshp', 'mod_playerpuzzle'));
         $mform->setType('basebosshp', PARAM_INT);
@@ -442,6 +440,10 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
      */
     public function data_preprocessing(&$defaultvalues): void {
         parent::data_preprocessing($defaultvalues);
+
+        if (isset($defaultvalues['bossavatar'])) {
+            $defaultvalues['bossavatar'] = opponents::normalise($defaultvalues['bossavatar']);
+        }
 
         $suffix = $this->get_suffix();
         foreach (['completionattempts', 'completionwins'] as $rule) {

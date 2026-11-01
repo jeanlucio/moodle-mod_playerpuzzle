@@ -260,14 +260,15 @@ class advance_phase extends external_api {
                 $attempt->combatstate = null;
                 // The PRNG seed/move log/frozen config belong to the phase just finished too —
                 // see security::seed_replay_state()'s own docblock for why a seed must never
-                // survive across phases.
+                // survive across phases. The new level/phase are set first: they decide the
+                // opponent frozen for the phase that starts now.
+                $attempt->currentlevel = $newlevel;
+                $attempt->currentphase = $newphase;
                 security::seed_replay_state($attempt, $playerpuzzle);
                 $attempt->phaserestarts = 0;
 
                 $newtoken = bin2hex(random_bytes(32));
                 $attempt->token = $newtoken;
-                $attempt->currentlevel = $newlevel;
-                $attempt->currentphase = $newphase;
                 $attempt->difficulty = $newdifficulty;
                 $attempt->timemodified = time();
                 $attempt->timephasewon = $attempt->timemodified;

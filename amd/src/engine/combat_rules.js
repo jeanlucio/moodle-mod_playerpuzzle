@@ -82,6 +82,8 @@
             FASTGRIMOIRE: 'fastgrimoire',
             // Each Orb the opponent matches gives it more mana.
             MANABOOST: 'manaboost',
+            // The Potions the opponent matches heal twice as much.
+            ROOTHEAL: 'rootheal',
         };
 
         // Rounds of poison a full Grimoire meter arms against the other side, and with the
@@ -304,7 +306,7 @@
         function pieceGains(side, config) {
             const boss = side === 'boss';
             return {
-                heal: config.baseDamage / 4,
+                heal: config.baseDamage / (boss && hasPower(config, POWERS.ROOTHEAL) ? 2 : 4),
                 multiplier: 0.1,
                 shield: 10,
                 poison: boss && hasPower(config, POWERS.FASTGRIMOIRE) ? FAST_GRIMOIRE_POISON : GRIMOIRE_POISON,

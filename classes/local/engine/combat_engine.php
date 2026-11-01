@@ -91,6 +91,9 @@ class combat_engine {
     /** @var int The same, for an opponent with the manaboost power. */
     public const BOOSTED_ORB_MANA = 30;
 
+    /** @var string Power: the Potions the opponent matches heal twice as much. */
+    public const POWER_ROOTHEAL = 'rootheal';
+
     /**
      * The combat state a phase starts from: both sides at full HP, every meter empty,
      * multipliers at 1 and no gold yet, except what the opponent's powers change at the start.
@@ -303,7 +306,7 @@ class combat_engine {
     public static function piece_gains(string $side, array $config): array {
         $boss = $side === 'boss';
         return [
-            'heal' => $config['baseDamage'] / 4,
+            'heal' => $config['baseDamage'] / ($boss && self::has_power($config, self::POWER_ROOTHEAL) ? 2 : 4),
             'multiplier' => 0.1,
             'shield' => 10,
             'poison' => $boss && self::has_power($config, self::POWER_FASTGRIMOIRE)

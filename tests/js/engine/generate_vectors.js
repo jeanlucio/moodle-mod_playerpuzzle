@@ -161,6 +161,8 @@ const REPLAY_CASES = [
         student: 400, typeOffset: 2, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'more mana, a lost match', opponent: 'wolf', seed: 124, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 1, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
+    {name: 'Potions heal double, a lost match', opponent: 'plant', seed: 125, boss: 3000, damage: 12, coin: 10,
+        student: 400, typeOffset: 3, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'final boss, no profile', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
         level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
 ];
@@ -187,6 +189,7 @@ const OPPONENT_POWERS = {
     mummy: ['longpoison'],
     spider: ['fastgrimoire'],
     wolf: ['manaboost'],
+    plant: ['rootheal'],
 };
 
 // Power lists for the rules that read them, one per power plus none and an unknown name. Picked
@@ -194,7 +197,7 @@ const OPPONENT_POWERS = {
 const POWER_CONFIGS = [[], ['iceshield'], ['longpoison'], ['fastgrimoire'], ['unknown']];
 
 // Every power, gone through one by one by the per-piece gains. A new power is appended here.
-const EVERY_POWER = ['iceshield', 'longpoison', 'fastgrimoire', 'manaboost'];
+const EVERY_POWER = ['iceshield', 'longpoison', 'fastgrimoire', 'manaboost', 'rootheal'];
 
 const HIT_CONFIGS = [
     {},

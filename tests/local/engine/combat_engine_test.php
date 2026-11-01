@@ -626,4 +626,18 @@ final class combat_engine_test extends \advanced_testcase {
         $this->assertSame(combat_engine::ORB_MANA, combat_engine::piece_gains('player', $config)['mana']);
         $this->assertSame(combat_engine::ORB_MANA, combat_engine::piece_gains('boss', self::CONFIG)['mana']);
     }
+
+    /**
+     * Tests that an opponent with rootheal heals twice as much per Potion, and the student the
+     * usual.
+     *
+     * @return void
+     */
+    public function test_rootheal_doubles_the_opponents_potion_heal(): void {
+        $config = array_merge(self::CONFIG, ['bossPowers' => [combat_engine::POWER_ROOTHEAL]]);
+
+        $this->assertSame(5, combat_engine::piece_gains('boss', $config)['heal']);
+        $this->assertSame(2.5, combat_engine::piece_gains('player', $config)['heal']);
+        $this->assertSame(2.5, combat_engine::piece_gains('boss', self::CONFIG)['heal']);
+    }
 }

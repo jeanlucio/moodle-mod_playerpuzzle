@@ -93,11 +93,12 @@ class mod_playerpuzzle_generator extends testing_module_generator {
      * Creates an in-progress attempt the same way a real Play does, then pins what makes it
      * reproducible: the PRNG seed of its current phase (so the board, and every piece falling
      * afterwards, is known in advance) and, optionally, the engine version it was started
-     * under, its level/phase, or a final status. Backs the "mod_playerpuzzle > attempts" Behat
-     * generator step.
+     * under, its level/phase, the question outcomes the server already stored for the phase,
+     * or a final status. Backs the "mod_playerpuzzle > attempts" Behat generator step.
      *
      * @param array $record Fields: playerpuzzleid, userid, rngseed; optional engineversion,
-     *  currentphase, status (anything but inprogress also stamps timefinished).
+     *  currentphase, questionresults (the raw JSON column), status (anything but inprogress also
+     *  stamps timefinished).
      * @return void
      */
     public function create_attempt(array $record): void {
@@ -115,6 +116,9 @@ class mod_playerpuzzle_generator extends testing_module_generator {
             if (isset($record[$field]) && $record[$field] !== '') {
                 $update[$field] = (int) $record[$field];
             }
+        }
+        if (!empty($record['questionresults'])) {
+            $update['questionresults'] = (string) $record['questionresults'];
         }
         if (!empty($record['status']) && $record['status'] !== 'inprogress') {
             $update['status'] = (string) $record['status'];

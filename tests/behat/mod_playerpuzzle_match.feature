@@ -55,11 +55,11 @@ Feature: A PlayerPuzzle match counts only as the server's own replay verifies it
     Given the following "activities" exist:
       | activity     | course | name         | gamemode | basebosshp | bossdamage | coingain | minquestions |
       | playerpuzzle | C1     | Dungeon Quiz | single   | 10         | 10         | 10       | 0            |
-    # An attempt started under an older engine version cannot be replayed, so its victory
-    # stays unverified — the same outcome a lost connection or a blocked event log leads to.
+    # The server already holds an answer the event log never reaches, as when part of the log
+    # was blocked, so the replay cannot account for the match and its victory stays unverified.
     And the following "mod_playerpuzzle > attempts" exist:
-      | playerpuzzle | user     | rngseed | engineversion |
-      | Dungeon Quiz | student1 | 2       | 1             |
+      | playerpuzzle | user     | rngseed | questionresults                                  |
+      | Dungeon Quiz | student1 | 2       | [{"side":"boss","correct":true,"counted":false}] |
     And I log in as "student1"
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
     When I click on "Play Game" "button"

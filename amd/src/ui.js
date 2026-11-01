@@ -394,12 +394,18 @@ define(
          * has no DOM/ARIA presence — same rationale as every other Canvas-only feedback in
          * this module.
          *
+         * Also used for the notice of the opponent's powers, whose text the turn announcement
+         * reads instead.
+         *
          * @param {string} text Balloon text, already resolved to the piece type involved.
+         * @param {boolean} [announce] Whether to announce the text too.
          */
-        showTutorialBalloon(text) {
+        showTutorialBalloon(text, announce = true) {
             const me = this.scene;
             const L = this.L;
-            Accessibility.announce(text);
+            if (announce) {
+                Accessibility.announce(text);
+            }
 
             // A second balloon can arrive while the previous one is still on screen (two
             // different match types in quick succession). Without tearing the old one down

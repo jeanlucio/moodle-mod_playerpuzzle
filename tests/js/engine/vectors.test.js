@@ -52,6 +52,7 @@ test('every recorded match verifies through the mirror as recorded', () => {
             attempt: vector.attempt,
             playerpuzzle: vector.playerpuzzle,
             modifiers: vector.modifiers,
+            powers: vector.powers,
             events: vector.events,
             outcomes: vector.outcomes,
             serverUses: vector.serveruses,

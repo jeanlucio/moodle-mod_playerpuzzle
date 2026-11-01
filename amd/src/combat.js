@@ -103,6 +103,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // opponent (1 and 0 when it has no profile).
             this.bossAttack = parseFloat(gameConfig.bossattack) || 1;
             this.bossArmor = parseFloat(gameConfig.bossarmor) || 0;
+            // The opponent's powers (classes/local/opponents.php), none in a Demo.
+            this.bossPowers = Array.isArray(gameConfig.bosspowers) ? gameConfig.bosspowers : [];
             // Minimum-questions rule: the server is the only source of truth for how many
             // questions this attempt has answered (questionsTotal starts at whatever a resumed
             // attempt already carries from earlier phases and only ever moves forward, mirroring
@@ -141,7 +143,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // to the base HP unchanged, so no branching is needed here for game mode.
             Object.assign(this, CombatRules.initialState(
                 parseInt(gameConfig.studenthp) || 100,
-                parseInt(gameConfig.bosshp) || 1000
+                parseInt(gameConfig.bosshp) || 1000,
+                this.ruleConfig()
             ));
             // Carried forward from the ledger, not reset to 0 — a mid-phase page reload (or a
             // Campaign attempt resuming a phase already partway through) must not forget coins
@@ -157,6 +160,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.restoredGrid = null;
             this.pendingQuestion = null;
             this.resumedEnded = false;
+            this.freshPhase = !gameConfig.snapshot && !gameConfig.combatstate;
             if (gameConfig.snapshot) {
                 this.hydrateFromSnapshot(gameConfig.snapshot);
             } else {
@@ -402,13 +406,41 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         /**
          * The phase's rule config as the pure rules take it.
          *
-         * @returns {{baseDamage: number, coinGain: number, coinFactor: number, bossAttack: number, bossArmor: number}}
+         * @returns {{baseDamage: number, coinGain: number, coinFactor: number, bossAttack: number, bossArmor: number,
+         *  bossPowers: Array<string>}}
          */
         ruleConfig() {
             return {
                 baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor,
-                bossAttack: this.bossAttack, bossArmor: this.bossArmor,
+                bossAttack: this.bossAttack, bossArmor: this.bossArmor, bossPowers: this.bossPowers,
             };
+        }
+
+        /**
+         * Explains the opponent's powers as a fresh phase begins: one balloon with every
+         * power's notice and a line in the opponent's history for each. Returns the notice so
+         * the turn announcement can open with it; announcing it separately would be overwritten
+         * by that announcement at once. A resumed phase shows nothing, as the student was
+         * already told when it started.
+         *
+         * @returns {string} The notice, or '' when there is none.
+         */
+        openingPowerNotice() {
+            if (!this.freshPhase) {
+                return '';
+            }
+            const notice = this.bossPowers.map(power => this.strings[`power_${power}`]).filter(Boolean).join(' ');
+            if (notice === '') {
+                return '';
+            }
+            this.scene.ui.showTutorialBalloon(notice, false);
+            this.bossPowers.forEach(power => {
+                const line = this.strings[`historylogpower_${power}`];
+                if (line) {
+                    this.scene.ui.pushHistoryLog('boss', line);
+                }
+            });
+            return notice;
         }
 
         /**

@@ -449,6 +449,9 @@ class game_page_service {
             // to play the fight; the server replay reads its own from the frozen opponent.
             'bossattack'           => $opponentside['bossattack'],
             'bossarmor'            => $opponentside['bossarmor'],
+            // The opponent's powers (none in a Demo), for the client's own rules and the notice
+            // that explains each one when the phase starts.
+            'bosspowers'           => $opponentside['bosspowers'],
             // Deliberately not scaled by level/phase, unlike bossdamage above: a teacher's
             // fixed-price consumable shop would otherwise get proportionally cheaper as a
             // campaign progresses.

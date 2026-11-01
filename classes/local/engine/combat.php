@@ -115,18 +115,20 @@ class combat {
 
     /**
      * The opponent's side of a phase as the fight runs it: its max HP, the phase's base damage
-     * (the unit every hit, heal and poison tick is counted in, for both sides), and the attack
-     * and armor its profile gives it. The game page, the server replay and the scoring all read
+     * (the unit every hit, heal and poison tick is counted in, for both sides), the attack and
+     * armor its profile gives it, and its powers. The game page, the server replay and the scoring all read
      * it from here, so they always fight the same opponent.
      *
      * A real phase uses the values frozen when it started (an attempt row from before a column
      * existed falls back to the instance), scaled by level, phase and difficulty, and then by the
-     * opponent's profile. A Demo fights at the fixed DEMO_HP, with no difficulty and no profile.
+     * opponent's profile. A Demo fights at the fixed DEMO_HP, with no difficulty, no profile and
+     * no powers.
      *
      * @param \stdClass $attempt The attempt: isdemo, difficulty, currentlevel, currentphase,
      *  frozenbasebosshp, frozenbossdamage and frozenopponent are read.
      * @param \stdClass $instance The activity: basebosshp and bossdamage are read.
-     * @return array ['maxbosshp' => int, 'basedamage' => int, 'bossattack' => float, 'bossarmor' => float]
+     * @return array ['maxbosshp' => int, 'basedamage' => int, 'bossattack' => float, 'bossarmor' => float,
+     *  'bosspowers' => string[]]
      */
     public static function phase_opponent(\stdClass $attempt, \stdClass $instance): array {
         $level = (int) $attempt->currentlevel;
@@ -138,6 +140,7 @@ class combat {
                 'basedamage' => self::calculate_boss_hp((int) $instance->bossdamage, $level, $phase),
                 'bossattack' => 1.0,
                 'bossarmor' => 0.0,
+                'bosspowers' => [],
             ];
         }
 
@@ -154,6 +157,7 @@ class combat {
             'basedamage' => self::apply_difficulty(self::calculate_boss_hp($basedamage, $level, $phase), $difficulty),
             'bossattack' => $modifiers['attack'],
             'bossarmor' => $modifiers['armor'],
+            'bosspowers' => opponents::powers((string) $attempt->frozenopponent),
         ];
     }
 

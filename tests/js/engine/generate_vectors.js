@@ -153,12 +153,15 @@ const REPLAY_CASES = [
     {name: 'brute opponent, minquestions', opponent: 'dragon', seed: 119, boss: 90, damage: 13, coin: 10,
         student: 400, minquestions: 4, phase: 10, typeOffset: 1, playerAnswers: ['right', 'skipped', 'wrong'],
         bossAnswers: ['right', 'wrong']},
+    {name: 'shield armed from the start, a lost match', opponent: 'golem', seed: 121, boss: 2000, damage: 20, coin: 10,
+        student: 150, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['right']},
     {name: 'final boss, no profile', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
         level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
 ];
 
 // The profile modifiers of the opponents the replay cases fight. The table itself lives only on
-// the server (opponents::modifiers()); replay_vectors_test.php checks each case's copy against it.
+// the server (opponents::modifiers()); replay_vectors_test.php checks each case's copy against it,
+// and the same for their powers below.
 const OPPONENT_MODIFIERS = {
     goblin: {hp: 1, attack: 1.25, armor: 0},
     golem: {hp: 1, attack: 1, armor: 0.25},
@@ -170,6 +173,10 @@ const OPPONENT_MODIFIERS = {
 
 // Attack and armor combinations for the rules that take them, including ones no opponent has
 // today (the student's own, an armor past the cap) so the rule itself is covered.
+const OPPONENT_POWERS = {
+    golem: ['iceshield'],
+};
+
 const HIT_CONFIGS = [
     {},
     {bossAttack: 1.25},
@@ -289,6 +296,8 @@ function buildCombatVectors() {
 
     cases.push({fn: 'STATE_FIELDS', args: [], result: CombatRules.STATE_FIELDS});
     [[100, 1000], [1, 1], [372, 2501]].forEach(args => cases.push(recordCall('initialState', args)));
+    [[100, 1000, {bossPowers: ['iceshield']}], [80, 300, {bossPowers: []}], [80, 300, {bossPowers: ['unknown']}]]
+        .forEach(args => cases.push(recordCall('initialState', args)));
 
     // A source of its own, so adding these calls left every case recorded before them unchanged.
     const turnRand = randomSource(20261101);
@@ -360,12 +369,15 @@ function buildReplayVectors() {
             frozencoingain: spec.coin,
         };
         const modifiers = spec.opponent ? OPPONENT_MODIFIERS[spec.opponent] : undefined;
+        const powers = spec.opponent ? OPPONENT_POWERS[spec.opponent] || [] : undefined;
         if (spec.opponent) {
             attempt.frozenopponent = spec.opponent;
         }
         const playerpuzzle = {minquestions: spec.minquestions || 0, basestudenthp: spec.student};
 
-        const recorded = ReplayMirror.record({attempt, playerpuzzle, modifiers, poolEmpty: true, policy: makePolicy(spec)});
+        const recorded = ReplayMirror.record({
+            attempt, playerpuzzle, modifiers, powers, poolEmpty: true, policy: makePolicy(spec),
+        });
         if (recorded.result === null) {
             throw new Error(`Replay case "${spec.name}" did not reach a conclusive end.`);
         }
@@ -378,6 +390,7 @@ function buildReplayVectors() {
         };
         if (modifiers) {
             vector.modifiers = modifiers;
+            vector.powers = powers;
         }
         return Object.assign(vector, {
             events: recorded.events,

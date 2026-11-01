@@ -97,7 +97,7 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
             } else if (combat.pendingQuestion) {
                 combat.openQuestionModal(combat.pendingQuestion);
             } else if (combat.currentTurn === 'player') {
-                this.announceTurnStart();
+                this.announceTurnStart(combat.openingPowerNotice());
             } else {
                 me.input.enabled = false;
                 me.time.delayedCall(800, combat.executeBossTurn, [], combat);
@@ -598,8 +598,10 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
          * piece type. Only called while it is actually the player's turn. The move list is
          * stored on this.announcedMoves so executeAnnouncedMove() (bound to keys 1-9 on the
          * accessible grid) can execute one of these moves directly instead of dragging/tapping.
+         *
+         * @param {string} [lead] Text read before the move list, such as the opponent's powers.
          */
-        announceTurnStart() {
+        announceTurnStart(lead = '') {
             const moves = this.findAllMoves(9);
             this.announcedMoves = moves;
 
@@ -608,7 +610,7 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
                 .replace('{$a->index}', String(index + 1))
                 .replace('{$a->piece}', this.strings[`${PIECE_NAME_KEYS[move.type]}_plural`]));
 
-            Accessibility.announce([intro, ...lines].join(' '));
+            Accessibility.announce([lead, intro, ...lines].filter(Boolean).join(' '));
         }
 
         /**

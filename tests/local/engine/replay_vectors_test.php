@@ -94,6 +94,7 @@ final class replay_vectors_test extends \advanced_testcase {
             $vector['modifiers'] ?? ['hp' => 1, 'attack' => 1, 'armor' => 0],
             opponents::modifiers($fields['frozenopponent'])
         );
+        $this->assertSame($vector['powers'] ?? [], opponents::powers($fields['frozenopponent']));
 
         $attempt = (object) array_merge($fields, [
             'id' => $attemptid,

@@ -61,16 +61,20 @@ class combat_engine {
     /** @var float The most of a hit any armor can absorb, so a hit always does some damage. */
     public const ARMOR_CAP = 0.6;
 
+    /** @var string Power: the opponent starts the fight with its Shield armed. */
+    public const POWER_ICESHIELD = 'iceshield';
+
     /**
      * The combat state a phase starts from: both sides at full HP, every meter empty,
-     * multipliers at 1 and no gold yet.
+     * multipliers at 1 and no gold yet, except what the opponent's powers change at the start.
      *
      * @param float $maxplayerhp The student's max HP for this phase.
      * @param float $maxbosshp The boss's max HP for this phase.
+     * @param array $config Key bossPowers, optional.
      * @return array A state keyed by exactly self::STATE_FIELDS.
      */
-    public static function initial_state(float $maxplayerhp, float $maxbosshp): array {
-        return [
+    public static function initial_state(float $maxplayerhp, float $maxbosshp, array $config = []): array {
+        $state = [
             'currentPlayerHp' => $maxplayerhp, 'maxPlayerHp' => $maxplayerhp,
             'currentHp' => $maxbosshp, 'maxBossHp' => $maxbosshp,
             'playerMultiplier' => 1.0, 'bossMultiplier' => 1.0,
@@ -81,6 +85,21 @@ class combat_engine {
             'playerMana' => 0, 'bossMana' => 0,
             'playerGold' => 0.0, 'bossGold' => 0.0,
         ];
+        if (self::has_power($config, self::POWER_ICESHIELD)) {
+            $state['bossShieldReady'] = true;
+        }
+        return $state;
+    }
+
+    /**
+     * Whether the opponent has a power this phase.
+     *
+     * @param array $config The phase's rule config; key bossPowers, optional.
+     * @param string $power A POWER_* value.
+     * @return bool
+     */
+    public static function has_power(array $config, string $power): bool {
+        return in_array($power, $config['bossPowers'] ?? [], true);
     }
 
     /**

@@ -24,6 +24,7 @@
 
 namespace mod_playerpuzzle\local;
 
+use mod_playerpuzzle\local\engine\combat_engine;
 use moodle_url;
 use stdClass;
 
@@ -82,6 +83,14 @@ class opponents {
 
     /** @var array The modifiers of an opponent with no profile: nothing changes. */
     private const NO_MODIFIERS = ['hp' => 1.0, 'attack' => 1.0, 'armor' => 0.0];
+
+    /**
+     * @var array The powers of each opponent. The rules of each live in combat_rules.js and its
+     *  PHP twin combat_engine.php, which name them and receive the list in the phase's config.
+     */
+    private const POWERS = [
+        'golem' => [combat_engine::POWER_ICESHIELD],
+    ];
 
     /** @var array The stage (pix/stages/<stage>.webp) each opponent is fought on. */
     private const STAGES = [
@@ -158,6 +167,16 @@ class opponents {
     public static function modifiers(string $key): array {
         $profile = self::profile($key);
         return $profile === null ? self::NO_MODIFIERS : self::PROFILE_MODIFIERS[$profile];
+    }
+
+    /**
+     * An opponent's powers. Only an exact key counts, as in modifiers().
+     *
+     * @param string $key An opponent key.
+     * @return string[] combat_engine::POWER_* values, possibly none.
+     */
+    public static function powers(string $key): array {
+        return self::POWERS[$key] ?? [];
     }
 
     /**

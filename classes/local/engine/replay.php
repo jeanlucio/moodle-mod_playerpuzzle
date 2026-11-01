@@ -182,6 +182,7 @@ class replay {
             'coinFactor' => combat::difficulty_coin_factor($difficulty),
             'bossAttack' => $opponent['bossattack'],
             'bossArmor' => $opponent['bossarmor'],
+            'bossPowers' => $opponent['bosspowers'],
         ];
         $maxbosshp = $opponent['maxbosshp'];
         // Note: basestudenthp is not one of the columns frozen at phase start (only the boss-side
@@ -194,7 +195,7 @@ class replay {
         // existing plausibility check), never more likely to return a wrong value.
         $maxplayerhp = combat::calculate_student_hp((int) $playerpuzzle->basestudenthp, $level, $phase);
 
-        $state = combat_engine::initial_state((float) $maxplayerhp, (float) $maxbosshp);
+        $state = combat_engine::initial_state((float) $maxplayerhp, (float) $maxbosshp, $config);
 
         $outcomes = question_results::decode($attempt->questionresults);
         $countedinphase = count(array_filter($outcomes, static fn(array $outcome): bool => !empty($outcome['counted'])));
@@ -349,7 +350,7 @@ class replay {
      * @param array $grid The board grid (mutated in place).
      * @param \Closure $rng The phase's seeded PRNG (mutated in place via its own closure state).
      * @param array $state Combat state (mutated in place).
-     * @param array $config Keys baseDamage/coinGain/coinFactor/bossAttack/bossArmor.
+     * @param array $config Keys baseDamage/coinGain/coinFactor/bossAttack/bossArmor/bossPowers.
      * @param array $sim The simulation context built by simulate() (mutated in place).
      * @param string $turn 'player' or 'boss' — whose swap this cascade belongs to.
      * @return bool False when the cascade could not be resolved (the swap itself matched
@@ -508,7 +509,7 @@ class replay {
      *
      * @param array $sim The simulation context (mutated in place).
      * @param array $state Combat state (mutated in place).
-     * @param array $config Keys baseDamage/coinGain/coinFactor/bossAttack/bossArmor.
+     * @param array $config Keys baseDamage/coinGain/coinFactor/bossAttack/bossArmor/bossPowers.
      * @return bool False when the log holds more uses than the server counted.
      */
     private static function apply_unlogged_consumables(array &$sim, array &$state, array $config): bool {
@@ -569,7 +570,7 @@ class replay {
      *
      * @param string $kind One of move_log::COMBAT_CONSUMABLES.
      * @param array $state Combat state (mutated in place).
-     * @param array $config Keys baseDamage/coinGain/coinFactor/bossAttack/bossArmor.
+     * @param array $config Keys baseDamage/coinGain/coinFactor/bossAttack/bossArmor/bossPowers.
      * @return void
      */
     private static function apply_consumable(string $kind, array &$state, array $config): void {

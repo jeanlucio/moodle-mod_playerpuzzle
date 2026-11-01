@@ -71,16 +71,35 @@
         // The most of a hit any armor can absorb, so a hit always does some damage.
         const ARMOR_CAP = 0.6;
 
+        // The opponent powers the rules know, as the server names them in the config's
+        // bossPowers (classes/local/opponents.php decides who has which).
+        const POWERS = {
+            // The opponent starts the fight with its Shield armed.
+            ICESHIELD: 'iceshield',
+        };
+
+        /**
+         * Whether the opponent has a power this phase.
+         *
+         * @param {object} config The phase's rule config; bossPowers is optional.
+         * @param {string} power One of POWERS.
+         * @return {boolean}
+         */
+        function hasPower(config, power) {
+            return (config.bossPowers || []).includes(power);
+        }
+
         /**
          * The combat state a phase starts from: both sides at full HP, every meter empty,
-         * multipliers at 1 and no gold yet.
+         * multipliers at 1 and no gold yet, except what the opponent's powers change at the start.
          *
          * @param {number} maxPlayerHp The student's max HP for this phase.
          * @param {number} maxBossHp The boss's max HP for this phase.
+         * @param {object} [config] The phase's rule config; bossPowers is read.
          * @return {object} A state holding exactly STATE_FIELDS.
          */
-        function initialState(maxPlayerHp, maxBossHp) {
-            return {
+        function initialState(maxPlayerHp, maxBossHp, config = {}) {
+            const state = {
                 currentPlayerHp: maxPlayerHp, maxPlayerHp,
                 currentHp: maxBossHp, maxBossHp,
                 playerMultiplier: 1, bossMultiplier: 1,
@@ -91,6 +110,10 @@
                 playerMana: 0, bossMana: 0,
                 playerGold: 0, bossGold: 0,
             };
+            if (hasPower(config, POWERS.ICESHIELD)) {
+                state.bossShieldReady = true;
+            }
+            return state;
         }
 
         /**
@@ -497,6 +520,8 @@
             CRITICAL_MULTIPLIER,
             WRONG_ANSWER_DAMAGE,
             ARMOR_CAP,
+            POWERS,
+            hasPower,
             initialState,
             comboMultiplier,
             resolvePoisonMeters,

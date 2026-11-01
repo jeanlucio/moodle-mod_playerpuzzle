@@ -25,6 +25,8 @@
 
 namespace mod_playerpuzzle\local;
 
+use mod_playerpuzzle\local\engine\combat_engine;
+
 /**
  * Tests for opponents.
  *
@@ -159,5 +161,17 @@ final class opponents_test extends \advanced_testcase {
 
         $this->assertSame($none, opponents::modifiers('vampire'));
         $this->assertSame($none, opponents::modifiers(''));
+    }
+
+    /**
+     * Tests that the golem starts with its Shield armed, and that an opponent without a power,
+     * or an attempt that never had its opponent frozen, has none.
+     *
+     * @return void
+     */
+    public function test_powers_of_each_opponent(): void {
+        $this->assertSame([combat_engine::POWER_ICESHIELD], opponents::powers('golem'));
+        $this->assertSame([], opponents::powers('vampire'));
+        $this->assertSame([], opponents::powers(''));
     }
 }

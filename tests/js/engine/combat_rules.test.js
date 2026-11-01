@@ -343,3 +343,10 @@ test('armor does not soften a poison tick', () => {
     const config = Object.assign({}, CONFIG, {bossArmor: 0.25});
     assert.equal(combatRules.startTurn('boss', state, config).state.currentHp, state.currentHp - CONFIG.baseDamage);
 });
+
+test('initialState: an opponent with iceshield starts with its Shield armed', () => {
+    const plain = combatRules.initialState(100, 200);
+    const shielded = combatRules.initialState(100, 200, {bossPowers: [combatRules.POWERS.ICESHIELD]});
+    assert.equal(plain.bossShieldReady, false);
+    assert.deepEqual(shielded, Object.assign({}, plain, {bossShieldReady: true}));
+});

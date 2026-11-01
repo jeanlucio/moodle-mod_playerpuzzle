@@ -1264,17 +1264,17 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the page hands the client the frozen opponent's profile: the armor and attack
-     * it fights with, and a Resistente's extra HP already in bosshp.
+     * Tests that the page hands the client the frozen opponent's profile and powers: the armor
+     * and attack it fights with, a Resistente's extra HP already in bosshp, and its powers.
      *
      * @return void
      */
     public function test_build_game_config_passes_the_opponent_profile(): void {
         $expected = [
-            'golem' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.25],
-            'goblin' => ['bosshp' => 200, 'bossattack' => 1.25, 'bossarmor' => 0.0],
-            'slime' => ['bosshp' => 260, 'bossattack' => 1.0, 'bossarmor' => 0.0],
-            'vampire' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.0],
+            'golem' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.25, 'bosspowers' => ['iceshield']],
+            'goblin' => ['bosshp' => 200, 'bossattack' => 1.25, 'bossarmor' => 0.0, 'bosspowers' => []],
+            'slime' => ['bosshp' => 260, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => []],
+            'vampire' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => []],
         ];
         foreach ($expected as $opponent => $values) {
             [$cm, $instance] = $this->make_cm_and_instance([
@@ -1291,6 +1291,7 @@ final class game_page_service_test extends \advanced_testcase {
                 'bosshp' => $config['bosshp'],
                 'bossattack' => $config['bossattack'],
                 'bossarmor' => $config['bossarmor'],
+                'bosspowers' => $config['bosspowers'],
             ], $opponent);
             $this->assertSame(10, $config['bossdamage'], 'the profile never changes the base damage');
         }

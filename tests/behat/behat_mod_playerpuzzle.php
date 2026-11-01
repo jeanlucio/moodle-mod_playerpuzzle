@@ -42,7 +42,8 @@ class behat_mod_playerpuzzle extends behat_base {
      * @return void
      */
     public function i_wait_until_the_playerpuzzle_board_is_ready(): void {
-        // The turn announcement starts with a fixed text before its move count.
+        // The turn announcement has a fixed text before its move count. It may come after the
+        // notice of the opponent's powers, read first when a phase starts.
         $marker = '@@count@@';
         $intro = get_string('turnstart_intro', 'mod_playerpuzzle', $marker);
         $prefix = trim(substr($intro, 0, (int) strpos($intro, $marker)));
@@ -50,7 +51,7 @@ class behat_mod_playerpuzzle extends behat_base {
         $this->spin(
             function (behat_mod_playerpuzzle $context) use ($prefix): bool {
                 $live = $context->getSession()->getPage()->find('css', '#pp-aria-live');
-                return $live !== null && str_starts_with(trim($live->getText()), $prefix);
+                return $live !== null && str_contains($live->getText(), $prefix);
             },
             $this,
             self::MATCH_TIMEOUT

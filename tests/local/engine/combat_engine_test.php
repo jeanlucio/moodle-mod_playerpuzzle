@@ -563,4 +563,20 @@ final class combat_engine_test extends \advanced_testcase {
             combat_engine::start_turn('boss', $poisoned, $config)['state']['currentHp']
         );
     }
+
+    /**
+     * Tests that an opponent with the iceshield power starts with its Shield armed, and that the
+     * state is otherwise the plain initial one.
+     *
+     * @return void
+     */
+    public function test_initial_state_arms_the_shield_of_an_opponent_with_iceshield(): void {
+        $plain = combat_engine::initial_state(100, 200);
+        $shielded = combat_engine::initial_state(100, 200, ['bossPowers' => [combat_engine::POWER_ICESHIELD]]);
+
+        $this->assertFalse($plain['bossShieldReady']);
+        $this->assertTrue($shielded['bossShieldReady']);
+        $this->assertSame(array_merge($plain, ['bossShieldReady' => true]), $shielded);
+        $this->assertSame($plain, combat_engine::initial_state(100, 200, ['bossPowers' => []]));
+    }
 }

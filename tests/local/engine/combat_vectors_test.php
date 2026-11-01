@@ -114,7 +114,7 @@ final class combat_vectors_test extends \advanced_testcase {
             case 'STATE_FIELDS':
                 return combat_engine::STATE_FIELDS;
             case 'initialState':
-                return combat_engine::initial_state($args[0], $args[1]);
+                return combat_engine::initial_state($args[0], $args[1], $args[2] ?? []);
             case 'matchHitAmount':
                 return combat_engine::match_hit_amount($args[0], $args[1], $args[2], $args[3]);
             case 'hitAmount':

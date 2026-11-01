@@ -29,6 +29,7 @@ namespace mod_playerpuzzle\local\engine;
  * Tests for combat.
  *
  * @covers \mod_playerpuzzle\local\engine\combat
+ * @covers \mod_playerpuzzle\local\opponents
  */
 final class combat_test extends \basic_testcase {
     /**
@@ -163,5 +164,85 @@ final class combat_test extends \basic_testcase {
      */
     public function test_demo_hp_is_fixed_at_fifty(): void {
         $this->assertSame(50, combat::DEMO_HP);
+    }
+
+    /**
+     * Builds an attempt row with the fields phase_opponent() reads, overridable per test.
+     *
+     * @param array $overrides Field overrides.
+     * @return \stdClass
+     */
+    private function make_attempt(array $overrides = []): \stdClass {
+        return (object) array_merge([
+            'isdemo' => 0,
+            'difficulty' => 'normal',
+            'currentlevel' => 1,
+            'currentphase' => 1,
+            'frozenbasebosshp' => 100,
+            'frozenbossdamage' => 10,
+            'frozenopponent' => 'goblin',
+        ], $overrides);
+    }
+
+    /**
+     * Tests that phase_opponent() scales the frozen values by level, phase and difficulty, and
+     * passes on the attack and armor of the frozen opponent's profile.
+     *
+     * @return void
+     */
+    public function test_phase_opponent_scales_the_frozen_values_and_applies_the_profile(): void {
+        $instance = (object) ['basebosshp' => 900, 'bossdamage' => 90];
+
+        $brute = combat::phase_opponent($this->make_attempt([
+            'currentlevel' => 2, 'currentphase' => 3, 'difficulty' => 'hard',
+        ]), $instance);
+        $this->assertSame(['maxbosshp' => 340, 'basedamage' => 34, 'bossattack' => 1.25, 'bossarmor' => 0.0], $brute);
+
+        $armored = combat::phase_opponent($this->make_attempt(['frozenopponent' => 'golem']), $instance);
+        $this->assertSame(['maxbosshp' => 100, 'basedamage' => 10, 'bossattack' => 1.0, 'bossarmor' => 0.25], $armored);
+    }
+
+    /**
+     * Tests that a Resistente's extra HP is applied last, rounding halves up.
+     *
+     * @return void
+     */
+    public function test_phase_opponent_gives_a_tough_opponent_more_hp(): void {
+        $instance = (object) ['basebosshp' => 900, 'bossdamage' => 90];
+
+        $tough = combat::phase_opponent($this->make_attempt([
+            'frozenopponent' => 'slime', 'frozenbasebosshp' => 175,
+        ]), $instance);
+        $this->assertSame(228, $tough['maxbosshp'], '175 x 1.3 = 227.5, rounded up');
+        $this->assertSame(10, $tough['basedamage'], 'the profile does not touch the base damage');
+    }
+
+    /**
+     * Tests that an attempt row from before the frozen columns falls back to the instance, and
+     * that one that never had its opponent frozen fights with no profile.
+     *
+     * @return void
+     */
+    public function test_phase_opponent_falls_back_to_the_instance_and_to_no_profile(): void {
+        $instance = (object) ['basebosshp' => 200, 'bossdamage' => 20];
+
+        $old = combat::phase_opponent($this->make_attempt([
+            'frozenbasebosshp' => 0, 'frozenbossdamage' => 0, 'frozenopponent' => '',
+        ]), $instance);
+        $this->assertSame(['maxbosshp' => 200, 'basedamage' => 20, 'bossattack' => 1.0, 'bossarmor' => 0.0], $old);
+    }
+
+    /**
+     * Tests that a Demo fights at the fixed HP with no profile and no difficulty.
+     *
+     * @return void
+     */
+    public function test_phase_opponent_of_a_demo_is_fixed_and_has_no_profile(): void {
+        $instance = (object) ['basebosshp' => 900, 'bossdamage' => 12];
+
+        $demo = combat::phase_opponent($this->make_attempt([
+            'isdemo' => 1, 'difficulty' => 'hard', 'frozenopponent' => 'slime',
+        ]), $instance);
+        $this->assertSame(['maxbosshp' => combat::DEMO_HP, 'basedamage' => 12, 'bossattack' => 1.0, 'bossarmor' => 0.0], $demo);
     }
 }

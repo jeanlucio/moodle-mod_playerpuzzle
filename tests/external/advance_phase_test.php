@@ -166,6 +166,9 @@ final class advance_phase_test extends \advanced_testcase {
             'frozenbasebosshp' => 10,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
+            // A Brutamontes: its profile leaves its own HP and the hits it takes as they are,
+            // so the single match still finishes it.
+            'frozenopponent' => 'goblin',
         ]);
     }
 

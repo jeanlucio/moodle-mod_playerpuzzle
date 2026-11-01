@@ -68,6 +68,9 @@
         // A wrong player answer always costs this much HP, whatever the phase or difficulty.
         const WRONG_ANSWER_DAMAGE = 30;
 
+        // The most of a hit any armor can absorb, so a hit always does some damage.
+        const ARMOR_CAP = 0.6;
+
         /**
          * The combat state a phase starts from: both sides at full HP, every meter empty,
          * multipliers at 1 and no gold yet.
@@ -367,15 +370,40 @@
          * The hit a match's Sword damage lands as: the player's own multiplier scales it (the
          * boss's never does — its multiplier only scales its critical hits), then it is
          * rounded to a whole number, so an odd base damage on a 4-piece combo never leaves a
-         * half point behind.
+         * half point behind, and last the phase's attack and armor apply (see hitAmount()).
          *
          * @param {string} currentTurn 'player' or 'boss' — whose match dealt it.
          * @param {number} damageDealt resolveMatchEffects()'s damageDealt.
          * @param {object} state Combat state after resolveMatchEffects().
+         * @param {object} config The phase's attack and armor (see hitAmount()).
          * @return {number} The hit to apply to the other side.
          */
-        function matchHitAmount(currentTurn, damageDealt, state) {
-            return Math.round(damageDealt * (currentTurn === 'player' ? state.playerMultiplier : 1));
+        function matchHitAmount(currentTurn, damageDealt, state, config) {
+            const multiplied = Math.round(damageDealt * (currentTurn === 'player' ? state.playerMultiplier : 1));
+            return hitAmount(multiplied, currentTurn, config);
+        }
+
+        /**
+         * A hit as it lands after the attacker's attack and the defender's armor: the attack
+         * multiplies it, the armor takes away its share (never more than ARMOR_CAP), and the
+         * result is rounded to a whole number. Only hits go through here (Swords from the board,
+         * critical answers, the Sword consumable); the wrong-answer penalty and poison do not.
+         * A hit with no attack or armor to apply keeps its exact value, as before either
+         * existed. The shield is checked afterwards, by resolveDamage().
+         *
+         * @param {number} amount The hit before attack and armor.
+         * @param {string} attacker 'player' or 'boss' — who lands the hit.
+         * @param {object} config {playerAttack, bossAttack, playerArmor, bossArmor}, each
+         *  optional: a missing attack is 1, a missing armor 0.
+         * @return {number}
+         */
+        function hitAmount(amount, attacker, config) {
+            const attack = (attacker === 'player' ? config.playerAttack : config.bossAttack) || 1;
+            const armor = Math.min(ARMOR_CAP, (attacker === 'player' ? config.bossArmor : config.playerArmor) || 0);
+            if (attack === 1 && armor === 0) {
+                return amount;
+            }
+            return Math.floor((amount * attack * (1 - armor)) + 0.5);
         }
 
         /**
@@ -388,7 +416,7 @@
          * @param {string} side 'player' or 'boss' — who answered.
          * @param {boolean} correct Whether the answer was right.
          * @param {object} state Current combat state.
-         * @param {object} config {baseDamage}.
+         * @param {object} config {baseDamage}, plus the phase's attack and armor (see hitAmount()).
          * @return {{hitBoss: (number|null), hitPlayer: (number|null), resetPlayerMultiplier: boolean,
          *  resetBossMultiplier: boolean}}
          */
@@ -396,13 +424,13 @@
             const outcome = {hitBoss: null, hitPlayer: null, resetPlayerMultiplier: false, resetBossMultiplier: false};
             if (side === 'player') {
                 if (correct) {
-                    outcome.hitBoss = config.baseDamage * CRITICAL_MULTIPLIER * state.playerMultiplier;
+                    outcome.hitBoss = hitAmount(config.baseDamage * CRITICAL_MULTIPLIER * state.playerMultiplier, 'player', config);
                 } else {
                     outcome.hitPlayer = WRONG_ANSWER_DAMAGE;
                     outcome.resetPlayerMultiplier = true;
                 }
             } else if (correct) {
-                outcome.hitPlayer = config.baseDamage * CRITICAL_MULTIPLIER * state.bossMultiplier;
+                outcome.hitPlayer = hitAmount(config.baseDamage * CRITICAL_MULTIPLIER * state.bossMultiplier, 'boss', config);
             } else {
                 outcome.resetBossMultiplier = true;
             }
@@ -438,7 +466,7 @@
          * @param {string} type One of 'potion', 'shield', 'magic', 'sword'.
          * @param {object} state Current combat state (only the player-side fields consumables
          *  ever touch) — copied, never mutated.
-         * @param {object} config {baseDamage}.
+         * @param {object} config {baseDamage}, plus the phase's attack and armor (see hitAmount()).
          * @return {{state: object, healAmount: number, damageAmount: number}}
          */
         function resolveConsumableEffect(type, state, config) {
@@ -456,7 +484,7 @@
                 next.playerPoisonMeter += 100;
                 resolvePoisonMeters(next);
             } else if (type === 'sword') {
-                damageAmount = config.baseDamage;
+                damageAmount = hitAmount(config.baseDamage, 'player', config);
             }
 
             return {state: next, healAmount, damageAmount};
@@ -468,6 +496,7 @@
             RESUMABLE_FIELDS,
             CRITICAL_MULTIPLIER,
             WRONG_ANSWER_DAMAGE,
+            ARMOR_CAP,
             initialState,
             comboMultiplier,
             resolvePoisonMeters,
@@ -481,6 +510,7 @@
             resolveMatchEffects,
             resolveConsumableEffect,
             matchHitAmount,
+            hitAmount,
             questionOutcome,
             startTurn,
         };

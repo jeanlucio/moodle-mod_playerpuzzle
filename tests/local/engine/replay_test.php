@@ -67,6 +67,7 @@ final class replay_test extends \advanced_testcase {
             'frozenbasebosshp' => 1000,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
+            'frozenopponent' => '',
         ], $overrides);
     }
 

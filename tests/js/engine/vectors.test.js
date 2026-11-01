@@ -51,6 +51,7 @@ test('every recorded match verifies through the mirror as recorded', () => {
         const derived = ReplayMirror.derive({
             attempt: vector.attempt,
             playerpuzzle: vector.playerpuzzle,
+            modifiers: vector.modifiers,
             events: vector.events,
             outcomes: vector.outcomes,
             serverUses: vector.serveruses,

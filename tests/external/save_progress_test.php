@@ -153,6 +153,9 @@ final class save_progress_test extends \advanced_testcase {
             'frozenbasebosshp' => 10,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
+            // A Brutamontes: its profile leaves its own HP and the hits it takes as they are,
+            // so the single match still finishes it.
+            'frozenopponent' => 'goblin',
         ]);
     }
 
@@ -1026,6 +1029,8 @@ final class save_progress_test extends \advanced_testcase {
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
         $DB->set_field('playerpuzzle_attempts', 'rngseed', 2, ['token' => $token]);
+        // A Brutamontes keeps its HP as configured, so the single match still finishes it.
+        $DB->set_field('playerpuzzle_attempts', 'frozenopponent', 'goblin', ['token' => $token]);
         $DB->set_field(
             'playerpuzzle_attempts',
             'movelog',
@@ -1067,6 +1072,8 @@ final class save_progress_test extends \advanced_testcase {
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
         $DB->set_field('playerpuzzle_attempts', 'rngseed', 2, ['token' => $token]);
+        // A Brutamontes keeps its HP as configured, so the single match still finishes it.
+        $DB->set_field('playerpuzzle_attempts', 'frozenopponent', 'goblin', ['token' => $token]);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,

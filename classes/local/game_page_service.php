@@ -348,54 +348,24 @@ class game_page_service {
             $event->trigger();
         }
 
+        // The opponent's HP, the phase's base damage and the profile's attack and armor come from
+        // the same calculation the server replay uses (combat::phase_opponent()), from the config
+        // frozen when the phase started, so a teacher editing the activity mid-phase never changes
+        // what a resumed client fights. A Demo fights at a fixed HP with no profile. Student HP is
+        // never touched by difficulty, and a Demo uses the fixed one too.
+        $opponentside = combat::phase_opponent($attemptinfo, $instance);
+        $bosshp = $opponentside['maxbosshp'];
+        $bossdamage = $opponentside['basedamage'];
         if ($isdemo) {
-            // Fixed, predictable practice fight — deliberately bypasses every real scaling
-            // formula (basebosshp/basestudenthp/difficulty/level/phase).
-            $bosshp = combat::DEMO_HP;
             $studenthp = combat::DEMO_HP;
-            $bossdamage = combat::calculate_boss_hp(
-                (int) $instance->bossdamage,
-                $attemptinfo->currentlevel,
-                $attemptinfo->currentphase
-            );
             $coingain = (int) $instance->coingain;
         } else {
-            // The boss side is read from the config the phase was started with, not from the
-            // instance: the server replay verifies the phase against that frozen copy, so a
-            // teacher editing the activity mid-phase must not change what a resumed client
-            // calculates. A row that predates the frozen columns falls back to the instance.
-            $basebosshp = $attemptinfo->frozenbasebosshp ?: (int) $instance->basebosshp;
-            $basebossdamage = $attemptinfo->frozenbossdamage ?: (int) $instance->bossdamage;
-            $coingain = $attemptinfo->frozencoingain;
-
-            // Boss HP and boss damage carry the level/phase scaling and then the difficulty
-            // factor on top (Easy halves, Hard doubles). Student HP is never touched by
-            // difficulty. save_progress/advance_phase apply the same factor to their own
-            // clamp, so the grade a run produces is unaffected by the difficulty chosen.
-            $bosshp = combat::apply_difficulty(
-                combat::calculate_boss_hp(
-                    $basebosshp,
-                    $attemptinfo->currentlevel,
-                    $attemptinfo->currentphase
-                ),
-                $difficulty
-            );
             $studenthp = combat::calculate_student_hp(
                 (int) $instance->basestudenthp,
                 $attemptinfo->currentlevel,
                 $attemptinfo->currentphase
             );
-            // Reuses the boss HP formula for combat damage: same shape of growth, and it
-            // keeps a single source of truth for "how much combat should scale" at this
-            // level/phase.
-            $bossdamage = combat::apply_difficulty(
-                combat::calculate_boss_hp(
-                    $basebossdamage,
-                    $attemptinfo->currentlevel,
-                    $attemptinfo->currentphase
-                ),
-                $difficulty
-            );
+            $coingain = $attemptinfo->frozencoingain;
         }
 
         // A resumed real phase is rebuilt by the server's own replay rather than taken from
@@ -474,6 +444,11 @@ class game_page_service {
             'bosshp'               => $bosshp,
             'studenthp'            => $studenthp,
             'bossdamage'           => $bossdamage,
+            // The opponent profile's multiplier on the hits it lands and the share of each hit it
+            // takes that its armor absorbs (1 and 0 without a profile). The client only uses them
+            // to play the fight; the server replay reads its own from the frozen opponent.
+            'bossattack'           => $opponentside['bossattack'],
+            'bossarmor'            => $opponentside['bossarmor'],
             // Deliberately not scaled by level/phase, unlike bossdamage above: a teacher's
             // fixed-price consumable shop would otherwise get proportionally cheaper as a
             // campaign progresses.

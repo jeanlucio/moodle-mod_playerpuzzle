@@ -58,6 +58,9 @@ class combat_engine {
     /** @var int HP a wrong player answer always costs. */
     public const WRONG_ANSWER_DAMAGE = 30;
 
+    /** @var float The most of a hit any armor can absorb, so a hit always does some damage. */
+    public const ARMOR_CAP = 0.6;
+
     /**
      * The combat state a phase starts from: both sides at full HP, every meter empty,
      * multipliers at 1 and no gold yet.
@@ -363,15 +366,41 @@ class combat_engine {
 
     /**
      * The hit a match's Sword damage lands as: scaled by the player's own multiplier (never the
-     * boss's), then rounded halves up exactly like the client's Math.round().
+     * boss's), rounded halves up exactly like the client's Math.round(), and last the phase's
+     * attack and armor apply (see hit_amount()).
      *
      * @param string $currentturn 'player' or 'boss' — whose match dealt it.
      * @param float $damagedealt resolve_match_effects()'s damageDealt.
      * @param array $state Combat state after resolve_match_effects().
+     * @param array $config The phase's attack and armor (see hit_amount()).
      * @return float The hit to apply to the other side.
      */
-    public static function match_hit_amount(string $currentturn, float $damagedealt, array $state): float {
-        return floor($damagedealt * ($currentturn === 'player' ? $state['playerMultiplier'] : 1) + 0.5);
+    public static function match_hit_amount(string $currentturn, float $damagedealt, array $state, array $config): float {
+        $multiplied = floor($damagedealt * ($currentturn === 'player' ? $state['playerMultiplier'] : 1) + 0.5);
+        return self::hit_amount($multiplied, $currentturn, $config);
+    }
+
+    /**
+     * A hit as it lands after the attacker's attack and the defender's armor: the attack
+     * multiplies it, the armor takes away its share (never more than ARMOR_CAP), and the result
+     * is rounded halves up. Only hits go through here (Swords from the board, critical answers,
+     * the Sword consumable); the wrong-answer penalty and poison do not. A hit with no attack or
+     * armor to apply keeps its exact value. The shield is checked afterwards, by resolve_damage().
+     *
+     * @param float $amount The hit before attack and armor.
+     * @param string $attacker 'player' or 'boss' — who lands the hit.
+     * @param array $config Keys playerAttack, bossAttack, playerArmor, bossArmor, each optional:
+     *  a missing attack is 1, a missing armor 0.
+     * @return float
+     */
+    public static function hit_amount(float $amount, string $attacker, array $config): float {
+        $defender = $attacker === 'player' ? 'boss' : 'player';
+        $attack = (float) (($config[$attacker . 'Attack'] ?? 0) ?: 1);
+        $armor = min(self::ARMOR_CAP, (float) ($config[$defender . 'Armor'] ?? 0));
+        if ($attack === 1.0 && $armor === 0.0) {
+            return $amount;
+        }
+        return floor(($amount * $attack * (1 - $armor)) + 0.5);
     }
 
     /**
@@ -383,7 +412,7 @@ class combat_engine {
      * @param string $side 'player' or 'boss' — who answered.
      * @param bool $correct Whether the answer was right.
      * @param array $state Current combat state.
-     * @param array $config Keys baseDamage.
+     * @param array $config Key baseDamage, plus the phase's attack and armor (see hit_amount()).
      * @return array ['hitBoss' => float|null, 'hitPlayer' => float|null, 'resetPlayerMultiplier' => bool,
      *  'resetBossMultiplier' => bool]
      */
@@ -391,13 +420,21 @@ class combat_engine {
         $outcome = ['hitBoss' => null, 'hitPlayer' => null, 'resetPlayerMultiplier' => false, 'resetBossMultiplier' => false];
         if ($side === 'player') {
             if ($correct) {
-                $outcome['hitBoss'] = $config['baseDamage'] * self::CRITICAL_MULTIPLIER * $state['playerMultiplier'];
+                $outcome['hitBoss'] = self::hit_amount(
+                    $config['baseDamage'] * self::CRITICAL_MULTIPLIER * $state['playerMultiplier'],
+                    'player',
+                    $config
+                );
             } else {
                 $outcome['hitPlayer'] = (float) self::WRONG_ANSWER_DAMAGE;
                 $outcome['resetPlayerMultiplier'] = true;
             }
         } else if ($correct) {
-            $outcome['hitPlayer'] = $config['baseDamage'] * self::CRITICAL_MULTIPLIER * $state['bossMultiplier'];
+            $outcome['hitPlayer'] = self::hit_amount(
+                $config['baseDamage'] * self::CRITICAL_MULTIPLIER * $state['bossMultiplier'],
+                'boss',
+                $config
+            );
         } else {
             $outcome['resetBossMultiplier'] = true;
         }
@@ -430,7 +467,7 @@ class combat_engine {
      *
      * @param string $type One of 'potion', 'shield', 'magic', 'sword'.
      * @param array $state Current combat state — copied, never mutated.
-     * @param array $config Keys baseDamage.
+     * @param array $config Key baseDamage, plus the phase's attack and armor (see hit_amount()).
      * @return array ['state', 'healAmount', 'damageAmount']
      */
     public static function resolve_consumable_effect(string $type, array $state, array $config): array {
@@ -448,7 +485,7 @@ class combat_engine {
             $next['playerPoisonMeter'] += 100;
             self::resolve_poison_meters($next);
         } else if ($type === 'sword') {
-            $damageamount = $config['baseDamage'];
+            $damageamount = self::hit_amount((float) $config['baseDamage'], 'player', $config);
         }
 
         return ['state' => $next, 'healAmount' => $healamount, 'damageAmount' => $damageamount];

@@ -46,6 +46,43 @@ class opponents {
     /** @var string The opponent used when a stored value names none of the known ones. */
     public const DEFAULT = 'slime';
 
+    /** @var string Profile of an opponent that hits harder. */
+    public const PROFILE_BRUTE = 'brute';
+
+    /** @var string Profile of an opponent whose armor softens every hit it takes. */
+    public const PROFILE_ARMORED = 'armored';
+
+    /** @var string Profile of an opponent with more HP. */
+    public const PROFILE_TOUGH = 'tough';
+
+    /** @var array The profile of each opponent. The final boss has none. */
+    private const PROFILES = [
+        'slime' => self::PROFILE_TOUGH,
+        'goblin' => self::PROFILE_BRUTE,
+        'golem' => self::PROFILE_ARMORED,
+        'mummy' => self::PROFILE_BRUTE,
+        'plant' => self::PROFILE_ARMORED,
+        'ghost' => self::PROFILE_TOUGH,
+        'pirate' => self::PROFILE_BRUTE,
+        'wolf' => self::PROFILE_BRUTE,
+        'spider' => self::PROFILE_TOUGH,
+        'dragon' => self::PROFILE_BRUTE,
+    ];
+
+    /**
+     * @var array What each profile changes in the fight: a multiplier on the opponent's HP, a
+     *  multiplier on the hits it lands, and the share of each hit it takes that its armor absorbs.
+     *  Starting values, to be tuned against simulated matches.
+     */
+    private const PROFILE_MODIFIERS = [
+        self::PROFILE_BRUTE => ['hp' => 1.0, 'attack' => 1.25, 'armor' => 0.0],
+        self::PROFILE_ARMORED => ['hp' => 1.0, 'attack' => 1.0, 'armor' => 0.25],
+        self::PROFILE_TOUGH => ['hp' => 1.3, 'attack' => 1.0, 'armor' => 0.0],
+    ];
+
+    /** @var array The modifiers of an opponent with no profile: nothing changes. */
+    private const NO_MODIFIERS = ['hp' => 1.0, 'attack' => 1.0, 'armor' => 0.0];
+
     /** @var array The stage (pix/stages/<stage>.webp) each opponent is fought on. */
     private const STAGES = [
         'slime' => 'ruins',
@@ -99,6 +136,28 @@ class opponents {
             return self::FINAL_BOSS;
         }
         return self::CAMPAIGN_ORDER[max(1, min(10, $phase)) - 1];
+    }
+
+    /**
+     * An opponent's profile.
+     *
+     * @param string $key An opponent key.
+     * @return string|null One of the PROFILE_* values, or null for an opponent without one.
+     */
+    public static function profile(string $key): ?string {
+        return self::PROFILES[$key] ?? null;
+    }
+
+    /**
+     * What an opponent's profile changes in the fight. Only an exact key counts: an empty value
+     * (an attempt that never had its opponent frozen) gets no modifiers, like the final boss.
+     *
+     * @param string $key An opponent key.
+     * @return array ['hp' => float, 'attack' => float, 'armor' => float]
+     */
+    public static function modifiers(string $key): array {
+        $profile = self::profile($key);
+        return $profile === null ? self::NO_MODIFIERS : self::PROFILE_MODIFIERS[$profile];
     }
 
     /**

@@ -26,6 +26,7 @@
 namespace mod_playerpuzzle\local\engine;
 
 use mod_playerpuzzle\local\move_log;
+use mod_playerpuzzle\local\opponents;
 
 /**
  * Replays every match in tests/fixtures/replay_vectors.json through the real replay::derive().
@@ -84,6 +85,15 @@ final class replay_vectors_test extends \advanced_testcase {
         $fields = $vector['attempt'];
         $fields['questions_total'] = $fields['questionsTotal'];
         unset($fields['questionsTotal']);
+
+        // A case that names no opponent is an attempt whose opponent was never frozen, which
+        // fights with no profile. A case that names one carries the modifiers the JavaScript side
+        // recorded it with, which must be the server's own.
+        $fields += ['frozenopponent' => ''];
+        $this->assertEquals(
+            $vector['modifiers'] ?? ['hp' => 1, 'attack' => 1, 'armor' => 0],
+            opponents::modifiers($fields['frozenopponent'])
+        );
 
         $attempt = (object) array_merge($fields, [
             'id' => $attemptid,

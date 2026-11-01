@@ -586,8 +586,9 @@ final class game_page_service_test extends \advanced_testcase {
 
         $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
 
-        // Level 5, Phase 1 with base 100: boss 300, student 220.
-        $this->assertSame(300, $config['bosshp']);
+        // Level 5, Phase 1 with base 100: boss 300, student 220. The opponent frozen when the
+        // attempt started is the slime, a Resistente: 30% more HP, 390.
+        $this->assertSame(390, $config['bosshp']);
         $this->assertSame(220, $config['studenthp']);
         // Combat damage reuses the same boss HP growth curve: base 10 -> 30 at Level 5/Phase 1.
         $this->assertSame(30, $config['bossdamage']);
@@ -612,6 +613,7 @@ final class game_page_service_test extends \advanced_testcase {
             'basebosshp' => 200,
             'bossdamage' => 10,
             'coingain'   => 10,
+            'bossavatar' => 'goblin',
         ]);
         $context = \context_module::instance($cm->id);
         $studentid = (int) $this->student->id;
@@ -634,7 +636,8 @@ final class game_page_service_test extends \advanced_testcase {
 
     /**
      * Tests that Single Match mode always resolves to the base HP unchanged, since its
-     * attempts stay at Level 1, Phase 1 — no special-casing needed in the service.
+     * attempts stay at Level 1, Phase 1 — no special-casing needed in the service. The goblin,
+     * a Brutamontes, leaves the HP as it is.
      *
      * @return void
      */
@@ -644,6 +647,7 @@ final class game_page_service_test extends \advanced_testcase {
             'basebosshp'    => 250,
             'basestudenthp' => 80,
             'bossdamage'    => 15,
+            'bossavatar'    => 'goblin',
         ]);
         $context = \context_module::instance($cm->id);
 
@@ -673,6 +677,7 @@ final class game_page_service_test extends \advanced_testcase {
             'basebosshp'    => 200,
             'basestudenthp' => 100,
             'bossdamage'    => 10,
+            'bossavatar'    => 'goblin',
         ]);
         $context = \context_module::instance($cm->id);
 
@@ -729,6 +734,7 @@ final class game_page_service_test extends \advanced_testcase {
         [$cm, $instance] = $this->make_cm_and_instance([
             'gamemode'   => constants::GAMEMODE_SINGLE,
             'basebosshp' => 200,
+            'bossavatar' => 'goblin',
         ]);
         $context = \context_module::instance($cm->id);
 
@@ -1255,5 +1261,38 @@ final class game_page_service_test extends \advanced_testcase {
         $config = $this->start_game($cm, $campaign);
         $this->assertSame('slime', $config['bossavatar'], 'a Campaign starts on phase 1, whatever the pick');
         $this->assertStringEndsWith('/mod/playerpuzzle/pix/stages/ruins.webp', $config['stagebgurl']);
+    }
+
+    /**
+     * Tests that the page hands the client the frozen opponent's profile: the armor and attack
+     * it fights with, and a Resistente's extra HP already in bosshp.
+     *
+     * @return void
+     */
+    public function test_build_game_config_passes_the_opponent_profile(): void {
+        $expected = [
+            'golem' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.25],
+            'goblin' => ['bosshp' => 200, 'bossattack' => 1.25, 'bossarmor' => 0.0],
+            'slime' => ['bosshp' => 260, 'bossattack' => 1.0, 'bossarmor' => 0.0],
+            'vampire' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.0],
+        ];
+        foreach ($expected as $opponent => $values) {
+            [$cm, $instance] = $this->make_cm_and_instance([
+                'gamemode'   => constants::GAMEMODE_SINGLE,
+                'basebosshp' => 200,
+                'bossdamage' => 10,
+                'bossavatar' => $opponent,
+            ]);
+            $context = \context_module::instance($cm->id);
+
+            $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
+
+            $this->assertSame($values, [
+                'bosshp' => $config['bosshp'],
+                'bossattack' => $config['bossattack'],
+                'bossarmor' => $config['bossarmor'],
+            ], $opponent);
+            $this->assertSame(10, $config['bossdamage'], 'the profile never changes the base damage');
+        }
     }
 }

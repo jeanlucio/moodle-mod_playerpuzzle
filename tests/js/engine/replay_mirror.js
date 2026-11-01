@@ -77,24 +77,35 @@ const DIFFICULTY_BOSS_FACTORS = {easy: 0.5, normal: 1.0, hard: 2.0};
 const DIFFICULTY_COIN_FACTORS = {easy: 0.5, normal: 1.0, hard: 3.0};
 
 /**
- * Builds the phase's combat config the way replay::simulate() does from an attempt row.
+ * The modifiers of an opponent with no profile: nothing changes.
+ */
+const NO_MODIFIERS = {hp: 1, attack: 1, armor: 0};
+
+/**
+ * Builds the phase's combat config the way replay::simulate() does from an attempt row, via
+ * combat::phase_opponent(). The opponent's profile table lives only on the server
+ * (opponents::modifiers()), so its modifiers are passed in.
  *
  * @param {object} attempt Attempt fields: frozenbasebosshp, frozenbossdamage,
  *  frozencoingain, currentlevel, currentphase, difficulty.
  * @param {object} playerpuzzle Instance fields: basestudenthp.
+ * @param {object} modifiers The frozen opponent's {hp, attack, armor}.
  * @return {{config: object, maxBossHp: number, maxPlayerHp: number}}
  */
-function phaseSetup(attempt, playerpuzzle) {
+function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS) {
     const level = attempt.currentlevel;
     const phase = attempt.currentphase;
     const bossFactor = DIFFICULTY_BOSS_FACTORS[attempt.difficulty] ?? 1.0;
+    const scaledBossHp = Math.round(scaleBoss(attempt.frozenbasebosshp, level, phase) * bossFactor);
     return {
         config: {
             baseDamage: Math.round(scaleBoss(attempt.frozenbossdamage, level, phase) * bossFactor),
             coinGain: attempt.frozencoingain,
             coinFactor: DIFFICULTY_COIN_FACTORS[attempt.difficulty] ?? 1.0,
+            bossAttack: modifiers.attack,
+            bossArmor: modifiers.armor,
         },
-        maxBossHp: Math.round(scaleBoss(attempt.frozenbasebosshp, level, phase) * bossFactor),
+        maxBossHp: Math.floor((scaledBossHp * modifiers.hp) + 0.5),
         maxPlayerHp: scaleStudent(playerpuzzle.basestudenthp, level, phase),
     };
 }
@@ -112,6 +123,7 @@ function phaseSetup(attempt, playerpuzzle) {
  * @param {object} params.attempt See phaseSetup(), plus rngseed and questionsTotal (the
  *  attempt's questions_total column).
  * @param {object} params.playerpuzzle See phaseSetup(), plus minquestions.
+ * @param {object} [params.modifiers] See phaseSetup(); none when absent.
  * @param {Array} params.events Recorded events (verifying), or [] (recording).
  * @param {Array} params.outcomes Server outcomes {side, correct, counted} (verifying), or [].
  * @param {object} params.serverUses Consumable uses the server counted, by type.
@@ -119,10 +131,10 @@ function phaseSetup(attempt, playerpuzzle) {
  * @param {object|null} params.policy Recording policy, or null to verify.
  * @return {{result: object|null, events: Array, outcomes: Array, serverUses: object}}
  */
-function runPhase({attempt, playerpuzzle, events, outcomes, serverUses, poolEmpty, policy}) {
+function runPhase({attempt, playerpuzzle, modifiers, events, outcomes, serverUses, poolEmpty, policy}) {
     const rng = Prng.create(attempt.rngseed);
     const grid = BoardRules.generateGrid(ROWS, COLS, null, rng);
-    const {config, maxBossHp, maxPlayerHp} = phaseSetup(attempt, playerpuzzle);
+    const {config, maxBossHp, maxPlayerHp} = phaseSetup(attempt, playerpuzzle, modifiers);
     const recording = policy !== null && policy !== undefined;
     const uses = Object.assign({}, serverUses);
 
@@ -244,7 +256,7 @@ function runPhase({attempt, playerpuzzle, events, outcomes, serverUses, poolEmpt
             state = result.state;
 
             if (result.damageDealt > 0) {
-                const scaled = CombatRules.matchHitAmount(turn, result.damageDealt, state);
+                const scaled = CombatRules.matchHitAmount(turn, result.damageDealt, state, config);
                 if (turn === 'player') {
                     const applied = CombatRules.resolveDamage(state.currentHp, state.bossShieldReady, scaled);
                     state.currentHp = applied.newHp;

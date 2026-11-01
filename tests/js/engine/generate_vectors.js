@@ -140,6 +140,45 @@ const REPLAY_CASES = [
         bossAnswers: ['wrong'], consumables: {'1': 'shield', '6': 'sword'}},
     {name: 'easy, level 4', seed: 114, boss: 140, damage: 10, coin: 10, student: 160, difficulty: 'easy',
         level: 4, phase: 3, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
+    {name: 'brute opponent', opponent: 'goblin', seed: 115, boss: 200, damage: 12, coin: 10, student: 220,
+        typeOffset: 2, playerAnswers: ['right', 'wrong'], bossAnswers: ['right', 'wrong']},
+    {name: 'armored opponent, Sword consumables', opponent: 'golem', seed: 116, boss: 180, damage: 11, coin: 10,
+        student: 240, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['right', 'wrong'],
+        consumables: {'1': 'sword', '3': 'sword', '5': 'shield'}},
+    {name: 'tough opponent', opponent: 'slime', seed: 117, boss: 175, damage: 10, coin: 10, student: 230,
+        typeOffset: 3, playerAnswers: ['right', 'right', 'wrong'], bossAnswers: ['wrong', 'right']},
+    {name: 'armored opponent, hard, level 2', opponent: 'plant', seed: 118, boss: 110, damage: 9, coin: 10,
+        student: 320, difficulty: 'hard', level: 2, phase: 5, typeOffset: 4, playerAnswers: ['right', 'wrong'],
+        bossAnswers: ['right']},
+    {name: 'brute opponent, minquestions', opponent: 'dragon', seed: 119, boss: 90, damage: 13, coin: 10,
+        student: 400, minquestions: 4, phase: 10, typeOffset: 1, playerAnswers: ['right', 'skipped', 'wrong'],
+        bossAnswers: ['right', 'wrong']},
+    {name: 'final boss, no profile', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
+        level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
+];
+
+// The profile modifiers of the opponents the replay cases fight. The table itself lives only on
+// the server (opponents::modifiers()); replay_vectors_test.php checks each case's copy against it.
+const OPPONENT_MODIFIERS = {
+    goblin: {hp: 1, attack: 1.25, armor: 0},
+    golem: {hp: 1, attack: 1, armor: 0.25},
+    slime: {hp: 1.3, attack: 1, armor: 0},
+    plant: {hp: 1, attack: 1, armor: 0.25},
+    dragon: {hp: 1, attack: 1.25, armor: 0},
+    vampire: {hp: 1, attack: 1, armor: 0},
+};
+
+// Attack and armor combinations for the rules that take them, including ones no opponent has
+// today (the student's own, an armor past the cap) so the rule itself is covered.
+const HIT_CONFIGS = [
+    {},
+    {bossAttack: 1.25},
+    {bossArmor: 0.25},
+    {bossAttack: 1.25, bossArmor: 0.25},
+    {playerArmor: 0.3},
+    {playerAttack: 1.2, bossArmor: 0.25},
+    {bossArmor: 0.9},
+    {bossAttack: 1, bossArmor: 0},
 ];
 
 /**
@@ -256,7 +295,7 @@ function buildCombatVectors() {
     for (let i = 0; i < 40; i++) {
         cases.push(recordCall('matchHitAmount', [
             turnRand.pick(['player', 'boss']), turnRand.int(1, 60) * turnRand.pick([1, 1.5, 2, 2.5, 3]),
-            randomState(turnRand),
+            randomState(turnRand), {},
         ]));
         cases.push(recordCall('questionOutcome', [
             turnRand.pick(['player', 'boss']), turnRand.chance(0.5), randomState(turnRand),
@@ -272,6 +311,31 @@ function buildCombatVectors() {
             rand.pick(['potion', 'shield', 'magic', 'sword']),
             randomState(rand),
             {baseDamage: rand.int(1, 60)},
+        ]));
+    }
+
+    const hitRand = randomSource(20261102);
+    cases.push({fn: 'ARMOR_CAP', args: [], result: CombatRules.ARMOR_CAP});
+    HIT_CONFIGS.forEach(config => {
+        ['player', 'boss'].forEach(attacker => {
+            [1, 7, 10, 13, 33.00000000000001, 39.6, 45, 62.5, 150].forEach(amount => {
+                cases.push(recordCall('hitAmount', [amount, attacker, config]));
+            });
+        });
+    });
+    for (let i = 0; i < 40; i++) {
+        const config = hitRand.pick(HIT_CONFIGS);
+        cases.push(recordCall('matchHitAmount', [
+            hitRand.pick(['player', 'boss']), hitRand.int(1, 60) * hitRand.pick([1, 1.5, 2, 2.5, 3]),
+            randomState(hitRand), config,
+        ]));
+        cases.push(recordCall('questionOutcome', [
+            hitRand.pick(['player', 'boss']), hitRand.chance(0.5), randomState(hitRand),
+            Object.assign({baseDamage: hitRand.int(1, 60)}, hitRand.pick(HIT_CONFIGS)),
+        ]));
+        cases.push(recordCall('resolveConsumableEffect', [
+            hitRand.pick(['potion', 'sword', 'sword']), randomState(hitRand),
+            Object.assign({baseDamage: hitRand.int(1, 60)}, hitRand.pick(HIT_CONFIGS)),
         ]));
     }
 
@@ -295,23 +359,32 @@ function buildReplayVectors() {
             frozenbossdamage: spec.damage,
             frozencoingain: spec.coin,
         };
+        const modifiers = spec.opponent ? OPPONENT_MODIFIERS[spec.opponent] : undefined;
+        if (spec.opponent) {
+            attempt.frozenopponent = spec.opponent;
+        }
         const playerpuzzle = {minquestions: spec.minquestions || 0, basestudenthp: spec.student};
 
-        const recorded = ReplayMirror.record({attempt, playerpuzzle, poolEmpty: true, policy: makePolicy(spec)});
+        const recorded = ReplayMirror.record({attempt, playerpuzzle, modifiers, poolEmpty: true, policy: makePolicy(spec)});
         if (recorded.result === null) {
             throw new Error(`Replay case "${spec.name}" did not reach a conclusive end.`);
         }
         attempt.questionsTotal = recorded.outcomes.filter(outcome => outcome.counted).length;
 
-        return {
+        const vector = {
             name: spec.name,
             attempt,
             playerpuzzle,
+        };
+        if (modifiers) {
+            vector.modifiers = modifiers;
+        }
+        return Object.assign(vector, {
             events: recorded.events,
             outcomes: recorded.outcomes,
             serveruses: recorded.serverUses,
             expected: recorded.result,
-        };
+        });
     });
 }
 

@@ -74,7 +74,7 @@ class report_service {
         // must never appear in a teacher-facing report as if they were real submissions.
         $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.difficulty, a.status,
                        a.bosshp_remaining, a.questions_correct, a.questions_total, a.timefinished,
-                       a.frozenbasebosshp
+                       a.isdemo, a.frozenbasebosshp, a.frozenbossdamage, a.frozenopponent
                   FROM {playerpuzzle_attempts} a
                  WHERE a.playerpuzzleid = :instanceid
                        AND a.isdemo = 0
@@ -132,17 +132,10 @@ class report_service {
         $totalsum = 0;
         $lastfinished = 0;
         foreach ($finished as $attempt) {
-            // The boss HP this phase was really fought at, frozen when it started — the
-            // teacher may have changed basebosshp since, which must not rewrite the damage
-            // of matches already played. Attempts from before the column existed have none.
-            $bosshp = combat::apply_difficulty(
-                combat::calculate_boss_hp(
-                    (int) $attempt->frozenbasebosshp ?: (int) $instance->basebosshp,
-                    (int) $attempt->currentlevel,
-                    (int) $attempt->currentphase
-                ),
-                (string) $attempt->difficulty
-            );
+            // The boss HP this phase was really fought at, from the config and opponent frozen
+            // when it started — the teacher may have changed basebosshp since, which must not
+            // rewrite the damage of matches already played.
+            $bosshp = combat::phase_opponent($attempt, $instance)['maxbosshp'];
             $damage = max(0, $bosshp - (int) $attempt->bosshp_remaining);
             $damagepercents[] = $bosshp > 0 ? ($damage / $bosshp) * 100 : 0.0;
             $correctsum += (int) $attempt->questions_correct;

@@ -84,6 +84,7 @@ final class replay_credit_test extends \advanced_testcase {
             'frozenbasebosshp' => 1000,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
+            'frozenopponent' => '',
         ];
     }
 
@@ -109,6 +110,7 @@ final class replay_credit_test extends \advanced_testcase {
             'frozenbasebosshp' => 10,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
+            'frozenopponent' => '',
         ];
     }
 

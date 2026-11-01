@@ -6,7 +6,8 @@ Feature: A PlayerPuzzle match counts only as the server's own replay verifies it
 
   # Every attempt below is created with PRNG seed 2, so its board is always the same: the
   # accessible board announces its moves in a fixed order, where move 1 is a Coin match and
-  # move 4 a Sword match. With boss HP equal to one Sword combo, move 4 wins on the spot.
+  # move 4 a Sword match. With boss HP equal to one Sword combo, move 4 wins on the spot, against
+  # a goblin: a Brutamontes, whose profile leaves its HP and the hits it takes as configured.
 
   Background:
     Given the following "users" exist:
@@ -21,8 +22,8 @@ Feature: A PlayerPuzzle match counts only as the server's own replay verifies it
 
   Scenario: A winning move ends in a verified victory that banks its coins
     Given the following "activities" exist:
-      | activity     | course | name         | gamemode | basebosshp | bossdamage | coingain | minquestions |
-      | playerpuzzle | C1     | Dungeon Quiz | single   | 10         | 10         | 10       | 0            |
+      | activity     | course | name         | gamemode | bossavatar | basebosshp | bossdamage | coingain | minquestions |
+      | playerpuzzle | C1     | Dungeon Quiz | single   | goblin     | 10         | 10         | 10       | 0            |
     And the following "mod_playerpuzzle > attempts" exist:
       | playerpuzzle | user     | rngseed |
       | Dungeon Quiz | student1 | 2       |
@@ -53,8 +54,8 @@ Feature: A PlayerPuzzle match counts only as the server's own replay verifies it
 
   Scenario: A victory the server cannot verify restarts the phase instead of counting
     Given the following "activities" exist:
-      | activity     | course | name         | gamemode | basebosshp | bossdamage | coingain | minquestions |
-      | playerpuzzle | C1     | Dungeon Quiz | single   | 10         | 10         | 10       | 0            |
+      | activity     | course | name         | gamemode | bossavatar | basebosshp | bossdamage | coingain | minquestions |
+      | playerpuzzle | C1     | Dungeon Quiz | single   | goblin     | 10         | 10         | 10       | 0            |
     # The server already holds an answer the event log never reaches, as when part of the log
     # was blocked, so the replay cannot account for the match and its victory stays unverified.
     And the following "mod_playerpuzzle > attempts" exist:

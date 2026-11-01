@@ -441,7 +441,7 @@ final class combat_engine_test extends \advanced_testcase {
     public function test_resolve_consumable_effect_sword_reports_without_applying(): void {
         $state = $this->fresh_state();
         $result = combat_engine::resolve_consumable_effect('sword', $state, self::CONFIG);
-        $this->assertSame(10, $result['damageAmount']);
+        $this->assertSame(10.0, $result['damageAmount']);
         $this->assertSame($state['currentHp'], $result['state']['currentHp'], 'applying the damage is the caller\'s job');
     }
 
@@ -471,9 +471,9 @@ final class combat_engine_test extends \advanced_testcase {
     public function test_match_hit_amount_scales_the_player_only_and_rounds_halves_up(): void {
         $state = array_merge($this->fresh_state(), ['playerMultiplier' => 1.5, 'bossMultiplier' => 2.0]);
 
-        $this->assertSame(23.0, combat_engine::match_hit_amount('player', 15, $state));
-        $this->assertSame(15.0, combat_engine::match_hit_amount('boss', 15, $state));
-        $this->assertSame(17.0, combat_engine::match_hit_amount('boss', 16.5, $state));
+        $this->assertSame(23.0, combat_engine::match_hit_amount('player', 15, $state, []));
+        $this->assertSame(15.0, combat_engine::match_hit_amount('boss', 15, $state, []));
+        $this->assertSame(17.0, combat_engine::match_hit_amount('boss', 16.5, $state, []));
     }
 
     /**
@@ -522,5 +522,45 @@ final class combat_engine_test extends \advanced_testcase {
         $this->assertFalse($quiet['poisonTicked']);
         // HP comes back as a float; the values themselves are unchanged.
         $this->assertEquals($this->fresh_state(), $quiet['state']);
+    }
+
+    /**
+     * Tests that hit_amount() applies the attacker's attack and the defender's armor, caps the
+     * armor and rounds halves up, and keeps a hit with neither exactly as it was.
+     *
+     * @return void
+     */
+    public function test_hit_amount_applies_attack_and_capped_armor(): void {
+        $this->assertSame(10.0, combat_engine::hit_amount(13, 'player', ['bossArmor' => 0.25]));
+        $this->assertSame(13.0, combat_engine::hit_amount(10, 'boss', ['bossAttack' => 1.25]));
+        $this->assertSame(10.0, combat_engine::hit_amount(10, 'player', ['bossAttack' => 1.25]));
+        $this->assertSame(40.0, combat_engine::hit_amount(100, 'player', ['bossArmor' => 0.95]));
+        $this->assertSame(33.3, combat_engine::hit_amount(33.3, 'player', []));
+    }
+
+    /**
+     * Tests that armor softens a critical answer, the board Swords and the Sword consumable,
+     * but never the wrong-answer penalty or a poison tick.
+     *
+     * @return void
+     */
+    public function test_armor_softens_hits_but_not_the_wrong_answer_penalty_or_poison(): void {
+        $config = array_merge(self::CONFIG, ['bossArmor' => 0.25, 'playerArmor' => 0.25]);
+        $state = $this->fresh_state();
+
+        $this->assertSame(23.0, combat_engine::question_outcome('player', true, $state, $config)['hitBoss']);
+        $this->assertSame(23.0, combat_engine::question_outcome('boss', true, $state, $config)['hitPlayer']);
+        $this->assertSame(
+            (float) combat_engine::WRONG_ANSWER_DAMAGE,
+            combat_engine::question_outcome('player', false, $state, $config)['hitPlayer']
+        );
+        $this->assertSame(11.0, combat_engine::match_hit_amount('player', 15, $state, $config));
+        $this->assertSame(8.0, combat_engine::resolve_consumable_effect('sword', $state, $config)['damageAmount']);
+
+        $poisoned = array_merge($state, ['bossPoisonRounds' => 2]);
+        $this->assertSame(
+            (float) ($state['currentHp'] - self::CONFIG['baseDamage']),
+            combat_engine::start_turn('boss', $poisoned, $config)['state']['currentHp']
+        );
     }
 }

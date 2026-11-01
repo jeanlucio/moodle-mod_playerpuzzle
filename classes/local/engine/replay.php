@@ -175,18 +175,15 @@ class replay {
         $phase = (int) $attempt->currentphase;
         $difficulty = (string) $attempt->difficulty;
 
+        $opponent = combat::phase_opponent($attempt, $playerpuzzle);
         $config = [
-            'baseDamage' => combat::apply_difficulty(
-                combat::calculate_boss_hp((int) $attempt->frozenbossdamage, $level, $phase),
-                $difficulty
-            ),
+            'baseDamage' => $opponent['basedamage'],
             'coinGain' => (int) $attempt->frozencoingain,
             'coinFactor' => combat::difficulty_coin_factor($difficulty),
+            'bossAttack' => $opponent['bossattack'],
+            'bossArmor' => $opponent['bossarmor'],
         ];
-        $maxbosshp = combat::apply_difficulty(
-            combat::calculate_boss_hp((int) $attempt->frozenbasebosshp, $level, $phase),
-            $difficulty
-        );
+        $maxbosshp = $opponent['maxbosshp'];
         // Note: basestudenthp is not one of the columns frozen at phase start (only the boss-side
         // config feeds the damage/coin totals this derives): a teacher edit to it mid-phase
         // could make this value disagree with what the live client used for its own
@@ -352,7 +349,7 @@ class replay {
      * @param array $grid The board grid (mutated in place).
      * @param \Closure $rng The phase's seeded PRNG (mutated in place via its own closure state).
      * @param array $state Combat state (mutated in place).
-     * @param array $config Keys baseDamage/coinGain/coinFactor.
+     * @param array $config Keys baseDamage/coinGain/coinFactor/bossAttack/bossArmor.
      * @param array $sim The simulation context built by simulate() (mutated in place).
      * @param string $turn 'player' or 'boss' — whose swap this cascade belongs to.
      * @return bool False when the cascade could not be resolved (the swap itself matched
@@ -400,7 +397,7 @@ class replay {
             $state = $result['state'];
 
             if ($result['damageDealt'] > 0) {
-                $scaled = combat_engine::match_hit_amount($turn, $result['damageDealt'], $state);
+                $scaled = combat_engine::match_hit_amount($turn, $result['damageDealt'], $state, $config);
                 if ($turn === 'player') {
                     $applied = combat_engine::resolve_damage($state['currentHp'], $state['bossShieldReady'], $scaled);
                     $state['currentHp'] = $applied['newHp'];
@@ -421,7 +418,7 @@ class replay {
             }
 
             if ($result['questionTriggered']) {
-                if (!self::consume_question($sim, $result['triggeredBy'], $state, (float) $config['baseDamage'])) {
+                if (!self::consume_question($sim, $result['triggeredBy'], $state, $config)) {
                     return false;
                 }
             }
@@ -442,10 +439,10 @@ class replay {
      * @param array $sim The simulation context (mutated in place).
      * @param string $side 'player' or 'boss' — who the simulation says was asked.
      * @param array $state Combat state (mutated in place).
-     * @param float $basedamage The phase's baseDamage, for the crit-hit formula.
+     * @param array $config The phase's rule config: baseDamage, bossAttack and bossArmor are read.
      * @return bool False when the log and the server's outcomes do not reconcile here.
      */
-    private static function consume_question(array &$sim, string $side, array &$state, float $basedamage): bool {
+    private static function consume_question(array &$sim, string $side, array &$state, array $config): bool {
         $event = $sim['events'][$sim['eventindex']] ?? null;
         if ($event === null && $sim['snapshotmode']) {
             // The events end right as this question opens. If the server already judged it
@@ -472,7 +469,7 @@ class replay {
                     return false;
                 }
                 $sim['outcomeindex']++;
-                self::apply_question_outcome($side, (bool) $outcome['correct'], $state, $basedamage);
+                self::apply_question_outcome($side, (bool) $outcome['correct'], $state, $config);
                 if (!empty($outcome['counted'])) {
                     $sim['questionstotal']++;
                 }
@@ -496,7 +493,7 @@ class replay {
                 if ($side !== 'player') {
                     return false;
                 }
-                self::apply_question_outcome('player', false, $state, $basedamage);
+                self::apply_question_outcome('player', false, $state, $config);
                 return true;
         }
 
@@ -511,7 +508,7 @@ class replay {
      *
      * @param array $sim The simulation context (mutated in place).
      * @param array $state Combat state (mutated in place).
-     * @param array $config Keys baseDamage/coinGain/coinFactor.
+     * @param array $config Keys baseDamage/coinGain/coinFactor/bossAttack/bossArmor.
      * @return bool False when the log holds more uses than the server counted.
      */
     private static function apply_unlogged_consumables(array &$sim, array &$state, array $config): bool {
@@ -572,7 +569,7 @@ class replay {
      *
      * @param string $kind One of move_log::COMBAT_CONSUMABLES.
      * @param array $state Combat state (mutated in place).
-     * @param array $config Keys baseDamage/coinGain/coinFactor.
+     * @param array $config Keys baseDamage/coinGain/coinFactor/bossAttack/bossArmor.
      * @return void
      */
     private static function apply_consumable(string $kind, array &$state, array $config): void {
@@ -618,11 +615,11 @@ class replay {
      * @param string $side 'player' or 'boss'.
      * @param bool $correct Whether the answer was right.
      * @param array $state Combat state (mutated in place).
-     * @param float $basedamage The phase's baseDamage, for the crit-hit formula.
+     * @param array $config The phase's rule config: baseDamage, bossAttack and bossArmor are read.
      * @return void
      */
-    private static function apply_question_outcome(string $side, bool $correct, array &$state, float $basedamage): void {
-        $outcome = combat_engine::question_outcome($side, $correct, $state, ['baseDamage' => $basedamage]);
+    private static function apply_question_outcome(string $side, bool $correct, array &$state, array $config): void {
+        $outcome = combat_engine::question_outcome($side, $correct, $state, $config);
         if ($outcome['hitBoss'] !== null) {
             $applied = combat_engine::resolve_damage($state['currentHp'], $state['bossShieldReady'], $outcome['hitBoss']);
             $state['currentHp'] = $applied['newHp'];

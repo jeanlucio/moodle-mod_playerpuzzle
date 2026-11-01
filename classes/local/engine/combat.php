@@ -25,6 +25,7 @@
 namespace mod_playerpuzzle\local\engine;
 
 use mod_playerpuzzle\local\constants;
+use mod_playerpuzzle\local\opponents;
 
 /**
  * Calculates boss/student HP scaling by level and phase (Campaign mode only).
@@ -111,6 +112,50 @@ class combat {
      * entirely: a Demo is not a scaled-down real fight, it is a fixed, predictable one.
      */
     public const DEMO_HP = 50;
+
+    /**
+     * The opponent's side of a phase as the fight runs it: its max HP, the phase's base damage
+     * (the unit every hit, heal and poison tick is counted in, for both sides), and the attack
+     * and armor its profile gives it. The game page, the server replay and the scoring all read
+     * it from here, so they always fight the same opponent.
+     *
+     * A real phase uses the values frozen when it started (an attempt row from before a column
+     * existed falls back to the instance), scaled by level, phase and difficulty, and then by the
+     * opponent's profile. A Demo fights at the fixed DEMO_HP, with no difficulty and no profile.
+     *
+     * @param \stdClass $attempt The attempt: isdemo, difficulty, currentlevel, currentphase,
+     *  frozenbasebosshp, frozenbossdamage and frozenopponent are read.
+     * @param \stdClass $instance The activity: basebosshp and bossdamage are read.
+     * @return array ['maxbosshp' => int, 'basedamage' => int, 'bossattack' => float, 'bossarmor' => float]
+     */
+    public static function phase_opponent(\stdClass $attempt, \stdClass $instance): array {
+        $level = (int) $attempt->currentlevel;
+        $phase = (int) $attempt->currentphase;
+
+        if ((bool) $attempt->isdemo) {
+            return [
+                'maxbosshp' => self::DEMO_HP,
+                'basedamage' => self::calculate_boss_hp((int) $instance->bossdamage, $level, $phase),
+                'bossattack' => 1.0,
+                'bossarmor' => 0.0,
+            ];
+        }
+
+        $difficulty = (string) $attempt->difficulty;
+        $modifiers = opponents::modifiers((string) $attempt->frozenopponent);
+        $basehp = (int) $attempt->frozenbasebosshp ?: (int) $instance->basebosshp;
+        $basedamage = (int) $attempt->frozenbossdamage ?: (int) $instance->bossdamage;
+        $maxbosshp = self::apply_difficulty(self::calculate_boss_hp($basehp, $level, $phase), $difficulty);
+
+        // Halves round up with floor(), never round(): the replay mirror in JavaScript must land
+        // on the same whole number, and round() pre-rounds values like 227.49999999999997 up.
+        return [
+            'maxbosshp' => (int) floor($maxbosshp * $modifiers['hp'] + 0.5),
+            'basedamage' => self::apply_difficulty(self::calculate_boss_hp($basedamage, $level, $phase), $difficulty),
+            'bossattack' => $modifiers['attack'],
+            'bossarmor' => $modifiers['armor'],
+        ];
+    }
 
     /**
      * Calculates the student HP for a given level/phase, scaled from the teacher-configured

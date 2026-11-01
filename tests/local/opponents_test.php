@@ -111,4 +111,53 @@ final class opponents_test extends \advanced_testcase {
         $this->assertSame(opponents::keys(), array_keys(opponents::options()));
         $this->assertSame(array_merge(opponents::CAMPAIGN_ORDER, [opponents::FINAL_BOSS]), opponents::keys());
     }
+
+    /**
+     * Tests that every Campaign opponent has a profile and the final boss has none.
+     *
+     * @return void
+     */
+    public function test_every_campaign_opponent_has_a_profile_and_the_final_boss_none(): void {
+        $expected = [
+            'slime' => opponents::PROFILE_TOUGH,
+            'goblin' => opponents::PROFILE_BRUTE,
+            'golem' => opponents::PROFILE_ARMORED,
+            'mummy' => opponents::PROFILE_BRUTE,
+            'plant' => opponents::PROFILE_ARMORED,
+            'ghost' => opponents::PROFILE_TOUGH,
+            'pirate' => opponents::PROFILE_BRUTE,
+            'wolf' => opponents::PROFILE_BRUTE,
+            'spider' => opponents::PROFILE_TOUGH,
+            'dragon' => opponents::PROFILE_BRUTE,
+        ];
+        foreach (opponents::CAMPAIGN_ORDER as $key) {
+            $this->assertSame($expected[$key], opponents::profile($key), $key);
+        }
+        $this->assertNull(opponents::profile(opponents::FINAL_BOSS));
+    }
+
+    /**
+     * Tests that each profile changes only its own attribute, and that an opponent without a
+     * profile, or an attempt that never had its opponent frozen, changes nothing.
+     *
+     * @return void
+     */
+    public function test_each_profile_changes_only_its_own_attribute(): void {
+        $none = ['hp' => 1.0, 'attack' => 1.0, 'armor' => 0.0];
+
+        $brute = opponents::modifiers('goblin');
+        $this->assertGreaterThan(1.0, $brute['attack']);
+        $this->assertSame(['hp' => 1.0, 'armor' => 0.0], ['hp' => $brute['hp'], 'armor' => $brute['armor']]);
+
+        $armored = opponents::modifiers('golem');
+        $this->assertGreaterThan(0.0, $armored['armor']);
+        $this->assertSame(['hp' => 1.0, 'attack' => 1.0], ['hp' => $armored['hp'], 'attack' => $armored['attack']]);
+
+        $tough = opponents::modifiers('slime');
+        $this->assertGreaterThan(1.0, $tough['hp']);
+        $this->assertSame(['attack' => 1.0, 'armor' => 0.0], ['attack' => $tough['attack'], 'armor' => $tough['armor']]);
+
+        $this->assertSame($none, opponents::modifiers('vampire'));
+        $this->assertSame($none, opponents::modifiers(''));
+    }
 }

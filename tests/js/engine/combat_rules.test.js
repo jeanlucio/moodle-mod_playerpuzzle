@@ -304,3 +304,42 @@ test('resolveConsumableEffect: sword reports baseDamage without applying it itse
     assert.equal(result.damageAmount, 10);
     assert.equal(result.state.currentHp, state.currentHp, 'applying the damage is the caller\'s job');
 });
+
+test('hitAmount: armor takes its share of the hit, rounded to a whole number', () => {
+    assert.equal(combatRules.hitAmount(13, 'player', {bossArmor: 0.25}), 10);
+    assert.equal(combatRules.hitAmount(30, 'boss', {playerArmor: 0.25}), 23);
+});
+
+test('hitAmount: attack multiplies the hit of the side that has it', () => {
+    assert.equal(combatRules.hitAmount(10, 'boss', {bossAttack: 1.25}), 13);
+    assert.equal(combatRules.hitAmount(10, 'player', {bossAttack: 1.25}), 10);
+});
+
+test('hitAmount: armor never absorbs more than ARMOR_CAP', () => {
+    assert.equal(combatRules.hitAmount(100, 'player', {bossArmor: 0.95}), 100 * (1 - combatRules.ARMOR_CAP));
+});
+
+test('hitAmount: a hit with no attack or armor keeps its exact value', () => {
+    assert.equal(combatRules.hitAmount(33.3, 'player', {}), 33.3);
+    assert.equal(combatRules.hitAmount(33.3, 'boss', {bossArmor: 0.25}), 33.3);
+});
+
+test('armor softens a critical answer but never the wrong-answer penalty', () => {
+    const state = freshState();
+    const config = Object.assign({}, CONFIG, {bossArmor: 0.25, playerArmor: 0.25});
+    assert.equal(combatRules.questionOutcome('player', true, state, config).hitBoss, 23);
+    assert.equal(combatRules.questionOutcome('boss', true, state, config).hitPlayer, 23);
+    assert.equal(combatRules.questionOutcome('player', false, state, config).hitPlayer, combatRules.WRONG_ANSWER_DAMAGE);
+});
+
+test('armor softens the board Swords and the Sword consumable', () => {
+    const config = Object.assign({}, CONFIG, {bossArmor: 0.25});
+    assert.equal(combatRules.matchHitAmount('player', 15, freshState(), config), 11);
+    assert.equal(combatRules.resolveConsumableEffect('sword', freshState(), config).damageAmount, 8);
+});
+
+test('armor does not soften a poison tick', () => {
+    const state = Object.assign(freshState(), {bossPoisonRounds: 2});
+    const config = Object.assign({}, CONFIG, {bossArmor: 0.25});
+    assert.equal(combatRules.startTurn('boss', state, config).state.currentHp, state.currentHp - CONFIG.baseDamage);
+});

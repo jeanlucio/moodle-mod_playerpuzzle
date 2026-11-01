@@ -98,6 +98,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // ledger (coins_earned/boss_coins_earned), capped by a damage-based ceiling,
             // never trusting this value outright.
             this.coinFactor = parseFloat(gameConfig.coinfactor) || 1;
+            // The opponent profile's multiplier on the hits it lands and the share of each hit
+            // it takes that its armor absorbs, resolved server-side from the phase's frozen
+            // opponent (1 and 0 when it has no profile).
+            this.bossAttack = parseFloat(gameConfig.bossattack) || 1;
+            this.bossArmor = parseFloat(gameConfig.bossarmor) || 0;
             // Minimum-questions rule: the server is the only source of truth for how many
             // questions this attempt has answered (questionsTotal starts at whatever a resumed
             // attempt already carries from earlier phases and only ever moves forward, mirroring
@@ -397,10 +402,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         /**
          * The phase's rule config as the pure rules take it.
          *
-         * @returns {{baseDamage: number, coinGain: number, coinFactor: number}}
+         * @returns {{baseDamage: number, coinGain: number, coinFactor: number, bossAttack: number, bossArmor: number}}
          */
         ruleConfig() {
-            return {baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor};
+            return {
+                baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor,
+                bossAttack: this.bossAttack, bossArmor: this.bossArmor,
+            };
         }
 
         /**
@@ -411,7 +419,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * @returns {number}
          */
         matchHit(damage) {
-            return CombatRules.matchHitAmount(this.currentTurn, damage, this.combatState());
+            return CombatRules.matchHitAmount(this.currentTurn, damage, this.combatState(), this.ruleConfig());
         }
 
         /**

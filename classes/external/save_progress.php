@@ -194,16 +194,9 @@ class save_progress extends external_api {
                 }
 
                 // Score against the boss HP this phase was really fought at: the frozen config
-                // the replay itself used (a teacher edit mid-phase changes neither), or the
-                // fixed Demo HP. Damage can never exceed it.
-                $bosshp = (bool) $attempt->isdemo ? combat::DEMO_HP : combat::apply_difficulty(
-                    combat::calculate_boss_hp(
-                        (int) $attempt->frozenbasebosshp ?: (int) $playerpuzzle->basebosshp,
-                        (int) $attempt->currentlevel,
-                        (int) $attempt->currentphase
-                    ),
-                    (string) $attempt->difficulty
-                );
+                // and opponent the replay itself used (a teacher edit mid-phase changes neither),
+                // or the fixed Demo HP. Damage can never exceed it.
+                $bosshp = combat::phase_opponent($attempt, $playerpuzzle)['maxbosshp'];
                 $safedamage = max(0, min($verdict['damage'], $bosshp));
                 $attempt->bosshp_remaining = max(0, $bosshp - $safedamage);
                 $attempt->score = round(($safedamage / max(1, $bosshp)) * 100, 5);

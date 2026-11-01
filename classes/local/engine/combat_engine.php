@@ -43,6 +43,43 @@ class combat_engine {
     /** @var array<string, int> Mirrors attempt_consumables::PHASE_LIMITS. */
     public const PHASE_LIMITS = ['shield' => 1, 'magic' => 1, 'potion' => 3, 'sword' => 3];
 
+    /** @var string[] Every field of the combat state — mirrors combat_rules.js's STATE_FIELDS. */
+    public const STATE_FIELDS = [
+        'currentPlayerHp', 'maxPlayerHp', 'currentHp', 'maxBossHp',
+        'playerMultiplier', 'bossMultiplier',
+        'playerShieldMeter', 'playerShieldReady', 'bossShieldMeter', 'bossShieldReady',
+        'playerPoisonMeter', 'playerPoisonRounds', 'bossPoisonMeter', 'bossPoisonRounds',
+        'playerMana', 'bossMana', 'playerGold', 'bossGold',
+    ];
+
+    /** @var int A right answer's critical hit, in multiples of the phase's base damage. */
+    public const CRITICAL_MULTIPLIER = 3;
+
+    /** @var int HP a wrong player answer always costs. */
+    public const WRONG_ANSWER_DAMAGE = 30;
+
+    /**
+     * The combat state a phase starts from: both sides at full HP, every meter empty,
+     * multipliers at 1 and no gold yet.
+     *
+     * @param float $maxplayerhp The student's max HP for this phase.
+     * @param float $maxbosshp The boss's max HP for this phase.
+     * @return array A state keyed by exactly self::STATE_FIELDS.
+     */
+    public static function initial_state(float $maxplayerhp, float $maxbosshp): array {
+        return [
+            'currentPlayerHp' => $maxplayerhp, 'maxPlayerHp' => $maxplayerhp,
+            'currentHp' => $maxbosshp, 'maxBossHp' => $maxbosshp,
+            'playerMultiplier' => 1.0, 'bossMultiplier' => 1.0,
+            'playerShieldMeter' => 0, 'playerShieldReady' => false,
+            'bossShieldMeter' => 0, 'bossShieldReady' => false,
+            'playerPoisonMeter' => 0, 'playerPoisonRounds' => 0,
+            'bossPoisonMeter' => 0, 'bossPoisonRounds' => 0,
+            'playerMana' => 0, 'bossMana' => 0,
+            'playerGold' => 0.0, 'bossGold' => 0.0,
+        ];
+    }
+
     /**
      * Combo-size multiplier for pieces whose effect scales with match size (Sword/Coin).
      *
@@ -322,6 +359,68 @@ class combat_engine {
             'questionTriggered' => $questiontriggered,
             'triggeredBy' => $triggeredby,
         ];
+    }
+
+    /**
+     * The hit a match's Sword damage lands as: scaled by the player's own multiplier (never the
+     * boss's), then rounded halves up exactly like the client's Math.round().
+     *
+     * @param string $currentturn 'player' or 'boss' — whose match dealt it.
+     * @param float $damagedealt resolve_match_effects()'s damageDealt.
+     * @param array $state Combat state after resolve_match_effects().
+     * @return float The hit to apply to the other side.
+     */
+    public static function match_hit_amount(string $currentturn, float $damagedealt, array $state): float {
+        return floor($damagedealt * ($currentturn === 'player' ? $state['playerMultiplier'] : 1) + 0.5);
+    }
+
+    /**
+     * What a judged question does: a right answer is a critical hit on the other side; a wrong
+     * one resets the answering side's multiplier, and costs the player WRONG_ANSWER_DAMAGE too.
+     * Returns the amounts only — applying a hit goes through resolve_damage(). A side that is not
+     * hit gets null, not 0: a hit of 0 would still spend a ready shield.
+     *
+     * @param string $side 'player' or 'boss' — who answered.
+     * @param bool $correct Whether the answer was right.
+     * @param array $state Current combat state.
+     * @param array $config Keys baseDamage.
+     * @return array ['hitBoss' => float|null, 'hitPlayer' => float|null, 'resetPlayerMultiplier' => bool,
+     *  'resetBossMultiplier' => bool]
+     */
+    public static function question_outcome(string $side, bool $correct, array $state, array $config): array {
+        $outcome = ['hitBoss' => null, 'hitPlayer' => null, 'resetPlayerMultiplier' => false, 'resetBossMultiplier' => false];
+        if ($side === 'player') {
+            if ($correct) {
+                $outcome['hitBoss'] = $config['baseDamage'] * self::CRITICAL_MULTIPLIER * $state['playerMultiplier'];
+            } else {
+                $outcome['hitPlayer'] = (float) self::WRONG_ANSWER_DAMAGE;
+                $outcome['resetPlayerMultiplier'] = true;
+            }
+        } else if ($correct) {
+            $outcome['hitPlayer'] = $config['baseDamage'] * self::CRITICAL_MULTIPLIER * $state['bossMultiplier'];
+        } else {
+            $outcome['resetBossMultiplier'] = true;
+        }
+        return $outcome;
+    }
+
+    /**
+     * Everything that happens to a side as its turn begins, before it moves. Today that is only
+     * its pending poison tick (see resolve_poison_tick()).
+     *
+     * @param string $side 'player' or 'boss' — whose turn begins.
+     * @param array $state Current combat state — copied, never mutated.
+     * @param array $config Keys baseDamage.
+     * @return array ['state' => array, 'poisonTicked' => bool]
+     */
+    public static function start_turn(string $side, array $state, array $config): array {
+        $next = $state;
+        $hpfield = $side === 'player' ? 'currentPlayerHp' : 'currentHp';
+        $roundsfield = $side === 'player' ? 'playerPoisonRounds' : 'bossPoisonRounds';
+        $tick = self::resolve_poison_tick($next[$hpfield], $next[$roundsfield], (float) $config['baseDamage']);
+        $next[$hpfield] = $tick['newHp'];
+        $next[$roundsfield] = $tick['newPoisonRounds'];
+        return ['state' => $next, 'poisonTicked' => $tick['ticked']];
     }
 
     /**

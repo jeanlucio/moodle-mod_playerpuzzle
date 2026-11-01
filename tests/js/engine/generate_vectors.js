@@ -248,6 +248,25 @@ function buildCombatVectors() {
         }]));
     }
 
+    cases.push({fn: 'STATE_FIELDS', args: [], result: CombatRules.STATE_FIELDS});
+    [[100, 1000], [1, 1], [372, 2501]].forEach(args => cases.push(recordCall('initialState', args)));
+
+    // A source of its own, so adding these calls left every case recorded before them unchanged.
+    const turnRand = randomSource(20261101);
+    for (let i = 0; i < 40; i++) {
+        cases.push(recordCall('matchHitAmount', [
+            turnRand.pick(['player', 'boss']), turnRand.int(1, 60) * turnRand.pick([1, 1.5, 2, 2.5, 3]),
+            randomState(turnRand),
+        ]));
+        cases.push(recordCall('questionOutcome', [
+            turnRand.pick(['player', 'boss']), turnRand.chance(0.5), randomState(turnRand),
+            {baseDamage: turnRand.int(1, 60)},
+        ]));
+        cases.push(recordCall('startTurn', [
+            turnRand.pick(['player', 'boss']), randomState(turnRand), {baseDamage: turnRand.int(1, 60)},
+        ]));
+    }
+
     for (let i = 0; i < 40; i++) {
         cases.push(recordCall('resolveConsumableEffect', [
             rand.pick(['potion', 'shield', 'magic', 'sword']),

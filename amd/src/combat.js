@@ -129,32 +129,20 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.tutorialSeenTypes = new Set();
             this.tutorialQuestionInstructionShown = false;
 
+            // Every combat field (CombatRules.STATE_FIELDS) starts from the same initial state
+            // the server replay starts from. The studenthp/bosshp config values are already
+            // scaled server-side for the attempt's current level/phase
+            // (combat::calculate_boss_hp()/calculate_student_hp()) — Single Match always resolves
+            // to the base HP unchanged, so no branching is needed here for game mode.
+            Object.assign(this, CombatRules.initialState(
+                parseInt(gameConfig.studenthp) || 100,
+                parseInt(gameConfig.bosshp) || 1000
+            ));
             // Carried forward from the ledger, not reset to 0 — a mid-phase page reload (or a
             // Campaign attempt resuming a phase already partway through) must not forget coins
             // already earned this window.
             this.playerGold = parseInt(gameConfig.coinsearnedsofar, 10) || 0;
-            this.playerShieldMeter = 0;
-            this.playerShieldReady = false;
-            this.playerMultiplier = 1;
-            this.playerMana = 0;
-            this.playerPoisonMeter = 0;
-            this.playerPoisonRounds = 0;
-            // The studenthp/bosshp config values are already scaled server-side for the
-            // attempt's current level/phase (combat::calculate_boss_hp()/calculate_student_hp())
-            // — Single Match always resolves to the base HP unchanged, so no branching is
-            // needed here for game mode.
-            this.maxPlayerHp = parseInt(gameConfig.studenthp) || 100;
-            this.currentPlayerHp = this.maxPlayerHp;
-
             this.bossGold = parseInt(gameConfig.bosscoinsearnedsofar, 10) || 0;
-            this.bossPoisonMeter = 0;
-            this.bossPoisonRounds = 0;
-            this.bossShieldMeter = 0;
-            this.bossShieldReady = false;
-            this.bossMana = 0;
-            this.bossMultiplier = 1;
-            this.maxBossHp = parseInt(gameConfig.bosshp) || 1000;
-            this.currentHp = this.maxBossHp;
 
             // A resumed phase overrides every HP/meter/turn default set above. The server's
             // rebuilt snapshot is preferred; the client's own last checkpoint is only the
@@ -263,12 +251,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          */
         hydrateFromSnapshot(snapshot) {
             const {state} = snapshot;
-            [
-                'currentPlayerHp', 'currentHp', 'playerMultiplier', 'bossMultiplier',
-                'playerShieldMeter', 'playerShieldReady', 'bossShieldMeter', 'bossShieldReady',
-                'playerPoisonMeter', 'playerPoisonRounds', 'bossPoisonMeter', 'bossPoisonRounds',
-                'playerMana', 'bossMana', 'playerGold', 'bossGold',
-            ].forEach(key => {
+            CombatRules.RESUMABLE_FIELDS.forEach(key => {
                 this[key] = state[key];
             });
             this.currentTurn = snapshot.turn;
@@ -402,6 +385,36 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
+         * The combat state as the pure rules take it: exactly CombatRules.STATE_FIELDS, read
+         * off this object's own fields.
+         *
+         * @returns {object}
+         */
+        combatState() {
+            return Object.fromEntries(CombatRules.STATE_FIELDS.map(field => [field, this[field]]));
+        }
+
+        /**
+         * The phase's rule config as the pure rules take it.
+         *
+         * @returns {{baseDamage: number, coinGain: number, coinFactor: number}}
+         */
+        ruleConfig() {
+            return {baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor};
+        }
+
+        /**
+         * The hit a match's Sword damage lands as on the other side (see
+         * CombatRules.matchHitAmount()), for board.js once a match has resolved.
+         *
+         * @param {number} damage processEffects()'s damage.
+         * @returns {number}
+         */
+        matchHit(damage) {
+            return CombatRules.matchHitAmount(this.currentTurn, damage, this.combatState());
+        }
+
+        /**
          * Resolves this turn's destroyed pieces/match groups via
          * mod_playerpuzzle/engine/combat_rules::resolveMatchEffects() — the pure calculation
          * of every HP/meter/mana/gold change this turn causes — then applies the result back
@@ -422,18 +435,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 currentTurn: this.currentTurn,
                 destroyedTypes: destroyedPieces.map(piece => piece.type),
                 matchGroups: matchGroups.map(group => ({type: group.type, size: group.pieces.length})),
-                state: {
-                    currentPlayerHp: this.currentPlayerHp, maxPlayerHp: this.maxPlayerHp,
-                    currentHp: this.currentHp, maxBossHp: this.maxBossHp,
-                    playerMultiplier: this.playerMultiplier, bossMultiplier: this.bossMultiplier,
-                    playerShieldMeter: this.playerShieldMeter, playerShieldReady: this.playerShieldReady,
-                    bossShieldMeter: this.bossShieldMeter, bossShieldReady: this.bossShieldReady,
-                    playerPoisonMeter: this.playerPoisonMeter, playerPoisonRounds: this.playerPoisonRounds,
-                    bossPoisonMeter: this.bossPoisonMeter, bossPoisonRounds: this.bossPoisonRounds,
-                    playerMana: this.playerMana, bossMana: this.bossMana,
-                    playerGold: this.playerGold, bossGold: this.bossGold,
-                },
-                config: {baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor},
+                state: this.combatState(),
+                config: this.ruleConfig(),
             });
             Object.assign(this, result.state);
 
@@ -663,10 +666,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.currentTurn = 'boss';
             me.input.enabled = false;
 
-            const tick = CombatRules.resolvePoisonTick(this.currentHp, this.bossPoisonRounds, this.baseDamage);
-            if (tick.ticked) {
-                this.currentHp = tick.newHp;
-                this.bossPoisonRounds = tick.newPoisonRounds;
+            const start = CombatRules.startTurn('boss', this.combatState(), this.ruleConfig());
+            Object.assign(this, start.state);
+            if (start.poisonTicked) {
                 this.updateUI();
                 me.ui.bossSprite.setTint(0xff00ff);
                 me.ui.pushHistoryLog('boss', this.strings.historylogpoisontick.replace('{$a}', this.baseDamage));
@@ -709,10 +711,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const me = this.scene;
             this.currentTurn = 'player';
 
-            const tick = CombatRules.resolvePoisonTick(this.currentPlayerHp, this.playerPoisonRounds, this.baseDamage);
-            if (tick.ticked) {
-                this.currentPlayerHp = tick.newHp;
-                this.playerPoisonRounds = tick.newPoisonRounds;
+            const start = CombatRules.startTurn('player', this.combatState(), this.ruleConfig());
+            Object.assign(this, start.state);
+            if (start.poisonTicked) {
                 this.updateUI();
                 // Mirrors passTurnToBoss()'s own poison-tick tint, replacing a
                 // screen shake — see applyDamageToPlayer()'s own comment for why.
@@ -890,13 +891,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // logic via resolveConsumableEffect() instead of setting shieldReady/rounds
             // directly, so a purchase behaves identically to filling the ring by matching
             // Shield/Grimoire pieces.
-            const result = CombatRules.resolveConsumableEffect(type, {
-                currentPlayerHp: this.currentPlayerHp, maxPlayerHp: this.maxPlayerHp,
-                playerShieldMeter: this.playerShieldMeter, playerShieldReady: this.playerShieldReady,
-                bossShieldMeter: this.bossShieldMeter, bossShieldReady: this.bossShieldReady,
-                playerPoisonMeter: this.playerPoisonMeter, playerPoisonRounds: this.playerPoisonRounds,
-                bossPoisonMeter: this.bossPoisonMeter, bossPoisonRounds: this.bossPoisonRounds,
-            }, {baseDamage: this.baseDamage});
+            const result = CombatRules.resolveConsumableEffect(type, this.combatState(), this.ruleConfig());
             Object.assign(this, result.state);
 
             if (type === 'potion') {
@@ -1228,11 +1223,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 $('#playerpuzzle-btn-confirm').prop('disabled', true);
 
                                 const applyResult = (isCorrect, correctanswerid) => {
+                                    const outcome = CombatRules.questionOutcome(
+                                        'player', isCorrect, ctx.combatState(), ctx.ruleConfig()
+                                    );
                                     let feedbackMsg;
                                     if (isCorrect) {
                                         answersContainer.find('.btn-warning')
                                             .removeClass('btn-warning').addClass('btn-success text-white');
-                                        const critDamage = ctx.baseDamage * 3 * ctx.playerMultiplier;
+                                        const critDamage = outcome.hitBoss;
                                         ctx.applyDamageToBoss(critDamage);
                                         me.ui.pushHistoryLog(
                                             'player', ctx.strings.historylogcritical.replace('{$a}', Math.round(critDamage))
@@ -1256,12 +1254,16 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                                 .removeClass('btn-outline-primary')
                                                 .addClass('btn-success text-white');
                                         }
-                                        ctx.applyDamageToPlayer(30);
-                                        me.ui.pushHistoryLog('player', ctx.strings.historylogwronganswer.replace('{$a}', 30));
+                                        ctx.applyDamageToPlayer(outcome.hitPlayer);
+                                        me.ui.pushHistoryLog(
+                                            'player', ctx.strings.historylogwronganswer.replace('{$a}', outcome.hitPlayer)
+                                        );
                                         const lostMultiplier = ctx.playerMultiplier;
-                                        ctx.playerMultiplier = 1;
+                                        if (outcome.resetPlayerMultiplier) {
+                                            ctx.playerMultiplier = 1;
+                                        }
                                         ctx.updateUI();
-                                        const wrongMsg = ctx.strings.playerwrong.replace('{$a}', 30);
+                                        const wrongMsg = ctx.strings.playerwrong.replace('{$a}', outcome.hitPlayer);
                                         feedbackMsg = '<div class="alert alert-danger mt-2 mb-0">'
                                             + `<strong>${wrongMsg}</strong></div>`;
                                         if (lostMultiplier > 1) {
@@ -1334,9 +1336,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     answersContainer.append(btn);
                                 });
 
+                                const outcome = CombatRules.questionOutcome(
+                                    'boss', isBossCorrect, ctx.combatState(), ctx.ruleConfig()
+                                );
                                 let bossFeedback;
                                 if (isBossCorrect) {
-                                    const bossCritDamage = ctx.baseDamage * 3 * ctx.bossMultiplier;
+                                    const bossCritDamage = outcome.hitPlayer;
                                     ctx.applyDamageToPlayer(bossCritDamage);
                                     me.ui.pushHistoryLog(
                                         'boss', ctx.strings.historylogcritical.replace('{$a}', Math.round(bossCritDamage))
@@ -1348,7 +1353,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     const wfMsg = ctx.strings.bosswrongfeedback;
                                     bossFeedback = `<div class="alert alert-success mt-2 mb-0"><strong>${wfMsg}</strong></div>`;
                                     const lostBossMultiplier = ctx.bossMultiplier;
-                                    ctx.bossMultiplier = 1;
+                                    if (outcome.resetBossMultiplier) {
+                                        ctx.bossMultiplier = 1;
+                                    }
                                     ctx.updateUI();
                                     if (lostBossMultiplier > 1) {
                                         const lostMsg = ctx.strings.bosslostmultiplier

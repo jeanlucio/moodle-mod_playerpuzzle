@@ -197,17 +197,7 @@ class replay {
         // existing plausibility check), never more likely to return a wrong value.
         $maxplayerhp = combat::calculate_student_hp((int) $playerpuzzle->basestudenthp, $level, $phase);
 
-        $state = [
-            'currentPlayerHp' => (float) $maxplayerhp, 'maxPlayerHp' => (float) $maxplayerhp,
-            'currentHp' => (float) $maxbosshp, 'maxBossHp' => (float) $maxbosshp,
-            'playerMultiplier' => 1.0, 'bossMultiplier' => 1.0,
-            'playerShieldMeter' => 0, 'playerShieldReady' => false,
-            'bossShieldMeter' => 0, 'bossShieldReady' => false,
-            'playerPoisonMeter' => 0, 'playerPoisonRounds' => 0,
-            'bossPoisonMeter' => 0, 'bossPoisonRounds' => 0,
-            'playerMana' => 0, 'bossMana' => 0,
-            'playerGold' => 0.0, 'bossGold' => 0.0,
-        ];
+        $state = combat_engine::initial_state((float) $maxplayerhp, (float) $maxbosshp);
 
         $outcomes = question_results::decode($attempt->questionresults);
         $countedinphase = count(array_filter($outcomes, static fn(array $outcome): bool => !empty($outcome['counted'])));
@@ -306,20 +296,13 @@ class replay {
                 }
 
                 $turn = 'boss';
-                $tick = combat_engine::resolve_poison_tick(
-                    $state['currentHp'],
-                    $state['bossPoisonRounds'],
-                    (float) $config['baseDamage']
-                );
-                if ($tick['ticked']) {
-                    $state['currentHp'] = $tick['newHp'];
-                    $state['bossPoisonRounds'] = $tick['newPoisonRounds'];
-                    if ($state['currentHp'] <= 0) {
-                        if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
-                            $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
-                        } else {
-                            return $finish('player', true);
-                        }
+                $start = combat_engine::start_turn('boss', $state, $config);
+                $state = $start['state'];
+                if ($start['poisonTicked'] && $state['currentHp'] <= 0) {
+                    if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
+                        $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
+                    } else {
+                        return $finish('player', true);
                     }
                 }
             } else {
@@ -345,17 +328,10 @@ class replay {
                 }
 
                 $turn = 'player';
-                $tick = combat_engine::resolve_poison_tick(
-                    $state['currentPlayerHp'],
-                    $state['playerPoisonRounds'],
-                    (float) $config['baseDamage']
-                );
-                if ($tick['ticked']) {
-                    $state['currentPlayerHp'] = $tick['newHp'];
-                    $state['playerPoisonRounds'] = $tick['newPoisonRounds'];
-                    if ($state['currentPlayerHp'] <= 0) {
-                        return $finish('player', true);
-                    }
+                $start = combat_engine::start_turn('player', $state, $config);
+                $state = $start['state'];
+                if ($start['poisonTicked'] && $state['currentPlayerHp'] <= 0) {
+                    return $finish('player', true);
                 }
                 if (!board_engine::has_available_move($grid, self::ROWS, self::COLS)) {
                     board_engine::shuffle_until_valid($grid, self::ROWS, self::COLS, $rng);
@@ -424,10 +400,7 @@ class replay {
             $state = $result['state'];
 
             if ($result['damageDealt'] > 0) {
-                // Rounded exactly like board.js::checkMatches() (Math.round(), halves up) before
-                // being dealt: an odd baseDamage makes a 4-piece combo land on .5, and an
-                // unrounded hit would leave a boss the client already killed on half a point.
-                $scaled = floor($result['damageDealt'] * ($turn === 'player' ? $state['playerMultiplier'] : 1) + 0.5);
+                $scaled = combat_engine::match_hit_amount($turn, $result['damageDealt'], $state);
                 if ($turn === 'player') {
                     $applied = combat_engine::resolve_damage($state['currentHp'], $state['bossShieldReady'], $scaled);
                     $state['currentHp'] = $applied['newHp'];
@@ -649,33 +622,30 @@ class replay {
      * @return void
      */
     private static function apply_question_outcome(string $side, bool $correct, array &$state, float $basedamage): void {
-        if ($side === 'player') {
-            if ($correct) {
-                $crit = $basedamage * 3 * $state['playerMultiplier'];
-                $applied = combat_engine::resolve_damage($state['currentHp'], $state['bossShieldReady'], $crit);
-                $state['currentHp'] = $applied['newHp'];
-                if ($applied['shieldConsumed']) {
-                    $state['bossShieldReady'] = false;
-                }
-            } else {
-                $applied = combat_engine::resolve_damage($state['currentPlayerHp'], $state['playerShieldReady'], 30.0);
-                $state['currentPlayerHp'] = $applied['newHp'];
-                if ($applied['shieldConsumed']) {
-                    $state['playerShieldReady'] = false;
-                }
-                $state['playerMultiplier'] = 1.0;
+        $outcome = combat_engine::question_outcome($side, $correct, $state, ['baseDamage' => $basedamage]);
+        if ($outcome['hitBoss'] !== null) {
+            $applied = combat_engine::resolve_damage($state['currentHp'], $state['bossShieldReady'], $outcome['hitBoss']);
+            $state['currentHp'] = $applied['newHp'];
+            if ($applied['shieldConsumed']) {
+                $state['bossShieldReady'] = false;
             }
-        } else {
-            if ($correct) {
-                $crit = $basedamage * 3 * $state['bossMultiplier'];
-                $applied = combat_engine::resolve_damage($state['currentPlayerHp'], $state['playerShieldReady'], $crit);
-                $state['currentPlayerHp'] = $applied['newHp'];
-                if ($applied['shieldConsumed']) {
-                    $state['playerShieldReady'] = false;
-                }
-            } else {
-                $state['bossMultiplier'] = 1.0;
+        }
+        if ($outcome['hitPlayer'] !== null) {
+            $applied = combat_engine::resolve_damage(
+                $state['currentPlayerHp'],
+                $state['playerShieldReady'],
+                $outcome['hitPlayer']
+            );
+            $state['currentPlayerHp'] = $applied['newHp'];
+            if ($applied['shieldConsumed']) {
+                $state['playerShieldReady'] = false;
             }
+        }
+        if ($outcome['resetPlayerMultiplier']) {
+            $state['playerMultiplier'] = 1.0;
+        }
+        if ($outcome['resetBossMultiplier']) {
+            $state['bossMultiplier'] = 1.0;
         }
     }
 

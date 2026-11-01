@@ -816,9 +816,7 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
             const damage = effects.damage;
 
             if (damage > 0) {
-                const scaledDamage = Math.round(
-                    damage * (me.combat.currentTurn === 'player' ? me.combat.playerMultiplier : 1)
-                );
+                const scaledDamage = me.combat.matchHit(damage);
                 if (me.combat.currentTurn === 'player') {
                     me.combat.applyDamageToBoss(scaledDamage);
                 } else {

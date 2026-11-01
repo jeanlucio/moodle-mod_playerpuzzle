@@ -444,4 +444,83 @@ final class combat_engine_test extends \advanced_testcase {
         $this->assertSame(10, $result['damageAmount']);
         $this->assertSame($state['currentHp'], $result['state']['currentHp'], 'applying the damage is the caller\'s job');
     }
+
+    /**
+     * Tests that initial_state starts both sides at full HP with everything else empty, keyed by
+     * exactly STATE_FIELDS.
+     *
+     * @return void
+     */
+    public function test_initial_state_is_full_hp_and_empty_meters(): void {
+        $state = combat_engine::initial_state(120, 900);
+
+        $this->assertSame(combat_engine::STATE_FIELDS, array_keys($state));
+        $this->assertSame(120.0, $state['currentPlayerHp']);
+        $this->assertSame(900.0, $state['currentHp']);
+        $this->assertSame(1.0, $state['playerMultiplier']);
+        $this->assertFalse($state['bossShieldReady']);
+        $this->assertSame(0.0, $state['playerGold']);
+    }
+
+    /**
+     * Tests that match_hit_amount scales only the player's hits by their multiplier and rounds
+     * halves up.
+     *
+     * @return void
+     */
+    public function test_match_hit_amount_scales_the_player_only_and_rounds_halves_up(): void {
+        $state = array_merge($this->fresh_state(), ['playerMultiplier' => 1.5, 'bossMultiplier' => 2.0]);
+
+        $this->assertSame(23.0, combat_engine::match_hit_amount('player', 15, $state));
+        $this->assertSame(15.0, combat_engine::match_hit_amount('boss', 15, $state));
+        $this->assertSame(17.0, combat_engine::match_hit_amount('boss', 16.5, $state));
+    }
+
+    /**
+     * Tests every question_outcome branch: a right answer is a critical hit on the other side, a
+     * wrong one resets the multiplier, and only the player pays WRONG_ANSWER_DAMAGE.
+     *
+     * @return void
+     */
+    public function test_question_outcome_for_each_side_and_answer(): void {
+        $state = array_merge($this->fresh_state(), ['playerMultiplier' => 1.2, 'bossMultiplier' => 1.5]);
+
+        $this->assertSame(
+            ['hitBoss' => 36.0, 'hitPlayer' => null, 'resetPlayerMultiplier' => false, 'resetBossMultiplier' => false],
+            combat_engine::question_outcome('player', true, $state, self::CONFIG)
+        );
+        $this->assertSame(
+            ['hitBoss' => null, 'hitPlayer' => 30.0, 'resetPlayerMultiplier' => true, 'resetBossMultiplier' => false],
+            combat_engine::question_outcome('player', false, $state, self::CONFIG)
+        );
+        $this->assertSame(
+            ['hitBoss' => null, 'hitPlayer' => 45.0, 'resetPlayerMultiplier' => false, 'resetBossMultiplier' => false],
+            combat_engine::question_outcome('boss', true, $state, self::CONFIG)
+        );
+        $this->assertSame(
+            ['hitBoss' => null, 'hitPlayer' => null, 'resetPlayerMultiplier' => false, 'resetBossMultiplier' => true],
+            combat_engine::question_outcome('boss', false, $state, self::CONFIG)
+        );
+    }
+
+    /**
+     * Tests that start_turn ticks only the poison of the side whose turn begins.
+     *
+     * @return void
+     */
+    public function test_start_turn_ticks_only_the_starting_sides_poison(): void {
+        $state = array_merge($this->fresh_state(), ['playerPoisonRounds' => 2, 'bossPoisonRounds' => 3]);
+
+        $boss = combat_engine::start_turn('boss', $state, self::CONFIG);
+        $this->assertTrue($boss['poisonTicked']);
+        $this->assertSame(90.0, $boss['state']['currentHp']);
+        $this->assertSame(2, $boss['state']['bossPoisonRounds']);
+        $this->assertSame(100, $boss['state']['currentPlayerHp']);
+        $this->assertSame(2, $boss['state']['playerPoisonRounds']);
+
+        $quiet = combat_engine::start_turn('player', $this->fresh_state(), self::CONFIG);
+        $this->assertFalse($quiet['poisonTicked']);
+        // HP comes back as a float; the values themselves are unchanged.
+        $this->assertEquals($this->fresh_state(), $quiet['state']);
+    }
 }

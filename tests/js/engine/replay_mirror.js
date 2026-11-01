@@ -126,17 +126,7 @@ function runPhase({attempt, playerpuzzle, events, outcomes, serverUses, poolEmpt
     const recording = policy !== null && policy !== undefined;
     const uses = Object.assign({}, serverUses);
 
-    let state = {
-        currentPlayerHp: maxPlayerHp, maxPlayerHp,
-        currentHp: maxBossHp, maxBossHp,
-        playerMultiplier: 1.0, bossMultiplier: 1.0,
-        playerShieldMeter: 0, playerShieldReady: false,
-        bossShieldMeter: 0, bossShieldReady: false,
-        playerPoisonMeter: 0, playerPoisonRounds: 0,
-        bossPoisonMeter: 0, bossPoisonRounds: 0,
-        playerMana: 0, bossMana: 0,
-        playerGold: 0.0, bossGold: 0.0,
-    };
+    let state = CombatRules.initialState(maxPlayerHp, maxBossHp);
 
     const countedInPhase = outcomes.filter(outcome => outcome.counted).length;
     const sim = {
@@ -168,31 +158,26 @@ function runPhase({attempt, playerpuzzle, events, outcomes, serverUses, poolEmpt
     };
 
     const applyQuestionOutcome = (side, correct) => {
-        if (side === 'player') {
-            if (correct) {
-                const crit = config.baseDamage * 3 * state.playerMultiplier;
-                const applied = CombatRules.resolveDamage(state.currentHp, state.bossShieldReady, crit);
-                state.currentHp = applied.newHp;
-                if (applied.shieldConsumed) {
-                    state.bossShieldReady = false;
-                }
-            } else {
-                const applied = CombatRules.resolveDamage(state.currentPlayerHp, state.playerShieldReady, 30);
-                state.currentPlayerHp = applied.newHp;
-                if (applied.shieldConsumed) {
-                    state.playerShieldReady = false;
-                }
-                state.playerMultiplier = 1.0;
+        const outcome = CombatRules.questionOutcome(side, correct, state, config);
+        if (outcome.hitBoss !== null) {
+            const applied = CombatRules.resolveDamage(state.currentHp, state.bossShieldReady, outcome.hitBoss);
+            state.currentHp = applied.newHp;
+            if (applied.shieldConsumed) {
+                state.bossShieldReady = false;
             }
-        } else if (correct) {
-            const crit = config.baseDamage * 3 * state.bossMultiplier;
-            const applied = CombatRules.resolveDamage(state.currentPlayerHp, state.playerShieldReady, crit);
+        }
+        if (outcome.hitPlayer !== null) {
+            const applied = CombatRules.resolveDamage(state.currentPlayerHp, state.playerShieldReady, outcome.hitPlayer);
             state.currentPlayerHp = applied.newHp;
             if (applied.shieldConsumed) {
                 state.playerShieldReady = false;
             }
-        } else {
-            state.bossMultiplier = 1.0;
+        }
+        if (outcome.resetPlayerMultiplier) {
+            state.playerMultiplier = 1;
+        }
+        if (outcome.resetBossMultiplier) {
+            state.bossMultiplier = 1;
         }
     };
 
@@ -259,7 +244,7 @@ function runPhase({attempt, playerpuzzle, events, outcomes, serverUses, poolEmpt
             state = result.state;
 
             if (result.damageDealt > 0) {
-                const scaled = Math.round(result.damageDealt * (turn === 'player' ? state.playerMultiplier : 1));
+                const scaled = CombatRules.matchHitAmount(turn, result.damageDealt, state);
                 if (turn === 'player') {
                     const applied = CombatRules.resolveDamage(state.currentHp, state.bossShieldReady, scaled);
                     state.currentHp = applied.newHp;
@@ -366,13 +351,10 @@ function runPhase({attempt, playerpuzzle, events, outcomes, serverUses, poolEmpt
             return finish();
         }
 
-        const tick = CombatRules.resolvePoisonTick(state.currentHp, state.bossPoisonRounds, config.baseDamage);
-        if (tick.ticked) {
-            state.currentHp = tick.newHp;
-            state.bossPoisonRounds = tick.newPoisonRounds;
-            if (bossDiesForGood()) {
-                return finish();
-            }
+        const start = CombatRules.startTurn('boss', state, config);
+        state = start.state;
+        if (start.poisonTicked && bossDiesForGood()) {
+            return finish();
         }
         return undefined;
     };
@@ -394,13 +376,10 @@ function runPhase({attempt, playerpuzzle, events, outcomes, serverUses, poolEmpt
             return finish();
         }
 
-        const tick = CombatRules.resolvePoisonTick(state.currentPlayerHp, state.playerPoisonRounds, config.baseDamage);
-        if (tick.ticked) {
-            state.currentPlayerHp = tick.newHp;
-            state.playerPoisonRounds = tick.newPoisonRounds;
-            if (state.currentPlayerHp <= 0) {
-                return finish();
-            }
+        const start = CombatRules.startTurn('player', state, config);
+        state = start.state;
+        if (start.poisonTicked && state.currentPlayerHp <= 0) {
+            return finish();
         }
         if (!BoardRules.hasAvailableMove(grid, ROWS, COLS)) {
             BoardRules.shuffleUntilValid(grid, ROWS, COLS, rng);

@@ -111,6 +111,16 @@ final class combat_vectors_test extends \advanced_testcase {
                 );
             case 'resolveConsumableEffect':
                 return combat_engine::resolve_consumable_effect($args[0], $args[1], $args[2]);
+            case 'STATE_FIELDS':
+                return combat_engine::STATE_FIELDS;
+            case 'initialState':
+                return combat_engine::initial_state($args[0], $args[1]);
+            case 'matchHitAmount':
+                return combat_engine::match_hit_amount($args[0], $args[1], $args[2]);
+            case 'questionOutcome':
+                return combat_engine::question_outcome($args[0], $args[1], $args[2], $args[3]);
+            case 'startTurn':
+                return combat_engine::start_turn($args[0], $args[1], $args[2]);
         }
         throw new \coding_exception('No PHP twin mapped for combat_rules.' . $fn);
     }

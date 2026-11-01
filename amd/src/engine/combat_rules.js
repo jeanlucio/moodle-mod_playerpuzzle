@@ -45,6 +45,51 @@
         // limit here — its own cap is however much stock the student bought, checked separately.
         const PHASE_LIMITS = {shield: 1, magic: 1, potion: 3, sword: 3};
 
+        // Every field of the combat state, in one place. combat.js copies exactly these to and
+        // from its own fields, and classes/local/engine/combat_engine.php keeps the same list
+        // for the server replay: a field added to one and not the other fails the parity tests
+        // in tests/fixtures/combat_vectors.json.
+        const STATE_FIELDS = [
+            'currentPlayerHp', 'maxPlayerHp', 'currentHp', 'maxBossHp',
+            'playerMultiplier', 'bossMultiplier',
+            'playerShieldMeter', 'playerShieldReady', 'bossShieldMeter', 'bossShieldReady',
+            'playerPoisonMeter', 'playerPoisonRounds', 'bossPoisonMeter', 'bossPoisonRounds',
+            'playerMana', 'bossMana', 'playerGold', 'bossGold',
+        ];
+
+        // The fields a resumed phase takes from the server's rebuilt snapshot: all but the two
+        // maximums, which the client always takes from its own page config.
+        const RESUMABLE_FIELDS = STATE_FIELDS.filter(field => field !== 'maxPlayerHp' && field !== 'maxBossHp');
+
+        // A right answer hits for this many times the phase's base damage, scaled by the
+        // answering side's own multiplier.
+        const CRITICAL_MULTIPLIER = 3;
+
+        // A wrong player answer always costs this much HP, whatever the phase or difficulty.
+        const WRONG_ANSWER_DAMAGE = 30;
+
+        /**
+         * The combat state a phase starts from: both sides at full HP, every meter empty,
+         * multipliers at 1 and no gold yet.
+         *
+         * @param {number} maxPlayerHp The student's max HP for this phase.
+         * @param {number} maxBossHp The boss's max HP for this phase.
+         * @return {object} A state holding exactly STATE_FIELDS.
+         */
+        function initialState(maxPlayerHp, maxBossHp) {
+            return {
+                currentPlayerHp: maxPlayerHp, maxPlayerHp,
+                currentHp: maxBossHp, maxBossHp,
+                playerMultiplier: 1, bossMultiplier: 1,
+                playerShieldMeter: 0, playerShieldReady: false,
+                bossShieldMeter: 0, bossShieldReady: false,
+                playerPoisonMeter: 0, playerPoisonRounds: 0,
+                bossPoisonMeter: 0, bossPoisonRounds: 0,
+                playerMana: 0, bossMana: 0,
+                playerGold: 0, bossGold: 0,
+            };
+        }
+
         /**
          * Combo-size multiplier for pieces whose effect scales with match size (Sword/Coin):
          * 3 pieces = x1.0 (unchanged baseline), +0.5x per extra piece beyond 3 (4 = x1.5,
@@ -319,6 +364,71 @@
         }
 
         /**
+         * The hit a match's Sword damage lands as: the player's own multiplier scales it (the
+         * boss's never does — its multiplier only scales its critical hits), then it is
+         * rounded to a whole number, so an odd base damage on a 4-piece combo never leaves a
+         * half point behind.
+         *
+         * @param {string} currentTurn 'player' or 'boss' — whose match dealt it.
+         * @param {number} damageDealt resolveMatchEffects()'s damageDealt.
+         * @param {object} state Combat state after resolveMatchEffects().
+         * @return {number} The hit to apply to the other side.
+         */
+        function matchHitAmount(currentTurn, damageDealt, state) {
+            return Math.round(damageDealt * (currentTurn === 'player' ? state.playerMultiplier : 1));
+        }
+
+        /**
+         * What a judged question does: a right answer is a critical hit on the other side; a
+         * wrong one resets the answering side's multiplier, and costs the player
+         * WRONG_ANSWER_DAMAGE too (the boss has no HP penalty for a wrong guess). Returns the
+         * amounts only — applying a hit goes through resolveDamage(), like every other hit. A
+         * side that is not hit gets null, not 0: a hit of 0 would still spend a ready shield.
+         *
+         * @param {string} side 'player' or 'boss' — who answered.
+         * @param {boolean} correct Whether the answer was right.
+         * @param {object} state Current combat state.
+         * @param {object} config {baseDamage}.
+         * @return {{hitBoss: (number|null), hitPlayer: (number|null), resetPlayerMultiplier: boolean,
+         *  resetBossMultiplier: boolean}}
+         */
+        function questionOutcome(side, correct, state, config) {
+            const outcome = {hitBoss: null, hitPlayer: null, resetPlayerMultiplier: false, resetBossMultiplier: false};
+            if (side === 'player') {
+                if (correct) {
+                    outcome.hitBoss = config.baseDamage * CRITICAL_MULTIPLIER * state.playerMultiplier;
+                } else {
+                    outcome.hitPlayer = WRONG_ANSWER_DAMAGE;
+                    outcome.resetPlayerMultiplier = true;
+                }
+            } else if (correct) {
+                outcome.hitPlayer = config.baseDamage * CRITICAL_MULTIPLIER * state.bossMultiplier;
+            } else {
+                outcome.resetBossMultiplier = true;
+            }
+            return outcome;
+        }
+
+        /**
+         * Everything that happens to a side as its turn begins, before it moves. Today that is
+         * only its pending poison tick (see resolvePoisonTick()).
+         *
+         * @param {string} side 'player' or 'boss' — whose turn begins.
+         * @param {object} state Current combat state — copied, never mutated.
+         * @param {object} config {baseDamage}.
+         * @return {{state: object, poisonTicked: boolean}}
+         */
+        function startTurn(side, state, config) {
+            const next = Object.assign({}, state);
+            const hpField = side === 'player' ? 'currentPlayerHp' : 'currentHp';
+            const roundsField = side === 'player' ? 'playerPoisonRounds' : 'bossPoisonRounds';
+            const tick = resolvePoisonTick(next[hpField], next[roundsField], config.baseDamage);
+            next[hpField] = tick.newHp;
+            next[roundsField] = tick.newPoisonRounds;
+            return {state: next, poisonTicked: tick.ticked};
+        }
+
+        /**
          * Resolves a used consumable's effect on combat state. Sword deliberately returns
          * only the damage amount rather than applying it: applying damage always goes through
          * resolveDamage() (the shield-check/clamp logic), which combat.js's own
@@ -354,6 +464,11 @@
 
         return {
             PHASE_LIMITS,
+            STATE_FIELDS,
+            RESUMABLE_FIELDS,
+            CRITICAL_MULTIPLIER,
+            WRONG_ANSWER_DAMAGE,
+            initialState,
             comboMultiplier,
             resolvePoisonMeters,
             resolveShieldMeters,
@@ -365,6 +480,9 @@
             resolvePoisonTick,
             resolveMatchEffects,
             resolveConsumableEffect,
+            matchHitAmount,
+            questionOutcome,
+            startTurn,
         };
     });
 }(typeof define === 'function' && define.amd ? define : function(deps, factory) {

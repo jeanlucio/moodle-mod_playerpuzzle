@@ -157,6 +157,8 @@ const REPLAY_CASES = [
         student: 150, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['right']},
     {name: 'longer poison, a lost match', opponent: 'mummy', seed: 122, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 4, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
+    {name: 'fast Grimoire, a lost match', opponent: 'spider', seed: 123, boss: 3000, damage: 12, coin: 10,
+        student: 400, typeOffset: 2, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'final boss, no profile', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
         level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
 ];
@@ -171,6 +173,7 @@ const OPPONENT_MODIFIERS = {
     plant: {hp: 1, attack: 1, armor: 0.25},
     dragon: {hp: 1, attack: 1.25, armor: 0},
     mummy: {hp: 1, attack: 1.25, armor: 0},
+    spider: {hp: 1.3, attack: 1, armor: 0},
     vampire: {hp: 1, attack: 1, armor: 0},
 };
 
@@ -179,10 +182,11 @@ const OPPONENT_MODIFIERS = {
 const OPPONENT_POWERS = {
     golem: ['iceshield'],
     mummy: ['longpoison'],
+    spider: ['fastgrimoire'],
 };
 
 // Power lists for the rules that read them, one per power plus none and an unknown name.
-const POWER_CONFIGS = [[], ['iceshield'], ['longpoison'], ['unknown']];
+const POWER_CONFIGS = [[], ['iceshield'], ['longpoison'], ['fastgrimoire'], ['unknown']];
 
 const HIT_CONFIGS = [
     {},

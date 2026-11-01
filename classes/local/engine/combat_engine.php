@@ -73,6 +73,15 @@ class combat_engine {
     /** @var int The same, for an opponent with the longpoison power. */
     public const LONG_POISON_ROUNDS = 4;
 
+    /** @var string Power: each Grimoire the opponent matches fills more of its poison meter. */
+    public const POWER_FASTGRIMOIRE = 'fastgrimoire';
+
+    /** @var int How much of the poison meter each matched Grimoire fills. */
+    public const GRIMOIRE_POISON = 10;
+
+    /** @var int The same, for an opponent with the fastgrimoire power. */
+    public const FAST_GRIMOIRE_POISON = 15;
+
     /**
      * The combat state a phase starts from: both sides at full HP, every meter empty,
      * multipliers at 1 and no gold yet, except what the opponent's powers change at the start.
@@ -274,6 +283,28 @@ class combat_engine {
     }
 
     /**
+     * What each piece a side destroys gives that side: the HP a Potion heals, the multiplier a
+     * Star adds, and how much of its meter a Shield, Grimoire or Orb fills. The opponent's powers
+     * change some of them for the opponent only.
+     *
+     * @param string $side 'player' or 'boss'.
+     * @param array $config The phase's rule config: baseDamage and bossPowers are read.
+     * @return array ['heal' => float, 'multiplier' => float, 'shield' => int, 'poison' => int, 'mana' => int]
+     */
+    public static function piece_gains(string $side, array $config): array {
+        $boss = $side === 'boss';
+        return [
+            'heal' => $config['baseDamage'] / 4,
+            'multiplier' => 0.1,
+            'shield' => 10,
+            'poison' => $boss && self::has_power($config, self::POWER_FASTGRIMOIRE)
+                ? self::FAST_GRIMOIRE_POISON
+                : self::GRIMOIRE_POISON,
+            'mana' => 20,
+        ];
+    }
+
+    /**
      * Resolves everything a single match (one turn's destroyed pieces + match groups) changes
      * about combat state.
      *
@@ -302,43 +333,26 @@ class combat_engine {
         $poisongained = 0;
         $managained = 0;
 
+        $side = $currentturn === 'player' ? 'player' : 'boss';
+        $hpfield = $side === 'player' ? 'currentPlayerHp' : 'currentHp';
+        $maxhpfield = $side === 'player' ? 'maxPlayerHp' : 'maxBossHp';
+        $gains = self::piece_gains($side, $config);
         foreach ($destroyedtypes as $type) {
-            if ($currentturn === 'player') {
-                if ($type === 5) {
-                    $heal = $config['baseDamage'] / 4;
-                    $next['currentPlayerHp'] = min($next['maxPlayerHp'], $next['currentPlayerHp'] + $heal);
-                    $healgained += $heal;
-                } else if ($type === 0) {
-                    $next['playerMultiplier'] += 0.1;
-                    $multipliergained += 0.1;
-                } else if ($type === 4) {
-                    $next['playerShieldMeter'] += 10;
-                    $shieldgained += 10;
-                } else if ($type === 1) {
-                    $next['playerPoisonMeter'] += 10;
-                    $poisongained += 10;
-                } else if ($type === 2) {
-                    $next['playerMana'] += 20;
-                    $managained += 20;
-                }
-            } else {
-                if ($type === 2) {
-                    $next['bossMana'] += 20;
-                    $managained += 20;
-                } else if ($type === 0) {
-                    $next['bossMultiplier'] += 0.1;
-                    $multipliergained += 0.1;
-                } else if ($type === 1) {
-                    $next['bossPoisonMeter'] += 10;
-                    $poisongained += 10;
-                } else if ($type === 4) {
-                    $next['bossShieldMeter'] += 10;
-                    $shieldgained += 10;
-                } else if ($type === 5) {
-                    $heal = $config['baseDamage'] / 4;
-                    $next['currentHp'] = min($next['maxBossHp'], $next['currentHp'] + $heal);
-                    $healgained += $heal;
-                }
+            if ($type === 5) {
+                $next[$hpfield] = min($next[$maxhpfield], $next[$hpfield] + $gains['heal']);
+                $healgained += $gains['heal'];
+            } else if ($type === 0) {
+                $next[$side . 'Multiplier'] += $gains['multiplier'];
+                $multipliergained += $gains['multiplier'];
+            } else if ($type === 4) {
+                $next[$side . 'ShieldMeter'] += $gains['shield'];
+                $shieldgained += $gains['shield'];
+            } else if ($type === 1) {
+                $next[$side . 'PoisonMeter'] += $gains['poison'];
+                $poisongained += $gains['poison'];
+            } else if ($type === 2) {
+                $next[$side . 'Mana'] += $gains['mana'];
+                $managained += $gains['mana'];
             }
         }
 

@@ -78,12 +78,19 @@
             ICESHIELD: 'iceshield',
             // The opponent's Grimoire poison lasts one round longer.
             LONGPOISON: 'longpoison',
+            // Each Grimoire the opponent matches fills more of its poison meter.
+            FASTGRIMOIRE: 'fastgrimoire',
         };
 
         // Rounds of poison a full Grimoire meter arms against the other side, and with the
         // opponent's longpoison power.
         const POISON_ROUNDS = 3;
         const LONG_POISON_ROUNDS = 4;
+
+        // How much of the poison meter each matched Grimoire fills, and for an opponent with the
+        // fastgrimoire power.
+        const GRIMOIRE_POISON = 10;
+        const FAST_GRIMOIRE_POISON = 15;
 
         /**
          * Whether the opponent has a power this phase.
@@ -280,6 +287,26 @@
         }
 
         /**
+         * What each piece a side destroys gives that side: the HP a Potion heals, the multiplier
+         * a Star adds, and how much of its meter a Shield, Grimoire or Orb fills. The opponent's
+         * powers change some of them for the opponent only.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {object} config The phase's rule config: baseDamage and bossPowers are read.
+         * @return {{heal: number, multiplier: number, shield: number, poison: number, mana: number}}
+         */
+        function pieceGains(side, config) {
+            const boss = side === 'boss';
+            return {
+                heal: config.baseDamage / 4,
+                multiplier: 0.1,
+                shield: 10,
+                poison: boss && hasPower(config, POWERS.FASTGRIMOIRE) ? FAST_GRIMOIRE_POISON : GRIMOIRE_POISON,
+                mana: 20,
+            };
+        }
+
+        /**
          * Resolves everything a single match (one turn's destroyed pieces + match groups)
          * changes about combat state: HP/meters/mana/gold on the acting side, Sword damage
          * and Coin gain by combo size, and whether either side's mana just crossed 100. Never
@@ -294,7 +321,7 @@
          *  turn — only type and size (piece count) matter here, never piece identity.
          * @param {object} params.state Current combat state (HP/meters/mana/gold/
          *  multipliers for both sides) — copied, never mutated.
-         * @param {object} params.config {baseDamage, coinGain, coinFactor}.
+         * @param {object} params.config {baseDamage, coinGain, coinFactor, bossPowers}.
          * @return {object} {state, damageDealt, coinsGained, healGained, multiplierGained,
          *  shieldGained, poisonGained, manaGained, questionTriggered, triggeredBy}.
          */
@@ -308,43 +335,26 @@
             let poisonGained = 0;
             let manaGained = 0;
 
+            const side = currentTurn === 'player' ? 'player' : 'boss';
+            const hpField = side === 'player' ? 'currentPlayerHp' : 'currentHp';
+            const maxHpField = side === 'player' ? 'maxPlayerHp' : 'maxBossHp';
+            const gains = pieceGains(side, config);
             for (const type of destroyedTypes) {
-                if (currentTurn === 'player') {
-                    if (type === 5) {
-                        const heal = config.baseDamage / 4;
-                        next.currentPlayerHp = Math.min(next.maxPlayerHp, next.currentPlayerHp + heal);
-                        healGained += heal;
-                    } else if (type === 0) {
-                        next.playerMultiplier += 0.1;
-                        multiplierGained += 0.1;
-                    } else if (type === 4) {
-                        next.playerShieldMeter += 10;
-                        shieldGained += 10;
-                    } else if (type === 1) {
-                        next.playerPoisonMeter += 10;
-                        poisonGained += 10;
-                    } else if (type === 2) {
-                        next.playerMana += 20;
-                        manaGained += 20;
-                    }
-                } else {
-                    if (type === 2) {
-                        next.bossMana += 20;
-                        manaGained += 20;
-                    } else if (type === 0) {
-                        next.bossMultiplier += 0.1;
-                        multiplierGained += 0.1;
-                    } else if (type === 1) {
-                        next.bossPoisonMeter += 10;
-                        poisonGained += 10;
-                    } else if (type === 4) {
-                        next.bossShieldMeter += 10;
-                        shieldGained += 10;
-                    } else if (type === 5) {
-                        const heal = config.baseDamage / 4;
-                        next.currentHp = Math.min(next.maxBossHp, next.currentHp + heal);
-                        healGained += heal;
-                    }
+                if (type === 5) {
+                    next[hpField] = Math.min(next[maxHpField], next[hpField] + gains.heal);
+                    healGained += gains.heal;
+                } else if (type === 0) {
+                    next[`${side}Multiplier`] += gains.multiplier;
+                    multiplierGained += gains.multiplier;
+                } else if (type === 4) {
+                    next[`${side}ShieldMeter`] += gains.shield;
+                    shieldGained += gains.shield;
+                } else if (type === 1) {
+                    next[`${side}PoisonMeter`] += gains.poison;
+                    poisonGained += gains.poison;
+                } else if (type === 2) {
+                    next[`${side}Mana`] += gains.mana;
+                    manaGained += gains.mana;
                 }
             }
 
@@ -532,6 +542,7 @@
             hasPower,
             initialState,
             comboMultiplier,
+            pieceGains,
             resolvePoisonMeters,
             resolveShieldMeters,
             phaseLimit,

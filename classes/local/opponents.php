@@ -91,6 +91,7 @@ class opponents {
     private const POWERS = [
         'golem' => [combat_engine::POWER_ICESHIELD],
         'mummy' => [combat_engine::POWER_LONGPOISON],
+        'spider' => [combat_engine::POWER_FASTGRIMOIRE],
     ];
 
     /** @var array The stage (pix/stages/<stage>.webp) each opponent is fought on. */

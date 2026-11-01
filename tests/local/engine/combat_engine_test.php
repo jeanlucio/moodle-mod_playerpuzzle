@@ -596,4 +596,21 @@ final class combat_engine_test extends \advanced_testcase {
         $this->assertSame(combat_engine::POISON_ROUNDS, $state['bossPoisonRounds']);
         $this->assertSame(10, $state['bossPoisonMeter']);
     }
+
+    /**
+     * Tests that an opponent with fastgrimoire fills more of its poison meter per Grimoire, and
+     * that the student's Grimoires fill the usual amount.
+     *
+     * @return void
+     */
+    public function test_fastgrimoire_fills_more_of_the_opponents_poison_meter_only(): void {
+        $config = array_merge(self::CONFIG, ['bossPowers' => [combat_engine::POWER_FASTGRIMOIRE]]);
+
+        $groups = [['type' => 1, 'size' => 3]];
+        $boss = combat_engine::resolve_match_effects('boss', [1, 1, 1], $groups, $this->fresh_state(), $config);
+        $player = combat_engine::resolve_match_effects('player', [1, 1, 1], $groups, $this->fresh_state(), $config);
+
+        $this->assertSame(3 * combat_engine::FAST_GRIMOIRE_POISON, $boss['state']['bossPoisonMeter']);
+        $this->assertSame(3 * combat_engine::GRIMOIRE_POISON, $player['state']['playerPoisonMeter']);
+    }
 }

@@ -358,3 +358,14 @@ test('resolvePoisonMeters: an opponent with longpoison arms one more round again
     assert.equal(state.bossPoisonRounds, 3);
     assert.equal(state.bossPoisonMeter, 10);
 });
+
+test('resolveMatchEffects: an opponent with fastgrimoire fills more of its poison meter per Grimoire', () => {
+    const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.FASTGRIMOIRE]});
+    const groups = [{type: 1, size: 3}];
+    const boss = combatRules.resolveMatchEffects({currentTurn: 'boss', destroyedTypes: [1, 1, 1], matchGroups: groups,
+        state: freshState(), config});
+    const player = combatRules.resolveMatchEffects({currentTurn: 'player', destroyedTypes: [1, 1, 1], matchGroups: groups,
+        state: freshState(), config});
+    assert.equal(boss.state.bossPoisonMeter, 45);
+    assert.equal(player.state.playerPoisonMeter, 30);
+});

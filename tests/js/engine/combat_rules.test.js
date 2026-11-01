@@ -350,3 +350,11 @@ test('initialState: an opponent with iceshield starts with its Shield armed', ()
     assert.equal(plain.bossShieldReady, false);
     assert.deepEqual(shielded, Object.assign({}, plain, {bossShieldReady: true}));
 });
+
+test('resolvePoisonMeters: an opponent with longpoison arms one more round against the student only', () => {
+    const state = Object.assign(freshState(), {playerPoisonMeter: 100, bossPoisonMeter: 110});
+    combatRules.resolvePoisonMeters(state, {bossPowers: [combatRules.POWERS.LONGPOISON]});
+    assert.equal(state.playerPoisonRounds, 4);
+    assert.equal(state.bossPoisonRounds, 3);
+    assert.equal(state.bossPoisonMeter, 10);
+});

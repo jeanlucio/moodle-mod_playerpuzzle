@@ -579,4 +579,21 @@ final class combat_engine_test extends \advanced_testcase {
         $this->assertSame(array_merge($plain, ['bossShieldReady' => true]), $shielded);
         $this->assertSame($plain, combat_engine::initial_state(100, 200, ['bossPowers' => []]));
     }
+
+    /**
+     * Tests that an opponent with longpoison arms one more round of poison against the student,
+     * and that the student's own Grimoires still arm the usual number against it.
+     *
+     * @return void
+     */
+    public function test_longpoison_arms_one_more_round_against_the_student_only(): void {
+        $config = ['bossPowers' => [combat_engine::POWER_LONGPOISON]];
+        $state = array_merge($this->fresh_state(), ['playerPoisonMeter' => 100, 'bossPoisonMeter' => 110]);
+
+        combat_engine::resolve_poison_meters($state, $config);
+
+        $this->assertSame(combat_engine::LONG_POISON_ROUNDS, $state['playerPoisonRounds']);
+        $this->assertSame(combat_engine::POISON_ROUNDS, $state['bossPoisonRounds']);
+        $this->assertSame(10, $state['bossPoisonMeter']);
+    }
 }

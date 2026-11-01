@@ -155,6 +155,8 @@ const REPLAY_CASES = [
         bossAnswers: ['right', 'wrong']},
     {name: 'shield armed from the start, a lost match', opponent: 'golem', seed: 121, boss: 2000, damage: 20, coin: 10,
         student: 150, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['right']},
+    {name: 'longer poison, a lost match', opponent: 'mummy', seed: 122, boss: 3000, damage: 12, coin: 10,
+        student: 400, typeOffset: 4, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'final boss, no profile', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
         level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
 ];
@@ -168,6 +170,7 @@ const OPPONENT_MODIFIERS = {
     slime: {hp: 1.3, attack: 1, armor: 0},
     plant: {hp: 1, attack: 1, armor: 0.25},
     dragon: {hp: 1, attack: 1.25, armor: 0},
+    mummy: {hp: 1, attack: 1.25, armor: 0},
     vampire: {hp: 1, attack: 1, armor: 0},
 };
 
@@ -175,7 +178,11 @@ const OPPONENT_MODIFIERS = {
 // today (the student's own, an armor past the cap) so the rule itself is covered.
 const OPPONENT_POWERS = {
     golem: ['iceshield'],
+    mummy: ['longpoison'],
 };
+
+// Power lists for the rules that read them, one per power plus none and an unknown name.
+const POWER_CONFIGS = [[], ['iceshield'], ['longpoison'], ['unknown']];
 
 const HIT_CONFIGS = [
     {},
@@ -346,6 +353,26 @@ function buildCombatVectors() {
             hitRand.pick(['potion', 'sword', 'sword']), randomState(hitRand),
             Object.assign({baseDamage: hitRand.int(1, 60)}, hitRand.pick(HIT_CONFIGS)),
         ]));
+    }
+
+    const powerRand = randomSource(20261103);
+    for (let i = 0; i < 20; i++) {
+        cases.push(recordCall('resolvePoisonMeters', [randomState(powerRand), {bossPowers: powerRand.pick(POWER_CONFIGS)}]));
+    }
+    for (let i = 0; i < 30; i++) {
+        const destroyedTypes = [];
+        const count = powerRand.int(3, 14);
+        for (let j = 0; j < count; j++) {
+            destroyedTypes.push(powerRand.pick([1, 1, 1, 0, 2, 3, 4, 5, 6]));
+        }
+        cases.push(recordCall('resolveMatchEffects', [{
+            currentTurn: powerRand.pick(['player', 'boss']),
+            destroyedTypes,
+            matchGroups: [{type: powerRand.int(0, 6), size: powerRand.int(3, 6)}],
+            state: randomState(powerRand),
+            config: {baseDamage: powerRand.int(1, 60), coinGain: powerRand.int(0, 25), coinFactor: 1,
+                bossPowers: powerRand.pick(POWER_CONFIGS)},
+        }]));
     }
 
     return cases;

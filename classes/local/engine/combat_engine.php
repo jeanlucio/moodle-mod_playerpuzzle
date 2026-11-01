@@ -64,6 +64,15 @@ class combat_engine {
     /** @var string Power: the opponent starts the fight with its Shield armed. */
     public const POWER_ICESHIELD = 'iceshield';
 
+    /** @var string Power: the opponent's Grimoire poison lasts one round longer. */
+    public const POWER_LONGPOISON = 'longpoison';
+
+    /** @var int Rounds of poison a full Grimoire meter arms against the other side. */
+    public const POISON_ROUNDS = 3;
+
+    /** @var int The same, for an opponent with the longpoison power. */
+    public const LONG_POISON_ROUNDS = 4;
+
     /**
      * The combat state a phase starts from: both sides at full HP, every meter empty,
      * multipliers at 1 and no gold yet, except what the opponent's powers change at the start.
@@ -126,21 +135,25 @@ class combat_engine {
     }
 
     /**
-     * Resolves both poison meters: filling one arms 3 damage rounds against the opponent and
-     * resets subtracting 100, preserving any overshoot for the next fill.
+     * Resolves both poison meters: filling one arms POISON_ROUNDS damage rounds against the other
+     * side (LONG_POISON_ROUNDS for an opponent with longpoison) and resets subtracting 100,
+     * preserving any overshoot for the next fill.
      *
      * @param array $state Keys playerPoisonMeter/bossPoisonMeter/bossPoisonRounds/
      *  playerPoisonRounds (mutated in place).
+     * @param array $config The phase's rule config; key bossPowers, optional.
      * @return array The same state array, for chaining.
      */
-    public static function resolve_poison_meters(array &$state): array {
+    public static function resolve_poison_meters(array &$state, array $config = []): array {
         if ($state['playerPoisonMeter'] >= 100) {
             $state['playerPoisonMeter'] -= 100;
-            $state['bossPoisonRounds'] += 3;
+            $state['bossPoisonRounds'] += self::POISON_ROUNDS;
         }
         if ($state['bossPoisonMeter'] >= 100) {
             $state['bossPoisonMeter'] -= 100;
-            $state['playerPoisonRounds'] += 3;
+            $state['playerPoisonRounds'] += self::has_power($config, self::POWER_LONGPOISON)
+                ? self::LONG_POISON_ROUNDS
+                : self::POISON_ROUNDS;
         }
         return $state;
     }
@@ -354,7 +367,7 @@ class combat_engine {
 
         $next['playerMultiplier'] = self::round_half_up($next['playerMultiplier'], 1);
         $next['bossMultiplier'] = self::round_half_up($next['bossMultiplier'], 1);
-        self::resolve_poison_meters($next);
+        self::resolve_poison_meters($next, $config);
         self::resolve_shield_meters($next);
 
         $questiontriggered = false;
@@ -502,7 +515,7 @@ class combat_engine {
             self::resolve_shield_meters($next);
         } else if ($type === 'magic') {
             $next['playerPoisonMeter'] += 100;
-            self::resolve_poison_meters($next);
+            self::resolve_poison_meters($next, $config);
         } else if ($type === 'sword') {
             $damageamount = self::hit_amount((float) $config['baseDamage'], 'player', $config);
         }

@@ -164,13 +164,14 @@ final class opponents_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the golem starts with its Shield armed, and that an opponent without a power,
+     * Tests each opponent's powers, and that an opponent without a power,
      * or an attempt that never had its opponent frozen, has none.
      *
      * @return void
      */
     public function test_powers_of_each_opponent(): void {
         $this->assertSame([combat_engine::POWER_ICESHIELD], opponents::powers('golem'));
+        $this->assertSame([combat_engine::POWER_LONGPOISON], opponents::powers('mummy'));
         $this->assertSame([], opponents::powers('vampire'));
         $this->assertSame([], opponents::powers(''));
     }

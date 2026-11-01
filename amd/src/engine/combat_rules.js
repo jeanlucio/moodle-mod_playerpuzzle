@@ -76,7 +76,14 @@
         const POWERS = {
             // The opponent starts the fight with its Shield armed.
             ICESHIELD: 'iceshield',
+            // The opponent's Grimoire poison lasts one round longer.
+            LONGPOISON: 'longpoison',
         };
+
+        // Rounds of poison a full Grimoire meter arms against the other side, and with the
+        // opponent's longpoison power.
+        const POISON_ROUNDS = 3;
+        const LONG_POISON_ROUNDS = 4;
 
         /**
          * Whether the opponent has a power this phase.
@@ -129,23 +136,24 @@
         }
 
         /**
-         * Resolves both poison meters: filling one arms 3 damage rounds against the opponent
-         * (ticked once per their own turn via resolvePoisonTick()) and resets subtracting 100,
-         * preserving any overshoot for the next fill — same overflow behaviour as the mana
-         * meters.
+         * Resolves both poison meters: filling one arms POISON_ROUNDS damage rounds against the
+         * other side (LONG_POISON_ROUNDS for an opponent with longpoison), ticked once per that
+         * side's own turn via resolvePoisonTick(), and resets subtracting 100, preserving any
+         * overshoot for the next fill — same overflow behaviour as the mana meters.
          *
          * @param {object} state Object with playerPoisonMeter/bossPoisonMeter/
          *  bossPoisonRounds/playerPoisonRounds (mutated in place).
+         * @param {object} [config] The phase's rule config; bossPowers is read.
          * @return {object} The same state object, for chaining.
          */
-        function resolvePoisonMeters(state) {
+        function resolvePoisonMeters(state, config = {}) {
             if (state.playerPoisonMeter >= 100) {
                 state.playerPoisonMeter -= 100;
-                state.bossPoisonRounds += 3;
+                state.bossPoisonRounds += POISON_ROUNDS;
             }
             if (state.bossPoisonMeter >= 100) {
                 state.bossPoisonMeter -= 100;
-                state.playerPoisonRounds += 3;
+                state.playerPoisonRounds += hasPower(config, POWERS.LONGPOISON) ? LONG_POISON_ROUNDS : POISON_ROUNDS;
             }
             return state;
         }
@@ -366,7 +374,7 @@
 
             next.playerMultiplier = Math.round(next.playerMultiplier * 10) / 10;
             next.bossMultiplier = Math.round(next.bossMultiplier * 10) / 10;
-            resolvePoisonMeters(next);
+            resolvePoisonMeters(next, config);
             resolveShieldMeters(next);
 
             let questionTriggered = false;
@@ -505,7 +513,7 @@
                 resolveShieldMeters(next);
             } else if (type === 'magic') {
                 next.playerPoisonMeter += 100;
-                resolvePoisonMeters(next);
+                resolvePoisonMeters(next, config);
             } else if (type === 'sword') {
                 damageAmount = hitAmount(config.baseDamage, 'player', config);
             }

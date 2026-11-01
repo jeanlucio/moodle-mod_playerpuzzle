@@ -85,7 +85,7 @@ final class combat_vectors_test extends \advanced_testcase {
                 return combat_engine::combo_multiplier($args[0]);
             case 'resolvePoisonMeters':
                 $state = $args[0];
-                return combat_engine::resolve_poison_meters($state);
+                return combat_engine::resolve_poison_meters($state, $args[1] ?? []);
             case 'resolveShieldMeters':
                 $state = $args[0];
                 return combat_engine::resolve_shield_meters($state);

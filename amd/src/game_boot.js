@@ -129,8 +129,10 @@ define([
                 this.load.image(`item${i}`, gameConfig.spriteurls[i]);
             }
 
+            // The background music is deliberately not loaded here: preload has to finish before
+            // the scene starts, so a track of several hundred KB would delay every boot, even for
+            // students who turned music off. createScene() fetches it in the background instead.
             const urlPix = `${M.cfg.wwwroot}/mod/playerpuzzle/pix/`;
-            this.load.audio('bg_music', `${urlPix}music.mp3`);
             this.load.audio('sfx_swap', `${urlPix}swap.mp3`);
             this.load.audio('sfx_match', `${urlPix}match.mp3`);
             this.load.audio('sfx_hit', `${urlPix}hit.mp3`);
@@ -355,18 +357,48 @@ define([
             this.sfxSwap = this.sound.add('sfx_swap', {volume: 0.6 * sfxVolume});
             this.sfxMatch = this.sound.add('sfx_match', {volume: 0.5 * sfxVolume});
             this.sfxHit = this.sound.add('sfx_hit', {volume: 0.8 * sfxVolume});
-            this.bgMusic = this.sound.add('bg_music', {volume: 0.3, loop: true});
+            this.bgMusic = null;
 
             const me = this;
-            const startMusic = () => {
-                if (me.musicOn && !me.bgMusic.isPlaying) {
+            let musicRequested = false;
+            // Plays the background music when it is on, downloading it first in the background
+            // if needed (only ever once). Called at start, when the audio unlocks and when the
+            // student turns music on, so every path ends up playing as soon as it can.
+            this.playMusic = () => {
+                if (!me.musicOn) {
+                    return;
+                }
+                if (!me.cache.audio.exists('bg_music')) {
+                    if (!musicRequested) {
+                        musicRequested = true;
+                        me.load.audio('bg_music', `${M.cfg.wwwroot}/mod/playerpuzzle/pix/music.mp3`);
+                        me.load.once('filecomplete-audio-bg_music', () => me.playMusic());
+                        me.load.start();
+                    }
+                    return;
+                }
+                if (me.sound.locked) {
+                    return;
+                }
+                if (!me.bgMusic) {
+                    me.bgMusic = me.sound.add('bg_music', {volume: 0.3, loop: true});
+                }
+                if (me.bgMusic.isPaused) {
+                    me.bgMusic.resume();
+                } else if (!me.bgMusic.isPlaying) {
                     me.bgMusic.play();
                 }
             };
-            if (!this.sound.locked) {
-                startMusic();
-            } else {
-                this.sound.once(Phaser.Sound.Events.UNLOCKED, startMusic);
+            this.pauseMusic = () => {
+                if (me.bgMusic && me.bgMusic.isPlaying) {
+                    me.bgMusic.pause();
+                }
+            };
+            // Starts the download right away; while the browser still blocks audio, the unlock
+            // handlers below play it once it is allowed.
+            this.playMusic();
+            if (this.sound.locked) {
+                this.sound.once(Phaser.Sound.Events.UNLOCKED, () => me.playMusic());
                 // Android Chrome may not fire UNLOCKED via Phaser's internal mechanism.
                 // Watch the AudioContext state directly as a fallback.
                 if (this.sound.context) {
@@ -375,7 +407,7 @@ define([
                         if (ctx.state === 'running') {
                             ctx.removeEventListener('statechange', onCtxState);
                             me.sound.locked = false;
-                            startMusic();
+                            me.playMusic();
                         }
                     };
                     ctx.addEventListener('statechange', onCtxState);
@@ -399,6 +431,9 @@ define([
         };
 
         const create = function() {
+            // The boot is over once the scene is being built: anything loaded later (the music)
+            // must not re-arm the boot-stall timeout and replace a running game with an error.
+            this.load.off('progress', armBootTimeout);
             try {
                 createScene.call(this);
                 window.clearTimeout(bootTimeoutId);

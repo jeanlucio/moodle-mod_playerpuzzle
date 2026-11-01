@@ -80,15 +80,19 @@ define(
         }
 
         setupLoader() {
-            this.scene.load.on('progress', value => {
+            const onProgress = value => {
                 const percent = parseInt(value * 100);
                 const bar = document.getElementById('pp-progress-bar');
                 bar.style.setProperty('--pp-bar-width', `${percent}%`);
                 bar.setAttribute('aria-valuenow', percent);
                 bar.textContent = `${percent}%`;
-            });
+            };
+            this.scene.load.on('progress', onProgress);
 
-            this.scene.load.on('complete', () => {
+            // Both listeners belong to the boot only: the music is loaded later, by the same
+            // loader, after the progress bar is gone.
+            this.scene.load.once('complete', () => {
+                this.scene.load.off('progress', onProgress);
                 $('#pp-bootstrap-loader').fadeOut(300, () => {
                     $('#pp-bootstrap-loader').remove();
                 });
@@ -1042,9 +1046,9 @@ define(
                     me.musicOn = !me.musicOn;
                     iconMusic.setText(me.musicOn ? FA_VOLUME_HIGH : FA_VOLUME_XMARK);
                     if (me.musicOn) {
-                        me.bgMusic.resume();
+                        me.playMusic();
                     } else {
-                        me.bgMusic.pause();
+                        me.pauseMusic();
                     }
                     this.saveSoundPreference('music', me.musicOn);
                 });

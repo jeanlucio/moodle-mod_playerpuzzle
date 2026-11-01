@@ -1197,7 +1197,8 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the Demo is refused for the same reason: it uses the same minimum.
+     * Tests that the Demo is refused for the same reason, although it does not require the minimum
+     * itself: a practice fight with no question to ask would not show what the real one is like.
      *
      * @return void
      */
@@ -1295,5 +1296,31 @@ final class game_page_service_test extends \advanced_testcase {
             ], $opponent);
             $this->assertSame(10, $config['bossdamage'], 'the profile never changes the base damage');
         }
+    }
+
+    /**
+     * Tests that a Demo gets no minimum of questions, so its opponent never revives, while a real
+     * match of the same activity keeps it.
+     *
+     * @return void
+     */
+    public function test_build_game_config_gives_a_demo_no_minimum_of_questions(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 3]);
+        questions_repository::add_question(
+            (int) $instance->id,
+            'truefalse',
+            'Q?',
+            '',
+            [['text' => 'True', 'iscorrect' => true], ['text' => 'False', 'iscorrect' => false]],
+            2
+        );
+        $context = \context_module::instance($cm->id);
+        $studentid = (int) $this->student->id;
+
+        $demo = game_page_service::build_game_config($cm, $instance, $context, $studentid, false, 'normal', true);
+        $real = game_page_service::build_game_config($cm, $instance, $context, $studentid, false);
+
+        $this->assertSame(0, $demo['minquestions']);
+        $this->assertSame(3, $real['minquestions']);
     }
 }

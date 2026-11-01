@@ -134,8 +134,10 @@ class save_progress extends external_api {
                 // rule entirely (a forged request, or a genuine client bug). Nothing has been
                 // written yet, so a rejected claim leaves the attempt resumable. The client
                 // should never actually reach this: the revive keeps the boss alive until
-                // enough questions are answered.
-                if ($claimedvictory && (int) $attempt->questions_total < (int) $playerpuzzle->minquestions) {
+                // enough questions are answered. A Demo has no minimum (see
+                // game_page_service::build_game_config()).
+                $belowminimum = (int) $attempt->questions_total < (int) $playerpuzzle->minquestions;
+                if ($claimedvictory && !(bool) $attempt->isdemo && $belowminimum) {
                     throw new moodle_exception(
                         'minquestionsnotmet',
                         'mod_playerpuzzle',

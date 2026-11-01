@@ -1427,4 +1427,30 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
     }
+
+    /**
+     * Tests that a Demo victory counts with fewer questions answered than the activity's minimum,
+     * which only real matches require.
+     *
+     * @return void
+     */
+    public function test_a_demo_victory_needs_no_minimum_of_questions(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['minquestions' => 5]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 1, true);
+
+        $result = $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 1,
+            'damage'               => \mod_playerpuzzle\local\engine\combat::DEMO_HP,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame('won', $DB->get_field('playerpuzzle_attempts', 'status', ['token' => $token]));
+    }
 }

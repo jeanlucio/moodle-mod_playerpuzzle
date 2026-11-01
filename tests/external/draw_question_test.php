@@ -435,4 +435,58 @@ final class draw_question_test extends \advanced_testcase {
         $stored = move_log::decode($DB->get_field('playerpuzzle_attempts', 'movelog', ['token' => $token]));
         $this->assertSame([$move], $stored);
     }
+
+    /**
+     * Tests that a phase started under an earlier engine version (the plugin was upgraded
+     * meanwhile) gets no question, since the replay cannot check one is due, and that resuming
+     * the attempt starts the phase again on today's engine, where questions are drawn again —
+     * keeping the level, phase, questions answered and the restart count.
+     *
+     * @return void
+     */
+    public function test_a_phase_from_an_earlier_engine_is_restarted_so_questions_come_back(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['gamemode' => 'campaign', 'maxlevels' => 1]);
+        $this->make_question((int) $instance->id);
+        $this->setUser($this->student);
+        $token = $this->make_attempt_token((int) $instance->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+        $DB->update_record('playerpuzzle_attempts', (object) [
+            'id' => $attemptid,
+            'engineversion' => (int) get_config('mod_playerpuzzle', 'version') - 1,
+            'currentphase' => 2,
+            'questions_total' => 8,
+            'coins_earned' => 30,
+            'phaserestarts' => 1,
+        ]);
+
+        $before = $this->call_draw_question([
+            'cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 0, 'movelog' => [self::DUE_MOVE],
+        ]);
+        $this->assertFalse($before['error']);
+        $this->assertFalse($before['data']['available'], 'the old phase cannot be replayed, so no question is due');
+
+        $resumed = security::resume_or_create_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1);
+        $row = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
+        $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), (int) $row->engineversion);
+        $this->assertSame(0, (int) $row->moveseq);
+        $this->assertNull($row->movelog);
+        $this->assertSame(0, (int) $row->coins_earned);
+        $this->assertSame('goblin', $row->frozenopponent);
+        $this->assertSame(2, (int) $row->currentphase);
+        $this->assertSame(8, (int) $row->questions_total);
+        $this->assertSame(1, (int) $row->phaserestarts, 'not counted: the student did nothing to cause it');
+        $this->assertSame(0, $resumed->moveseq);
+        $this->assertSame((int) $row->rngseed, $resumed->rngseed);
+
+        // The same opening match on the restarted phase now opens a question that is drawn.
+        $DB->set_field('playerpuzzle_attempts', 'rngseed', 56, ['id' => $attemptid]);
+        $DB->set_field('playerpuzzle_attempts', 'frozenbasebosshp', 100000, ['id' => $attemptid]);
+        $after = $this->call_draw_question([
+            'cmid' => $instance->cmid, 'token' => $resumed->token, 'eventoffset' => 0, 'movelog' => [self::DUE_MOVE],
+        ]);
+        $this->assertFalse($after['error']);
+        $this->assertTrue($after['data']['available']);
+    }
 }

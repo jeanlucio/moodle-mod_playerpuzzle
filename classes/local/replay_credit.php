@@ -152,17 +152,21 @@ class replay_credit {
     /**
      * Restarts the attempt's current phase from scratch, keeping the attempt: a new seed and
      * an empty log (see security::seed_replay_state()), a fresh board and full HP, the phase's
-     * coins and per-phase consumable uses cleared, and one more restart counted.
+     * coins and per-phase consumable uses cleared, and, unless the restart is not the
+     * student's doing, one more restart counted.
      *
      * @param \stdClass $attempt The attempt row (written in place; caller persists).
      * @param \stdClass $playerpuzzle The instance record.
+     * @param bool $counted Whether it counts towards MAX_PHASE_RESTARTS.
      * @return void
      */
-    public static function restart_phase(\stdClass $attempt, \stdClass $playerpuzzle): void {
+    public static function restart_phase(\stdClass $attempt, \stdClass $playerpuzzle, bool $counted = true): void {
         security::seed_replay_state($attempt, $playerpuzzle);
         $attempt->combatstate = null;
         $attempt->currentquestionid = 0;
-        $attempt->phaserestarts = (int) $attempt->phaserestarts + 1;
+        if ($counted) {
+            $attempt->phaserestarts = (int) $attempt->phaserestarts + 1;
+        }
         coin_ledger::reset($attempt);
         attempt_consumables::reset_attempt((int) $attempt->id);
     }

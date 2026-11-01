@@ -26,6 +26,7 @@ namespace mod_playerpuzzle\local\engine;
 
 use mod_playerpuzzle\local\combat_state;
 use mod_playerpuzzle\local\opponents;
+use mod_playerpuzzle\local\replay_credit;
 
 /**
  * Security class to handle tokens and anti-cheat validations.
@@ -244,7 +245,29 @@ class security {
             // in flight, and a whole-row write from either side would silently undo the
             // other's (a reverted token breaks every call from the new page; a stale movelog
             // drops recorded events).
-            $rotate = function () use ($DB, $attempt): bool {
+            //
+            // A phase started under another engine version (the plugin was upgraded meanwhile)
+            // can no longer be replayed: draw_question would refuse every question, since it
+            // checks one is due through the replay, and a victory could not be verified. It is
+            // started again on today's engine instead, read fresh under the lock and written
+            // whole. Not counted as a restart: the student did nothing to cause it.
+            $stale = !$isdemo && (int) $attempt->engineversion !== (int) get_config('mod_playerpuzzle', 'version');
+            $rotate = function () use ($DB, $attempt, $stale, $playerpuzzleid): bool {
+                if ($stale) {
+                    $fresh = $DB->get_record('playerpuzzle_attempts', ['id' => $attempt->id], '*', MUST_EXIST);
+                    replay_credit::restart_phase(
+                        $fresh,
+                        $DB->get_record('playerpuzzle', ['id' => $playerpuzzleid], '*', MUST_EXIST),
+                        false
+                    );
+                    $fresh->token = $attempt->token;
+                    $fresh->timemodified = $attempt->timemodified;
+                    $DB->update_record('playerpuzzle_attempts', $fresh);
+                    foreach (get_object_vars($fresh) as $field => $value) {
+                        $attempt->$field = $value;
+                    }
+                    return true;
+                }
                 $DB->update_record('playerpuzzle_attempts', (object) [
                     'id' => $attempt->id,
                     'token' => $attempt->token,

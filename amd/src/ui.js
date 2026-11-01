@@ -24,8 +24,8 @@
 /* global Phaser */
 
 define(
-    ['jquery', 'core/ajax', 'core/templates', 'mod_playerpuzzle/accessibility'],
-    function($, Ajax, Templates, Accessibility) {
+    ['jquery', 'core/ajax', 'core/templates', 'mod_playerpuzzle/accessibility', 'mod_playerpuzzle/depth'],
+    ($, Ajax, Templates, Accessibility, Depth) => {
     'use strict';
 
     // Font Awesome 6 Free (solid, weight 900) is bundled by Moodle core (theme_boost) and
@@ -181,7 +181,7 @@ define(
             } else {
                 // The stage band: the wide stage scaled to the band's height, keeping its own
                 // proportions, and centred, so the canvas edges crop its two sides.
-                me.add.rectangle(L.w / 2, L.h / 2, L.w, L.h, L.backdropColor);
+                me.add.rectangle(L.w / 2, L.h / 2, L.w, L.h, L.backdropColor).setDepth(Depth.BACK_SHAPES);
                 const stage = me.add.image(L.w / 2, L.stageBandH / 2, 'stagebg');
                 const source = stage.texture.getSourceImage();
                 stage.setDisplaySize(L.stageBandH * source.width / source.height, L.stageBandH);
@@ -219,22 +219,24 @@ define(
             }
 
             me.add.graphics().fillStyle(0x000000, 0.8)
-                .fillRoundedRect(L.bossUiX, L.bossHpY, L.hpBarW, L.hpBarH, this.hpBarCorners());
-            this.bossHpBar = me.add.graphics();
+                .fillRoundedRect(L.bossUiX, L.bossHpY, L.hpBarW, L.hpBarH, this.hpBarCorners())
+                .setDepth(Depth.MIDDLE_SHAPES);
+            this.bossHpBar = me.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
             this.bossHpText = me.add.text(L.bossUiX + (L.hpBarW / 2), L.bossTxtY, '', {
                 fontSize: '15px',
                 fill: '#ffffff',
                 fontStyle: 'bold'
-            }).setOrigin(0.5);
+            }).setOrigin(0.5).setDepth(Depth.MIDDLE_IMAGES);
 
             me.add.graphics().fillStyle(0x000000, 0.8)
-                .fillRoundedRect(L.playerUiX, L.playerHpY, L.hpBarW, L.hpBarH, this.hpBarCorners());
-            this.playerHpBar = me.add.graphics();
+                .fillRoundedRect(L.playerUiX, L.playerHpY, L.hpBarW, L.hpBarH, this.hpBarCorners())
+                .setDepth(Depth.MIDDLE_SHAPES);
+            this.playerHpBar = me.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
             this.playerHpText = me.add.text(L.playerUiX + (L.hpBarW / 2), L.playerTxtY, '', {
                 fontSize: '15px',
                 fill: '#ffffff',
                 fontStyle: 'bold'
-            }).setOrigin(0.5);
+            }).setOrigin(0.5).setDepth(Depth.MIDDLE_IMAGES);
 
             // Status badges themselves are created lazily on the first updatePlayerBar()/
             // updateBossBar() call (via combat.js's own initial updateUI()) — see
@@ -343,14 +345,14 @@ define(
                 .fillRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6 * scale)
                 .lineStyle(2, 0x9c6b2e, 1)
                 .strokeRoundedRect(cx - (w / 2), cy - (h / 2), w, h, 6 * scale)
-                .setDepth(5);
+                .setDepth(Depth.FRONT_SHAPES);
             // Set once boot's first updateUI()/updateConsumableBadges() call runs — this
             // placeholder never stays on screen.
             const label = me.add.text(cx, cy, '0', {
                 fontSize: `${Math.round(16 * scale)}px`,
                 fill: '#ffffaa',
                 fontStyle: 'bold'
-            }).setOrigin(0.5).setDepth(6);
+            }).setOrigin(0.5).setDepth(Depth.FRONT_IMAGES);
 
             const hitzone = me.add.zone(cx, cy, w, h).setOrigin(0.5).setDepth(7)
                 .setInteractive({useHandCursor: true});
@@ -727,12 +729,14 @@ define(
             if (!this.statusBadges[prefix]) {
                 const makeBadge = (icon) => ({
                     backing: this.scene.add.circle(0, 0, badgeR, 0x1a1410, 0.85)
-                        .setStrokeStyle(1, 0x6a4a2a),
-                    iconImg: this.scene.add.image(0, 0, icon).setDisplaySize(badgeR * 1.3, badgeR * 1.3),
-                    countBg: this.scene.add.circle(0, 0, 8, 0x2a1a10).setStrokeStyle(1, 0xffffff),
+                        .setStrokeStyle(1, 0x6a4a2a).setDepth(Depth.MIDDLE_SHAPES),
+                    iconImg: this.scene.add.image(0, 0, icon).setDisplaySize(badgeR * 1.3, badgeR * 1.3)
+                        .setDepth(Depth.MIDDLE_IMAGES),
+                    countBg: this.scene.add.circle(0, 0, 8, 0x2a1a10).setStrokeStyle(1, 0xffffff)
+                        .setDepth(Depth.FRONT_SHAPES),
                     countText: this.scene.add.text(0, 0, '', {
                         fontSize: '9px', fill: '#ffffff', fontStyle: 'bold'
-                    }).setOrigin(0.5)
+                    }).setOrigin(0.5).setDepth(Depth.FRONT_IMAGES)
                 });
                 this.statusBadges[prefix] = {
                     poison: makeBadge('item1'),
@@ -786,7 +790,8 @@ define(
                 .fillStyle(0x1a1410, 0.55)
                 .fillRoundedRect(margin, topY, L.w - (margin * 2), bottomY - topY, 12)
                 .lineStyle(1, 0x6a4a2a, 0.6)
-                .strokeRoundedRect(margin, topY, L.w - (margin * 2), bottomY - topY, 12);
+                .strokeRoundedRect(margin, topY, L.w - (margin * 2), bottomY - topY, 12)
+                .setDepth(Depth.BACK_SHAPES);
         }
 
         /**
@@ -800,7 +805,7 @@ define(
 
             const btn = me.add.text(L.w / 2, L.historyBtnY, this.strings.historylogtitle, {
                 fontSize: '16px', fill: '#ffffff', backgroundColor: '#3a2a1a', padding: {x: 12, y: 8}
-            }).setOrigin(0.5, 0).setInteractive().setDepth(10);
+            }).setOrigin(0.5, 0).setInteractive().setDepth(Depth.FRONT_IMAGES);
 
             btn.on('pointerdown', () => this.showHistoryModalMobile());
         }
@@ -1004,10 +1009,14 @@ define(
                 // A solid backing plate is required here: the ring sits directly over the
                 // battle background (grass, trees, sky), which bleeds through a stroke-only
                 // circle and makes the icon inside unreadable at this size.
-                this.scene.add.circle(x, y, radius + 3, 0x1a1a1a, 0.9);
-                this.scene.add.graphics().lineStyle(thickness, 0x222222, 1).strokeCircle(x, y, radius);
-                this.scene.add.image(x, y, spriteKey).setDisplaySize(iconSize, iconSize);
-                this.rings[key] = this.scene.add.graphics();
+                // The arc is drawn under the icon, with the other shapes of its band; the
+                // icon is smaller than the ring's inner edge, so the two never overlap.
+                this.scene.add.circle(x, y, radius + 3, 0x1a1a1a, 0.9).setDepth(Depth.MIDDLE_SHAPES);
+                this.scene.add.graphics().lineStyle(thickness, 0x222222, 1).strokeCircle(x, y, radius)
+                    .setDepth(Depth.MIDDLE_SHAPES);
+                this.rings[key] = this.scene.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
+                this.scene.add.image(x, y, spriteKey).setDisplaySize(iconSize, iconSize)
+                    .setDepth(Depth.MIDDLE_IMAGES);
             }
 
             const arc = this.rings[key];
@@ -1047,7 +1056,7 @@ define(
 
             this.progressText = me.add.text(L.w / 2, y, text, {
                 fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-            }).setOrigin(0.5, 0).setDepth(10);
+            }).setOrigin(0.5, 0).setDepth(Depth.FRONT_IMAGES);
         }
 
         /**
@@ -1068,7 +1077,7 @@ define(
             return this.scene.add.circle(x, y, radius, 0x1c1712, 0.9)
                 .setStrokeStyle(2, 0x9c6b2e)
                 .setInteractive()
-                .setDepth(10);
+                .setDepth(Depth.FRONT_SHAPES);
         }
 
         /**
@@ -1129,7 +1138,7 @@ define(
                 fontStyle: '900',
                 fontSize: `${Math.round(r * 1.15)}px`,
                 fill: '#e8dcc8'
-            }).setOrigin(0.5).setDepth(11);
+            }).setOrigin(0.5).setDepth(Depth.FRONT_IMAGES);
         }
 
         /**
@@ -1149,7 +1158,7 @@ define(
                 fontStyle: '900',
                 fontSize: `${Math.round(r * 1.15)}px`,
                 fill: '#e8dcc8'
-            }).setOrigin(0.5).setDepth(11);
+            }).setOrigin(0.5).setDepth(Depth.FRONT_IMAGES);
         }
 
         setupButtons() {
@@ -1208,7 +1217,7 @@ define(
             });
 
             const badgeExpand = this.createButtonBadge(xExpand, y, r);
-            const iconExpand = me.add.graphics().setDepth(11);
+            const iconExpand = me.add.graphics().setDepth(Depth.FRONT_SHAPES);
             this.drawFullscreenIcon(iconExpand, xExpand, y, r, false);
             badgeExpand.on('pointerdown', () => {
                 this.guardAgainstDoubleTap('expand', () => {

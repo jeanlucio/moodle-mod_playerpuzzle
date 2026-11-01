@@ -21,7 +21,9 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules'], function(Accessibility, BoardRules) {
+define([
+    'mod_playerpuzzle/accessibility', 'mod_playerpuzzle/depth', 'mod_playerpuzzle/engine/board_rules'
+], (Accessibility, Depth, BoardRules) => {
     'use strict';
 
     // Maps a piece's numeric type (0-6) to the lang string key holding its accessible
@@ -105,7 +107,7 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
         }
 
         drawBackground() {
-            const graphics = this.scene.add.graphics();
+            const graphics = this.scene.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
             const gridWidth = this.cols * this.pieceSize;
             const gridHeight = this.rows * this.pieceSize;
             const rx = this.offsetX - (this.pieceSize / 2);
@@ -176,7 +178,7 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
                     const x = this.offsetX + (col * this.pieceSize);
                     const y = this.offsetY + (row * this.pieceSize);
 
-                    const piece = me.add.image(x, y, `item${randomType}`);
+                    const piece = me.add.image(x, y, `item${randomType}`).setDepth(Depth.MIDDLE_IMAGES);
                     piece.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
                     piece.type = randomType;
                     piece.row = row;
@@ -739,7 +741,7 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
                 const yStart = this.offsetY - (this.pieceSize * (this.rows - row));
                 const yEnd = this.offsetY + (row * this.pieceSize);
 
-                const piece = me.add.image(x, yStart, `item${type}`);
+                const piece = me.add.image(x, yStart, `item${type}`).setDepth(Depth.MIDDLE_IMAGES);
                 piece.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
                 piece.type = type;
                 piece.row = row;

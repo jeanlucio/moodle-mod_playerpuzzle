@@ -45,10 +45,8 @@ define(
     const BREATH_DURATION = 1400;
 
     // Character moves on the stage, in logical px toward the other character (negative: away
-    // from it) and ms per leg: the step a side takes as it plays, the lunge of a hit and of a
-    // critical answer, the recoil of the side hit, and the tremor of a blocked hit or a poison
-    // tick.
-    const STEP = {distance: 18, duration: 140};
+    // from it) and ms per leg: the lunge of a hit and of a critical answer, the recoil of the
+    // side hit, and the tremor of a blocked hit or a poison tick.
     const LUNGE = {distance: 35, duration: 110};
     const CRITICAL_LUNGE = {distance: 60, duration: 140};
     const RECOIL = {distance: -14, duration: 110};
@@ -434,8 +432,8 @@ define(
 
         /**
          * Moves a character out and back to where it stands. A move still running is stopped
-         * and the new one starts from wherever the character is, so moves that overlap (a step
-         * followed at once by the lunge of the match it made) never leave it out of place.
+         * and the new one starts from wherever the character is, so moves that overlap (a lunge
+         * and the recoil of a hit right after it) never leave it out of place.
          * Only the look: nothing in the fight waits for a move to finish.
          *
          * @param {string} side 'player' or 'boss'.
@@ -468,15 +466,6 @@ define(
                 repeat: move.times ? move.times - 1 : 0,
                 onComplete: comeBack,
             });
-        }
-
-        /**
-         * The small step a side takes toward the board as it plays its move.
-         *
-         * @param {string} side 'player' or 'boss'.
-         */
-        stepCharacter(side) {
-            this.moveCharacter(side, STEP);
         }
 
         /**

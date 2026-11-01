@@ -718,9 +718,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const move = me.board.findMove(3) || me.board.findMove();
 
             if (move) {
-                // The boss steps toward the board and plays as it comes back. The swap waits on
-                // the clock, not on the step itself, which a hit may cut short.
-                me.ui.stepCharacter('boss');
                 me.time.delayedCall(300, () => me.board.swapPieces(move.p1, move.p2));
             } else {
                 me.board.shuffle();

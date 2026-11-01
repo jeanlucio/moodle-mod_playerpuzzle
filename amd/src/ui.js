@@ -709,7 +709,7 @@ define(
             // Section headers are plain labels now, not buttons — colored to match each side's
             // own HP bar (green/red) so the two blocks stay visually distinct at a glance.
             const headerYouY = boxY + 28;
-            me.add.text(lineX, headerYouY, this.strings.hpyou, {
+            const headerYou = me.add.text(lineX, headerYouY, this.strings.hpyou, {
                 fontSize: '15px', fill: '#5fd95f', fontStyle: 'bold'
             }).setOrigin(0, 0.5).setDepth(21);
 
@@ -722,7 +722,7 @@ define(
             }
 
             const headerBossY = linesYouStartY + (5 * 24) + 30;
-            me.add.text(lineX, headerBossY, this.strings.hpboss, {
+            const headerBoss = me.add.text(lineX, headerBossY, this.strings.hpboss, {
                 fontSize: '15px', fill: '#ff6b6b', fontStyle: 'bold'
             }).setOrigin(0, 0.5).setDepth(21);
 
@@ -743,6 +743,8 @@ define(
             btnClose.on('pointerdown', () => {
                 this._historyModalOpen = false;
                 overlay.destroy();
+                headerYou.destroy();
+                headerBoss.destroy();
                 playerLines.forEach(line => line.destroy());
                 bossLines.forEach(line => line.destroy());
                 btnClose.destroy();

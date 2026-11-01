@@ -39,6 +39,24 @@ define(
     const FA_VOLUME_XMARK = '\uf6a9';
     const FA_DRUM = '\uf569';
 
+    // The characters' idle breathing: how much taller they get at the top of a breath, and how
+    // long half a breath lasts, in ms.
+    const BREATH_SCALE = 1.02;
+    const BREATH_DURATION = 1400;
+
+    // Character moves on the stage, in logical px toward the other character (negative: away
+    // from it) and ms per leg: the step a side takes as it plays, the lunge of a hit and of a
+    // critical answer, the recoil of the side hit, and the tremor of a blocked hit or a poison
+    // tick.
+    const STEP = {distance: 18, duration: 140};
+    const LUNGE = {distance: 35, duration: 110};
+    const CRITICAL_LUNGE = {distance: 60, duration: 140};
+    const RECOIL = {distance: -14, duration: 110};
+    const TREMOR = {distance: -4, duration: 45, times: 3};
+
+    // The purple of a poison tick, blinked twice.
+    const POISON_TINT = 0xff00ff;
+
     class UIHandler {
         constructor(scene, layout, gameConfig, strings) {
             this.scene = scene;
@@ -123,10 +141,7 @@ define(
                     .setDisplaySize(L.panelW, panelH)
                     .setFlipX(true);
 
-                this.playerSprite = me.add.image(L.playerX, L.playerY, 'player')
-                    .setDisplaySize(L.playerScale, L.playerScale);
-                this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
-                    .setDisplaySize(L.bossScale, L.bossScale);
+                this.createCharacters();
 
                 // Consumables row: Potion + Sword — the two purchasable consumables with no
                 // meter of their own (Shield/Quick Magic fill a ring, so their buy badges sit
@@ -179,10 +194,7 @@ define(
                 this.drawSimplePanel(L.panelTopBoss, L.panelBottomBoss);
                 this.drawSimplePanel(L.panelTopPlayer, L.panelBottomPlayer);
 
-                this.playerSprite = me.add.image(L.playerX, L.playerY, 'player')
-                    .setDisplaySize(L.playerScale, L.playerScale);
-                this.bossSprite = me.add.image(L.bossX, L.bossY, 'boss')
-                    .setDisplaySize(L.bossScale, L.bossScale);
+                this.createCharacters();
 
                 // Icon chips (reused from the desktop redesign), not raw emoji text — the old
                 // "🪙: 0" read poorly against the sky background at this size. Also fixes a
@@ -385,6 +397,130 @@ define(
                 badge.label.setText(combat.isdemo ? '∞' : String(owned));
                 badge.parts.forEach(part => part.setAlpha(disabled ? 0.4 : 1));
             });
+        }
+
+        /**
+         * Places the student's and the opponent's characters on the stage, facing each other,
+         * and starts their idle breathing. Each stands on its feet (origin at the bottom), so a
+         * breath grows it upwards only.
+         */
+        createCharacters() {
+            const me = this.scene;
+            const L = this.L;
+            const addCharacter = (x, y, key, size) => me.add.image(x, y + (size / 2), key)
+                .setDisplaySize(size, size)
+                .setOrigin(0.5, 1);
+
+            this.playerSprite = addCharacter(L.playerX, L.playerY, 'player', L.playerScale);
+            this.bossSprite = addCharacter(L.bossX, L.bossY, 'boss', L.bossScale);
+            this.characters = {
+                player: {sprite: this.playerSprite, homeX: L.playerX, forward: 1, motion: null},
+                boss: {sprite: this.bossSprite, homeX: L.bossX, forward: -1, motion: null},
+            };
+
+            // Half a breath apart, so the two never breathe in step.
+            [this.playerSprite, this.bossSprite].forEach((sprite, index) => {
+                me.tweens.add({
+                    targets: sprite,
+                    scaleY: sprite.scaleY * BREATH_SCALE,
+                    duration: BREATH_DURATION,
+                    delay: index * BREATH_DURATION,
+                    ease: 'Sine.easeInOut',
+                    yoyo: true,
+                    repeat: -1,
+                });
+            });
+        }
+
+        /**
+         * Moves a character out and back to where it stands. A move still running is stopped
+         * and the new one starts from wherever the character is, so moves that overlap (a step
+         * followed at once by the lunge of the match it made) never leave it out of place.
+         * Only the look: nothing in the fight waits for a move to finish.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {{distance: number, duration: number, times: (number|undefined)}} move Toward the
+         *  other character for a positive distance; times repeats a short move as a tremor.
+         */
+        moveCharacter(side, move) {
+            const me = this.scene;
+            const character = this.characters[side];
+            if (character.motion) {
+                character.motion.stop();
+            }
+            const comeBack = () => {
+                character.motion = me.tweens.add({
+                    targets: character.sprite,
+                    x: character.homeX,
+                    duration: move.duration,
+                    ease: 'Quad.easeIn',
+                    onComplete: () => {
+                        character.motion = null;
+                    },
+                });
+            };
+            character.motion = me.tweens.add({
+                targets: character.sprite,
+                x: character.homeX + (move.distance * character.forward),
+                duration: move.duration,
+                ease: 'Quad.easeOut',
+                yoyo: Boolean(move.times),
+                repeat: move.times ? move.times - 1 : 0,
+                onComplete: comeBack,
+            });
+        }
+
+        /**
+         * The small step a side takes toward the board as it plays its move.
+         *
+         * @param {string} side 'player' or 'boss'.
+         */
+        stepCharacter(side) {
+            this.moveCharacter(side, STEP);
+        }
+
+        /**
+         * The lunge of a side landing a hit, longer for a critical answer.
+         *
+         * @param {string} side 'player' or 'boss' — who hits.
+         * @param {boolean} critical Whether the hit is a critical answer.
+         */
+        lungeCharacter(side, critical) {
+            this.moveCharacter(side, critical ? CRITICAL_LUNGE : LUNGE);
+        }
+
+        /**
+         * A side taking a hit: a red flash and a recoil, or only a tremor when its Shield
+         * blocked the hit.
+         *
+         * @param {string} side 'player' or 'boss' — who is hit.
+         * @param {boolean} blocked Whether a Shield blocked it.
+         */
+        hitCharacter(side, blocked) {
+            const me = this.scene;
+            const {sprite} = this.characters[side];
+            if (blocked) {
+                this.moveCharacter(side, TREMOR);
+                return;
+            }
+            sprite.setTint(0xff0000);
+            me.time.delayedCall(200, () => sprite.clearTint());
+            this.moveCharacter(side, RECOIL);
+        }
+
+        /**
+         * A side taking a poison tick: two purple blinks and a tremor.
+         *
+         * @param {string} side 'player' or 'boss'.
+         */
+        poisonCharacter(side) {
+            const me = this.scene;
+            const {sprite} = this.characters[side];
+            [0, 300].forEach(start => {
+                me.time.delayedCall(start, () => sprite.setTint(POISON_TINT));
+                me.time.delayedCall(start + 180, () => sprite.clearTint());
+            });
+            this.moveCharacter(side, TREMOR);
         }
 
         /**

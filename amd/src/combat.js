@@ -671,10 +671,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     .replace('{$a->damage}', Math.round(result.appliedAmount))
                     .replace('{$a->hp}', Math.round(this.currentHp))
             );
-            me.ui.bossSprite.setTint(0xff0000);
-            me.time.delayedCall(200, () => {
-                me.ui.bossSprite.clearTint();
-            });
+            me.ui.hitCharacter('boss', result.shieldConsumed);
         }
 
         applyDamageToPlayer(amount) {
@@ -692,13 +689,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     .replace('{$a->damage}', Math.round(result.appliedAmount))
                     .replace('{$a->hp}', Math.round(this.currentPlayerHp))
             );
-            // Mirrors applyDamageToBoss()'s own tint flash — replaces a screen shake found
-            // disruptive, now that a player sprite actually exists on every layout (mobile
-            // included) to carry the same feedback the boss already had.
-            me.ui.playerSprite.setTint(0xff0000);
-            me.time.delayedCall(200, () => {
-                me.ui.playerSprite.clearTint();
-            });
+            // The same flash and recoil as the boss, in place of a screen shake found
+            // disruptive.
+            me.ui.hitCharacter('player', result.shieldConsumed);
         }
 
         passTurnToBoss() {
@@ -710,11 +703,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             Object.assign(this, start.state);
             if (start.poisonTicked) {
                 this.updateUI();
-                me.ui.bossSprite.setTint(0xff00ff);
+                me.ui.poisonCharacter('boss');
                 me.ui.pushHistoryLog('boss', this.strings.historylogpoisontick.replace('{$a}', this.baseDamage));
-                me.time.delayedCall(300, () => {
-                    me.ui.bossSprite.clearTint();
-                });
                 if (this.checkGameOver()) {
                     return;
                 }
@@ -728,13 +718,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const move = me.board.findMove(3) || me.board.findMove();
 
             if (move) {
-                me.tweens.add({
-                    targets: me.ui.bossSprite,
-                    scaleX: 1.2, scaleY: 1.2, yoyo: true, duration: 300,
-                    onComplete: () => {
-                        me.board.swapPieces(move.p1, move.p2);
-                    }
-                });
+                // The boss steps toward the board and plays as it comes back. The swap waits on
+                // the clock, not on the step itself, which a hit may cut short.
+                me.ui.stepCharacter('boss');
+                me.time.delayedCall(300, () => me.board.swapPieces(move.p1, move.p2));
             } else {
                 me.board.shuffle();
             }
@@ -755,13 +742,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             Object.assign(this, start.state);
             if (start.poisonTicked) {
                 this.updateUI();
-                // Mirrors passTurnToBoss()'s own poison-tick tint, replacing a
-                // screen shake — see applyDamageToPlayer()'s own comment for why.
-                me.ui.playerSprite.setTint(0xff00ff);
+                me.ui.poisonCharacter('player');
                 me.ui.pushHistoryLog('player', this.strings.historylogpoisontick.replace('{$a}', this.baseDamage));
-                me.time.delayedCall(300, () => {
-                    me.ui.playerSprite.clearTint();
-                });
                 if (this.checkGameOver()) {
                     return true;
                 }
@@ -941,6 +923,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             } else if (type === 'magic') {
                 me.ui.pushHistoryLog('player', this.strings.historylogpoisoncharge.replace('{$a}', 100));
             } else if (type === 'sword') {
+                me.ui.lungeCharacter('player', false);
                 this.applyDamageToBoss(result.damageAmount);
                 me.ui.pushHistoryLog('player', this.strings.historylogattack.replace('{$a}', Math.round(result.damageAmount)));
             }
@@ -1271,18 +1254,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                         answersContainer.find('.btn-warning')
                                             .removeClass('btn-warning').addClass('btn-success text-white');
                                         const critDamage = outcome.hitBoss;
+                                        // The scene is paused while the question is open: the
+                                        // lunge and the recoil play as soon as it closes.
+                                        me.ui.lungeCharacter('player', true);
                                         ctx.applyDamageToBoss(critDamage);
                                         me.ui.pushHistoryLog(
                                             'player', ctx.strings.historylogcritical.replace('{$a}', Math.round(critDamage))
                                         );
-                                        me.ui.bossSprite.setTint(0x0088ff);
-                                        me.tweens.add({
-                                            targets: me.ui.bossSprite, y: me.ui.bossSprite.y - 20,
-                                            yoyo: true, duration: 150,
-                                            onComplete: () => {
-                                                me.ui.bossSprite.clearTint();
-                                            }
-                                        });
                                         feedbackMsg = '<div class="alert alert-success mt-2 mb-0">'
                                             + `<strong>${ctx.strings.playercorrect}</strong></div>`;
                                     } else {
@@ -1382,6 +1360,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 let bossFeedback;
                                 if (isBossCorrect) {
                                     const bossCritDamage = outcome.hitPlayer;
+                                    me.ui.lungeCharacter('boss', true);
                                     ctx.applyDamageToPlayer(bossCritDamage);
                                     me.ui.pushHistoryLog(
                                         'boss', ctx.strings.historylogcritical.replace('{$a}', Math.round(bossCritDamage))

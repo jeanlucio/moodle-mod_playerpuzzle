@@ -491,6 +491,10 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
             const me = this.scene;
             me.input.enabled = false;
             me.sfxSwap.play();
+            // The boss already stepped forward before calling this (combat.js::executeBossTurn()).
+            if (!isRevert && me.combat.currentTurn === 'player') {
+                me.ui.stepCharacter('player');
+            }
 
             const tempRow = piece1.row;
             const tempCol = piece1.col;
@@ -818,6 +822,7 @@ define(['mod_playerpuzzle/accessibility', 'mod_playerpuzzle/engine/board_rules']
             const damage = effects.damage;
 
             if (damage > 0) {
+                me.ui.lungeCharacter(me.combat.currentTurn, false);
                 const scaledDamage = me.combat.matchHit(damage);
                 if (me.combat.currentTurn === 'player') {
                     me.combat.applyDamageToBoss(scaledDamage);

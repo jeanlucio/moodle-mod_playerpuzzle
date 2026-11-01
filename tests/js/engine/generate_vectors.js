@@ -159,6 +159,8 @@ const REPLAY_CASES = [
         student: 400, typeOffset: 4, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'fast Grimoire, a lost match', opponent: 'spider', seed: 123, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 2, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
+    {name: 'more mana, a lost match', opponent: 'wolf', seed: 124, boss: 3000, damage: 12, coin: 10,
+        student: 400, typeOffset: 1, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
     {name: 'final boss, no profile', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
         level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
 ];
@@ -174,6 +176,7 @@ const OPPONENT_MODIFIERS = {
     dragon: {hp: 1, attack: 1.25, armor: 0},
     mummy: {hp: 1, attack: 1.25, armor: 0},
     spider: {hp: 1.3, attack: 1, armor: 0},
+    wolf: {hp: 1, attack: 1.25, armor: 0},
     vampire: {hp: 1, attack: 1, armor: 0},
 };
 
@@ -183,10 +186,15 @@ const OPPONENT_POWERS = {
     golem: ['iceshield'],
     mummy: ['longpoison'],
     spider: ['fastgrimoire'],
+    wolf: ['manaboost'],
 };
 
-// Power lists for the rules that read them, one per power plus none and an unknown name.
+// Power lists for the rules that read them, one per power plus none and an unknown name. Picked
+// at random by the cases that use it, so it is not extended: a new power goes in EVERY_POWER.
 const POWER_CONFIGS = [[], ['iceshield'], ['longpoison'], ['fastgrimoire'], ['unknown']];
+
+// Every power, gone through one by one by the per-piece gains. A new power is appended here.
+const EVERY_POWER = ['iceshield', 'longpoison', 'fastgrimoire', 'manaboost'];
 
 const HIT_CONFIGS = [
     {},
@@ -358,6 +366,14 @@ function buildCombatVectors() {
             Object.assign({baseDamage: hitRand.int(1, 60)}, hitRand.pick(HIT_CONFIGS)),
         ]));
     }
+
+    ['player', 'boss'].forEach(side => {
+        [[], ...EVERY_POWER.map(power => [power]), EVERY_POWER].forEach(powers => {
+            [7, 10, 13].forEach(baseDamage => {
+                cases.push(recordCall('pieceGains', [side, {baseDamage, bossPowers: powers}]));
+            });
+        });
+    });
 
     const powerRand = randomSource(20261103);
     for (let i = 0; i < 20; i++) {

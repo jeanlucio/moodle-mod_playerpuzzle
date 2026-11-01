@@ -80,6 +80,8 @@
             LONGPOISON: 'longpoison',
             // Each Grimoire the opponent matches fills more of its poison meter.
             FASTGRIMOIRE: 'fastgrimoire',
+            // Each Orb the opponent matches gives it more mana.
+            MANABOOST: 'manaboost',
         };
 
         // Rounds of poison a full Grimoire meter arms against the other side, and with the
@@ -91,6 +93,10 @@
         // fastgrimoire power.
         const GRIMOIRE_POISON = 10;
         const FAST_GRIMOIRE_POISON = 15;
+
+        // How much mana each matched Orb gives, and for an opponent with the manaboost power.
+        const ORB_MANA = 20;
+        const BOOSTED_ORB_MANA = 30;
 
         /**
          * Whether the opponent has a power this phase.
@@ -302,7 +308,7 @@
                 multiplier: 0.1,
                 shield: 10,
                 poison: boss && hasPower(config, POWERS.FASTGRIMOIRE) ? FAST_GRIMOIRE_POISON : GRIMOIRE_POISON,
-                mana: 20,
+                mana: boss && hasPower(config, POWERS.MANABOOST) ? BOOSTED_ORB_MANA : ORB_MANA,
             };
         }
 

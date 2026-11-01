@@ -81,6 +81,8 @@ final class combat_vectors_test extends \advanced_testcase {
      */
     private static function call(string $fn, array $args): mixed {
         switch ($fn) {
+            case 'pieceGains':
+                return combat_engine::piece_gains($args[0], $args[1]);
             case 'comboMultiplier':
                 return combat_engine::combo_multiplier($args[0]);
             case 'resolvePoisonMeters':

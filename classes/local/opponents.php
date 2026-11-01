@@ -91,6 +91,7 @@ class opponents {
     private const POWERS = [
         'golem' => [combat_engine::POWER_ICESHIELD],
         'mummy' => [combat_engine::POWER_LONGPOISON],
+        'wolf' => [combat_engine::POWER_MANABOOST],
         'spider' => [combat_engine::POWER_FASTGRIMOIRE],
     ];
 

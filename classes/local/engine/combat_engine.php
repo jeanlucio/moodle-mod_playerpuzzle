@@ -82,6 +82,15 @@ class combat_engine {
     /** @var int The same, for an opponent with the fastgrimoire power. */
     public const FAST_GRIMOIRE_POISON = 15;
 
+    /** @var string Power: each Orb the opponent matches gives it more mana. */
+    public const POWER_MANABOOST = 'manaboost';
+
+    /** @var int How much mana each matched Orb gives. */
+    public const ORB_MANA = 20;
+
+    /** @var int The same, for an opponent with the manaboost power. */
+    public const BOOSTED_ORB_MANA = 30;
+
     /**
      * The combat state a phase starts from: both sides at full HP, every meter empty,
      * multipliers at 1 and no gold yet, except what the opponent's powers change at the start.
@@ -300,7 +309,7 @@ class combat_engine {
             'poison' => $boss && self::has_power($config, self::POWER_FASTGRIMOIRE)
                 ? self::FAST_GRIMOIRE_POISON
                 : self::GRIMOIRE_POISON,
-            'mana' => 20,
+            'mana' => $boss && self::has_power($config, self::POWER_MANABOOST) ? self::BOOSTED_ORB_MANA : self::ORB_MANA,
         ];
     }
 

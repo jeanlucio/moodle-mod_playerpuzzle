@@ -613,4 +613,17 @@ final class combat_engine_test extends \advanced_testcase {
         $this->assertSame(3 * combat_engine::FAST_GRIMOIRE_POISON, $boss['state']['bossPoisonMeter']);
         $this->assertSame(3 * combat_engine::GRIMOIRE_POISON, $player['state']['playerPoisonMeter']);
     }
+
+    /**
+     * Tests that an opponent with manaboost gets more mana per Orb, and the student the usual.
+     *
+     * @return void
+     */
+    public function test_manaboost_gives_the_opponent_more_mana_per_orb(): void {
+        $config = array_merge(self::CONFIG, ['bossPowers' => [combat_engine::POWER_MANABOOST]]);
+
+        $this->assertSame(combat_engine::BOOSTED_ORB_MANA, combat_engine::piece_gains('boss', $config)['mana']);
+        $this->assertSame(combat_engine::ORB_MANA, combat_engine::piece_gains('player', $config)['mana']);
+        $this->assertSame(combat_engine::ORB_MANA, combat_engine::piece_gains('boss', self::CONFIG)['mana']);
+    }
 }

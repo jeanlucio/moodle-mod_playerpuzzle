@@ -20,14 +20,15 @@
  * Every match runs through replay_mirror.js, the same turn loop the server replays, with a
  * simulated student who plays the way the opponent does (a Sword match when there is one, any
  * match otherwise), uses no consumable and answers right at a fixed rate. The opponent answers
- * right at its Normal rate. Each opponent fights at its own Campaign phase, three ways: without
- * profile or power, with its profile only, and with both.
+ * right at its Normal rate. Each opponent fights at its own Campaign phase, the final boss at
+ * phase 10 like the dragon it replaces, three ways: without profile or power, with its profile
+ * only (the final boss: its extra HP), and with its powers too.
  *
  * A real student plays better or worse and shops, so a win rate here is not a target in
  * itself: compare the columns, and the opponents with one another.
  *
- * The profile and power tables are read from classes/local/opponents.php through the PHP CLI,
- * so the numbers always follow the server's values.
+ * Each opponent's modifiers and powers come from classes/local/opponents.php through the PHP
+ * CLI, so the numbers always follow the server's values.
  *
  * Usage: node tests/js/engine/simulate_balance.js [matches] [student accuracies]
  * e.g.   node tests/js/engine/simulate_balance.js 3000 0.5,0.75,0.9
@@ -58,21 +59,22 @@ const INSTANCE = {basebosshp: 100, bossdamage: 10, basestudenthp: 100, coingain:
 const NO_MODIFIERS = {hp: 1, attack: 1, armor: 0};
 
 /**
- * Reads the opponent tables from the server's own class.
+ * Asks the server's own class for every opponent, in Campaign order with the final boss last, and
+ * what each fights with.
  *
- * @return {{order: Array<string>, profiles: object, modifiers: object, powers: object}}
+ * @return {Array<{key: string, modifiers: object, powers: Array<string>}>}
  */
 function readOpponents() {
     const script = `
         require 'classes/local/engine/combat_engine.php';
         require 'classes/local/opponents.php';
-        $class = new ReflectionClass('mod_playerpuzzle\\\\local\\\\opponents');
-        echo json_encode([
-            'order' => $class->getConstant('CAMPAIGN_ORDER'),
-            'profiles' => $class->getConstant('PROFILES'),
-            'modifiers' => $class->getConstant('PROFILE_MODIFIERS'),
-            'powers' => $class->getConstant('POWERS'),
-        ]);`;
+        $class = 'mod_playerpuzzle\\\\local\\\\opponents';
+        $keys = array_merge($class::CAMPAIGN_ORDER, [$class::FINAL_BOSS]);
+        echo json_encode(array_map(fn($key) => [
+            'key' => $key,
+            'modifiers' => $class::modifiers($key),
+            'powers' => $class::powers($key),
+        ], $keys));`;
     return JSON.parse(childProcess.execFileSync('php', ['-r', script], {cwd: PLUGIN_ROOT, encoding: 'utf8'}));
 }
 
@@ -163,11 +165,8 @@ for (const accuracy of accuracies) {
     process.stdout.write(`\nStudent right ${percent(accuracy)}, opponent right ${percent(OPPONENT_ACCURACY)}, `
         + `${matches} matches per cell. Each cell: win rate, student turns, HP left on a win.\n`);
     process.stdout.write('phase opponent | no profile      | profile only    | profile+power   | power effect\n');
-    opponents.order.forEach((name, index) => {
-        const phase = index + 1;
-        const profile = opponents.profiles[name];
-        const modifiers = profile ? opponents.modifiers[profile] : NO_MODIFIERS;
-        const powers = opponents.powers[name] || [];
+    opponents.forEach(({key: name, modifiers, powers}, index) => {
+        const phase = Math.min(index + 1, 10);
         const bare = playBatch(matches, phase, NO_MODIFIERS, [], accuracy);
         const profiled = playBatch(matches, phase, modifiers, [], accuracy);
         const full = powers.length ? playBatch(matches, phase, modifiers, powers, accuracy) : null;

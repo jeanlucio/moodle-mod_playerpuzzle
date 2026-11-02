@@ -187,6 +187,9 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, events, outcomes, s
             if (applied.shieldConsumed) {
                 state.playerShieldReady = false;
             }
+            if (side === 'boss') {
+                state.currentHp += CombatRules.drainAmount(applied.appliedAmount, state, config);
+            }
         }
         if (outcome.resetPlayerMultiplier) {
             state.playerMultiplier = 1;
@@ -272,6 +275,7 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, events, outcomes, s
                     if (applied.shieldConsumed) {
                         state.playerShieldReady = false;
                     }
+                    state.currentHp += CombatRules.drainAmount(applied.appliedAmount, state, config);
                 }
             }
 

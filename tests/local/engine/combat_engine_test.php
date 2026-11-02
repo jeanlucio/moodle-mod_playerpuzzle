@@ -642,6 +642,52 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that an opponent with regen recovers REGEN_PERCENT of its max HP as its turn begins,
+     * never past the max and never after its own poison tick knocked it out, and that the student
+     * and an opponent without the power recover nothing.
+     *
+     * @return void
+     */
+    public function test_regen_heals_the_opponent_as_its_turn_begins(): void {
+        $config = array_merge(self::CONFIG, ['bossPowers' => [combat_engine::POWER_REGEN]]);
+        $state = array_merge($this->fresh_state(), ['currentHp' => 150.0, 'maxBossHp' => 230.0]);
+
+        $healed = combat_engine::start_turn('boss', $state, $config);
+        $this->assertSame(1, combat_engine::REGEN_PERCENT);
+        $this->assertSame(2.3, $healed['regenerated']);
+        $this->assertSame(152.3, $healed['state']['currentHp']);
+
+        $nearlyfull = combat_engine::start_turn('boss', array_merge($state, ['currentHp' => 229.0]), $config);
+        $this->assertSame(1.0, $nearlyfull['regenerated']);
+        $this->assertSame(230.0, $nearlyfull['state']['currentHp']);
+
+        $knockedout = array_merge($state, ['currentHp' => 5.0, 'bossPoisonRounds' => 1]);
+        $killed = combat_engine::start_turn('boss', $knockedout, $config);
+        $this->assertEquals(0, $killed['state']['currentHp']);
+        $this->assertSame(0.0, $killed['regenerated']);
+
+        $this->assertSame(0.0, combat_engine::start_turn('player', $state, $config)['regenerated']);
+        $this->assertSame(0.0, combat_engine::start_turn('boss', $state, self::CONFIG)['regenerated']);
+    }
+
+    /**
+     * Tests that an opponent with drain recovers DRAIN_PERCENT of what its hit dealt, up to its
+     * max HP, and that an opponent without the power recovers nothing.
+     *
+     * @return void
+     */
+    public function test_drain_heals_the_opponent_by_part_of_its_hit(): void {
+        $config = ['bossPowers' => [combat_engine::POWER_DRAIN]];
+        $state = array_merge($this->fresh_state(), ['currentHp' => 100.0, 'maxBossHp' => 240.0]);
+
+        $this->assertSame(30, combat_engine::DRAIN_PERCENT);
+        $this->assertSame(6.0, combat_engine::drain_amount(20, $state, $config));
+        $this->assertSame(0.0, combat_engine::drain_amount(0, $state, $config));
+        $this->assertSame(2.0, combat_engine::drain_amount(20, array_merge($state, ['currentHp' => 238.0]), $config));
+        $this->assertSame(0.0, combat_engine::drain_amount(20, $state, []));
+    }
+
+    /**
      * Tests that an opponent with rootheal heals half as much again per Potion, and the student
      * the usual.
      *

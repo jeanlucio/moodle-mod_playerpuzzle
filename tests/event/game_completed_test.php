@@ -81,14 +81,15 @@ final class game_completed_test extends \advanced_testcase {
         $this->setUser($this->student);
         // A Campaign victory is recorded by save_progress only on the last phase of the last level.
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 2, 10);
-        // A win only counts once the server-side replay verifies it: seed 2's one-move kill,
-        // with boss HP and combo damage frozen equal (see tests/local/engine/replay_test.php).
+        // A win only counts once the server-side replay verifies it: seed 2's one-move kill (see
+        // tests/local/engine/replay_test.php). The last phase is the final boss's, whose extra HP
+        // the base HP leaves room for: 8 scales to 19, and 23 with it, under the move's 24 damage.
         $DB->update_record('playerpuzzle_attempts', (object) [
             'id' => (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]),
             'rngseed' => 2,
             'movelog' => move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
             'moveseq' => 1,
-            'frozenbasebosshp' => 10,
+            'frozenbasebosshp' => 8,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
         ]);

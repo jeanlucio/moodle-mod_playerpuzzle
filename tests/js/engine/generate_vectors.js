@@ -145,7 +145,7 @@ const REPLAY_CASES = [
     {name: 'armored opponent, Sword consumables', opponent: 'golem', seed: 116, boss: 180, damage: 11, coin: 10,
         student: 240, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['right', 'wrong'],
         consumables: {'1': 'sword', '3': 'sword', '5': 'shield'}},
-    {name: 'tough opponent', opponent: 'slime', seed: 117, boss: 175, damage: 10, coin: 10, student: 230,
+    {name: 'regenerating opponent', opponent: 'slime', seed: 117, boss: 175, damage: 10, coin: 10, student: 230,
         typeOffset: 3, playerAnswers: ['right', 'right', 'wrong'], bossAnswers: ['wrong', 'right']},
     {name: 'armored opponent, hard, level 2', opponent: 'plant', seed: 118, boss: 110, damage: 9, coin: 10,
         student: 320, difficulty: 'hard', level: 2, phase: 5, typeOffset: 4, playerAnswers: ['right', 'wrong'],
@@ -163,7 +163,11 @@ const REPLAY_CASES = [
         student: 400, typeOffset: 1, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
     {name: 'Potions heal half as much again, a lost match', opponent: 'plant', seed: 125, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 3, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
-    {name: 'final boss, no profile', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
+    {name: 'regeneration, a lost match', opponent: 'slime', seed: 126, boss: 3000, damage: 12, coin: 10,
+        student: 400, typeOffset: 0, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
+    {name: 'drain, a lost match', opponent: 'vampire', seed: 127, boss: 3000, damage: 12, coin: 10,
+        student: 400, typeOffset: 4, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
+    {name: 'final boss, drain and extra HP', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
         level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
 ];
 
@@ -173,13 +177,13 @@ const REPLAY_CASES = [
 const OPPONENT_MODIFIERS = {
     goblin: {hp: 1, attack: 1.15, armor: 0},
     golem: {hp: 1, attack: 1, armor: 0.15},
-    slime: {hp: 1.15, attack: 1, armor: 0},
+    slime: {hp: 1, attack: 1, armor: 0},
     plant: {hp: 1, attack: 1, armor: 0.15},
     dragon: {hp: 1, attack: 1.15, armor: 0},
     mummy: {hp: 1, attack: 1.15, armor: 0},
     spider: {hp: 1.15, attack: 1, armor: 0},
     wolf: {hp: 1, attack: 1.15, armor: 0},
-    vampire: {hp: 1, attack: 1, armor: 0},
+    vampire: {hp: 1.2, attack: 1, armor: 0},
 };
 
 // Attack and armor combinations for the rules that take them, including ones no opponent has
@@ -190,6 +194,8 @@ const OPPONENT_POWERS = {
     spider: ['fastgrimoire'],
     wolf: ['manaboost'],
     plant: ['rootheal'],
+    slime: ['regen'],
+    vampire: ['drain'],
 };
 
 // Power lists for the rules that read them, one per power plus none and an unknown name. Picked
@@ -197,7 +203,7 @@ const OPPONENT_POWERS = {
 const POWER_CONFIGS = [[], ['iceshield'], ['longpoison'], ['fastgrimoire'], ['unknown']];
 
 // Every power, gone through one by one by the per-piece gains. A new power is appended here.
-const EVERY_POWER = ['iceshield', 'longpoison', 'fastgrimoire', 'manaboost', 'rootheal'];
+const EVERY_POWER = ['iceshield', 'longpoison', 'fastgrimoire', 'manaboost', 'rootheal', 'regen', 'drain'];
 
 const HIT_CONFIGS = [
     {},
@@ -396,6 +402,18 @@ function buildCombatVectors() {
             config: {baseDamage: powerRand.int(1, 60), coinGain: powerRand.int(0, 25), coinFactor: 1,
                 bossPowers: powerRand.pick(POWER_CONFIGS)},
         }]));
+    }
+
+    const turnPowerRand = randomSource(20261104);
+    for (let i = 0; i < 30; i++) {
+        cases.push(recordCall('startTurn', [
+            turnPowerRand.pick(['player', 'boss', 'boss']), randomState(turnPowerRand),
+            {baseDamage: turnPowerRand.int(1, 60), bossPowers: turnPowerRand.pick([[], ['regen'], ['regen', 'drain']])},
+        ]));
+        cases.push(recordCall('drainAmount', [
+            turnPowerRand.pick([0, 7, 10, 13.5, 45, 150]), randomState(turnPowerRand),
+            {bossPowers: turnPowerRand.pick([[], ['drain'], ['regen', 'drain']])},
+        ]));
     }
 
     return cases;

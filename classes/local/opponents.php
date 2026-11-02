@@ -56,9 +56,8 @@ class opponents {
     /** @var string Profile of an opponent with more HP. */
     public const PROFILE_TOUGH = 'tough';
 
-    /** @var array The profile of each opponent. The final boss has none. */
+    /** @var array The profile of each opponent. The slime, as the first one, and the final boss have none. */
     private const PROFILES = [
-        'slime' => self::PROFILE_TOUGH,
         'goblin' => self::PROFILE_BRUTE,
         'golem' => self::PROFILE_ARMORED,
         'mummy' => self::PROFILE_BRUTE,
@@ -84,16 +83,21 @@ class opponents {
     /** @var array The modifiers of an opponent with no profile: nothing changes. */
     private const NO_MODIFIERS = ['hp' => 1.0, 'attack' => 1.0, 'armor' => 0.0];
 
+    /** @var array The final boss has no profile, only more HP than the phase gives. */
+    private const FINAL_BOSS_MODIFIERS = ['hp' => 1.2, 'attack' => 1.0, 'armor' => 0.0];
+
     /**
      * @var array The powers of each opponent. The rules of each live in combat_rules.js and its
      *  PHP twin combat_engine.php, which name them and receive the list in the phase's config.
      */
     private const POWERS = [
+        'slime' => [combat_engine::POWER_REGEN],
         'golem' => [combat_engine::POWER_ICESHIELD],
         'mummy' => [combat_engine::POWER_LONGPOISON],
         'plant' => [combat_engine::POWER_ROOTHEAL],
         'wolf' => [combat_engine::POWER_MANABOOST],
         'spider' => [combat_engine::POWER_FASTGRIMOIRE],
+        'vampire' => [combat_engine::POWER_DRAIN],
     ];
 
     /** @var array The stage (pix/stages/<stage>.webp) each opponent is fought on. */
@@ -162,13 +166,16 @@ class opponents {
     }
 
     /**
-     * What an opponent's profile changes in the fight. Only an exact key counts: an empty value
-     * (an attempt that never had its opponent frozen) gets no modifiers, like the final boss.
+     * What an opponent's profile, or the final boss's extra HP, changes in the fight. Only an exact
+     * key counts: an empty value (an attempt that never had its opponent frozen) gets no modifiers.
      *
      * @param string $key An opponent key.
      * @return array ['hp' => float, 'attack' => float, 'armor' => float]
      */
     public static function modifiers(string $key): array {
+        if ($key === self::FINAL_BOSS) {
+            return self::FINAL_BOSS_MODIFIERS;
+        }
         $profile = self::profile($key);
         return $profile === null ? self::NO_MODIFIERS : self::PROFILE_MODIFIERS[$profile];
     }

@@ -97,6 +97,18 @@ class combat_engine {
     /** @var string Power: the Potions the opponent matches heal half as much again. */
     public const POWER_ROOTHEAL = 'rootheal';
 
+    /** @var string Power: the opponent recovers part of its max HP as each of its turns begins. */
+    public const POWER_REGEN = 'regen';
+
+    /** @var string Power: the opponent recovers part of the damage its hits deal. */
+    public const POWER_DRAIN = 'drain';
+
+    /** @var int The percentage of the damage its hits deal that an opponent with the drain power recovers. */
+    public const DRAIN_PERCENT = 30;
+
+    /** @var int The percentage of its max HP an opponent with the regen power recovers per turn. */
+    public const REGEN_PERCENT = 1;
+
     /**
      * The combat state a phase starts from: both sides at full HP, every meter empty,
      * multipliers at 1 and no gold yet, except what the opponent's powers change at the start.
@@ -472,6 +484,24 @@ class combat_engine {
     }
 
     /**
+     * The HP an opponent with the drain power recovers from one of its hits: DRAIN_PERCENT of the
+     * damage that hit actually dealt (nothing when the shield took it), up to its max HP. Only the
+     * opponent's hits drain (Swords from the board and critical answers), never the student's
+     * wrong-answer penalty or poison. The caller adds it to currentHp.
+     *
+     * @param float $appliedamount The damage the hit dealt, from resolve_damage().
+     * @param array $state Current combat state: currentHp and maxBossHp are read.
+     * @param array $config The phase's rule config; bossPowers is read.
+     * @return float
+     */
+    public static function drain_amount(float $appliedamount, array $state, array $config): float {
+        if (!self::has_power($config, self::POWER_DRAIN)) {
+            return 0.0;
+        }
+        return (float) min($state['maxBossHp'] - $state['currentHp'], $appliedamount * self::DRAIN_PERCENT / 100);
+    }
+
+    /**
      * What a judged question does: a right answer is a critical hit on the other side; a wrong
      * one resets the answering side's multiplier, and costs the player WRONG_ANSWER_DAMAGE too.
      * Returns the amounts only — applying a hit goes through resolve_damage(). A side that is not
@@ -510,13 +540,14 @@ class combat_engine {
     }
 
     /**
-     * Everything that happens to a side as its turn begins, before it moves. Today that is only
-     * its pending poison tick (see resolve_poison_tick()).
+     * Everything that happens to a side as its turn begins, before it moves: its pending poison
+     * tick (see resolve_poison_tick()), then, for an opponent with the regen power that is still
+     * standing, REGEN_PERCENT of its max HP back, up to the max.
      *
      * @param string $side 'player' or 'boss' — whose turn begins.
      * @param array $state Current combat state — copied, never mutated.
-     * @param array $config Keys baseDamage.
-     * @return array ['state' => array, 'poisonTicked' => bool]
+     * @param array $config Keys baseDamage, and bossPowers (optional).
+     * @return array ['state' => array, 'poisonTicked' => bool, 'regenerated' => float]
      */
     public static function start_turn(string $side, array $state, array $config): array {
         $next = $state;
@@ -525,7 +556,16 @@ class combat_engine {
         $tick = self::resolve_poison_tick($next[$hpfield], $next[$roundsfield], (float) $config['baseDamage']);
         $next[$hpfield] = $tick['newHp'];
         $next[$roundsfield] = $tick['newPoisonRounds'];
-        return ['state' => $next, 'poisonTicked' => $tick['ticked']];
+
+        $regenerated = 0.0;
+        if ($side === 'boss' && self::has_power($config, self::POWER_REGEN) && $next['currentHp'] > 0) {
+            $regenerated = (float) min(
+                $next['maxBossHp'] - $next['currentHp'],
+                $next['maxBossHp'] * self::REGEN_PERCENT / 100
+            );
+            $next['currentHp'] += $regenerated;
+        }
+        return ['state' => $next, 'poisonTicked' => $tick['ticked'], 'regenerated' => $regenerated];
     }
 
     /**

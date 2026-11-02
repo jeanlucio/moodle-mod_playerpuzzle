@@ -383,6 +383,31 @@ test('pieceGains: an opponent with manaboost gets more mana per Orb, the student
     assert.equal(combatRules.pieceGains('boss', CONFIG).mana, 20);
 });
 
+test('startTurn: an opponent with regen recovers 1% of its max HP, up to the max, and only while standing', () => {
+    const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.REGEN]});
+    const state = Object.assign(freshState(), {currentHp: 150, maxBossHp: 230});
+    const healed = combatRules.startTurn('boss', state, config);
+    assert.equal(healed.regenerated, 2.3);
+    assert.equal(healed.state.currentHp, 152.3);
+    const nearlyFull = combatRules.startTurn('boss', Object.assign({}, state, {currentHp: 229}), config);
+    assert.equal(nearlyFull.regenerated, 1);
+    assert.equal(nearlyFull.state.currentHp, 230);
+    const killed = combatRules.startTurn('boss', Object.assign({}, state, {currentHp: 5, bossPoisonRounds: 1}), config);
+    assert.equal(killed.state.currentHp, 0);
+    assert.equal(killed.regenerated, 0);
+    assert.equal(combatRules.startTurn('player', state, config).regenerated, 0);
+    assert.equal(combatRules.startTurn('boss', state, CONFIG).regenerated, 0);
+});
+
+test('drainAmount: an opponent with drain recovers 30% of what its hit dealt, up to its max HP', () => {
+    const config = {bossPowers: [combatRules.POWERS.DRAIN]};
+    const state = Object.assign(freshState(), {currentHp: 100, maxBossHp: 240});
+    assert.equal(combatRules.drainAmount(20, state, config), 6);
+    assert.equal(combatRules.drainAmount(0, state, config), 0);
+    assert.equal(combatRules.drainAmount(20, Object.assign({}, state, {currentHp: 238}), config), 2);
+    assert.equal(combatRules.drainAmount(20, state, {}), 0);
+});
+
 test('pieceGains: an opponent with rootheal heals half as much again per Potion, the student the usual', () => {
     const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.ROOTHEAL]});
     assert.equal(combatRules.pieceGains('boss', config).heal, 3.75);

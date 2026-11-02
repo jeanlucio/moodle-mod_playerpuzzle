@@ -415,6 +415,7 @@ class replay {
                     if ($applied['shieldConsumed']) {
                         $state['playerShieldReady'] = false;
                     }
+                    $state['currentHp'] += combat_engine::drain_amount($applied['appliedAmount'], $state, $config);
                 }
             }
 
@@ -637,6 +638,10 @@ class replay {
             $state['currentPlayerHp'] = $applied['newHp'];
             if ($applied['shieldConsumed']) {
                 $state['playerShieldReady'] = false;
+            }
+            // A critical answer is the opponent's hit; the student's wrong-answer penalty is not.
+            if ($side === 'boss') {
+                $state['currentHp'] += combat_engine::drain_amount($applied['appliedAmount'], $state, $config);
             }
         }
         if ($outcome['resetPlayerMultiplier']) {

@@ -115,13 +115,14 @@ final class opponents_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that every Campaign opponent has a profile and the final boss has none.
+     * Tests the profile of each Campaign opponent, and that the first one and the final boss have
+     * none.
      *
      * @return void
      */
-    public function test_every_campaign_opponent_has_a_profile_and_the_final_boss_none(): void {
+    public function test_profile_of_each_opponent(): void {
         $expected = [
-            'slime' => opponents::PROFILE_TOUGH,
+            'slime' => null,
             'goblin' => opponents::PROFILE_BRUTE,
             'golem' => opponents::PROFILE_ARMORED,
             'mummy' => opponents::PROFILE_BRUTE,
@@ -155,12 +156,21 @@ final class opponents_test extends \advanced_testcase {
         $this->assertGreaterThan(0.0, $armored['armor']);
         $this->assertSame(['hp' => 1.0, 'attack' => 1.0], ['hp' => $armored['hp'], 'attack' => $armored['attack']]);
 
-        $tough = opponents::modifiers('slime');
+        $tough = opponents::modifiers('ghost');
         $this->assertGreaterThan(1.0, $tough['hp']);
         $this->assertSame(['attack' => 1.0, 'armor' => 0.0], ['attack' => $tough['attack'], 'armor' => $tough['armor']]);
 
-        $this->assertSame($none, opponents::modifiers('vampire'));
+        $this->assertSame($none, opponents::modifiers('slime'));
         $this->assertSame($none, opponents::modifiers(''));
+    }
+
+    /**
+     * Tests that the final boss, without a profile, gets only more HP than its phase gives.
+     *
+     * @return void
+     */
+    public function test_final_boss_gets_extra_hp_only(): void {
+        $this->assertSame(['hp' => 1.2, 'attack' => 1.0, 'armor' => 0.0], opponents::modifiers(opponents::FINAL_BOSS));
     }
 
     /**
@@ -175,7 +185,9 @@ final class opponents_test extends \advanced_testcase {
         $this->assertSame([combat_engine::POWER_FASTGRIMOIRE], opponents::powers('spider'));
         $this->assertSame([combat_engine::POWER_MANABOOST], opponents::powers('wolf'));
         $this->assertSame([combat_engine::POWER_ROOTHEAL], opponents::powers('plant'));
-        $this->assertSame([], opponents::powers('vampire'));
+        $this->assertSame([combat_engine::POWER_REGEN], opponents::powers('slime'));
+        $this->assertSame([combat_engine::POWER_DRAIN], opponents::powers('vampire'));
+        $this->assertSame([], opponents::powers('goblin'));
         $this->assertSame([], opponents::powers(''));
     }
 }

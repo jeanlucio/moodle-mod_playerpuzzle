@@ -209,7 +209,7 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
-     * Tests that a Resistente's extra HP is applied last, rounding halves up.
+     * Tests that a tough opponent's extra HP is applied last, rounding halves up.
      *
      * @return void
      */
@@ -217,7 +217,7 @@ final class combat_test extends \basic_testcase {
         $instance = (object) ['basebosshp' => 900, 'bossdamage' => 90];
 
         $tough = combat::phase_opponent($this->make_attempt([
-            'frozenopponent' => 'slime', 'frozenbasebosshp' => 150,
+            'frozenopponent' => 'ghost', 'frozenbasebosshp' => 150,
         ]), $instance);
         $this->assertSame(173, $tough['maxbosshp'], '150 x 1.15 = 172.5, rounded up');
         $this->assertSame(10, $tough['basedamage'], 'the profile does not touch the base damage');

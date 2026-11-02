@@ -84,6 +84,10 @@
             MANABOOST: 'manaboost',
             // The Potions the opponent matches heal half as much again.
             ROOTHEAL: 'rootheal',
+            // The opponent recovers part of its max HP as each of its turns begins.
+            REGEN: 'regen',
+            // The opponent recovers part of the damage its hits deal.
+            DRAIN: 'drain',
         };
 
         // Rounds of poison a full Grimoire meter arms against the other side, and with the
@@ -102,6 +106,12 @@
         // How much mana each matched Orb gives, and for an opponent with the manaboost power.
         const ORB_MANA = 20;
         const BOOSTED_ORB_MANA = 30;
+
+        // The percentage of the damage its hits deal that an opponent with the drain power recovers.
+        const DRAIN_PERCENT = 30;
+
+        // The percentage of its max HP an opponent with the regen power recovers per turn.
+        const REGEN_PERCENT = 1;
 
         /**
          * Whether the opponent has a power this phase.
@@ -463,6 +473,24 @@
         }
 
         /**
+         * The HP an opponent with the drain power recovers from one of its hits: DRAIN_PERCENT of
+         * the damage that hit actually dealt (nothing when the shield took it), up to its max HP.
+         * Only the opponent's hits drain (Swords from the board and critical answers), never the
+         * student's wrong-answer penalty or poison. The caller adds it to currentHp.
+         *
+         * @param {number} appliedAmount The damage the hit dealt, from resolveDamage().
+         * @param {object} state Current combat state: currentHp and maxBossHp are read.
+         * @param {object} config The phase's rule config; bossPowers is read.
+         * @return {number}
+         */
+        function drainAmount(appliedAmount, state, config) {
+            if (!hasPower(config, POWERS.DRAIN)) {
+                return 0;
+            }
+            return Math.min(state.maxBossHp - state.currentHp, appliedAmount * DRAIN_PERCENT / 100);
+        }
+
+        /**
          * What a judged question does: a right answer is a critical hit on the other side; a
          * wrong one resets the answering side's multiplier, and costs the player
          * WRONG_ANSWER_DAMAGE too (the boss has no HP penalty for a wrong guess). Returns the
@@ -494,13 +522,14 @@
         }
 
         /**
-         * Everything that happens to a side as its turn begins, before it moves. Today that is
-         * only its pending poison tick (see resolvePoisonTick()).
+         * Everything that happens to a side as its turn begins, before it moves: its pending
+         * poison tick (see resolvePoisonTick()), then, for an opponent with the regen power that
+         * is still standing, REGEN_PERCENT of its max HP back, up to the max.
          *
          * @param {string} side 'player' or 'boss' — whose turn begins.
          * @param {object} state Current combat state — copied, never mutated.
-         * @param {object} config {baseDamage}.
-         * @return {{state: object, poisonTicked: boolean}}
+         * @param {object} config {baseDamage}; bossPowers is read.
+         * @return {{state: object, poisonTicked: boolean, regenerated: number}}
          */
         function startTurn(side, state, config) {
             const next = Object.assign({}, state);
@@ -509,7 +538,13 @@
             const tick = resolvePoisonTick(next[hpField], next[roundsField], config.baseDamage);
             next[hpField] = tick.newHp;
             next[roundsField] = tick.newPoisonRounds;
-            return {state: next, poisonTicked: tick.ticked};
+
+            let regenerated = 0;
+            if (side === 'boss' && hasPower(config, POWERS.REGEN) && next.currentHp > 0) {
+                regenerated = Math.min(next.maxBossHp - next.currentHp, next.maxBossHp * REGEN_PERCENT / 100);
+                next.currentHp += regenerated;
+            }
+            return {state: next, poisonTicked: tick.ticked, regenerated};
         }
 
         /**
@@ -570,6 +605,7 @@
             resolveConsumableEffect,
             matchHitAmount,
             hitAmount,
+            drainAmount,
             questionOutcome,
             startTurn,
         };

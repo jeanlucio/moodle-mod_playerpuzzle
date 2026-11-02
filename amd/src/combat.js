@@ -674,13 +674,27 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             me.ui.hitCharacter('boss', result.shieldConsumed);
         }
 
-        applyDamageToPlayer(amount) {
+        /**
+         * Applies a hit to the student. An opponent with the drain power recovers part of what
+         * its own hits deal, never of the wrong-answer penalty.
+         *
+         * @param {number} amount The hit, already through attack and armor.
+         * @param {boolean} [byOpponent] Whether the opponent landed it (Swords or a critical answer).
+         */
+        applyDamageToPlayer(amount, byOpponent = false) {
             const me = this.scene;
             const result = CombatRules.resolveDamage(this.currentPlayerHp, this.playerShieldReady, amount);
             this.currentPlayerHp = result.newHp;
             if (result.shieldConsumed) {
                 this.playerShieldReady = false;
                 me.ui.pushHistoryLog('player', this.strings.historylogshieldblock);
+            }
+            if (byOpponent) {
+                const drained = CombatRules.drainAmount(result.appliedAmount, this.combatState(), this.ruleConfig());
+                if (drained > 0) {
+                    this.currentHp += drained;
+                    me.ui.pushHistoryLog('boss', this.strings.historylogdrain.replace('{$a}', Math.round(drained)));
+                }
             }
 
             this.updateUI();
@@ -708,6 +722,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 if (this.checkGameOver()) {
                     return;
                 }
+            }
+            if (start.regenerated > 0) {
+                this.updateUI();
+                me.ui.pushHistoryLog('boss', this.strings.historylogregen.replace('{$a}', Math.round(start.regenerated)));
             }
 
             me.time.delayedCall(800, this.executeBossTurn, [], this);
@@ -1358,10 +1376,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 if (isBossCorrect) {
                                     const bossCritDamage = outcome.hitPlayer;
                                     me.ui.lungeCharacter('boss', true);
-                                    ctx.applyDamageToPlayer(bossCritDamage);
                                     me.ui.pushHistoryLog(
                                         'boss', ctx.strings.historylogcritical.replace('{$a}', Math.round(bossCritDamage))
                                     );
+                                    ctx.applyDamageToPlayer(bossCritDamage, true);
                                     const dmgMsg = ctx.strings.bosscorrectfeedback
                                         .replace('{$a}', Math.round(bossCritDamage));
                                     bossFeedback = `<div class="alert alert-danger mt-2 mb-0"><strong>${dmgMsg}</strong></div>`;

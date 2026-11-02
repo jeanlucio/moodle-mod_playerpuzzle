@@ -445,12 +445,16 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
         /**
          * The hit a match's Sword damage lands as on the other side (see
-         * CombatRules.matchHitAmount()), for board.js once a match has resolved.
+         * CombatRules.matchHitAmount()), for board.js once a match has resolved. An ambush is
+         * logged in the opponent's history, since it is the only sign the hit was doubled.
          *
          * @param {number} damage processEffects()'s damage.
          * @returns {number}
          */
         matchHit(damage) {
+            if (CombatRules.isAmbush(this.currentTurn, this.combatState(), this.ruleConfig())) {
+                this.scene.ui.pushHistoryLog('boss', this.strings.historylogambush);
+            }
             return CombatRules.matchHitAmount(this.currentTurn, damage, this.combatState(), this.ruleConfig());
         }
 

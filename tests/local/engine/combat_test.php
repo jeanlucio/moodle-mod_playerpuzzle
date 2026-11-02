@@ -197,7 +197,7 @@ final class combat_test extends \basic_testcase {
             'currentlevel' => 2, 'currentphase' => 3, 'difficulty' => 'hard',
         ]), $instance);
         $this->assertSame(
-            ['maxbosshp' => 340, 'basedamage' => 34, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => []],
+            ['maxbosshp' => 340, 'basedamage' => 34, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => ['ambush']],
             $brute
         );
 

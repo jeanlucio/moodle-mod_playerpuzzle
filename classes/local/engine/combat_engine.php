@@ -50,6 +50,7 @@ class combat_engine {
         'playerShieldMeter', 'playerShieldReady', 'bossShieldMeter', 'bossShieldReady',
         'playerPoisonMeter', 'playerPoisonRounds', 'bossPoisonMeter', 'bossPoisonRounds',
         'playerMana', 'bossMana', 'playerGold', 'bossGold',
+        'bossTurnCount',
     ];
 
     /** @var int A right answer's critical hit, in multiples of the phase's base damage. */
@@ -100,6 +101,12 @@ class combat_engine {
     /** @var string Power: the opponent recovers part of its max HP as each of its turns begins. */
     public const POWER_REGEN = 'regen';
 
+    /** @var string Power: the opponent's Swords hit harder on its first turn. */
+    public const POWER_AMBUSH = 'ambush';
+
+    /** @var int How much harder an opponent with the ambush power's Swords hit on its first turn. */
+    public const AMBUSH_MULTIPLIER = 2;
+
     /** @var string Power: the opponent recovers part of the damage its hits deal. */
     public const POWER_DRAIN = 'drain';
 
@@ -129,6 +136,7 @@ class combat_engine {
             'bossPoisonMeter' => 0, 'bossPoisonRounds' => 0,
             'playerMana' => 0, 'bossMana' => 0,
             'playerGold' => 0.0, 'bossGold' => 0.0,
+            'bossTurnCount' => 0,
         ];
         if (self::has_power($config, self::POWER_ICESHIELD)) {
             $state['bossShieldReady'] = true;
@@ -446,18 +454,35 @@ class combat_engine {
 
     /**
      * The hit a match's Sword damage lands as: scaled by the player's own multiplier (never the
-     * boss's), rounded halves up exactly like the client's Math.round(), and last the phase's
-     * attack and armor apply (see hit_amount()).
+     * boss's), rounded halves up exactly like the client's Math.round(); an opponent with the
+     * ambush power doubles it on its first turn; and last the phase's attack and armor apply (see
+     * hit_amount()).
      *
      * @param string $currentturn 'player' or 'boss' — whose match dealt it.
      * @param float $damagedealt resolve_match_effects()'s damageDealt.
      * @param array $state Combat state after resolve_match_effects().
-     * @param array $config The phase's attack and armor (see hit_amount()).
+     * @param array $config The phase's attack and armor (see hit_amount()); bossPowers is read.
      * @return float The hit to apply to the other side.
      */
     public static function match_hit_amount(string $currentturn, float $damagedealt, array $state, array $config): float {
         $multiplied = floor($damagedealt * ($currentturn === 'player' ? $state['playerMultiplier'] : 1) + 0.5);
+        if (self::is_ambush($currentturn, $state, $config)) {
+            $multiplied *= self::AMBUSH_MULTIPLIER;
+        }
         return self::hit_amount($multiplied, $currentturn, $config);
+    }
+
+    /**
+     * Whether a match's Swords are an ambush: the opponent's, on its first turn, with the ambush
+     * power.
+     *
+     * @param string $currentturn 'player' or 'boss' — whose match it is.
+     * @param array $state Combat state: bossTurnCount is read.
+     * @param array $config The phase's rule config; bossPowers is read.
+     * @return bool
+     */
+    public static function is_ambush(string $currentturn, array $state, array $config): bool {
+        return $currentturn === 'boss' && $state['bossTurnCount'] === 1 && self::has_power($config, self::POWER_AMBUSH);
     }
 
     /**
@@ -541,8 +566,9 @@ class combat_engine {
 
     /**
      * Everything that happens to a side as its turn begins, before it moves: its pending poison
-     * tick (see resolve_poison_tick()), then, for an opponent with the regen power that is still
-     * standing, REGEN_PERCENT of its max HP back, up to the max.
+     * tick (see resolve_poison_tick()); for the opponent, its turn count goes up (its first turn
+     * is 1), and with the regen power, while it still stands, REGEN_PERCENT of its max HP comes
+     * back, up to the max.
      *
      * @param string $side 'player' or 'boss' — whose turn begins.
      * @param array $state Current combat state — copied, never mutated.
@@ -556,6 +582,9 @@ class combat_engine {
         $tick = self::resolve_poison_tick($next[$hpfield], $next[$roundsfield], (float) $config['baseDamage']);
         $next[$hpfield] = $tick['newHp'];
         $next[$roundsfield] = $tick['newPoisonRounds'];
+        if ($side === 'boss') {
+            $next['bossTurnCount'] += 1;
+        }
 
         $regenerated = 0.0;
         if ($side === 'boss' && self::has_power($config, self::POWER_REGEN) && $next['currentHp'] > 0) {

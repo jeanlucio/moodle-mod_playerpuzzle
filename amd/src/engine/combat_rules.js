@@ -55,6 +55,7 @@
             'playerShieldMeter', 'playerShieldReady', 'bossShieldMeter', 'bossShieldReady',
             'playerPoisonMeter', 'playerPoisonRounds', 'bossPoisonMeter', 'bossPoisonRounds',
             'playerMana', 'bossMana', 'playerGold', 'bossGold',
+            'bossTurnCount',
         ];
 
         // The fields a resumed phase takes from the server's rebuilt snapshot: all but the two
@@ -88,6 +89,8 @@
             REGEN: 'regen',
             // The opponent recovers part of the damage its hits deal.
             DRAIN: 'drain',
+            // The opponent's Swords hit harder on its first turn.
+            AMBUSH: 'ambush',
         };
 
         // Rounds of poison a full Grimoire meter arms against the other side, and with the
@@ -106,6 +109,9 @@
         // How much mana each matched Orb gives, and for an opponent with the manaboost power.
         const ORB_MANA = 20;
         const BOOSTED_ORB_MANA = 30;
+
+        // How much harder an opponent with the ambush power's Swords hit on its first turn.
+        const AMBUSH_MULTIPLIER = 2;
 
         // The percentage of the damage its hits deal that an opponent with the drain power recovers.
         const DRAIN_PERCENT = 30;
@@ -144,6 +150,7 @@
                 bossPoisonMeter: 0, bossPoisonRounds: 0,
                 playerMana: 0, bossMana: 0,
                 playerGold: 0, bossGold: 0,
+                bossTurnCount: 0,
             };
             if (hasPower(config, POWERS.ICESHIELD)) {
                 state.bossShieldReady = true;
@@ -436,17 +443,34 @@
          * The hit a match's Sword damage lands as: the player's own multiplier scales it (the
          * boss's never does — its multiplier only scales its critical hits), then it is
          * rounded to a whole number, so an odd base damage on a 4-piece combo never leaves a
-         * half point behind, and last the phase's attack and armor apply (see hitAmount()).
+         * half point behind; an opponent with the ambush power doubles it on its first turn;
+         * and last the phase's attack and armor apply (see hitAmount()).
          *
          * @param {string} currentTurn 'player' or 'boss' — whose match dealt it.
          * @param {number} damageDealt resolveMatchEffects()'s damageDealt.
          * @param {object} state Combat state after resolveMatchEffects().
-         * @param {object} config The phase's attack and armor (see hitAmount()).
+         * @param {object} config The phase's attack and armor (see hitAmount()); bossPowers is read.
          * @return {number} The hit to apply to the other side.
          */
         function matchHitAmount(currentTurn, damageDealt, state, config) {
-            const multiplied = Math.round(damageDealt * (currentTurn === 'player' ? state.playerMultiplier : 1));
+            let multiplied = Math.round(damageDealt * (currentTurn === 'player' ? state.playerMultiplier : 1));
+            if (isAmbush(currentTurn, state, config)) {
+                multiplied *= AMBUSH_MULTIPLIER;
+            }
             return hitAmount(multiplied, currentTurn, config);
+        }
+
+        /**
+         * Whether a match's Swords are an ambush: the opponent's, on its first turn, with the
+         * ambush power.
+         *
+         * @param {string} currentTurn 'player' or 'boss' — whose match it is.
+         * @param {object} state Combat state: bossTurnCount is read.
+         * @param {object} config The phase's rule config; bossPowers is read.
+         * @return {boolean}
+         */
+        function isAmbush(currentTurn, state, config) {
+            return currentTurn === 'boss' && state.bossTurnCount === 1 && hasPower(config, POWERS.AMBUSH);
         }
 
         /**
@@ -523,8 +547,9 @@
 
         /**
          * Everything that happens to a side as its turn begins, before it moves: its pending
-         * poison tick (see resolvePoisonTick()), then, for an opponent with the regen power that
-         * is still standing, REGEN_PERCENT of its max HP back, up to the max.
+         * poison tick (see resolvePoisonTick()); for the opponent, its turn count goes up (its
+         * first turn is 1), and with the regen power, while it still stands, REGEN_PERCENT of its
+         * max HP comes back, up to the max.
          *
          * @param {string} side 'player' or 'boss' — whose turn begins.
          * @param {object} state Current combat state — copied, never mutated.
@@ -538,6 +563,9 @@
             const tick = resolvePoisonTick(next[hpField], next[roundsField], config.baseDamage);
             next[hpField] = tick.newHp;
             next[roundsField] = tick.newPoisonRounds;
+            if (side === 'boss') {
+                next.bossTurnCount += 1;
+            }
 
             let regenerated = 0;
             if (side === 'boss' && hasPower(config, POWERS.REGEN) && next.currentHp > 0) {
@@ -604,6 +632,7 @@
             resolveMatchEffects,
             resolveConsumableEffect,
             matchHitAmount,
+            isAmbush,
             hitAmount,
             drainAmount,
             questionOutcome,

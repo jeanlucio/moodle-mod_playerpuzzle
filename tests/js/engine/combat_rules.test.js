@@ -46,6 +46,7 @@ function freshState() {
         bossPoisonMeter: 0, bossPoisonRounds: 0,
         playerMana: 0, bossMana: 0,
         playerGold: 0, bossGold: 0,
+        bossTurnCount: 0,
     };
 }
 
@@ -397,6 +398,26 @@ test('startTurn: an opponent with regen recovers 1% of its max HP, up to the max
     assert.equal(killed.regenerated, 0);
     assert.equal(combatRules.startTurn('player', state, config).regenerated, 0);
     assert.equal(combatRules.startTurn('boss', state, CONFIG).regenerated, 0);
+});
+
+test('startTurn: the opponent counts its turns, from 1; the student never does', () => {
+    const state = freshState();
+    assert.equal(state.bossTurnCount, 0);
+    const first = combatRules.startTurn('boss', state, CONFIG).state;
+    assert.equal(first.bossTurnCount, 1);
+    assert.equal(combatRules.startTurn('boss', first, CONFIG).state.bossTurnCount, 2);
+    assert.equal(combatRules.startTurn('player', first, CONFIG).state.bossTurnCount, 1);
+});
+
+test('matchHitAmount: an opponent with ambush doubles its Swords on its first turn only', () => {
+    const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.AMBUSH], bossAttack: 1.15});
+    const onTurn = count => Object.assign(freshState(), {bossTurnCount: count});
+    assert.equal(combatRules.matchHitAmount('boss', 10, onTurn(1), config), 23);
+    assert.equal(combatRules.matchHitAmount('boss', 10, onTurn(2), config), 12);
+    assert.equal(combatRules.matchHitAmount('boss', 10, onTurn(1), Object.assign({}, CONFIG, {bossAttack: 1.15})), 12);
+    assert.equal(combatRules.matchHitAmount('player', 10, onTurn(1), config), 10);
+    assert.equal(combatRules.isAmbush('boss', onTurn(1), config), true);
+    assert.equal(combatRules.isAmbush('boss', onTurn(0), config), false);
 });
 
 test('drainAmount: an opponent with drain recovers 30% of what its hit dealt, up to its max HP', () => {

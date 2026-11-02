@@ -58,6 +58,7 @@ final class combat_engine_test extends \advanced_testcase {
             'bossPoisonMeter' => 0, 'bossPoisonRounds' => 0,
             'playerMana' => 0, 'bossMana' => 0,
             'playerGold' => 0, 'bossGold' => 0,
+            'bossTurnCount' => 0,
         ];
     }
 
@@ -668,6 +669,41 @@ final class combat_engine_test extends \advanced_testcase {
 
         $this->assertSame(0.0, combat_engine::start_turn('player', $state, $config)['regenerated']);
         $this->assertSame(0.0, combat_engine::start_turn('boss', $state, self::CONFIG)['regenerated']);
+    }
+
+    /**
+     * Tests that the opponent counts its turns as they begin, its first turn being 1, and that
+     * the student's turns never move the count.
+     *
+     * @return void
+     */
+    public function test_start_turn_counts_the_opponents_turns(): void {
+        $state = $this->fresh_state();
+        $this->assertSame(0, $state['bossTurnCount']);
+
+        $first = combat_engine::start_turn('boss', $state, self::CONFIG)['state'];
+        $this->assertSame(1, $first['bossTurnCount']);
+        $this->assertSame(2, combat_engine::start_turn('boss', $first, self::CONFIG)['state']['bossTurnCount']);
+        $this->assertSame(1, combat_engine::start_turn('player', $first, self::CONFIG)['state']['bossTurnCount']);
+    }
+
+    /**
+     * Tests that an opponent with ambush doubles its Swords on its first turn, before its attack,
+     * and on no other turn, and that the student's Swords never double.
+     *
+     * @return void
+     */
+    public function test_ambush_doubles_the_opponents_swords_on_its_first_turn(): void {
+        $config = array_merge(self::CONFIG, ['bossPowers' => [combat_engine::POWER_AMBUSH], 'bossAttack' => 1.15]);
+        $onturn = fn(int $count): array => array_merge($this->fresh_state(), ['bossTurnCount' => $count]);
+
+        $this->assertSame(23.0, combat_engine::match_hit_amount('boss', 10, $onturn(1), $config));
+        $this->assertSame(12.0, combat_engine::match_hit_amount('boss', 10, $onturn(2), $config));
+        $plain = array_merge(self::CONFIG, ['bossAttack' => 1.15]);
+        $this->assertSame(12.0, combat_engine::match_hit_amount('boss', 10, $onturn(1), $plain));
+        $this->assertSame(10.0, combat_engine::match_hit_amount('player', 10, $onturn(1), $config));
+        $this->assertTrue(combat_engine::is_ambush('boss', $onturn(1), $config));
+        $this->assertFalse(combat_engine::is_ambush('boss', $onturn(0), $config));
     }
 
     /**

@@ -1274,7 +1274,7 @@ final class game_page_service_test extends \advanced_testcase {
     public function test_build_game_config_passes_the_opponent_profile(): void {
         $expected = [
             'golem' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield']],
-            'goblin' => ['bosshp' => 200, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => []],
+            'goblin' => ['bosshp' => 200, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => ['ambush']],
             'ghost' => ['bosshp' => 230, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => []],
             'vampire' => ['bosshp' => 240, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => ['drain']],
         ];

@@ -92,6 +92,7 @@ class opponents {
      */
     private const POWERS = [
         'slime' => [combat_engine::POWER_REGEN],
+        'goblin' => [combat_engine::POWER_AMBUSH],
         'golem' => [combat_engine::POWER_ICESHIELD],
         'mummy' => [combat_engine::POWER_LONGPOISON],
         'plant' => [combat_engine::POWER_ROOTHEAL],

@@ -169,6 +169,8 @@ const REPLAY_CASES = [
         student: 400, typeOffset: 1, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'intangible, a lost match', opponent: 'ghost', seed: 129, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['wrong']},
+    {name: 'breath, a lost match', opponent: 'dragon', seed: 130, boss: 3000, damage: 12, coin: 10,
+        student: 400, typeOffset: 2, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'drain, a lost match', opponent: 'vampire', seed: 127, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 4, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
     {name: 'final boss, drain and extra HP', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
@@ -202,6 +204,7 @@ const OPPONENT_POWERS = {
     slime: ['regen'],
     goblin: ['ambush'],
     ghost: ['intangible'],
+    dragon: ['breath'],
     vampire: ['drain'],
 };
 
@@ -212,6 +215,7 @@ const POWER_CONFIGS = [[], ['iceshield'], ['longpoison'], ['fastgrimoire'], ['un
 // Every power, gone through one by one by the per-piece gains. A new power is appended here.
 const EVERY_POWER = [
     'iceshield', 'longpoison', 'fastgrimoire', 'manaboost', 'rootheal', 'regen', 'drain', 'ambush', 'intangible',
+    'breath',
 ];
 
 const HIT_CONFIGS = [
@@ -443,6 +447,15 @@ function buildCombatVectors() {
             intangibleRand.pick(['player', 'boss', 'boss']), state,
             {baseDamage: intangibleRand.int(1, 60), bossPowers: intangibleRand.pick([[], ['intangible'], ['intangible', 'regen']])},
         ]));
+    }
+
+    const breathRand = randomSource(20261107);
+    for (let i = 0; i < 30; i++) {
+        const state = Object.assign(randomState(breathRand), {bossTurnCount: breathRand.pick([8, 9, 9, 19, 29])});
+        const config = Object.assign({baseDamage: breathRand.int(1, 60),
+            bossPowers: breathRand.pick([[], ['breath'], ['breath', 'drain'], ['breath', 'intangible']])},
+            breathRand.pick(HIT_CONFIGS));
+        cases.push(recordCall('startTurn', [breathRand.pick(['player', 'boss', 'boss', 'boss']), state, config]));
     }
 
     return cases;

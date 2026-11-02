@@ -740,8 +740,39 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 this.updateUI();
                 me.ui.pushHistoryLog('boss', this.strings.historylogintangible);
             }
+            if (start.breath) {
+                this.showBreath(start.breath);
+                if (this.checkGameOver()) {
+                    return;
+                }
+            }
 
             me.time.delayedCall(800, this.executeBossTurn, [], this);
+        }
+
+        /**
+         * Shows the opponent's breath, already applied by CombatRules.startTurn(): the lunge, the
+         * hit or the Shield that took it, and what its drain recovered.
+         *
+         * @param {{hit: number, appliedAmount: number, shieldConsumed: boolean, drained: number}} breath
+         */
+        showBreath(breath) {
+            const me = this.scene;
+            this.updateUI();
+            me.ui.lungeCharacter('boss', true);
+            me.ui.pushHistoryLog('boss', this.strings.historylogbreath.replace('{$a}', Math.round(breath.hit)));
+            if (breath.shieldConsumed) {
+                me.ui.pushHistoryLog('player', this.strings.historylogshieldblock);
+            }
+            if (breath.drained > 0) {
+                me.ui.pushHistoryLog('boss', this.strings.historylogdrain.replace('{$a}', Math.round(breath.drained)));
+            }
+            Accessibility.announce(
+                this.strings.damagetaken
+                    .replace('{$a->damage}', Math.round(breath.appliedAmount))
+                    .replace('{$a->hp}', Math.round(this.currentPlayerHp))
+            );
+            me.ui.hitCharacter('player', breath.shieldConsumed);
         }
 
         executeBossTurn() {

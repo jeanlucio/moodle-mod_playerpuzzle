@@ -93,6 +93,8 @@
             AMBUSH: 'ambush',
             // The opponent's Shield arms by itself every few of its turns.
             INTANGIBLE: 'intangible',
+            // Every few of its turns, the opponent lands a strong hit before it moves.
+            BREATH: 'breath',
         };
 
         // Rounds of poison a full Grimoire meter arms against the other side, and with the
@@ -111,6 +113,11 @@
         // How much mana each matched Orb gives, and for an opponent with the manaboost power.
         const ORB_MANA = 20;
         const BOOSTED_ORB_MANA = 30;
+
+        // Every how many of its turns an opponent with the breath power lands it, and how many times
+        // the phase's base damage it hits for.
+        const BREATH_EVERY = 10;
+        const BREATH_MULTIPLIER = 1.5;
 
         // Every how many of its turns an opponent with the intangible power has its Shield armed.
         const INTANGIBLE_EVERY = 10;
@@ -554,14 +561,20 @@
          * Everything that happens to a side as its turn begins, before it moves: its pending
          * poison tick (see resolvePoisonTick()); for the opponent, its turn count goes up (its
          * first turn is 1); with the intangible power, every INTANGIBLE_EVERY turns its Shield
-         * arms; and with the regen power, while it still stands, REGEN_PERCENT of its max HP
-         * comes back, up to the max.
+         * arms; with the breath power, while it still stands, every BREATH_EVERY turns it hits
+         * the student for BREATH_MULTIPLIER times the base damage, through its attack, the
+         * student's armor and Shield, and its own drain; and with the regen power, while it still
+         * stands, REGEN_PERCENT of its max HP comes back, up to the max. The caller checks
+         * whether the student survived the breath.
          *
          * @param {string} side 'player' or 'boss' — whose turn begins.
          * @param {object} state Current combat state — copied, never mutated.
-         * @param {object} config {baseDamage}; bossPowers is read.
-         * @return {{state: object, poisonTicked: boolean, regenerated: number, shieldArmed: boolean}}
-         *  shieldArmed is true when the intangible power armed a Shield that was not armed yet.
+         * @param {object} config {baseDamage}, the phase's attack and armor (see hitAmount());
+         *  bossPowers is read.
+         * @return {{state: object, poisonTicked: boolean, regenerated: number, shieldArmed: boolean,
+         *  breath: ?{hit: number, appliedAmount: number, shieldConsumed: boolean, drained: number}}}
+         *  shieldArmed is true when the intangible power armed a Shield that was not armed yet;
+         *  breath is null on a turn without one.
          */
         function startTurn(side, state, config) {
             const next = Object.assign({}, state);
@@ -579,12 +592,26 @@
                 }
             }
 
+            let breath = null;
+            if (side === 'boss' && hasPower(config, POWERS.BREATH) && next.currentHp > 0
+                    && next.bossTurnCount % BREATH_EVERY === 0) {
+                const hit = hitAmount(config.baseDamage * BREATH_MULTIPLIER, 'boss', config);
+                const applied = resolveDamage(next.currentPlayerHp, next.playerShieldReady, hit);
+                next.currentPlayerHp = applied.newHp;
+                if (applied.shieldConsumed) {
+                    next.playerShieldReady = false;
+                }
+                const drained = drainAmount(applied.appliedAmount, next, config);
+                next.currentHp += drained;
+                breath = {hit, appliedAmount: applied.appliedAmount, shieldConsumed: applied.shieldConsumed, drained};
+            }
+
             let regenerated = 0;
             if (side === 'boss' && hasPower(config, POWERS.REGEN) && next.currentHp > 0) {
                 regenerated = Math.min(next.maxBossHp - next.currentHp, next.maxBossHp * REGEN_PERCENT / 100);
                 next.currentHp += regenerated;
             }
-            return {state: next, poisonTicked: tick.ticked, regenerated, shieldArmed};
+            return {state: next, poisonTicked: tick.ticked, regenerated, shieldArmed, breath};
         }
 
         /**

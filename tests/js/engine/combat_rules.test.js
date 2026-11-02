@@ -425,6 +425,23 @@ test('startTurn: an opponent with intangible arms its Shield every 10 of its tur
     assert.equal(combatRules.startTurn('player', before(11), config).state.bossShieldReady, false);
 });
 
+test('startTurn: an opponent with breath hits for 1.5x base damage every 10 turns, through armor and Shield', () => {
+    const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.BREATH], bossAttack: 1.15});
+    const before = turn => Object.assign(freshState(), {bossTurnCount: turn - 1});
+    const tenth = combatRules.startTurn('boss', before(10), config);
+    assert.deepEqual(tenth.breath, {hit: 17, appliedAmount: 17, shieldConsumed: false, drained: 0});
+    assert.equal(tenth.state.currentPlayerHp, 83);
+    assert.equal(combatRules.startTurn('boss', before(9), config).breath, null);
+    const shielded = combatRules.startTurn('boss', Object.assign(before(10), {playerShieldReady: true}), config);
+    assert.equal(shielded.state.currentPlayerHp, 100);
+    assert.equal(shielded.state.playerShieldReady, false);
+    assert.equal(shielded.breath.shieldConsumed, true);
+    const draining = Object.assign({}, config, {bossPowers: [combatRules.POWERS.BREATH, combatRules.POWERS.DRAIN]});
+    assert.equal(combatRules.startTurn('boss', before(10), draining).breath.drained, 5.1);
+    const poisoned = Object.assign(before(10), {currentHp: 5, bossPoisonRounds: 1});
+    assert.equal(combatRules.startTurn('boss', poisoned, config).breath, null);
+});
+
 test('matchHitAmount: an opponent with ambush doubles its Swords on its first turn only', () => {
     const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.AMBUSH], bossAttack: 1.15});
     const onTurn = count => Object.assign(freshState(), {bossTurnCount: count});

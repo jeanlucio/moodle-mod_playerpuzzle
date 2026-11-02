@@ -96,6 +96,7 @@ class opponents {
         'slime' => [combat_engine::POWER_REGEN],
         'goblin' => [combat_engine::POWER_AMBUSH],
         'ghost' => [combat_engine::POWER_INTANGIBLE],
+        'dragon' => [combat_engine::POWER_BREATH],
         'golem' => [combat_engine::POWER_ICESHIELD],
         'mummy' => [combat_engine::POWER_LONGPOISON],
         'plant' => [combat_engine::POWER_ROOTHEAL],

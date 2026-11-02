@@ -716,6 +716,35 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that an opponent with breath hits the student for BREATH_MULTIPLIER times the base
+     * damage every BREATH_EVERY of its turns, through its attack, the student's Shield and its own
+     * drain, and never once its own poison tick knocked it out.
+     *
+     * @return void
+     */
+    public function test_breath_hits_the_student_every_few_turns(): void {
+        $config = array_merge(self::CONFIG, ['bossPowers' => [combat_engine::POWER_BREATH], 'bossAttack' => 1.15]);
+        $before = fn(int $turn): array => array_merge($this->fresh_state(), ['bossTurnCount' => $turn - 1]);
+
+        $this->assertSame([10, 1.5], [combat_engine::BREATH_EVERY, combat_engine::BREATH_MULTIPLIER]);
+        $tenth = combat_engine::start_turn('boss', $before(10), $config);
+        $this->assertEquals(['hit' => 17, 'appliedAmount' => 17, 'shieldConsumed' => false, 'drained' => 0], $tenth['breath']);
+        $this->assertEquals(83, $tenth['state']['currentPlayerHp']);
+        $this->assertNull(combat_engine::start_turn('boss', $before(9), $config)['breath']);
+
+        $shielded = combat_engine::start_turn('boss', array_merge($before(10), ['playerShieldReady' => true]), $config);
+        $this->assertEquals(100, $shielded['state']['currentPlayerHp']);
+        $this->assertFalse($shielded['state']['playerShieldReady']);
+        $this->assertTrue($shielded['breath']['shieldConsumed']);
+
+        $draining = array_merge($config, ['bossPowers' => [combat_engine::POWER_BREATH, combat_engine::POWER_DRAIN]]);
+        $this->assertEqualsWithDelta(5.1, combat_engine::start_turn('boss', $before(10), $draining)['breath']['drained'], 1e-9);
+
+        $poisoned = array_merge($before(10), ['currentHp' => 5, 'bossPoisonRounds' => 1]);
+        $this->assertNull(combat_engine::start_turn('boss', $poisoned, $config)['breath']);
+    }
+
+    /**
      * Tests that an opponent with ambush doubles its Swords on its first turn, before its attack,
      * and on no other turn, and that the student's Swords never double.
      *

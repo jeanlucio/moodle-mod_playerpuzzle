@@ -101,6 +101,15 @@ class combat_engine {
     /** @var string Power: the opponent recovers part of its max HP as each of its turns begins. */
     public const POWER_REGEN = 'regen';
 
+    /** @var string Power: every few of its turns, the opponent lands a strong hit before it moves. */
+    public const POWER_BREATH = 'breath';
+
+    /** @var int Every how many of its turns an opponent with the breath power lands it. */
+    public const BREATH_EVERY = 10;
+
+    /** @var float How many times the phase's base damage the breath hits for. */
+    public const BREATH_MULTIPLIER = 1.5;
+
     /** @var string Power: the opponent's Shield arms by itself every few of its turns. */
     public const POWER_INTANGIBLE = 'intangible';
 
@@ -573,14 +582,19 @@ class combat_engine {
     /**
      * Everything that happens to a side as its turn begins, before it moves: its pending poison
      * tick (see resolve_poison_tick()); for the opponent, its turn count goes up (its first turn
-     * is 1); with the intangible power, every INTANGIBLE_EVERY turns its Shield arms; and with the
-     * regen power, while it still stands, REGEN_PERCENT of its max HP comes back, up to the max.
+     * is 1); with the intangible power, every INTANGIBLE_EVERY turns its Shield arms; with the
+     * breath power, while it still stands, every BREATH_EVERY turns it hits the student for
+     * BREATH_MULTIPLIER times the base damage, through its attack, the student's armor and Shield,
+     * and its own drain; and with the regen power, while it still stands, REGEN_PERCENT of its max
+     * HP comes back, up to the max. The caller checks whether the student survived the breath.
      *
      * @param string $side 'player' or 'boss' — whose turn begins.
      * @param array $state Current combat state — copied, never mutated.
-     * @param array $config Keys baseDamage, and bossPowers (optional).
-     * @return array ['state' => array, 'poisonTicked' => bool, 'regenerated' => float, 'shieldArmed' => bool]
-     *  shieldArmed is true when the intangible power armed a Shield that was not armed yet.
+     * @param array $config Keys baseDamage, the phase's attack and armor (see hit_amount()), and
+     *  bossPowers (optional).
+     * @return array ['state' => array, 'poisonTicked' => bool, 'regenerated' => float, 'shieldArmed' => bool,
+     *  'breath' => array|null] shieldArmed is true when the intangible power armed a Shield that was not armed
+     *  yet; breath is null on a turn without one, otherwise ['hit', 'appliedAmount', 'shieldConsumed', 'drained'].
      */
     public static function start_turn(string $side, array $state, array $config): array {
         $next = $state;
@@ -598,6 +612,27 @@ class combat_engine {
             }
         }
 
+        $breath = null;
+        if (
+            $side === 'boss' && self::has_power($config, self::POWER_BREATH) && $next['currentHp'] > 0
+            && $next['bossTurnCount'] % self::BREATH_EVERY === 0
+        ) {
+            $hit = self::hit_amount($config['baseDamage'] * self::BREATH_MULTIPLIER, 'boss', $config);
+            $applied = self::resolve_damage($next['currentPlayerHp'], $next['playerShieldReady'], $hit);
+            $next['currentPlayerHp'] = $applied['newHp'];
+            if ($applied['shieldConsumed']) {
+                $next['playerShieldReady'] = false;
+            }
+            $drained = self::drain_amount($applied['appliedAmount'], $next, $config);
+            $next['currentHp'] += $drained;
+            $breath = [
+                'hit' => $hit,
+                'appliedAmount' => $applied['appliedAmount'],
+                'shieldConsumed' => $applied['shieldConsumed'],
+                'drained' => $drained,
+            ];
+        }
+
         $regenerated = 0.0;
         if ($side === 'boss' && self::has_power($config, self::POWER_REGEN) && $next['currentHp'] > 0) {
             $regenerated = (float) min(
@@ -611,6 +646,7 @@ class combat_engine {
             'poisonTicked' => $tick['ticked'],
             'regenerated' => $regenerated,
             'shieldArmed' => $shieldarmed,
+            'breath' => $breath,
         ];
     }
 

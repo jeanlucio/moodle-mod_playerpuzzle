@@ -303,6 +303,10 @@ class replay {
                         return $finish('player', true);
                     }
                 }
+                // The opponent's breath lands as its turn begins, before it moves.
+                if ($state['currentPlayerHp'] <= 0) {
+                    return $finish('boss', true);
+                }
             } else {
                 $move = board_engine::find_move($grid, self::ROWS, self::COLS, 3)
                     ?? board_engine::find_move($grid, self::ROWS, self::COLS, null);

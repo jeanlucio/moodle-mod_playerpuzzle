@@ -375,6 +375,9 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, events, outcomes, s
         if (start.poisonTicked && bossDiesForGood()) {
             return finish();
         }
+        if (state.currentPlayerHp <= 0) {
+            return finish();
+        }
         return undefined;
     };
 

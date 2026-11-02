@@ -30,6 +30,7 @@ use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
+use mod_playerpuzzle\local\seen_opponents;
 use mod_playerpuzzle\local\sound_preferences;
 
 /**
@@ -123,6 +124,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->assertContains(sound_preferences::preference_name('music'), $keys);
         $this->assertContains(sound_preferences::preference_name('sfx'), $keys);
         $this->assertContains(sound_preferences::preference_name('speech'), $keys);
+        $this->assertContains(seen_opponents::PREFERENCE, $keys);
     }
 
     /**
@@ -157,6 +159,23 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $prefs = (array) $writer->get_user_preferences('mod_playerpuzzle');
         $this->assertCount(1, $prefs);
         $this->assertArrayHasKey(sound_preferences::preference_name('music'), $prefs);
+    }
+
+    /**
+     * Tests that the opponents a user has already faced export as one preference, listing them.
+     *
+     * @return void
+     */
+    public function test_export_user_preferences_seen_opponents(): void {
+        $user = $this->getDataGenerator()->create_user();
+        seen_opponents::first_meeting('goblin', (int) $user->id);
+        seen_opponents::first_meeting('golem', (int) $user->id);
+
+        provider::export_user_preferences((int) $user->id);
+
+        $prefs = (array) writer::with_context(\context_system::instance())->get_user_preferences('mod_playerpuzzle');
+        $this->assertCount(1, $prefs);
+        $this->assertSame('goblin, golem', $prefs[seen_opponents::PREFERENCE]->value);
     }
 
     /**

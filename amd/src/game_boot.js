@@ -501,7 +501,7 @@ define([
 
                 const strKeys = [
                     'advancingphase',
-                    'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectfeedback',
+                    'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectblocked', 'bosscorrectfeedback',
                     'bosslostmultiplier', 'bossrevived', 'bosstrigger', 'bosswrongfeedback',
                     'btnattack', 'btncontinue', 'btnexitgame', 'btnplayagain',
                     'coinscollected',
@@ -537,7 +537,7 @@ define([
                     'piece_orb', 'piece_orb_plural', 'piece_potion', 'piece_potion_plural',
                     'piece_shield', 'piece_shield_plural', 'piece_star', 'piece_star_plural',
                     'piece_sword', 'piece_sword_plural',
-                    'playercorrect',
+                    'playercorrect', 'playercorrectblocked',
                     'power_ambush', 'power_breath', 'power_drain', 'power_fastgrimoire', 'power_iceshield',
                     'power_longpoison',
                     'power_intangible', 'power_loot', 'power_manaboost',

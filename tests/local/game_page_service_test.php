@@ -906,6 +906,69 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the balloon explaining an opponent's powers is offered only the first time the
+     * student meets that opponent, in any activity, while the phase still counts as fresh until a
+     * move is played in it.
+     *
+     * @return void
+     */
+    public function test_build_game_config_explains_an_opponent_only_the_first_time(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'bossavatar' => 'goblin']);
+        $context = \context_module::instance($cm->id);
+        $userid = (int) $this->student->id;
+
+        $first = game_page_service::build_game_config($cm, $instance, $context, $userid, false);
+        $this->assertTrue($first['freshphase']);
+        $this->assertTrue($first['powernotice']);
+
+        $again = game_page_service::build_game_config($cm, $instance, $context, $userid, false);
+        $this->assertTrue($again['freshphase'], 'no move was played yet');
+        $this->assertFalse($again['powernotice']);
+
+        [$othercm, $other] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'bossavatar' => 'goblin']);
+        $othercontext = \context_module::instance($othercm->id);
+        $this->assertFalse(game_page_service::build_game_config($othercm, $other, $othercontext, $userid, false)['powernotice']);
+
+        [$golemcm, $golem] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'bossavatar' => 'golem']);
+        $golemcontext = \context_module::instance($golemcm->id);
+        $this->assertTrue(game_page_service::build_game_config($golemcm, $golem, $golemcontext, $userid, false)['powernotice']);
+        $this->assertSame(['goblin', 'golem'], seen_opponents::seen($userid));
+    }
+
+    /**
+     * Tests that a phase with a move played in it is no longer fresh, so a first meeting there is
+     * neither explained nor recorded, and that a Demo never records one.
+     *
+     * @return void
+     */
+    public function test_build_game_config_explains_nothing_once_the_phase_is_under_way(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'bossavatar' => 'goblin']);
+        $context = \context_module::instance($cm->id);
+        $userid = (int) $this->student->id;
+
+        $demo = game_page_service::build_game_config($cm, $instance, $context, $userid, false, 'normal', true);
+        $this->assertFalse($demo['powernotice']);
+        $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $instance->id, 'userid' => $userid]);
+
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token((int) $instance->id, $userid);
+        $DB->update_record('playerpuzzle_attempts', (object) [
+            'id' => (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]),
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 1, 'c2' => 4]]),
+            'moveseq' => 1,
+            'frozenbasebosshp' => 100000,
+        ]);
+
+        $config = game_page_service::build_game_config($cm, $instance, $context, $userid, false);
+        $this->assertNotNull($config['snapshot']);
+        $this->assertFalse($config['freshphase']);
+        $this->assertFalse($config['powernotice']);
+        $this->assertSame([], seen_opponents::seen($userid));
+    }
+
+    /**
      * Tests that an event the rebuild had to add — here, a question the server had already
      * judged before the reload, but whose marker never reached the log — is stored, and the
      * client continues from the new count.

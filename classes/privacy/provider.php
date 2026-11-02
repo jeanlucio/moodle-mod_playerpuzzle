@@ -31,6 +31,7 @@ use core_privacy\local\request\contextlist;
 use core_privacy\local\request\transform;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
+use mod_playerpuzzle\local\seen_opponents;
 use mod_playerpuzzle\local\sound_preferences;
 
 /**
@@ -158,13 +159,14 @@ class provider implements
             sound_preferences::preference_name('speech'),
             'privacy:metadata:preference:speech'
         );
+        $collection->add_user_preference(seen_opponents::PREFERENCE, 'privacy:metadata:preference:seenopponents');
 
         return $collection;
     }
 
     /**
-     * Exports the Music/Sound Effects/narration preferences for the given user, for
-     * whichever ones have ever been set — get_user_preferences() with no default (null) is
+     * Exports the opponents the user has already faced and the Music/Sound Effects/narration
+     * preferences for the given user, for whichever ones have ever been set — get_user_preferences() with no default (null) is
      * the only way to distinguish "never toggled" from "toggled back to that channel's own
      * default", the same distinction has_seen_intro()-style boolean preferences do not need
      * to make.
@@ -174,6 +176,15 @@ class provider implements
      */
     #[\Override]
     public static function export_user_preferences(int $userid): void {
+        $seen = seen_opponents::seen($userid);
+        if ($seen) {
+            writer::export_user_preference(
+                'mod_playerpuzzle',
+                seen_opponents::PREFERENCE,
+                implode(', ', $seen),
+                get_string('privacy:metadata:preference:seenopponents', 'mod_playerpuzzle')
+            );
+        }
         foreach (sound_preferences::TYPES as $type) {
             $name = sound_preferences::preference_name($type);
             $value = get_user_preferences($name, null, $userid);

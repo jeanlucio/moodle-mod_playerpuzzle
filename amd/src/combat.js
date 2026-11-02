@@ -160,7 +160,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.restoredGrid = null;
             this.pendingQuestion = null;
             this.resumedEnded = false;
-            this.freshPhase = !gameConfig.snapshot && !gameConfig.combatstate;
+            // The server tells whether no move was played in this phase yet (see
+            // game_page_service::build_game_config()).
+            this.freshPhase = !!gameConfig.freshphase;
             if (gameConfig.snapshot) {
                 this.hydrateFromSnapshot(gameConfig.snapshot);
             } else {
@@ -420,11 +422,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Explains the opponent's powers as a fresh phase begins: one balloon with every
-         * power's notice and a line in the opponent's history for each. Returns the notice so
-         * the turn announcement can open with it; announcing it separately would be overwritten
-         * by that announcement at once. A resumed phase shows nothing, as the student was
-         * already told when it started.
+         * Lists the opponent's powers and items as a fresh phase begins: a line in the
+         * opponent's history for each, and, the first time the student meets this opponent
+         * (gameConfig.powernotice), one balloon explaining them all. Returns the balloon's
+         * notice so the turn announcement can open with it; announcing it separately would be
+         * overwritten by that announcement at once. A resumed phase shows nothing, as the
+         * student was already told when it started.
          *
          * @returns {string} The notice, or '' when there is none.
          */
@@ -439,11 +442,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             if (hasKit) {
                 notices.push(fillKit(this.strings.opponentkit));
             }
-            const notice = notices.join(' ');
-            if (notice === '') {
-                return '';
-            }
-            this.scene.ui.showTutorialBalloon(notice, false);
             this.bossPowers.forEach(power => {
                 const line = this.strings[`historylogpower_${power}`];
                 if (line) {
@@ -453,6 +451,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             if (hasKit) {
                 this.scene.ui.pushHistoryLog('boss', fillKit(this.strings.historylogkit));
             }
+            const notice = notices.join(' ');
+            if (notice === '' || !this.gameConfig.powernotice) {
+                return '';
+            }
+            this.scene.ui.showTutorialBalloon(notice, false);
             return notice;
         }
 
@@ -679,6 +682,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             return CombatRules.phaseLimit(type);
         }
 
+        /**
+         * Applies a hit to the opponent.
+         *
+         * @param {number} amount The hit, already through attack and armor.
+         * @returns {{newHp: number, shieldConsumed: boolean, appliedAmount: number}} What landed.
+         */
         applyDamageToBoss(amount) {
             const me = this.scene;
             const result = CombatRules.resolveDamage(this.currentHp, this.bossShieldReady, amount);
@@ -695,6 +704,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     .replace('{$a->hp}', Math.round(this.currentHp))
             );
             me.ui.hitCharacter('boss', result.shieldConsumed);
+            return result;
         }
 
         /**
@@ -703,6 +713,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          *
          * @param {number} amount The hit, already through attack and armor.
          * @param {boolean} [byOpponent] Whether the opponent landed it (Swords or a critical answer).
+         * @returns {{newHp: number, shieldConsumed: boolean, appliedAmount: number}} What landed.
          */
         applyDamageToPlayer(amount, byOpponent = false) {
             const me = this.scene;
@@ -729,6 +740,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // The same flash and recoil as the boss, in place of a screen shake found
             // disruptive.
             me.ui.hitCharacter('player', result.shieldConsumed);
+            return result;
         }
 
         passTurnToBoss() {
@@ -1372,12 +1384,15 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                         // The scene is paused while the question is open: the
                                         // lunge and the recoil play as soon as it closes.
                                         me.ui.lungeCharacter('player', true);
-                                        ctx.applyDamageToBoss(critDamage);
+                                        const landed = ctx.applyDamageToBoss(critDamage);
                                         me.ui.pushHistoryLog(
                                             'player', ctx.strings.historylogcritical.replace('{$a}', Math.round(critDamage))
                                         );
+                                        const rightMsg = landed.shieldConsumed
+                                            ? ctx.strings.playercorrectblocked
+                                            : ctx.strings.playercorrect.replace('{$a}', Math.round(landed.appliedAmount));
                                         feedbackMsg = '<div class="alert alert-success mt-2 mb-0">'
-                                            + `<strong>${ctx.strings.playercorrect}</strong></div>`;
+                                            + `<strong>${rightMsg}</strong></div>`;
                                     } else {
                                         answersContainer.find('.btn-warning')
                                             .removeClass('btn-warning').addClass('btn-danger text-white');
@@ -1479,9 +1494,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     me.ui.pushHistoryLog(
                                         'boss', ctx.strings.historylogcritical.replace('{$a}', Math.round(bossCritDamage))
                                     );
-                                    ctx.applyDamageToPlayer(bossCritDamage, true);
-                                    const dmgMsg = ctx.strings.bosscorrectfeedback
-                                        .replace('{$a}', Math.round(bossCritDamage));
+                                    const taken = ctx.applyDamageToPlayer(bossCritDamage, true);
+                                    const dmgMsg = taken.shieldConsumed
+                                        ? ctx.strings.bosscorrectblocked
+                                        : ctx.strings.bosscorrectfeedback.replace('{$a}', Math.round(taken.appliedAmount));
                                     bossFeedback = `<div class="alert alert-danger mt-2 mb-0"><strong>${dmgMsg}</strong></div>`;
                                 } else {
                                     const wfMsg = ctx.strings.bosswrongfeedback;

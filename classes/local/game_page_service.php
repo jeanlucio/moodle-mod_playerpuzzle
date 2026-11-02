@@ -395,6 +395,15 @@ class game_page_service {
             : opponents::for_phase($instance, $attemptinfo->currentlevel, $attemptinfo->currentphase);
         $bossurl = opponents::sprite_url($opponent)->out(false);
         $playerurl = $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false);
+
+        // A phase no move has been played in yet: just started, advanced to, or started again
+        // (after a defeat, or on a newer engine). Its opponent's powers are listed in the
+        // opponent's history, and explained in a balloon only the first time the student meets
+        // that opponent, in any activity. A Demo never counts as meeting it.
+        $freshphase = $snapshot !== null
+            ? $snapshot['eventcount'] === 0 && $snapshot['pendingquestion'] === null && !$snapshot['terminal']
+            : empty($attemptinfo->combatstate);
+        $powernotice = $freshphase && !$isdemo && seen_opponents::first_meeting($opponent, $userid);
         $stagebgurl = opponents::stage_url($opponent)->out(false);
 
         return [
@@ -433,6 +442,8 @@ class game_page_service {
             // when there is no server-rebuilt snapshot above (a Demo, or a log that does not
             // replay consistently).
             'combatstate'          => $snapshot === null ? $attemptinfo->combatstate : null,
+            'freshphase'           => $freshphase,
+            'powernotice'          => $powernotice,
             'consumableuses'       => $consumableuses,
             'consumablestock'      => $consumablestock,
             // Coin multiplier the client applies to its own gold display so the end screen

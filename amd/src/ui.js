@@ -162,9 +162,9 @@ define(
 
                 // Boss side: same layout translated by the panel offset. Potion/Sword shown
                 // for visual parity only (no boss shop) — plain icon, never a purchase badge.
-                me.add.image(L.bossPotionX, L.bossPotionY, 'item5')
+                this.bossPotionIcon = me.add.image(L.bossPotionX, L.bossPotionY, 'item5')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
-                me.add.image(L.bossSwordX, L.bossSwordY, 'item3')
+                this.bossSwordIcon = me.add.image(L.bossSwordX, L.bossSwordY, 'item3')
                     .setDisplaySize(L.resourceIconSize, L.resourceIconSize);
                 this.txtBossGold = this.addResourceChip(
                     L.bossGoldX, L.bossGoldY, 'item6', '0', L.indicatorIconSize
@@ -500,6 +500,48 @@ define(
             sprite.setTint(0xff0000);
             me.time.delayedCall(200, () => sprite.clearTint());
             this.moveCharacter(side, RECOIL);
+        }
+
+        /**
+         * Shows the opponent's starting items, when it has any: a "×N" counter on a Potion and a
+         * Sword icon — the desktop panel's own icons, or two small ones drawn on the phone's.
+         *
+         * @param {{potion: number, sword: number}} kit The items the phase started with.
+         */
+        createOpponentItems(kit) {
+            if (!kit.potion && !kit.sword) {
+                return;
+            }
+            const me = this.scene;
+            const L = this.L;
+            const size = L.bossItemIconSize;
+            const make = (x, y, key, icon) => ({
+                icon: icon || me.add.image(x, y, key).setDisplaySize(size, size),
+                label: me.add.text(x + (size * 0.35), y + (size * 0.35), '', {
+                    fontSize: `${L.bossItemFontSize}px`, fill: '#ffffff', fontStyle: 'bold',
+                    backgroundColor: '#1c1712', padding: {x: 3, y: 1},
+                }).setOrigin(0.5).setDepth(Depth.FRONT_IMAGES),
+            });
+            this.opponentItems = {
+                potion: make(L.bossPotionX, L.bossPotionY, 'item5', this.bossPotionIcon),
+                sword: make(L.bossSwordX, L.bossSwordY, 'item3', this.bossSwordIcon),
+            };
+        }
+
+        /**
+         * Refreshes the opponent's item counters; a spent item's icon is dimmed.
+         *
+         * @param {number} potions Potions left.
+         * @param {number} swords Swords left.
+         */
+        updateOpponentItems(potions, swords) {
+            if (!this.opponentItems) {
+                return;
+            }
+            [[this.opponentItems.potion, potions], [this.opponentItems.sword, swords]].forEach(([item, count]) => {
+                item.label.setText(`×${count}`);
+                item.icon.setAlpha(count > 0 ? 1 : 0.35);
+            });
         }
 
         /**

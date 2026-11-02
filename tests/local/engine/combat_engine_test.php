@@ -58,7 +58,7 @@ final class combat_engine_test extends \advanced_testcase {
             'bossPoisonMeter' => 0, 'bossPoisonRounds' => 0,
             'playerMana' => 0, 'bossMana' => 0,
             'playerGold' => 0, 'bossGold' => 0,
-            'bossTurnCount' => 0,
+            'bossTurnCount' => 0, 'bossPotions' => 0, 'bossSwords' => 0,
         ];
     }
 
@@ -808,6 +808,73 @@ final class combat_engine_test extends \advanced_testcase {
         $plant = ['difficulty' => 'hard', 'bossPowers' => [combat_engine::POWER_ROOTHEAL]];
         $this->assertEquals([1.5, 1.5, 1.5, 3, 1.5, 3, 1], combat_engine::opponent_move_weights($state, $plant));
         $this->assertEquals($base, combat_engine::opponent_move_weights($state, array_merge($plant, ['difficulty' => 'normal'])));
+    }
+
+    /**
+     * Tests the opponent's starting items: one per level after the first, plus Hard and the final
+     * boss, Potions first and alternating, capped at the phase limits, none on Easy.
+     *
+     * @return void
+     */
+    public function test_opponent_kit_grows_with_level_difficulty_and_the_final_boss(): void {
+        $this->assertSame(['potion' => 0, 'sword' => 0], combat_engine::opponent_kit(1, 'normal', false));
+        $this->assertSame(['potion' => 1, 'sword' => 0], combat_engine::opponent_kit(2, 'normal', false));
+        $this->assertSame(['potion' => 1, 'sword' => 1], combat_engine::opponent_kit(3, 'normal', false));
+        $this->assertSame(['potion' => 1, 'sword' => 0], combat_engine::opponent_kit(1, 'hard', false));
+        $this->assertSame(['potion' => 1, 'sword' => 0], combat_engine::opponent_kit(1, 'normal', true));
+        $this->assertSame(['potion' => 0, 'sword' => 0], combat_engine::opponent_kit(3, 'easy', true));
+        $this->assertSame(['potion' => 3, 'sword' => 3], combat_engine::opponent_kit(10, 'hard', true));
+        $this->assertSame(2, combat_engine::initial_state(100, 200, ['bossKit' => ['potion' => 2, 'sword' => 1]])['bossPotions']);
+    }
+
+    /**
+     * Tests when the opponent uses an item: a Sword that wins the fight or hits a student below
+     * ITEM_SWORD_BELOW, never against an armed Shield; otherwise a Potion below ITEM_POTION_BELOW.
+     *
+     * @return void
+     */
+    public function test_opponent_item_use_follows_the_hp_thresholds(): void {
+        $config = array_merge(self::CONFIG, ['bossAttack' => 1.15]);
+        $kit = array_merge($this->fresh_state(), ['bossPotions' => 1, 'bossSwords' => 1, 'maxPlayerHp' => 200]);
+
+        $this->assertSame('sword', combat_engine::opponent_item_use(array_merge($kit, ['currentPlayerHp' => 12]), $config));
+        $this->assertSame('sword', combat_engine::opponent_item_use(array_merge($kit, ['currentPlayerHp' => 59]), $config));
+        $this->assertNull(combat_engine::opponent_item_use(array_merge($kit, ['currentPlayerHp' => 60]), $config));
+        $shielded = array_merge($kit, ['currentPlayerHp' => 12, 'playerShieldReady' => true]);
+        $this->assertNull(combat_engine::opponent_item_use($shielded, $config));
+
+        $hurt = array_merge($kit, ['currentPlayerHp' => 150, 'currentHp' => 79]);
+        $this->assertSame('potion', combat_engine::opponent_item_use($hurt, $config));
+        $this->assertNull(combat_engine::opponent_item_use(array_merge($hurt, ['currentHp' => 80]), $config));
+        $this->assertNull(combat_engine::opponent_item_use(array_merge($hurt, ['bossPotions' => 0]), $config));
+    }
+
+    /**
+     * Tests that start_turn uses the opponent's item last: a Sword through the Shield rules and its
+     * drain, a Potion healing like the student's, and nothing on the student's turn.
+     *
+     * @return void
+     */
+    public function test_start_turn_uses_the_opponents_item(): void {
+        $config = array_merge(self::CONFIG, ['bossAttack' => 1.15, 'bossPowers' => [combat_engine::POWER_DRAIN]]);
+        $low = array_merge($this->fresh_state(), ['bossSwords' => 1, 'currentPlayerHp' => 12, 'maxPlayerHp' => 200]);
+        $sword = combat_engine::start_turn('boss', $low, $config);
+        $this->assertEquals(
+            ['kind' => 'sword', 'amount' => 12, 'appliedAmount' => 12, 'shieldConsumed' => false, 'drained' => 3.6],
+            $sword['item']
+        );
+        $this->assertEquals(0, $sword['state']['currentPlayerHp']);
+        $this->assertSame(0, $sword['state']['bossSwords']);
+
+        $hurt = array_merge($this->fresh_state(), ['bossPotions' => 2, 'currentHp' => 50.0, 'maxBossHp' => 200.0]);
+        $potion = combat_engine::start_turn('boss', $hurt, self::CONFIG);
+        $this->assertEquals(
+            ['kind' => 'potion', 'amount' => 12.5, 'appliedAmount' => 0, 'shieldConsumed' => false, 'drained' => 0],
+            $potion['item']
+        );
+        $this->assertSame(62.5, $potion['state']['currentHp']);
+        $this->assertSame(1, $potion['state']['bossPotions']);
+        $this->assertNull(combat_engine::start_turn('player', $hurt, self::CONFIG)['item']);
     }
 
     /**

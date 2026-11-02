@@ -220,8 +220,10 @@ define([
                 // width on each edge.
                 potionX: 130, potionY: 388, swordX: 290, swordY: 388,
                 // Boss side is the player row translated by the panel offset (860) — Potion and
-                // Sword shown for visual parity only (no boss shop), plain icon, no buy badge.
+                // Sword, plain icons with no buy badge (no boss shop), counting the opponent's
+                // starting items when it has any.
                 bossPotionX: 990, bossPotionY: 388, bossSwordX: 1150, bossSwordY: 388,
+                bossItemIconSize: 60, bossItemFontSize: 16,
 
                 // Coin/Star: passive quantity readouts, moved out of the action area to sit
                 // beside the history block instead, stacked vertically just right of the scroll
@@ -288,6 +290,10 @@ define([
                 bossUiX: 120, bossHpY: 250, bossTxtY: 261,
                 bossGoldX: 60, bossGoldY: 296, bossStarX: 160, bossStarY: 296,
                 bossRingY: 296, bossGrimoireX: 330, bossShieldRingX: 390, bossOrbX: 450,
+                // The opponent's starting items, drawn only when it has any, between the Star
+                // and the rings.
+                bossPotionX: 248, bossPotionY: 296, bossSwordX: 290, bossSwordY: 296,
+                bossItemIconSize: 26, bossItemFontSize: 11,
 
                 // Board: fixed 440x440 (board.js hardcodes pieceSize 55 regardless of layout),
                 // centred horizontally ((540-440)/2 = 50), 8px below the opponent's panel —
@@ -399,6 +405,7 @@ define([
 
             this.combat = new CombatHandler(this, gameConfig, strings);
             this.board = new BoardHandler(this, L, strings);
+            this.ui.createOpponentItems(this.combat.ruleConfig().bossKit);
 
             this.combat.updateUI();
             this.board.resumeFlow();
@@ -512,7 +519,8 @@ define([
                     'difficulty_easy', 'difficulty_hard', 'difficulty_normal',
                     'hintbutton',
                     'historylogambush', 'historylogattack', 'historylogbreath', 'historylogcoins', 'historylogcritical',
-                    'historylogdrain', 'historylogempty', 'historylogintangible', 'historylogloot',
+                    'historylogdrain', 'historylogempty', 'historylogintangible', 'historylogitempotion',
+                    'historylogitemsword', 'historylogkit', 'historylogloot',
                     'historylogheal', 'historylogmana', 'historylogmultiplier',
                     'historylogmultiplierlost', 'historylogpoisoncharge', 'historylogpoisontick',
                     'historylogpower_ambush', 'historylogpower_breath', 'historylogpower_drain',
@@ -523,7 +531,7 @@ define([
                     'historylogregen', 'historylogrevive', 'historylogshieldblock', 'historylogshieldcharge',
                     'historylogtitle', 'historylogwronganswer',
                     'hpboss', 'hpyou', 'loading', 'manafull', 'maxmultiplier',
-                    'nextlevel', 'nextphase', 'noanswers',
+                    'nextlevel', 'nextphase', 'noanswers', 'opponentitempotion', 'opponentkit',
                     'phaseadvanced', 'phaseadvanceerror', 'phasecompletetitle', 'phasedifficulty',
                     'piece_coin', 'piece_coin_plural', 'piece_grimoire', 'piece_grimoire_plural',
                     'piece_orb', 'piece_orb_plural', 'piece_potion', 'piece_potion_plural',

@@ -46,7 +46,7 @@ function freshState() {
         bossPoisonMeter: 0, bossPoisonRounds: 0,
         playerMana: 0, bossMana: 0,
         playerGold: 0, bossGold: 0,
-        bossTurnCount: 0,
+        bossTurnCount: 0, bossPotions: 0, bossSwords: 0,
     };
 }
 
@@ -476,6 +476,46 @@ test('opponentMoveWeights: none on Easy, the base on Normal, the personality on 
     assert.deepEqual(combatRules.opponentMoveWeights(state, plant), [1.5, 1.5, 1.5, 3, 1.5, 3, 1]);
     const normalPlant = Object.assign({}, plant, {difficulty: 'normal'});
     assert.deepEqual(combatRules.opponentMoveWeights(state, normalPlant), [1.5, 1.5, 1.5, 3, 1.5, 1.5, 1]);
+});
+
+test('opponentKit: one item per level after the first, plus Hard and the final boss, none on Easy', () => {
+    assert.deepEqual(combatRules.opponentKit(1, 'normal', false), {potion: 0, sword: 0});
+    assert.deepEqual(combatRules.opponentKit(2, 'normal', false), {potion: 1, sword: 0});
+    assert.deepEqual(combatRules.opponentKit(3, 'normal', false), {potion: 1, sword: 1});
+    assert.deepEqual(combatRules.opponentKit(1, 'hard', false), {potion: 1, sword: 0});
+    assert.deepEqual(combatRules.opponentKit(1, 'normal', true), {potion: 1, sword: 0});
+    assert.deepEqual(combatRules.opponentKit(3, 'easy', true), {potion: 0, sword: 0});
+    assert.deepEqual(combatRules.opponentKit(10, 'hard', true), {potion: 3, sword: 3});
+    assert.deepEqual(combatRules.initialState(100, 200, {bossKit: {potion: 2, sword: 1}}).bossPotions, 2);
+});
+
+test('opponentItemUse: a Sword that wins or hits a low student, else a Potion when hurt', () => {
+    const config = Object.assign({}, CONFIG, {bossAttack: 1.15});
+    const kit = Object.assign(freshState(), {bossPotions: 1, bossSwords: 1, maxPlayerHp: 200});
+    assert.equal(combatRules.opponentItemUse(Object.assign({}, kit, {currentPlayerHp: 12}), config), 'sword');
+    assert.equal(combatRules.opponentItemUse(Object.assign({}, kit, {currentPlayerHp: 59}), config), 'sword');
+    assert.equal(combatRules.opponentItemUse(Object.assign({}, kit, {currentPlayerHp: 60}), config), null);
+    const shielded = Object.assign({}, kit, {currentPlayerHp: 12, playerShieldReady: true});
+    assert.equal(combatRules.opponentItemUse(shielded, config), null);
+    const hurt = Object.assign({}, kit, {currentPlayerHp: 150, currentHp: 79});
+    assert.equal(combatRules.opponentItemUse(hurt, config), 'potion');
+    assert.equal(combatRules.opponentItemUse(Object.assign({}, hurt, {currentHp: 80}), config), null);
+    assert.equal(combatRules.opponentItemUse(Object.assign({}, hurt, {bossPotions: 0}), config), null);
+});
+
+test('startTurn: the opponent uses its item last, a Sword through the Shield rules and its drain', () => {
+    const config = Object.assign({}, CONFIG, {bossAttack: 1.15, bossPowers: [combatRules.POWERS.DRAIN]});
+    const low = Object.assign(freshState(), {bossSwords: 1, currentPlayerHp: 12, maxPlayerHp: 200});
+    const sword = combatRules.startTurn('boss', low, config);
+    assert.deepEqual(sword.item, {kind: 'sword', amount: 12, appliedAmount: 12, shieldConsumed: false, drained: 3.6});
+    assert.equal(sword.state.currentPlayerHp, 0);
+    assert.equal(sword.state.bossSwords, 0);
+    const hurt = Object.assign(freshState(), {bossPotions: 2, currentHp: 50, maxBossHp: 200});
+    const potion = combatRules.startTurn('boss', hurt, CONFIG);
+    assert.deepEqual(potion.item, {kind: 'potion', amount: 12.5, appliedAmount: 0, shieldConsumed: false, drained: 0});
+    assert.equal(potion.state.currentHp, 62.5);
+    assert.equal(potion.state.bossPotions, 1);
+    assert.equal(combatRules.startTurn('player', hurt, CONFIG).item, null);
 });
 
 test('drainAmount: an opponent with drain recovers 30% of what its hit dealt, up to its max HP', () => {

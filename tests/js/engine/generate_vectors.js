@@ -273,6 +273,7 @@ function randomState(rand) {
         bossMana: rand.chance(0.2) ? rand.step(100, 160, 20) : rand.step(0, 80, 20),
         playerGold: rand.step(0, 400, 1) / 2, bossGold: rand.step(0, 400, 1) / 2,
         bossTurnCount: rand.int(0, 4),
+        bossPotions: rand.int(0, 3), bossSwords: rand.int(0, 3),
     };
 }
 
@@ -468,6 +469,19 @@ function buildCombatVectors() {
             difficulty: weightRand.pick(['easy', 'normal', 'hard', 'hard']),
             bossPowers: weightRand.pick([[], ...EVERY_POWER.map(power => [power]), ['ambush', 'drain', 'breath']]),
         }]));
+    }
+
+    [1, 2, 3, 4, 6, 9].forEach(level => {
+        ['easy', 'normal', 'hard'].forEach(difficulty => {
+            [false, true].forEach(finalBoss => cases.push(recordCall('opponentKit', [level, difficulty, finalBoss])));
+        });
+    });
+    const itemRand = randomSource(20261110);
+    for (let i = 0; i < 40; i++) {
+        const config = Object.assign({baseDamage: itemRand.int(1, 60), bossPowers: itemRand.pick([[], ['drain']])},
+            itemRand.pick(HIT_CONFIGS));
+        cases.push(recordCall('opponentItemUse', [randomState(itemRand), config]));
+        cases.push(recordCall('startTurn', ['boss', randomState(itemRand), config]));
     }
 
     const lootRand = randomSource(20261108);

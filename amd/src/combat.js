@@ -407,12 +407,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * The phase's rule config as the pure rules take it.
          *
          * @returns {{baseDamage: number, coinGain: number, coinFactor: number, bossAttack: number, bossArmor: number,
-         *  bossPowers: Array<string>}}
+         *  bossPowers: Array<string>, bossKit: {potion: number, sword: number}, difficulty: string}}
          */
         ruleConfig() {
             return {
                 baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor,
                 bossAttack: this.bossAttack, bossArmor: this.bossArmor, bossPowers: this.bossPowers,
+                // The Potions and Swords the opponent starts the phase with, none in a Demo.
+                bossKit: this.gameConfig.bosskit || {potion: 0, sword: 0},
                 difficulty: this.gameConfig.difficulty || 'normal',
             };
         }
@@ -430,7 +432,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             if (!this.freshPhase) {
                 return '';
             }
-            const notice = this.bossPowers.map(power => this.strings[`power_${power}`]).filter(Boolean).join(' ');
+            const kit = this.ruleConfig().bossKit;
+            const hasKit = kit.potion > 0 || kit.sword > 0;
+            const fillKit = text => text.replace('{$a->potions}', kit.potion).replace('{$a->swords}', kit.sword);
+            const notices = this.bossPowers.map(power => this.strings[`power_${power}`]).filter(Boolean);
+            if (hasKit) {
+                notices.push(fillKit(this.strings.opponentkit));
+            }
+            const notice = notices.join(' ');
             if (notice === '') {
                 return '';
             }
@@ -441,6 +450,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     this.scene.ui.pushHistoryLog('boss', line);
                 }
             });
+            if (hasKit) {
+                this.scene.ui.pushHistoryLog('boss', fillKit(this.strings.historylogkit));
+            }
             return notice;
         }
 
@@ -621,6 +633,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             );
             this.scene.ui.updateQuestionsCounter(this.questionsTotal, this.minQuestions);
             this.scene.ui.updateConsumableBadges();
+            this.scene.ui.updateOpponentItems(this.bossPotions, this.bossSwords);
             // An intangible opponent shows its armed Shield on itself, so the student can see the
             // next hit will not land.
             this.scene.ui.setTranslucent(
@@ -751,6 +764,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     return;
                 }
             }
+            if (start.item) {
+                this.showOpponentItem(start.item);
+                if (this.checkGameOver()) {
+                    return;
+                }
+            }
 
             me.time.delayedCall(800, this.executeBossTurn, [], this);
         }
@@ -778,6 +797,38 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     .replace('{$a->hp}', Math.round(this.currentPlayerHp))
             );
             me.ui.hitCharacter('player', breath.shieldConsumed);
+        }
+
+        /**
+         * Shows the item the opponent used as its turn began, already applied by
+         * CombatRules.startTurn(): a Potion's heal, or a Sword's lunge and hit (or the Shield that
+         * took it) and what its drain recovered.
+         *
+         * @param {{kind: string, amount: number, appliedAmount: number, shieldConsumed: boolean,
+         *  drained: number}} item
+         */
+        showOpponentItem(item) {
+            const me = this.scene;
+            this.updateUI();
+            if (item.kind === 'potion') {
+                me.ui.pushHistoryLog('boss', this.strings.historylogitempotion.replace('{$a}', Math.round(item.amount)));
+                Accessibility.announce(this.strings.opponentitempotion.replace('{$a}', Math.round(item.amount)));
+                return;
+            }
+            me.ui.lungeCharacter('boss', false);
+            me.ui.pushHistoryLog('boss', this.strings.historylogitemsword.replace('{$a}', Math.round(item.amount)));
+            if (item.shieldConsumed) {
+                me.ui.pushHistoryLog('player', this.strings.historylogshieldblock);
+            }
+            if (item.drained > 0) {
+                me.ui.pushHistoryLog('boss', this.strings.historylogdrain.replace('{$a}', Math.round(item.drained)));
+            }
+            Accessibility.announce(
+                this.strings.damagetaken
+                    .replace('{$a->damage}', Math.round(item.appliedAmount))
+                    .replace('{$a->hp}', Math.round(this.currentPlayerHp))
+            );
+            me.ui.hitCharacter('player', item.shieldConsumed);
         }
 
         executeBossTurn() {

@@ -55,7 +55,7 @@
             'playerShieldMeter', 'playerShieldReady', 'bossShieldMeter', 'bossShieldReady',
             'playerPoisonMeter', 'playerPoisonRounds', 'bossPoisonMeter', 'bossPoisonRounds',
             'playerMana', 'bossMana', 'playerGold', 'bossGold',
-            'bossTurnCount',
+            'bossTurnCount', 'bossPotions', 'bossSwords',
         ];
 
         // The fields a resumed phase takes from the server's rebuilt snapshot: all but the two
@@ -115,6 +115,16 @@
         // How much mana each matched Orb gives, and for an opponent with the manaboost power.
         const ORB_MANA = 20;
         const BOOSTED_ORB_MANA = 30;
+
+        // The opponent's starting items: none on level 1, one more per level after it, one more
+        // on Hard and one more for the final boss, none at all on Easy; Potions and Swords
+        // alternate, a Potion first, never past the student's own limit per phase. It drinks a
+        // Potion (healing like the student's) below ITEM_POTION_BELOW of its max HP, and draws a
+        // Sword (a hit of the base damage) when it wins the fight or the student is below
+        // ITEM_SWORD_BELOW of theirs, never against an armed Shield.
+        const ITEM_POTION_BELOW = 0.4;
+        const ITEM_SWORD_BELOW = 0.3;
+        const ITEM_POTION_HEAL = 1.25;
 
         // How much the opponent values each piece type (0 Star, 1 Grimoire, 2 Orb, 3 Sword,
         // 4 Shield, 5 Potion, 6 Coin) when it picks a move on Normal and Hard. The Potion's is
@@ -192,6 +202,8 @@
                 playerMana: 0, bossMana: 0,
                 playerGold: 0, bossGold: 0,
                 bossTurnCount: 0,
+                bossPotions: (config.bossKit || {}).potion || 0,
+                bossSwords: (config.bossKit || {}).sword || 0,
             };
             if (hasPower(config, POWERS.ICESHIELD)) {
                 state.bossShieldReady = true;
@@ -532,6 +544,49 @@
         }
 
         /**
+         * The opponent's starting items for a phase (see ITEM_POTION_BELOW).
+         *
+         * @param {number} level The phase's level.
+         * @param {string} difficulty 'easy', 'normal' or 'hard'.
+         * @param {boolean} finalBoss Whether the opponent is the final boss.
+         * @return {{potion: number, sword: number}}
+         */
+        function opponentKit(level, difficulty, finalBoss) {
+            if (difficulty === 'easy') {
+                return {potion: 0, sword: 0};
+            }
+            const items = Math.max(0, level - 1) + (difficulty === 'hard' ? 1 : 0) + (finalBoss ? 1 : 0);
+            return {
+                potion: Math.min(PHASE_LIMITS.potion, Math.ceil(items / 2)),
+                sword: Math.min(PHASE_LIMITS.sword, Math.floor(items / 2)),
+            };
+        }
+
+        /**
+         * The item the opponent uses as its turn begins, if any: a Sword when it has one, the
+         * student has no Shield armed, and the hit wins the fight or the student is below
+         * ITEM_SWORD_BELOW of their max HP; otherwise a Potion when it has one and is below
+         * ITEM_POTION_BELOW of its own.
+         *
+         * @param {object} state Combat state.
+         * @param {object} config The phase's rule config: baseDamage and the attack and armor
+         *  (see hitAmount()) are read.
+         * @return {?string} 'sword', 'potion' or null.
+         */
+        function opponentItemUse(state, config) {
+            if (state.bossSwords > 0 && !state.playerShieldReady) {
+                const hit = hitAmount(config.baseDamage, 'boss', config);
+                if (hit >= state.currentPlayerHp || state.currentPlayerHp < state.maxPlayerHp * ITEM_SWORD_BELOW) {
+                    return 'sword';
+                }
+            }
+            if (state.bossPotions > 0 && state.currentHp < state.maxBossHp * ITEM_POTION_BELOW) {
+                return 'potion';
+            }
+            return null;
+        }
+
+        /**
          * Whether a match's Swords are an ambush: the opponent's, on its first turn, with the
          * ambush power.
          *
@@ -625,7 +680,8 @@
          * student's armor and Shield, and its own drain; with the loot power, every LOOT_EVERY
          * turns it takes LOOT_PERCENT of the student's coins for itself; and with the regen
          * power, while it still stands, REGEN_PERCENT of its max HP comes back, up to the max.
-         * The caller checks whether the student survived the breath.
+         * Last, the opponent may use one of its items (see opponentItemUse()). The caller checks
+         * whether the student survived the breath or a Sword.
          *
          * @param {string} side 'player' or 'boss' — whose turn begins.
          * @param {object} state Current combat state — copied, never mutated.
@@ -633,8 +689,10 @@
          *  bossPowers is read.
          * @return {{state: object, poisonTicked: boolean, regenerated: number, shieldArmed: boolean,
          *  breath: ?{hit: number, appliedAmount: number, shieldConsumed: boolean, drained: number},
-         *  looted: number}} shieldArmed is true when the intangible power armed a Shield that was not
-         *  armed yet; breath is null on a turn without one; looted is the coins taken, 0 if none.
+         *  looted: number, item: ?{kind: string, amount: number, appliedAmount: number,
+         *  shieldConsumed: boolean, drained: number}} shieldArmed is true when the intangible
+         *  power armed a Shield that was not armed yet; breath is null on a turn without one;
+         *  looted is the coins taken, 0 if none; item is the item the opponent used, or null.
          */
         function startTurn(side, state, config) {
             const next = Object.assign({}, state);
@@ -678,7 +736,41 @@
                 regenerated = Math.min(next.maxBossHp - next.currentHp, next.maxBossHp * REGEN_PERCENT / 100);
                 next.currentHp += regenerated;
             }
-            return {state: next, poisonTicked: tick.ticked, regenerated, shieldArmed, breath, looted};
+            const item = useOpponentItem(side, next, config);
+            return {state: next, poisonTicked: tick.ticked, regenerated, shieldArmed, breath, looted, item};
+        }
+
+        /**
+         * Uses the opponent's item as its turn begins, if any (see opponentItemUse()), on the
+         * state startTurn() is building.
+         *
+         * @param {string} side Whose turn begins.
+         * @param {object} next The state startTurn() is building (mutated in place).
+         * @param {object} config The phase's rule config.
+         * @return {?{kind: string, amount: number, appliedAmount: number, shieldConsumed: boolean,
+         *  drained: number}}
+         */
+        function useOpponentItem(side, next, config) {
+            const kind = side === 'boss' && next.currentHp > 0 ? opponentItemUse(next, config) : null;
+            if (kind === 'potion') {
+                const amount = Math.min(next.maxBossHp - next.currentHp, config.baseDamage * ITEM_POTION_HEAL);
+                next.bossPotions -= 1;
+                next.currentHp += amount;
+                return {kind, amount, appliedAmount: 0, shieldConsumed: false, drained: 0};
+            }
+            if (kind === 'sword') {
+                const amount = hitAmount(config.baseDamage, 'boss', config);
+                const applied = resolveDamage(next.currentPlayerHp, next.playerShieldReady, amount);
+                next.bossSwords -= 1;
+                next.currentPlayerHp = applied.newHp;
+                if (applied.shieldConsumed) {
+                    next.playerShieldReady = false;
+                }
+                const drained = drainAmount(applied.appliedAmount, next, config);
+                next.currentHp += drained;
+                return {kind, amount, appliedAmount: applied.appliedAmount, shieldConsumed: applied.shieldConsumed, drained};
+            }
+            return null;
         }
 
         /**
@@ -740,6 +832,8 @@
             matchHitAmount,
             isAmbush,
             opponentMoveWeights,
+            opponentKit,
+            opponentItemUse,
             hitAmount,
             drainAmount,
             questionOutcome,

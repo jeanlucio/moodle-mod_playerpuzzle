@@ -197,13 +197,19 @@ final class combat_test extends \basic_testcase {
             'currentlevel' => 2, 'currentphase' => 3, 'difficulty' => 'hard',
         ]), $instance);
         $this->assertSame(
-            ['maxbosshp' => 340, 'basedamage' => 34, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => ['ambush']],
+            [
+                'maxbosshp' => 340, 'basedamage' => 34, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => ['ambush'],
+                'bosskit' => ['potion' => 1, 'sword' => 1],
+            ],
             $brute
         );
 
         $armored = combat::phase_opponent($this->make_attempt(['frozenopponent' => 'golem']), $instance);
         $this->assertSame(
-            ['maxbosshp' => 100, 'basedamage' => 10, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield']],
+            [
+                'maxbosshp' => 100, 'basedamage' => 10, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield'],
+                'bosskit' => ['potion' => 0, 'sword' => 0],
+            ],
             $armored
         );
     }
@@ -236,13 +242,16 @@ final class combat_test extends \basic_testcase {
             'frozenbasebosshp' => 0, 'frozenbossdamage' => 0, 'frozenopponent' => '',
         ]), $instance);
         $this->assertSame(
-            ['maxbosshp' => 200, 'basedamage' => 20, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => []],
+            [
+                'maxbosshp' => 200, 'basedamage' => 20, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => [],
+                'bosskit' => ['potion' => 0, 'sword' => 0],
+            ],
             $old
         );
     }
 
     /**
-     * Tests that a Demo fights at the fixed HP with no profile, no powers and no difficulty.
+     * Tests that a Demo fights at the fixed HP with no profile, no powers, no items and no difficulty.
      *
      * @return void
      */
@@ -253,7 +262,10 @@ final class combat_test extends \basic_testcase {
             'isdemo' => 1, 'difficulty' => 'hard', 'frozenopponent' => 'golem',
         ]), $instance);
         $this->assertSame(
-            ['maxbosshp' => combat::DEMO_HP, 'basedamage' => 12, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => []],
+            [
+                'maxbosshp' => combat::DEMO_HP, 'basedamage' => 12, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => [],
+                'bosskit' => ['potion' => 0, 'sword' => 0],
+            ],
             $demo
         );
     }

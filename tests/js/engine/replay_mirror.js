@@ -106,6 +106,8 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             bossAttack: modifiers.attack,
             bossArmor: modifiers.armor,
             bossPowers: powers,
+            // The final boss's key, as classes/local/opponents.php::FINAL_BOSS names it.
+            bossKit: CombatRules.opponentKit(level, attempt.difficulty || 'normal', attempt.frozenopponent === 'vampire'),
             difficulty: attempt.difficulty || 'normal',
         },
         maxBossHp: Math.floor((scaledBossHp * modifiers.hp) + 0.5),

@@ -453,6 +453,8 @@ class game_page_service {
             // The opponent's powers (none in a Demo), for the client's own rules and the notice
             // that explains each one when the phase starts.
             'bosspowers'           => $opponentside['bosspowers'],
+            // The Potions and Swords the opponent starts the phase with (none in a Demo).
+            'bosskit'              => $opponentside['bosskit'],
             // Deliberately not scaled by level/phase, unlike bossdamage above: a teacher's
             // fixed-price consumable shop would otherwise get proportionally cheaper as a
             // campaign progresses.

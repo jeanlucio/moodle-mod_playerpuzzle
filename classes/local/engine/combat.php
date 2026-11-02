@@ -116,19 +116,20 @@ class combat {
     /**
      * The opponent's side of a phase as the fight runs it: its max HP, the phase's base damage
      * (the unit every hit, heal and poison tick is counted in, for both sides), the attack and
-     * armor its profile gives it, and its powers. The game page, the server replay and the scoring all read
+     * armor its profile gives it, its powers and its starting items. The game page, the server replay and the
+     * scoring all read
      * it from here, so they always fight the same opponent.
      *
      * A real phase uses the values frozen when it started (an attempt row from before a column
      * existed falls back to the instance), scaled by level, phase and difficulty, and then by the
-     * opponent's profile. A Demo fights at the fixed DEMO_HP, with no difficulty, no profile and
-     * no powers.
+     * opponent's profile. A Demo fights at the fixed DEMO_HP, with no difficulty, no profile, no
+     * powers and no items.
      *
      * @param \stdClass $attempt The attempt: isdemo, difficulty, currentlevel, currentphase,
      *  frozenbasebosshp, frozenbossdamage and frozenopponent are read.
      * @param \stdClass $instance The activity: basebosshp and bossdamage are read.
      * @return array ['maxbosshp' => int, 'basedamage' => int, 'bossattack' => float, 'bossarmor' => float,
-     *  'bosspowers' => string[]]
+     *  'bosspowers' => string[], 'bosskit' => ['potion' => int, 'sword' => int]]
      */
     public static function phase_opponent(\stdClass $attempt, \stdClass $instance): array {
         $level = (int) $attempt->currentlevel;
@@ -141,6 +142,7 @@ class combat {
                 'bossattack' => 1.0,
                 'bossarmor' => 0.0,
                 'bosspowers' => [],
+                'bosskit' => ['potion' => 0, 'sword' => 0],
             ];
         }
 
@@ -158,6 +160,11 @@ class combat {
             'bossattack' => $modifiers['attack'],
             'bossarmor' => $modifiers['armor'],
             'bosspowers' => opponents::powers((string) $attempt->frozenopponent),
+            'bosskit' => combat_engine::opponent_kit(
+                $level,
+                $difficulty,
+                (string) $attempt->frozenopponent === opponents::FINAL_BOSS
+            ),
         ];
     }
 

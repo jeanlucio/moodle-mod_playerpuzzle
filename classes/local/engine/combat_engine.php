@@ -50,7 +50,7 @@ class combat_engine {
         'playerShieldMeter', 'playerShieldReady', 'bossShieldMeter', 'bossShieldReady',
         'playerPoisonMeter', 'playerPoisonRounds', 'bossPoisonMeter', 'bossPoisonRounds',
         'playerMana', 'bossMana', 'playerGold', 'bossGold',
-        'bossTurnCount',
+        'bossTurnCount', 'bossPotions', 'bossSwords',
     ];
 
     /** @var int A right answer's critical hit, in multiples of the phase's base damage. */
@@ -100,6 +100,20 @@ class combat_engine {
 
     /** @var string Power: the opponent recovers part of its max HP as each of its turns begins. */
     public const POWER_REGEN = 'regen';
+
+    /**
+     * @var float The opponent drinks a Potion below this share of its max HP. Its starting items: none
+     *  on level 1, one more per level after it, one more on Hard and one more for the final boss, none
+     *  at all on Easy; Potions and Swords alternate, a Potion first, never past the student's own limit
+     *  per phase.
+     */
+    public const ITEM_POTION_BELOW = 0.4;
+
+    /** @var float The opponent draws a Sword when it wins the fight or the student is below this share. */
+    public const ITEM_SWORD_BELOW = 0.3;
+
+    /** @var float The opponent's Potion heals this many times the base damage, like the student's. */
+    public const ITEM_POTION_HEAL = 1.25;
 
     /**
      * @var float[] How much the opponent values each piece type (0 Star, 1 Grimoire, 2 Orb, 3 Sword, 4 Shield,
@@ -186,6 +200,8 @@ class combat_engine {
             'playerMana' => 0, 'bossMana' => 0,
             'playerGold' => 0.0, 'bossGold' => 0.0,
             'bossTurnCount' => 0,
+            'bossPotions' => (int) ($config['bossKit']['potion'] ?? 0),
+            'bossSwords' => (int) ($config['bossKit']['sword'] ?? 0),
         ];
         if (self::has_power($config, self::POWER_ICESHIELD)) {
             $state['bossShieldReady'] = true;
@@ -553,6 +569,89 @@ class combat_engine {
     }
 
     /**
+     * The opponent's starting items for a phase (see ITEM_POTION_BELOW) — mirrors
+     * combat_rules.js::opponentKit().
+     *
+     * @param int $level The phase's level.
+     * @param string $difficulty 'easy', 'normal' or 'hard'.
+     * @param bool $finalboss Whether the opponent is the final boss.
+     * @return array ['potion' => int, 'sword' => int]
+     */
+    public static function opponent_kit(int $level, string $difficulty, bool $finalboss): array {
+        if ($difficulty === 'easy') {
+            return ['potion' => 0, 'sword' => 0];
+        }
+        $items = max(0, $level - 1) + ($difficulty === 'hard' ? 1 : 0) + ($finalboss ? 1 : 0);
+        return [
+            'potion' => min(self::PHASE_LIMITS['potion'], (int) ceil($items / 2)),
+            'sword' => min(self::PHASE_LIMITS['sword'], intdiv($items, 2)),
+        ];
+    }
+
+    /**
+     * The item the opponent uses as its turn begins, if any — mirrors
+     * combat_rules.js::opponentItemUse(): a Sword when it has one, the student has no Shield
+     * armed, and the hit wins the fight or the student is below ITEM_SWORD_BELOW of their max HP;
+     * otherwise a Potion when it has one and is below ITEM_POTION_BELOW of its own.
+     *
+     * @param array $state Combat state.
+     * @param array $config The phase's rule config: baseDamage and the attack and armor (see
+     *  hit_amount()) are read.
+     * @return string|null 'sword', 'potion' or null.
+     */
+    public static function opponent_item_use(array $state, array $config): ?string {
+        if ($state['bossSwords'] > 0 && !$state['playerShieldReady']) {
+            $hit = self::hit_amount($config['baseDamage'], 'boss', $config);
+            $low = $state['currentPlayerHp'] < $state['maxPlayerHp'] * self::ITEM_SWORD_BELOW;
+            if ($hit >= $state['currentPlayerHp'] || $low) {
+                return 'sword';
+            }
+        }
+        if ($state['bossPotions'] > 0 && $state['currentHp'] < $state['maxBossHp'] * self::ITEM_POTION_BELOW) {
+            return 'potion';
+        }
+        return null;
+    }
+
+    /**
+     * Uses the opponent's item as its turn begins, if any (see opponent_item_use()), on the state
+     * start_turn() is building.
+     *
+     * @param string $side Whose turn begins.
+     * @param array $next The state start_turn() is building (mutated in place).
+     * @param array $config The phase's rule config.
+     * @return array|null ['kind', 'amount', 'appliedAmount', 'shieldConsumed', 'drained'], or null.
+     */
+    private static function use_opponent_item(string $side, array &$next, array $config): ?array {
+        $kind = $side === 'boss' && $next['currentHp'] > 0 ? self::opponent_item_use($next, $config) : null;
+        if ($kind === 'potion') {
+            $amount = (float) min($next['maxBossHp'] - $next['currentHp'], $config['baseDamage'] * self::ITEM_POTION_HEAL);
+            $next['bossPotions'] -= 1;
+            $next['currentHp'] += $amount;
+            return ['kind' => $kind, 'amount' => $amount, 'appliedAmount' => 0.0, 'shieldConsumed' => false, 'drained' => 0.0];
+        }
+        if ($kind === 'sword') {
+            $amount = self::hit_amount($config['baseDamage'], 'boss', $config);
+            $applied = self::resolve_damage($next['currentPlayerHp'], $next['playerShieldReady'], $amount);
+            $next['bossSwords'] -= 1;
+            $next['currentPlayerHp'] = $applied['newHp'];
+            if ($applied['shieldConsumed']) {
+                $next['playerShieldReady'] = false;
+            }
+            $drained = self::drain_amount($applied['appliedAmount'], $next, $config);
+            $next['currentHp'] += $drained;
+            return [
+                'kind' => $kind,
+                'amount' => $amount,
+                'appliedAmount' => $applied['appliedAmount'],
+                'shieldConsumed' => $applied['shieldConsumed'],
+                'drained' => $drained,
+            ];
+        }
+        return null;
+    }
+
+    /**
      * Whether a match's Swords are an ambush: the opponent's, on its first turn, with the ambush
      * power.
      *
@@ -652,8 +751,8 @@ class combat_engine {
      * BREATH_MULTIPLIER times the base damage, through its attack, the student's armor and Shield,
      * and its own drain; with the loot power, every LOOT_EVERY turns it takes LOOT_PERCENT of the
      * student's coins for itself; and with the regen power, while it still stands, REGEN_PERCENT of
-     * its max HP comes back, up to the max. The caller checks whether the student survived the
-     * breath.
+     * its max HP comes back, up to the max. Last, the opponent may use one of its items (see
+     * opponent_item_use()). The caller checks whether the student survived the breath or a Sword.
      *
      * @param string $side 'player' or 'boss' — whose turn begins.
      * @param array $state Current combat state — copied, never mutated.
@@ -662,7 +761,8 @@ class combat_engine {
      * @return array ['state' => array, 'poisonTicked' => bool, 'regenerated' => float, 'shieldArmed' => bool,
      *  'breath' => array|null, 'looted' => float] shieldArmed is true when the intangible power armed a Shield
      *  that was not armed yet; breath is null on a turn without one, otherwise ['hit', 'appliedAmount',
-     *  'shieldConsumed', 'drained']; looted is the coins taken, 0 if none.
+     *  'shieldConsumed', 'drained']; looted is the coins taken, 0 if none; item is null, or the item the
+     *  opponent used as ['kind', 'amount', 'appliedAmount', 'shieldConsumed', 'drained'].
      */
     public static function start_turn(string $side, array $state, array $config): array {
         $next = $state;
@@ -716,6 +816,7 @@ class combat_engine {
             );
             $next['currentHp'] += $regenerated;
         }
+        $item = self::use_opponent_item($side, $next, $config);
         return [
             'state' => $next,
             'poisonTicked' => $tick['ticked'],
@@ -723,6 +824,7 @@ class combat_engine {
             'shieldArmed' => $shieldarmed,
             'breath' => $breath,
             'looted' => $looted,
+            'item' => $item,
         ];
     }
 

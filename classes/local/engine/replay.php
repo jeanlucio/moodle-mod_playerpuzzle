@@ -183,6 +183,7 @@ class replay {
             'bossAttack' => $opponent['bossattack'],
             'bossArmor' => $opponent['bossarmor'],
             'bossPowers' => $opponent['bosspowers'],
+            'bossKit' => $opponent['bosskit'],
             'difficulty' => $difficulty,
         ];
         $maxbosshp = $opponent['maxbosshp'];

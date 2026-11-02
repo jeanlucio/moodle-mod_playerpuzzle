@@ -18,11 +18,13 @@
  * is, so profile and power values can be tuned against numbers instead of guesses.
  *
  * Every match runs through replay_mirror.js, the same turn loop the server replays, with a
- * simulated student who plays the way the opponent does (a Sword match when there is one, any
- * match otherwise), uses no consumable and answers right at a fixed rate. The opponent answers
- * right at its Normal rate. Each opponent fights at its own Campaign phase, the final boss at
- * phase 10 like the dragon it replaces, three ways: without profile or power, with its profile
- * only (the final boss: its extra HP), and with its powers too.
+ * simulated student who plays the way the opponent does on Easy (the first Sword match it finds,
+ * any match otherwise), uses no consumable and answers right at a fixed rate. The opponent plays
+ * and answers as the chosen difficulty makes it (see combat_rules.js::opponentMoveWeights() and
+ * combat::BOSS_GUESS_PROBABILITIES), with that difficulty's HP and damage. Each opponent fights
+ * at its own Campaign phase, the final boss at phase 10 like the dragon it replaces, three ways:
+ * without profile or power, with its profile only (the final boss: its extra HP), and with its
+ * powers too.
  *
  * A real student plays better or worse and shops, so a win rate here is not a target in
  * itself: compare the columns, and the opponents with one another.
@@ -30,8 +32,8 @@
  * Each opponent's modifiers and powers come from classes/local/opponents.php through the PHP
  * CLI, so the numbers always follow the server's values.
  *
- * Usage: node tests/js/engine/simulate_balance.js [matches] [student accuracies]
- * e.g.   node tests/js/engine/simulate_balance.js 3000 0.5,0.75,0.9
+ * Usage: node tests/js/engine/simulate_balance.js [matches] [accuracies] [difficulties]
+ * e.g.   node tests/js/engine/simulate_balance.js 3000 0.5,0.75 easy,normal,hard
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -50,8 +52,8 @@ const ReplayMirror = require('./replay_mirror.js');
 
 const PLUGIN_ROOT = path.join(__dirname, '..', '..', '..');
 
-// The Normal multiple-choice rate in combat::BOSS_GUESS_PROBABILITIES.
-const OPPONENT_ACCURACY = 0.66;
+// The multiple-choice rates in combat::BOSS_GUESS_PROBABILITIES.
+const OPPONENT_ACCURACY = {easy: 0.33, normal: 0.66, hard: 1.0};
 
 // The instance values the activity form defaults to.
 const INSTANCE = {basebosshp: 100, bossdamage: 10, basestudenthp: 100, coingain: 10};
@@ -86,11 +88,12 @@ function readOpponents() {
  * @param {object} modifiers The opponent's {hp, attack, armor}.
  * @param {Array<string>} powers The opponent's powers.
  * @param {number} accuracy The student's share of right answers.
+ * @param {string} difficulty 'easy', 'normal' or 'hard'.
  * @return {{finished: boolean, won: boolean, turns: number, hpLeft: number, coins: number}} hpLeft
  *  is the student's HP share at the start of their last turn, which is what they finish a won match
  *  with; coins is what the match nets them (their coins minus the opponent's, never below 0).
  */
-function playMatch(seed, phase, modifiers, powers, accuracy) {
+function playMatch(seed, phase, modifiers, powers, accuracy, difficulty) {
     const answers = Prng.create((seed * 7919) + 13);
     let lastState = null;
     let turns = 0;
@@ -105,14 +108,14 @@ function playMatch(seed, phase, modifiers, powers, accuracy) {
             return null;
         },
         question(side) {
-            const rate = side === 'player' ? accuracy : OPPONENT_ACCURACY;
+            const rate = side === 'player' ? accuracy : OPPONENT_ACCURACY[difficulty];
             return {outcome: 'answered', correct: answers() < rate};
         },
     };
     const attempt = {
         frozenbasebosshp: INSTANCE.basebosshp, frozenbossdamage: INSTANCE.bossdamage,
         frozencoingain: INSTANCE.coingain, currentlevel: 1, currentphase: phase,
-        difficulty: 'normal', rngseed: seed, questionsTotal: 0,
+        difficulty, rngseed: seed, questionsTotal: 0,
     };
     const playerpuzzle = {basestudenthp: INSTANCE.basestudenthp, minquestions: 0};
     const {result} = ReplayMirror.record({attempt, playerpuzzle, modifiers, powers, poolEmpty: false, policy});
@@ -133,16 +136,17 @@ function playMatch(seed, phase, modifiers, powers, accuracy) {
  * @param {object} modifiers See playMatch().
  * @param {Array<string>} powers See playMatch().
  * @param {number} accuracy See playMatch().
+ * @param {string} difficulty See playMatch().
  * @return {{win: number, turns: number, hpLeft: number, coins: number, unfinished: number}}
  */
-function playBatch(matches, phase, modifiers, powers, accuracy) {
+function playBatch(matches, phase, modifiers, powers, accuracy, difficulty) {
     let wins = 0;
     let turns = 0;
     let hpLeft = 0;
     let unfinished = 0;
     let coins = 0;
     for (let seed = 1; seed <= matches; seed++) {
-        const match = playMatch(seed, phase, modifiers, powers, accuracy);
+        const match = playMatch(seed, phase, modifiers, powers, accuracy, difficulty);
         if (!match.finished) {
             unfinished++;
             continue;
@@ -164,22 +168,27 @@ const cell = batch => `${percent(batch.win)} ${batch.turns.toFixed(1).padStart(4
 
 const matches = parseInt(process.argv[2] || '1000', 10);
 const accuracies = (process.argv[3] || '0.5,0.75,0.9').split(',').map(Number);
+const difficulties = (process.argv[4] || 'normal').split(',');
 const opponents = readOpponents();
 
-for (const accuracy of accuracies) {
-    process.stdout.write(`\nStudent right ${percent(accuracy)}, opponent right ${percent(OPPONENT_ACCURACY)}, `
-        + `${matches} matches per cell. Each cell: win rate, student turns, HP left on a win, net coins.\n`);
-    process.stdout.write('phase opponent | no profile           | profile only         | profile+power        | power effect\n');
-    opponents.forEach(({key: name, modifiers, powers}, index) => {
-        const phase = Math.min(index + 1, 10);
-        const bare = playBatch(matches, phase, NO_MODIFIERS, [], accuracy);
-        const profiled = playBatch(matches, phase, modifiers, [], accuracy);
-        const full = powers.length ? playBatch(matches, phase, modifiers, powers, accuracy) : null;
-        const effect = full
-            ? `${Math.round((full.win - profiled.win) * 100)} pts, ${(full.turns - profiled.turns).toFixed(1)} turns`
-            : '';
-        const unfinished = bare.unfinished + profiled.unfinished + (full ? full.unfinished : 0);
-        process.stdout.write(`${String(phase).padStart(5)} ${name.padEnd(8)} | ${cell(bare)} | ${cell(profiled)} | `
-            + `${full ? cell(full) : '-'.padEnd(20)} | ${effect}${unfinished ? ` (${unfinished} unfinished)` : ''}\n`);
-    });
+for (const difficulty of difficulties) {
+    for (const accuracy of accuracies) {
+        process.stdout.write(`\n${difficulty}: student right ${percent(accuracy)}, opponent right `
+            + `${percent(OPPONENT_ACCURACY[difficulty])}, ${matches} matches per cell. `
+            + 'Each cell: win rate, student turns, HP left on a win, net coins.\n');
+        process.stdout.write('phase opponent | no profile           | profile only         | '
+            + 'profile+power        | power effect\n');
+        opponents.forEach(({key: name, modifiers, powers}, index) => {
+            const phase = Math.min(index + 1, 10);
+            const bare = playBatch(matches, phase, NO_MODIFIERS, [], accuracy, difficulty);
+            const profiled = playBatch(matches, phase, modifiers, [], accuracy, difficulty);
+            const full = powers.length ? playBatch(matches, phase, modifiers, powers, accuracy, difficulty) : null;
+            const effect = full
+                ? `${Math.round((full.win - profiled.win) * 100)} pts, ${(full.turns - profiled.turns).toFixed(1)} turns`
+                : '';
+            const unfinished = bare.unfinished + profiled.unfinished + (full ? full.unfinished : 0);
+            process.stdout.write(`${String(phase).padStart(5)} ${name.padEnd(8)} | ${cell(bare)} | ${cell(profiled)} | `
+                + `${full ? cell(full) : '-'.padEnd(20)} | ${effect}${unfinished ? ` (${unfinished} unfinished)` : ''}\n`);
+        });
+    }
 }

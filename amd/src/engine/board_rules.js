@@ -299,6 +299,96 @@
         }
 
         /**
+         * The runs of three or more a cell is part of: its row run and its column run, each
+         * as {type, size}.
+         *
+         * @param {Array} grid The board grid.
+         * @param {number} rows Board row count.
+         * @param {number} cols Board column count.
+         * @param {number} rowP Cell row.
+         * @param {number} colP Cell column.
+         * @return {Array<{type: number, size: number}>} Row run first, then column run.
+         */
+        function runsAt(grid, rows, cols, rowP, colP) {
+            const type = grid[rowP][colP];
+            const runs = [];
+            if (type === null) {
+                return runs;
+            }
+            let row = 1;
+            for (let c = colP - 1; c >= 0 && grid[rowP][c] === type; c--) {
+                row++;
+            }
+            for (let c = colP + 1; c < cols && grid[rowP][c] === type; c++) {
+                row++;
+            }
+            if (row >= 3) {
+                runs.push({type, size: row});
+            }
+            let column = 1;
+            for (let r = rowP - 1; r >= 0 && grid[r][colP] === type; r--) {
+                column++;
+            }
+            for (let r = rowP + 1; r < rows && grid[r][colP] === type; r++) {
+                column++;
+            }
+            if (column >= 3) {
+                runs.push({type, size: column});
+            }
+            return runs;
+        }
+
+        /**
+         * The opponent's move. Without weights it is findMove()'s: the first Sword match in
+         * scan order, else the first match. With weights, every swap that makes a match is
+         * scored by the runs it makes right away, each worth its piece type's weight times
+         * 1 + 0.5 per piece past three, and the highest score wins; a tie keeps the swap found
+         * first in scan order. The cascade after the swap is never scored: the pieces that
+         * fall come from the seeded generator, which the scoring must not draw from.
+         *
+         * @param {Array} grid The board grid (swapped and restored in place).
+         * @param {number} rows Board row count.
+         * @param {number} cols Board column count.
+         * @param {?Array<number>} weights Weight per piece type (index 0-6), or null.
+         * @return {{r1: number, c1: number, r2: number, c2: number}|null} The two cells to
+         *  swap, or null when no swap makes a match.
+         */
+        function chooseMove(grid, rows, cols, weights) {
+            if (!weights) {
+                return findMove(grid, rows, cols, 3) || findMove(grid, rows, cols, null);
+            }
+            let best = null;
+            let bestScore = -1;
+            const consider = (r1, c1, r2, c2) => {
+                swapInGrid(grid, r1, c1, r2, c2);
+                const runs = runsAt(grid, rows, cols, r1, c1).concat(runsAt(grid, rows, cols, r2, c2));
+                swapInGrid(grid, r1, c1, r2, c2);
+                if (runs.length === 0) {
+                    return;
+                }
+                let score = 0;
+                runs.forEach(({type, size}) => {
+                    score += weights[type] * (1 + (0.5 * (size - 3)));
+                });
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = {r1, c1, r2, c2};
+                }
+            };
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (c < cols - 1) {
+                        consider(r, c, r, c + 1);
+                    }
+                    if (r < rows - 1) {
+                        consider(r, c, r + 1, c);
+                    }
+                }
+            }
+            return best;
+        }
+
+        /**
          * Whether any valid match-producing swap exists anywhere on the board.
          *
          * @param {Array} grid The board grid.
@@ -525,6 +615,8 @@
             checkVertical,
             isMatchAt,
             findMove,
+            runsAt,
+            chooseMove,
             hasAvailableMove,
             hasAnyMatch,
             shuffleGrid,

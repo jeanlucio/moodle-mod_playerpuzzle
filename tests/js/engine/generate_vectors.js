@@ -462,6 +462,14 @@ function buildCombatVectors() {
         cases.push(recordCall('startTurn', [breathRand.pick(['player', 'boss', 'boss', 'boss']), state, config]));
     }
 
+    const weightRand = randomSource(20261109);
+    for (let i = 0; i < 40; i++) {
+        cases.push(recordCall('opponentMoveWeights', [randomState(weightRand), {
+            difficulty: weightRand.pick(['easy', 'normal', 'hard', 'hard']),
+            bossPowers: weightRand.pick([[], ...EVERY_POWER.map(power => [power]), ['ambush', 'drain', 'breath']]),
+        }]));
+    }
+
     const lootRand = randomSource(20261108);
     for (let i = 0; i < 30; i++) {
         const state = Object.assign(randomState(lootRand), {bossTurnCount: lootRand.pick([3, 3, 7, 4, 11])});

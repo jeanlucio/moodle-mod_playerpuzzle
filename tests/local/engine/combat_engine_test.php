@@ -788,6 +788,29 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
+     * Tests the opponent's move weights: none on Easy, the base on Normal (and without a
+     * difficulty), with the Potion scaled by how hurt it is and less for an armed Shield, and the
+     * personality of its powers on Hard only.
+     *
+     * @return void
+     */
+    public function test_opponent_move_weights_follow_the_difficulty(): void {
+        $state = array_merge($this->fresh_state(), ['currentHp' => 100.0, 'maxBossHp' => 200.0]);
+        $base = [1.5, 1.5, 1.5, 3, 1.5, 1.5, 1];
+
+        $this->assertNull(combat_engine::opponent_move_weights($state, ['difficulty' => 'easy']));
+        $this->assertEquals($base, combat_engine::opponent_move_weights($state, ['difficulty' => 'normal']));
+        $this->assertEquals($base, combat_engine::opponent_move_weights($state, []));
+
+        $full = array_merge($state, ['currentHp' => 200.0, 'bossShieldReady' => true]);
+        $this->assertEquals([1.5, 1.5, 1.5, 3, 0.5, 0, 1], combat_engine::opponent_move_weights($full, ['difficulty' => 'normal']));
+
+        $plant = ['difficulty' => 'hard', 'bossPowers' => [combat_engine::POWER_ROOTHEAL]];
+        $this->assertEquals([1.5, 1.5, 1.5, 3, 1.5, 3, 1], combat_engine::opponent_move_weights($state, $plant));
+        $this->assertEquals($base, combat_engine::opponent_move_weights($state, array_merge($plant, ['difficulty' => 'normal'])));
+    }
+
+    /**
      * Tests that an opponent with drain recovers DRAIN_PERCENT of what its hit dealt, up to its
      * max HP, and that an opponent without the power recovers nothing.
      *

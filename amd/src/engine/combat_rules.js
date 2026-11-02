@@ -116,6 +116,28 @@
         const ORB_MANA = 20;
         const BOOSTED_ORB_MANA = 30;
 
+        // How much the opponent values each piece type (0 Star, 1 Grimoire, 2 Orb, 3 Sword,
+        // 4 Shield, 5 Potion, 6 Coin) when it picks a move on Normal and Hard. The Potion's is
+        // scaled by how hurt the opponent is, and a Shield is worth less while one is armed.
+        const MOVE_WEIGHTS = [1.5, 1.5, 1.5, 3, 1.5, 3, 1];
+        const ARMED_SHIELD_WEIGHT = 0.5;
+
+        // On Hard, each power makes the opponent value the pieces that feed it more: power =>
+        // {piece type: factor}.
+        const PERSONALITY = {
+            rootheal: {'5': 2},
+            regen: {'5': 1.5},
+            manaboost: {'2': 2},
+            fastgrimoire: {'1': 2},
+            longpoison: {'1': 2},
+            iceshield: {'4': 2},
+            intangible: {'4': 2},
+            ambush: {'3': 1.5},
+            breath: {'3': 1.5},
+            drain: {'3': 1.5},
+            loot: {'6': 3},
+        };
+
         // Every how many of its turns an opponent with the loot power takes the student's coins, and
         // the percentage of them it takes each time.
         const LOOT_EVERY = 4;
@@ -480,6 +502,36 @@
         }
 
         /**
+         * How the opponent values each piece type when it picks a move (see
+         * board_rules.js::chooseMove()): none on Easy, so it plays the first Sword match it
+         * finds; MOVE_WEIGHTS on Normal, with the Potion's scaled by how hurt it is and less for a
+         * Shield while one is armed; on Hard, those times the PERSONALITY of each of its powers.
+         * A config without a difficulty plays as Normal.
+         *
+         * @param {object} state Combat state: currentHp, maxBossHp and bossShieldReady are read.
+         * @param {object} config The phase's rule config: difficulty and bossPowers are read.
+         * @return {?Array<number>} Weight per piece type (index 0-6), or null on Easy.
+         */
+        function opponentMoveWeights(state, config) {
+            if (config.difficulty === 'easy') {
+                return null;
+            }
+            const weights = MOVE_WEIGHTS.slice();
+            if (state.bossShieldReady) {
+                weights[4] = ARMED_SHIELD_WEIGHT;
+            }
+            weights[5] = MOVE_WEIGHTS[5] * (state.maxBossHp - state.currentHp) / state.maxBossHp;
+            if (config.difficulty === 'hard') {
+                (config.bossPowers || []).forEach(power => {
+                    Object.entries(PERSONALITY[power] || {}).forEach(([type, factor]) => {
+                        weights[type] *= factor;
+                    });
+                });
+            }
+            return weights;
+        }
+
+        /**
          * Whether a match's Swords are an ambush: the opponent's, on its first turn, with the
          * ambush power.
          *
@@ -687,6 +739,7 @@
             resolveConsumableEffect,
             matchHitAmount,
             isAmbush,
+            opponentMoveWeights,
             hitAmount,
             drainAmount,
             questionOutcome,

@@ -465,6 +465,19 @@ test('matchHitAmount: an opponent with ambush doubles its Swords on its first tu
     assert.equal(combatRules.isAmbush('boss', onTurn(0), config), false);
 });
 
+test('opponentMoveWeights: none on Easy, the base on Normal, the personality on Hard', () => {
+    const state = Object.assign(freshState(), {currentHp: 100, maxBossHp: 200});
+    assert.equal(combatRules.opponentMoveWeights(state, {difficulty: 'easy'}), null);
+    assert.deepEqual(combatRules.opponentMoveWeights(state, {difficulty: 'normal'}), [1.5, 1.5, 1.5, 3, 1.5, 1.5, 1]);
+    assert.deepEqual(combatRules.opponentMoveWeights(state, {}), [1.5, 1.5, 1.5, 3, 1.5, 1.5, 1]);
+    const full = Object.assign({}, state, {currentHp: 200, bossShieldReady: true});
+    assert.deepEqual(combatRules.opponentMoveWeights(full, {difficulty: 'normal'}), [1.5, 1.5, 1.5, 3, 0.5, 0, 1]);
+    const plant = {difficulty: 'hard', bossPowers: [combatRules.POWERS.ROOTHEAL]};
+    assert.deepEqual(combatRules.opponentMoveWeights(state, plant), [1.5, 1.5, 1.5, 3, 1.5, 3, 1]);
+    const normalPlant = Object.assign({}, plant, {difficulty: 'normal'});
+    assert.deepEqual(combatRules.opponentMoveWeights(state, normalPlant), [1.5, 1.5, 1.5, 3, 1.5, 1.5, 1]);
+});
+
 test('drainAmount: an opponent with drain recovers 30% of what its hit dealt, up to its max HP', () => {
     const config = {bossPowers: [combatRules.POWERS.DRAIN]};
     const state = Object.assign(freshState(), {currentHp: 100, maxBossHp: 240});

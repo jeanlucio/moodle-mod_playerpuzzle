@@ -560,6 +560,20 @@ define([
             return {p1: this.grid[move.r1][move.c1], p2: this.grid[move.r2][move.c2]};
         }
 
+        /**
+         * The opponent's move (see BoardRules.chooseMove()).
+         *
+         * @param {?Array<number>} weights Weight per piece type, or null to play the first Sword match.
+         * @returns {{p1: object, p2: object}|null} The two pieces to swap, or null when none exist.
+         */
+        chooseOpponentMove(weights) {
+            const move = BoardRules.chooseMove(this.extractTypesGrid(), this.rows, this.cols, weights);
+            if (!move) {
+                return null;
+            }
+            return {p1: this.grid[move.r1][move.c1], p2: this.grid[move.r2][move.c2]};
+        }
+
         hasAvailableMove() {
             return this.findMove() !== null;
         }

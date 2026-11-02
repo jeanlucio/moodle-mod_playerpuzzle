@@ -326,13 +326,13 @@ final class replay_test extends \advanced_testcase {
      */
     public function test_derive_resolves_a_multi_turn_phase_with_a_boss_question(): void {
         $attempt = $this->make_attempt([
-            'rngseed' => 11,
+            'rngseed' => 22,
             'movelog' => move_log::encode([
-                ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 1, 'c2' => 0],
-                ['type' => 'move', 'r1' => 1, 'c1' => 4, 'r2' => 1, 'c2' => 5],
+                ['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 2, 'c2' => 6],
+                ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 1, 'c2' => 3],
                 ['type' => 'question', 'side' => 'boss', 'outcome' => 'answered'],
-                ['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 0, 'c2' => 4],
-                ['type' => 'move', 'r1' => 0, 'c1' => 2, 'r2' => 0, 'c2' => 3],
+                ['type' => 'move', 'r1' => 2, 'c1' => 0, 'r2' => 2, 'c2' => 1],
+                ['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 0, 'c2' => 5],
             ]),
             'frozenbasebosshp' => 15,
             'frozenbossdamage' => 10,
@@ -435,13 +435,13 @@ final class replay_test extends \advanced_testcase {
      */
     public function test_derive_revives_the_boss_instead_of_ending_the_match(): void {
         $attempt = $this->make_attempt([
-            'rngseed' => 11,
+            'rngseed' => 22,
             'movelog' => move_log::encode([
-                ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 1, 'c2' => 0],
-                ['type' => 'move', 'r1' => 1, 'c1' => 4, 'r2' => 1, 'c2' => 5],
+                ['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 2, 'c2' => 6],
+                ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 1, 'c2' => 3],
                 ['type' => 'question', 'side' => 'boss', 'outcome' => 'answered'],
-                ['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 0, 'c2' => 4],
-                ['type' => 'move', 'r1' => 0, 'c1' => 2, 'r2' => 0, 'c2' => 3],
+                ['type' => 'move', 'r1' => 2, 'c1' => 0, 'r2' => 2, 'c2' => 1],
+                ['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 0, 'c2' => 5],
             ]),
             'frozenbasebosshp' => 15,
             'questionresults' => question_results::append(null, 'boss', true, false),
@@ -561,13 +561,13 @@ final class replay_test extends \advanced_testcase {
     public function test_derive_handles_a_failed_validation_by_side(): void {
         $player = $this->make_seed56_attempt('failed', [], 10);
         $boss = $this->make_attempt([
-            'rngseed' => 11,
+            'rngseed' => 22,
             'movelog' => move_log::encode([
-                ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 1, 'c2' => 0],
-                ['type' => 'move', 'r1' => 1, 'c1' => 4, 'r2' => 1, 'c2' => 5],
+                ['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 2, 'c2' => 6],
+                ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 1, 'c2' => 3],
                 ['type' => 'question', 'side' => 'boss', 'outcome' => 'failed'],
-                ['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 0, 'c2' => 4],
-                ['type' => 'move', 'r1' => 0, 'c1' => 2, 'r2' => 0, 'c2' => 3],
+                ['type' => 'move', 'r1' => 2, 'c1' => 0, 'r2' => 2, 'c2' => 1],
+                ['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 0, 'c2' => 5],
             ]),
             'frozenbasebosshp' => 15,
         ]);

@@ -59,12 +59,12 @@ function derive(attempt, playerpuzzle, events, outcomes = [], serverUses = {}) {
 }
 
 const seed2Win = [{type: 'move', r1: 3, c1: 1, r2: 3, c2: 2}];
-const seed11Log = (bossOutcome) => [
-    {type: 'move', r1: 0, c1: 0, r2: 1, c2: 0},
-    {type: 'move', r1: 1, c1: 4, r2: 1, c2: 5},
+const seed22Log = (bossOutcome) => [
+    {type: 'move', r1: 2, c1: 5, r2: 2, c2: 6},
+    {type: 'move', r1: 1, c1: 2, r2: 1, c2: 3},
     {type: 'question', side: 'boss', outcome: bossOutcome},
-    {type: 'move', r1: 0, c1: 3, r2: 0, c2: 4},
-    {type: 'move', r1: 0, c1: 2, r2: 0, c2: 3},
+    {type: 'move', r1: 2, c1: 0, r2: 2, c2: 1},
+    {type: 'move', r1: 0, c1: 4, r2: 0, c2: 5},
 ];
 const seed56Log = (outcome) => [
     {type: 'move', r1: 0, c1: 7, r2: 1, c2: 7},
@@ -115,9 +115,9 @@ test('a missing question event is a gap on seed 56', () => {
     );
 });
 
-test('a multi-turn phase with a boss question on seed 11', () => {
+test('a multi-turn phase with a boss question on seed 22', () => {
     assert.deepEqual(
-        derive({rngseed: 11, frozenbasebosshp: 15}, {}, seed11Log('answered'), [['boss', true, false]]),
+        derive({rngseed: 22, frozenbasebosshp: 15}, {}, seed22Log('answered'), [['boss', true, false]]),
         {damage: 15, playergold: 0, bossgold: 0, bossdefeated: true}
     );
 });
@@ -134,7 +134,7 @@ test('impossible swaps are rejected', () => {
 
 test('the boss revives instead of dying while minquestions is unmet', () => {
     assert.equal(
-        derive({rngseed: 11, frozenbasebosshp: 15}, {minquestions: 5}, seed11Log('answered'), [['boss', true, false]]),
+        derive({rngseed: 22, frozenbasebosshp: 15}, {minquestions: 5}, seed22Log('answered'), [['boss', true, false]]),
         null
     );
 });
@@ -158,6 +158,6 @@ test('question outcomes come from the server on seed 56', () => {
     assert.deepEqual(seed56('unavailable', [], 10), {damage: 10, playergold: 25, bossgold: 0, bossdefeated: true});
 });
 
-test('a failed boss validation is inconclusive on seed 11', () => {
-    assert.equal(derive({rngseed: 11, frozenbasebosshp: 15}, {}, seed11Log('failed')), null);
+test('a failed boss validation is inconclusive on seed 22', () => {
+    assert.equal(derive({rngseed: 22, frozenbasebosshp: 15}, {}, seed22Log('failed')), null);
 });

@@ -183,6 +183,7 @@ class replay {
             'bossAttack' => $opponent['bossattack'],
             'bossArmor' => $opponent['bossarmor'],
             'bossPowers' => $opponent['bosspowers'],
+            'difficulty' => $difficulty,
         ];
         $maxbosshp = $opponent['maxbosshp'];
         // Note: basestudenthp is not one of the columns frozen at phase start (only the boss-side
@@ -308,12 +309,11 @@ class replay {
                     return $finish('boss', true);
                 }
             } else {
-                $move = board_engine::find_move($grid, self::ROWS, self::COLS, 3)
-                    ?? board_engine::find_move($grid, self::ROWS, self::COLS, null);
+                $weights = combat_engine::opponent_move_weights($state, $config);
+                $move = board_engine::choose_move($grid, self::ROWS, self::COLS, $weights);
                 if ($move === null) {
                     board_engine::shuffle_until_valid($grid, self::ROWS, self::COLS, $rng);
-                    $move = board_engine::find_move($grid, self::ROWS, self::COLS, 3)
-                        ?? board_engine::find_move($grid, self::ROWS, self::COLS, null);
+                    $move = board_engine::choose_move($grid, self::ROWS, self::COLS, $weights);
                     if ($move === null) {
                         // Reaching here means something is structurally wrong, not a real game
                         // state — shuffle_until_valid() guarantees a move exists afterwards.

@@ -282,6 +282,44 @@ final class board_engine_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that runs_at lists the row and column runs of three or more through a cell.
+     *
+     * @return void
+     */
+    public function test_runs_at_lists_the_runs_through_a_cell(): void {
+        $this->assertSame([['type' => 3, 'size' => 3]], board_engine::runs_at([[3, 3, 3, 0]], 1, 4, 0, 1));
+        $this->assertSame([], board_engine::runs_at([[3, 3, 0, 0]], 1, 4, 0, 1));
+        $this->assertSame([['type' => 1, 'size' => 3]], board_engine::runs_at([[1, 2, 2], [1, 0, 0], [1, 3, 3]], 3, 3, 0, 0));
+    }
+
+    /**
+     * Tests that choose_move plays find_move's first Sword match without weights, and with
+     * weights the best-scoring swap, a tie going to the first in scan order.
+     *
+     * @return void
+     */
+    public function test_choose_move_plays_the_best_scoring_swap(): void {
+        $grid = [[3, 3, 0, 3, 3, 6, 6, 1, 6], [1, 2, 3, 4, 5, 0, 2, 6, 4]];
+        $this->assertSame(board_engine::find_move($grid, 2, 9, 3), board_engine::choose_move($grid, 2, 9, null));
+        // Five Swords (1 x 2) beat four Coins (1 x 1.5) and the three-Sword swaps found first.
+        $this->assertSame(
+            ['r1' => 0, 'c1' => 2, 'r2' => 1, 'c2' => 2],
+            board_engine::choose_move($grid, 2, 9, [1, 1, 1, 1, 1, 1, 1])
+        );
+        // Coins worth twice as much (2 x 1.5) beat the five Swords.
+        $this->assertSame(
+            ['r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7],
+            board_engine::choose_move($grid, 2, 9, [1, 1, 1, 1, 1, 1, 2])
+        );
+        $tie = [[3, 3, 0, 3, 4, 6, 6, 1, 6]];
+        $this->assertSame(
+            ['r1' => 0, 'c1' => 2, 'r2' => 0, 'c2' => 3],
+            board_engine::choose_move($tie, 1, 9, [1, 1, 1, 1, 1, 1, 1])
+        );
+        $this->assertNull(board_engine::choose_move([[1, 2], [3, 4]], 2, 2, [1, 1, 1, 1, 1, 1, 1]));
+    }
+
+    /**
      * Tests that find_move returns null and has_available_move is false on a board with no
      * valid swap — a 2x2 board can never contain a run of 3 in either direction.
      *

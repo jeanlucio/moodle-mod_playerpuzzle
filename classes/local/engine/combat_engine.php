@@ -101,6 +101,31 @@ class combat_engine {
     /** @var string Power: the opponent recovers part of its max HP as each of its turns begins. */
     public const POWER_REGEN = 'regen';
 
+    /**
+     * @var float[] How much the opponent values each piece type (0 Star, 1 Grimoire, 2 Orb, 3 Sword, 4 Shield,
+     *  5 Potion, 6 Coin) when it picks a move on Normal and Hard. The Potion's is scaled by how hurt the
+     *  opponent is, and a Shield is worth less while one is armed.
+     */
+    public const MOVE_WEIGHTS = [1.5, 1.5, 1.5, 3, 1.5, 3, 1];
+
+    /** @var float The Shield's weight while the opponent has one armed. */
+    public const ARMED_SHIELD_WEIGHT = 0.5;
+
+    /** @var array On Hard, each power makes the opponent value the pieces that feed it more: power => [type => factor]. */
+    public const PERSONALITY = [
+        'rootheal' => [5 => 2],
+        'regen' => [5 => 1.5],
+        'manaboost' => [2 => 2],
+        'fastgrimoire' => [1 => 2],
+        'longpoison' => [1 => 2],
+        'iceshield' => [4 => 2],
+        'intangible' => [4 => 2],
+        'ambush' => [3 => 1.5],
+        'breath' => [3 => 1.5],
+        'drain' => [3 => 1.5],
+        'loot' => [6 => 3],
+    ];
+
     /** @var string Power: every few of its turns, the opponent takes some of the student's coins. */
     public const POWER_LOOT = 'loot';
 
@@ -494,6 +519,37 @@ class combat_engine {
             $multiplied *= self::AMBUSH_MULTIPLIER;
         }
         return self::hit_amount($multiplied, $currentturn, $config);
+    }
+
+    /**
+     * How the opponent values each piece type when it picks a move (see
+     * board_engine::choose_move()) — mirrors combat_rules.js::opponentMoveWeights(): none on Easy,
+     * so it plays the first Sword match it finds; MOVE_WEIGHTS on Normal, with the Potion's scaled
+     * by how hurt it is and less for a Shield while one is armed; on Hard, those times the
+     * PERSONALITY of each of its powers. A config without a difficulty plays as Normal.
+     *
+     * @param array $state Combat state: currentHp, maxBossHp and bossShieldReady are read.
+     * @param array $config The phase's rule config: difficulty and bossPowers are read.
+     * @return array|null Weight per piece type (index 0-6), or null on Easy.
+     */
+    public static function opponent_move_weights(array $state, array $config): ?array {
+        $difficulty = $config['difficulty'] ?? 'normal';
+        if ($difficulty === 'easy') {
+            return null;
+        }
+        $weights = self::MOVE_WEIGHTS;
+        if ($state['bossShieldReady']) {
+            $weights[4] = self::ARMED_SHIELD_WEIGHT;
+        }
+        $weights[5] = self::MOVE_WEIGHTS[5] * ($state['maxBossHp'] - $state['currentHp']) / $state['maxBossHp'];
+        if ($difficulty === 'hard') {
+            foreach ($config['bossPowers'] ?? [] as $power) {
+                foreach (self::PERSONALITY[$power] ?? [] as $type => $factor) {
+                    $weights[$type] *= $factor;
+                }
+            }
+        }
+        return $weights;
     }
 
     /**

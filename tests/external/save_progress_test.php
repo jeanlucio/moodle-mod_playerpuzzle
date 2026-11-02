@@ -883,9 +883,9 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
-        // Seed 20: a first match, the boss's turn earns it 10 coins, then the finishing
+        // Seed 274: a first match, the boss's turn earns it 10 coins, then the finishing
         // Sword match — 20 coins for the player in all.
-        $this->make_verified_phase($token, 20, [[2, 6, 2, 7], [3, 4, 3, 5]]);
+        $this->make_verified_phase($token, 274, [[4, 3, 5, 3], [5, 0, 5, 1]]);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,

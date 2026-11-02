@@ -183,6 +183,30 @@ test('findMove finds a swap that produces a match', () => {
     assert.ok(toDestroy.length >= 3);
 });
 
+test('runsAt lists the row and column runs of three or more through a cell', () => {
+    assert.deepEqual(boardRules.runsAt([[3, 3, 3, 0]], 1, 4, 0, 1), [{type: 3, size: 3}]);
+    assert.deepEqual(boardRules.runsAt([[3, 3, 0, 0]], 1, 4, 0, 1), []);
+    assert.deepEqual(boardRules.runsAt([[1, 2, 2], [1, 0, 0], [1, 3, 3]], 3, 3, 0, 0), [{type: 1, size: 3}]);
+});
+
+test('chooseMove without weights plays the first Sword match, like findMove', () => {
+    const grid = [[3, 3, 0, 3, 3, 6, 6, 1, 6], [1, 2, 3, 4, 5, 0, 2, 6, 4]];
+    assert.deepEqual(boardRules.chooseMove(grid, 2, 9, null), boardRules.findMove(grid, 2, 9, 3));
+});
+
+test('chooseMove with weights plays the best-scoring swap, a tie going to the first in scan order', () => {
+    const grid = [[3, 3, 0, 3, 3, 6, 6, 1, 6], [1, 2, 3, 4, 5, 0, 2, 6, 4]];
+    const before = JSON.stringify(grid);
+    // Five Swords (1 x 2) beat four Coins (1 x 1.5) and the three-Sword swaps found first.
+    assert.deepEqual(boardRules.chooseMove(grid, 2, 9, [1, 1, 1, 1, 1, 1, 1]), {r1: 0, c1: 2, r2: 1, c2: 2});
+    // Coins worth twice as much (2 x 1.5) beat the five Swords.
+    assert.deepEqual(boardRules.chooseMove(grid, 2, 9, [1, 1, 1, 1, 1, 1, 2]), {r1: 0, c1: 7, r2: 1, c2: 7});
+    assert.equal(JSON.stringify(grid), before);
+    const tie = [[3, 3, 0, 3, 4, 6, 6, 1, 6]];
+    assert.deepEqual(boardRules.chooseMove(tie, 1, 9, [1, 1, 1, 1, 1, 1, 1]), {r1: 0, c1: 2, r2: 0, c2: 3});
+    assert.equal(boardRules.chooseMove([[1, 2], [3, 4]], 2, 2, [1, 1, 1, 1, 1, 1, 1]), null);
+});
+
 test('findMove returns null and hasAvailableMove is false on a board with no valid swap', () => {
     // A 2x2 board can never contain a run of 3 in either direction, regardless of which
     // types sit where or which adjacent pair gets swapped — geometrically impossible, not

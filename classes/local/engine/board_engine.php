@@ -309,6 +309,97 @@ class board_engine {
     }
 
     /**
+     * The runs of three or more a cell is part of: its row run and its column run, each as
+     * ['type', 'size'] — mirrors board_rules.js::runsAt().
+     *
+     * @param array $grid The board grid.
+     * @param int $rows Board row count.
+     * @param int $cols Board column count.
+     * @param int $rowp Cell row.
+     * @param int $colp Cell column.
+     * @return array Row run first, then column run.
+     */
+    public static function runs_at(array $grid, int $rows, int $cols, int $rowp, int $colp): array {
+        $type = $grid[$rowp][$colp];
+        $runs = [];
+        if ($type === null) {
+            return $runs;
+        }
+        $row = 1;
+        for ($c = $colp - 1; $c >= 0 && $grid[$rowp][$c] === $type; $c--) {
+            $row++;
+        }
+        for ($c = $colp + 1; $c < $cols && $grid[$rowp][$c] === $type; $c++) {
+            $row++;
+        }
+        if ($row >= 3) {
+            $runs[] = ['type' => $type, 'size' => $row];
+        }
+        $column = 1;
+        for ($r = $rowp - 1; $r >= 0 && $grid[$r][$colp] === $type; $r--) {
+            $column++;
+        }
+        for ($r = $rowp + 1; $r < $rows && $grid[$r][$colp] === $type; $r++) {
+            $column++;
+        }
+        if ($column >= 3) {
+            $runs[] = ['type' => $type, 'size' => $column];
+        }
+        return $runs;
+    }
+
+    /**
+     * The opponent's move — mirrors board_rules.js::chooseMove(). Without weights it is
+     * find_move()'s: the first Sword match in scan order, else the first match. With weights,
+     * every swap that makes a match is scored by the runs it makes right away, each worth its
+     * piece type's weight times 1 + 0.5 per piece past three, and the highest score wins; a tie
+     * keeps the swap found first in scan order. The cascade after the swap is never scored: the
+     * pieces that fall come from the seeded generator, which the scoring must not draw from.
+     *
+     * @param array $grid The board grid.
+     * @param int $rows Board row count.
+     * @param int $cols Board column count.
+     * @param array|null $weights Weight per piece type (index 0-6), or null.
+     * @return array|null ['r1', 'c1', 'r2', 'c2'] the two cells to swap, or null when no swap
+     *  makes a match.
+     */
+    public static function choose_move(array $grid, int $rows, int $cols, ?array $weights): ?array {
+        if ($weights === null) {
+            return self::find_move($grid, $rows, $cols, 3) ?? self::find_move($grid, $rows, $cols, null);
+        }
+        $best = null;
+        $bestscore = -1;
+        for ($r = 0; $r < $rows; $r++) {
+            for ($c = 0; $c < $cols; $c++) {
+                $swaps = [];
+                if ($c < $cols - 1) {
+                    $swaps[] = [$r, $c, $r, $c + 1];
+                }
+                if ($r < $rows - 1) {
+                    $swaps[] = [$r, $c, $r + 1, $c];
+                }
+                foreach ($swaps as [$r1, $c1, $r2, $c2]) {
+                    self::swap_in_grid($grid, $r1, $c1, $r2, $c2);
+                    $runs = array_merge(self::runs_at($grid, $rows, $cols, $r1, $c1), self::runs_at($grid, $rows, $cols, $r2, $c2));
+                    self::swap_in_grid($grid, $r1, $c1, $r2, $c2);
+                    if (!$runs) {
+                        continue;
+                    }
+                    $score = 0;
+                    foreach ($runs as $run) {
+                        $score += $weights[$run['type']] * (1 + (0.5 * ($run['size'] - 3)));
+                    }
+                    if ($score > $bestscore) {
+                        $bestscore = $score;
+                        $best = ['r1' => $r1, 'c1' => $c1, 'r2' => $r2, 'c2' => $c2];
+                    }
+                }
+            }
+        }
+        return $best;
+    }
+
+    /**
      * Whether any valid match-producing swap exists anywhere on the board.
      *
      * @param array $grid The board grid.

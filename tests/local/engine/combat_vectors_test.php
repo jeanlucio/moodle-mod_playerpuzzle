@@ -121,6 +121,8 @@ final class combat_vectors_test extends \advanced_testcase {
                 return combat_engine::match_hit_amount($args[0], $args[1], $args[2], $args[3]);
             case 'hitAmount':
                 return combat_engine::hit_amount($args[0], $args[1], $args[2]);
+            case 'opponentMoveWeights':
+                return combat_engine::opponent_move_weights($args[0], $args[1]);
             case 'drainAmount':
                 return combat_engine::drain_amount($args[0], $args[1], $args[2]);
             case 'ARMOR_CAP':

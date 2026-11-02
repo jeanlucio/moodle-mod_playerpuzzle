@@ -413,6 +413,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             return {
                 baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor,
                 bossAttack: this.bossAttack, bossArmor: this.bossArmor, bossPowers: this.bossPowers,
+                difficulty: this.gameConfig.difficulty || 'normal',
             };
         }
 
@@ -781,7 +782,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
         executeBossTurn() {
             const me = this.scene;
-            const move = me.board.findMove(3) || me.board.findMove();
+            const move = me.board.chooseOpponentMove(CombatRules.opponentMoveWeights(this.combatState(), this.ruleConfig()));
 
             if (move) {
                 me.time.delayedCall(300, () => me.board.swapPieces(move.p1, move.p2));

@@ -106,6 +106,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             bossAttack: modifiers.attack,
             bossArmor: modifiers.armor,
             bossPowers: powers,
+            difficulty: attempt.difficulty || 'normal',
         },
         maxBossHp: Math.floor((scaledBossHp * modifiers.hp) + 0.5),
         maxPlayerHp: scaleStudent(playerpuzzle.basestudenthp, level, phase),
@@ -382,10 +383,11 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, events, outcomes, s
     };
 
     const bossTurn = () => {
-        let move = BoardRules.findMove(grid, ROWS, COLS, 3) || BoardRules.findMove(grid, ROWS, COLS, null);
+        const weights = CombatRules.opponentMoveWeights(state, config);
+        let move = BoardRules.chooseMove(grid, ROWS, COLS, weights);
         if (move === null) {
             BoardRules.shuffleUntilValid(grid, ROWS, COLS, rng);
-            move = BoardRules.findMove(grid, ROWS, COLS, 3) || BoardRules.findMove(grid, ROWS, COLS, null);
+            move = BoardRules.chooseMove(grid, ROWS, COLS, weights);
             if (move === null) {
                 return done(null);
             }

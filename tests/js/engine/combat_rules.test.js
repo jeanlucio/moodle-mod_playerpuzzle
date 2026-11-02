@@ -351,6 +351,12 @@ test('initialState: an opponent with iceshield starts with its Shield armed', ()
     assert.deepEqual(shielded, Object.assign({}, plain, {bossShieldReady: true}));
 });
 
+test('initialState: an opponent with longpoison starts with its poison meter 20% full', () => {
+    const plain = combatRules.initialState(100, 200);
+    const cursed = combatRules.initialState(100, 200, {bossPowers: [combatRules.POWERS.LONGPOISON]});
+    assert.deepEqual(cursed, Object.assign({}, plain, {bossPoisonMeter: 20}));
+});
+
 test('resolvePoisonMeters: an opponent with longpoison arms one more round against the student only', () => {
     const state = Object.assign(freshState(), {playerPoisonMeter: 100, bossPoisonMeter: 110});
     combatRules.resolvePoisonMeters(state, {bossPowers: [combatRules.POWERS.LONGPOISON]});
@@ -377,8 +383,8 @@ test('pieceGains: an opponent with manaboost gets more mana per Orb, the student
     assert.equal(combatRules.pieceGains('boss', CONFIG).mana, 20);
 });
 
-test('pieceGains: an opponent with rootheal heals twice as much per Potion, the student the usual', () => {
+test('pieceGains: an opponent with rootheal heals half as much again per Potion, the student the usual', () => {
     const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.ROOTHEAL]});
-    assert.equal(combatRules.pieceGains('boss', config).heal, 5);
+    assert.equal(combatRules.pieceGains('boss', config).heal, 3.75);
     assert.equal(combatRules.pieceGains('player', config).heal, 2.5);
 });

@@ -197,13 +197,13 @@ final class combat_test extends \basic_testcase {
             'currentlevel' => 2, 'currentphase' => 3, 'difficulty' => 'hard',
         ]), $instance);
         $this->assertSame(
-            ['maxbosshp' => 340, 'basedamage' => 34, 'bossattack' => 1.25, 'bossarmor' => 0.0, 'bosspowers' => []],
+            ['maxbosshp' => 340, 'basedamage' => 34, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => []],
             $brute
         );
 
         $armored = combat::phase_opponent($this->make_attempt(['frozenopponent' => 'golem']), $instance);
         $this->assertSame(
-            ['maxbosshp' => 100, 'basedamage' => 10, 'bossattack' => 1.0, 'bossarmor' => 0.25, 'bosspowers' => ['iceshield']],
+            ['maxbosshp' => 100, 'basedamage' => 10, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield']],
             $armored
         );
     }
@@ -217,9 +217,9 @@ final class combat_test extends \basic_testcase {
         $instance = (object) ['basebosshp' => 900, 'bossdamage' => 90];
 
         $tough = combat::phase_opponent($this->make_attempt([
-            'frozenopponent' => 'slime', 'frozenbasebosshp' => 175,
+            'frozenopponent' => 'slime', 'frozenbasebosshp' => 150,
         ]), $instance);
-        $this->assertSame(228, $tough['maxbosshp'], '175 x 1.3 = 227.5, rounded up');
+        $this->assertSame(173, $tough['maxbosshp'], '150 x 1.15 = 172.5, rounded up');
         $this->assertSame(10, $tough['basedamage'], 'the profile does not touch the base damage');
     }
 

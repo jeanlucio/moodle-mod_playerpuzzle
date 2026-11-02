@@ -161,7 +161,7 @@ const REPLAY_CASES = [
         student: 400, typeOffset: 2, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'more mana, a lost match', opponent: 'wolf', seed: 124, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 1, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
-    {name: 'Potions heal double, a lost match', opponent: 'plant', seed: 125, boss: 3000, damage: 12, coin: 10,
+    {name: 'Potions heal half as much again, a lost match', opponent: 'plant', seed: 125, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 3, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'final boss, no profile', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
         level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
@@ -171,14 +171,14 @@ const REPLAY_CASES = [
 // the server (opponents::modifiers()); replay_vectors_test.php checks each case's copy against it,
 // and the same for their powers below.
 const OPPONENT_MODIFIERS = {
-    goblin: {hp: 1, attack: 1.25, armor: 0},
-    golem: {hp: 1, attack: 1, armor: 0.25},
-    slime: {hp: 1.3, attack: 1, armor: 0},
-    plant: {hp: 1, attack: 1, armor: 0.25},
-    dragon: {hp: 1, attack: 1.25, armor: 0},
-    mummy: {hp: 1, attack: 1.25, armor: 0},
-    spider: {hp: 1.3, attack: 1, armor: 0},
-    wolf: {hp: 1, attack: 1.25, armor: 0},
+    goblin: {hp: 1, attack: 1.15, armor: 0},
+    golem: {hp: 1, attack: 1, armor: 0.15},
+    slime: {hp: 1.15, attack: 1, armor: 0},
+    plant: {hp: 1, attack: 1, armor: 0.15},
+    dragon: {hp: 1, attack: 1.15, armor: 0},
+    mummy: {hp: 1, attack: 1.15, armor: 0},
+    spider: {hp: 1.15, attack: 1, armor: 0},
+    wolf: {hp: 1, attack: 1.15, armor: 0},
     vampire: {hp: 1, attack: 1, armor: 0},
 };
 

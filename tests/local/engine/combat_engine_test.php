@@ -581,6 +581,20 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that an opponent with the longpoison power starts with part of its poison meter
+     * filled, and that the state is otherwise the plain initial one.
+     *
+     * @return void
+     */
+    public function test_initial_state_fills_part_of_the_poison_meter_of_an_opponent_with_longpoison(): void {
+        $plain = combat_engine::initial_state(100, 200);
+        $cursed = combat_engine::initial_state(100, 200, ['bossPowers' => [combat_engine::POWER_LONGPOISON]]);
+
+        $this->assertSame(array_merge($plain, ['bossPoisonMeter' => combat_engine::LONG_POISON_HEAD_START]), $cursed);
+        $this->assertSame(20, combat_engine::LONG_POISON_HEAD_START);
+    }
+
+    /**
      * Tests that an opponent with longpoison arms one more round of poison against the student,
      * and that the student's own Grimoires still arm the usual number against it.
      *
@@ -628,15 +642,16 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that an opponent with rootheal heals twice as much per Potion, and the student the
-     * usual.
+     * Tests that an opponent with rootheal heals half as much again per Potion, and the student
+     * the usual.
      *
      * @return void
      */
-    public function test_rootheal_doubles_the_opponents_potion_heal(): void {
+    public function test_rootheal_raises_the_opponents_potion_heal_by_half(): void {
         $config = array_merge(self::CONFIG, ['bossPowers' => [combat_engine::POWER_ROOTHEAL]]);
 
-        $this->assertSame(5, combat_engine::piece_gains('boss', $config)['heal']);
+        $this->assertSame(3.75, combat_engine::piece_gains('boss', $config)['heal']);
+        $this->assertSame(6, combat_engine::piece_gains('boss', array_merge($config, ['baseDamage' => 16]))['heal']);
         $this->assertSame(2.5, combat_engine::piece_gains('player', $config)['heal']);
         $this->assertSame(2.5, combat_engine::piece_gains('boss', self::CONFIG)['heal']);
     }

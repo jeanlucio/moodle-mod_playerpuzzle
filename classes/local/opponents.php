@@ -73,12 +73,12 @@ class opponents {
     /**
      * @var array What each profile changes in the fight: a multiplier on the opponent's HP, a
      *  multiplier on the hits it lands, and the share of each hit it takes that its armor absorbs.
-     *  Starting values, to be tuned against simulated matches.
+     *  Tuned against simulated matches: see tests/js/engine/simulate_balance.js.
      */
     private const PROFILE_MODIFIERS = [
-        self::PROFILE_BRUTE => ['hp' => 1.0, 'attack' => 1.25, 'armor' => 0.0],
-        self::PROFILE_ARMORED => ['hp' => 1.0, 'attack' => 1.0, 'armor' => 0.25],
-        self::PROFILE_TOUGH => ['hp' => 1.3, 'attack' => 1.0, 'armor' => 0.0],
+        self::PROFILE_BRUTE => ['hp' => 1.0, 'attack' => 1.15, 'armor' => 0.0],
+        self::PROFILE_ARMORED => ['hp' => 1.0, 'attack' => 1.0, 'armor' => 0.15],
+        self::PROFILE_TOUGH => ['hp' => 1.15, 'attack' => 1.0, 'armor' => 0.0],
     ];
 
     /** @var array The modifiers of an opponent with no profile: nothing changes. */

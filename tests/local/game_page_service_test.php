@@ -587,8 +587,8 @@ final class game_page_service_test extends \advanced_testcase {
         $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
 
         // Level 5, Phase 1 with base 100: boss 300, student 220. The opponent frozen when the
-        // attempt started is the slime, a Resistente: 30% more HP, 390.
-        $this->assertSame(390, $config['bosshp']);
+        // attempt started is the slime, a Resistente: 15% more HP, 345.
+        $this->assertSame(345, $config['bosshp']);
         $this->assertSame(220, $config['studenthp']);
         // Combat damage reuses the same boss HP growth curve: base 10 -> 30 at Level 5/Phase 1.
         $this->assertSame(30, $config['bossdamage']);
@@ -1272,9 +1272,9 @@ final class game_page_service_test extends \advanced_testcase {
      */
     public function test_build_game_config_passes_the_opponent_profile(): void {
         $expected = [
-            'golem' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.25, 'bosspowers' => ['iceshield']],
-            'goblin' => ['bosshp' => 200, 'bossattack' => 1.25, 'bossarmor' => 0.0, 'bosspowers' => []],
-            'slime' => ['bosshp' => 260, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => []],
+            'golem' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield']],
+            'goblin' => ['bosshp' => 200, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => []],
+            'slime' => ['bosshp' => 230, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => []],
             'vampire' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => []],
         ];
         foreach ($expected as $opponent => $values) {

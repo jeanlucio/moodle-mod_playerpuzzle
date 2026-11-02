@@ -76,13 +76,13 @@
         const POWERS = {
             // The opponent starts the fight with its Shield armed.
             ICESHIELD: 'iceshield',
-            // The opponent's Grimoire poison lasts one round longer.
+            // The opponent's Grimoire starts partly filled and its poison lasts one round longer.
             LONGPOISON: 'longpoison',
             // Each Grimoire the opponent matches fills more of its poison meter.
             FASTGRIMOIRE: 'fastgrimoire',
             // Each Orb the opponent matches gives it more mana.
             MANABOOST: 'manaboost',
-            // The Potions the opponent matches heal twice as much.
+            // The Potions the opponent matches heal half as much again.
             ROOTHEAL: 'rootheal',
         };
 
@@ -90,6 +90,9 @@
         // opponent's longpoison power.
         const POISON_ROUNDS = 3;
         const LONG_POISON_ROUNDS = 4;
+
+        // How much of its poison meter an opponent with the longpoison power starts with.
+        const LONG_POISON_HEAD_START = 20;
 
         // How much of the poison meter each matched Grimoire fills, and for an opponent with the
         // fastgrimoire power.
@@ -134,6 +137,9 @@
             };
             if (hasPower(config, POWERS.ICESHIELD)) {
                 state.bossShieldReady = true;
+            }
+            if (hasPower(config, POWERS.LONGPOISON)) {
+                state.bossPoisonMeter = LONG_POISON_HEAD_START;
             }
             return state;
         }
@@ -306,7 +312,8 @@
         function pieceGains(side, config) {
             const boss = side === 'boss';
             return {
-                heal: config.baseDamage / (boss && hasPower(config, POWERS.ROOTHEAL) ? 2 : 4),
+                // A quarter of baseDamage, or three eighths with rootheal.
+                heal: boss && hasPower(config, POWERS.ROOTHEAL) ? config.baseDamage * 3 / 8 : config.baseDamage / 4,
                 multiplier: 0.1,
                 shield: 10,
                 poison: boss && hasPower(config, POWERS.FASTGRIMOIRE) ? FAST_GRIMOIRE_POISON : GRIMOIRE_POISON,

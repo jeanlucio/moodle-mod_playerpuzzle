@@ -64,8 +64,11 @@ class combat_engine {
     /** @var string Power: the opponent starts the fight with its Shield armed. */
     public const POWER_ICESHIELD = 'iceshield';
 
-    /** @var string Power: the opponent's Grimoire poison lasts one round longer. */
+    /** @var string Power: the opponent's Grimoire starts partly filled and its poison lasts one round longer. */
     public const POWER_LONGPOISON = 'longpoison';
+
+    /** @var int How much of its poison meter an opponent with the longpoison power starts with. */
+    public const LONG_POISON_HEAD_START = 20;
 
     /** @var int Rounds of poison a full Grimoire meter arms against the other side. */
     public const POISON_ROUNDS = 3;
@@ -91,7 +94,7 @@ class combat_engine {
     /** @var int The same, for an opponent with the manaboost power. */
     public const BOOSTED_ORB_MANA = 30;
 
-    /** @var string Power: the Potions the opponent matches heal twice as much. */
+    /** @var string Power: the Potions the opponent matches heal half as much again. */
     public const POWER_ROOTHEAL = 'rootheal';
 
     /**
@@ -117,6 +120,9 @@ class combat_engine {
         ];
         if (self::has_power($config, self::POWER_ICESHIELD)) {
             $state['bossShieldReady'] = true;
+        }
+        if (self::has_power($config, self::POWER_LONGPOISON)) {
+            $state['bossPoisonMeter'] = self::LONG_POISON_HEAD_START;
         }
         return $state;
     }
@@ -306,7 +312,11 @@ class combat_engine {
     public static function piece_gains(string $side, array $config): array {
         $boss = $side === 'boss';
         return [
-            'heal' => $config['baseDamage'] / ($boss && self::has_power($config, self::POWER_ROOTHEAL) ? 2 : 4),
+            // A quarter of baseDamage, or three eighths with rootheal. Kept as a division, like
+            // the JS twin, so an exact result stays an integer in PHP.
+            'heal' => $boss && self::has_power($config, self::POWER_ROOTHEAL)
+                ? $config['baseDamage'] * 3 / 8
+                : $config['baseDamage'] / 4,
             'multiplier' => 0.1,
             'shield' => 10,
             'poison' => $boss && self::has_power($config, self::POWER_FASTGRIMOIRE)

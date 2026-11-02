@@ -56,13 +56,15 @@ class opponents {
     /** @var string Profile of an opponent with more HP. */
     public const PROFILE_TOUGH = 'tough';
 
-    /** @var array The profile of each opponent. The slime, as the first one, and the final boss have none. */
+    /**
+     * @var array The profile of each opponent. The slime and the ghost, whose powers weigh enough on their own,
+     *  and the final boss have none.
+     */
     private const PROFILES = [
         'goblin' => self::PROFILE_BRUTE,
         'golem' => self::PROFILE_ARMORED,
         'mummy' => self::PROFILE_BRUTE,
         'plant' => self::PROFILE_ARMORED,
-        'ghost' => self::PROFILE_TOUGH,
         'pirate' => self::PROFILE_BRUTE,
         'wolf' => self::PROFILE_BRUTE,
         'spider' => self::PROFILE_TOUGH,
@@ -93,6 +95,7 @@ class opponents {
     private const POWERS = [
         'slime' => [combat_engine::POWER_REGEN],
         'goblin' => [combat_engine::POWER_AMBUSH],
+        'ghost' => [combat_engine::POWER_INTANGIBLE],
         'golem' => [combat_engine::POWER_ICESHIELD],
         'mummy' => [combat_engine::POWER_LONGPOISON],
         'plant' => [combat_engine::POWER_ROOTHEAL],

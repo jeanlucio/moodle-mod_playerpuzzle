@@ -217,7 +217,7 @@ final class combat_test extends \basic_testcase {
         $instance = (object) ['basebosshp' => 900, 'bossdamage' => 90];
 
         $tough = combat::phase_opponent($this->make_attempt([
-            'frozenopponent' => 'ghost', 'frozenbasebosshp' => 150,
+            'frozenopponent' => 'spider', 'frozenbasebosshp' => 150,
         ]), $instance);
         $this->assertSame(173, $tough['maxbosshp'], '150 x 1.15 = 172.5, rounded up');
         $this->assertSame(10, $tough['basedamage'], 'the profile does not touch the base damage');

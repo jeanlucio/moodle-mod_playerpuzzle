@@ -55,6 +55,9 @@ define(
     // The purple of a poison tick, blinked twice.
     const POISON_TINT = 0xff00ff;
 
+    // How see-through a character looks while it is intangible.
+    const TRANSLUCENT_ALPHA = 0.45;
+
     class UIHandler {
         constructor(scene, layout, gameConfig, strings) {
             this.scene = scene;
@@ -497,6 +500,19 @@ define(
             sprite.setTint(0xff0000);
             me.time.delayedCall(200, () => sprite.clearTint());
             this.moveCharacter(side, RECOIL);
+        }
+
+        /**
+         * Makes a character see-through, or solid again.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {boolean} translucent Whether it should be see-through.
+         */
+        setTranslucent(side, translucent) {
+            const character = this.characters && this.characters[side];
+            if (character) {
+                character.sprite.setAlpha(translucent ? TRANSLUCENT_ALPHA : 1);
+            }
         }
 
         /**

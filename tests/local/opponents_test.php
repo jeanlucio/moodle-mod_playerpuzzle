@@ -115,8 +115,8 @@ final class opponents_test extends \advanced_testcase {
     }
 
     /**
-     * Tests the profile of each Campaign opponent, and that the first one and the final boss have
-     * none.
+     * Tests the profile of each Campaign opponent, and that the slime, the ghost and the final boss
+     * have none.
      *
      * @return void
      */
@@ -127,7 +127,7 @@ final class opponents_test extends \advanced_testcase {
             'golem' => opponents::PROFILE_ARMORED,
             'mummy' => opponents::PROFILE_BRUTE,
             'plant' => opponents::PROFILE_ARMORED,
-            'ghost' => opponents::PROFILE_TOUGH,
+            'ghost' => null,
             'pirate' => opponents::PROFILE_BRUTE,
             'wolf' => opponents::PROFILE_BRUTE,
             'spider' => opponents::PROFILE_TOUGH,
@@ -156,7 +156,7 @@ final class opponents_test extends \advanced_testcase {
         $this->assertGreaterThan(0.0, $armored['armor']);
         $this->assertSame(['hp' => 1.0, 'attack' => 1.0], ['hp' => $armored['hp'], 'attack' => $armored['attack']]);
 
-        $tough = opponents::modifiers('ghost');
+        $tough = opponents::modifiers('spider');
         $this->assertGreaterThan(1.0, $tough['hp']);
         $this->assertSame(['attack' => 1.0, 'armor' => 0.0], ['attack' => $tough['attack'], 'armor' => $tough['armor']]);
 
@@ -188,7 +188,8 @@ final class opponents_test extends \advanced_testcase {
         $this->assertSame([combat_engine::POWER_REGEN], opponents::powers('slime'));
         $this->assertSame([combat_engine::POWER_DRAIN], opponents::powers('vampire'));
         $this->assertSame([combat_engine::POWER_AMBUSH], opponents::powers('goblin'));
-        $this->assertSame([], opponents::powers('ghost'));
+        $this->assertSame([combat_engine::POWER_INTANGIBLE], opponents::powers('ghost'));
+        $this->assertSame([], opponents::powers('pirate'));
         $this->assertSame([], opponents::powers(''));
     }
 }

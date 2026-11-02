@@ -91,6 +91,8 @@
             DRAIN: 'drain',
             // The opponent's Swords hit harder on its first turn.
             AMBUSH: 'ambush',
+            // The opponent's Shield arms by itself every few of its turns.
+            INTANGIBLE: 'intangible',
         };
 
         // Rounds of poison a full Grimoire meter arms against the other side, and with the
@@ -109,6 +111,9 @@
         // How much mana each matched Orb gives, and for an opponent with the manaboost power.
         const ORB_MANA = 20;
         const BOOSTED_ORB_MANA = 30;
+
+        // Every how many of its turns an opponent with the intangible power has its Shield armed.
+        const INTANGIBLE_EVERY = 10;
 
         // How much harder an opponent with the ambush power's Swords hit on its first turn.
         const AMBUSH_MULTIPLIER = 2;
@@ -548,13 +553,15 @@
         /**
          * Everything that happens to a side as its turn begins, before it moves: its pending
          * poison tick (see resolvePoisonTick()); for the opponent, its turn count goes up (its
-         * first turn is 1), and with the regen power, while it still stands, REGEN_PERCENT of its
-         * max HP comes back, up to the max.
+         * first turn is 1); with the intangible power, every INTANGIBLE_EVERY turns its Shield
+         * arms; and with the regen power, while it still stands, REGEN_PERCENT of its max HP
+         * comes back, up to the max.
          *
          * @param {string} side 'player' or 'boss' — whose turn begins.
          * @param {object} state Current combat state — copied, never mutated.
          * @param {object} config {baseDamage}; bossPowers is read.
-         * @return {{state: object, poisonTicked: boolean, regenerated: number}}
+         * @return {{state: object, poisonTicked: boolean, regenerated: number, shieldArmed: boolean}}
+         *  shieldArmed is true when the intangible power armed a Shield that was not armed yet.
          */
         function startTurn(side, state, config) {
             const next = Object.assign({}, state);
@@ -563,8 +570,13 @@
             const tick = resolvePoisonTick(next[hpField], next[roundsField], config.baseDamage);
             next[hpField] = tick.newHp;
             next[roundsField] = tick.newPoisonRounds;
+            let shieldArmed = false;
             if (side === 'boss') {
                 next.bossTurnCount += 1;
+                if (hasPower(config, POWERS.INTANGIBLE) && next.bossTurnCount % INTANGIBLE_EVERY === 0) {
+                    shieldArmed = !next.bossShieldReady;
+                    next.bossShieldReady = true;
+                }
             }
 
             let regenerated = 0;
@@ -572,7 +584,7 @@
                 regenerated = Math.min(next.maxBossHp - next.currentHp, next.maxBossHp * REGEN_PERCENT / 100);
                 next.currentHp += regenerated;
             }
-            return {state: next, poisonTicked: tick.ticked, regenerated};
+            return {state: next, poisonTicked: tick.ticked, regenerated, shieldArmed};
         }
 
         /**

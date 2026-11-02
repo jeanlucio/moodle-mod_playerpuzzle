@@ -620,6 +620,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             );
             this.scene.ui.updateQuestionsCounter(this.questionsTotal, this.minQuestions);
             this.scene.ui.updateConsumableBadges();
+            // An intangible opponent shows its armed Shield on itself, so the student can see the
+            // next hit will not land.
+            this.scene.ui.setTranslucent(
+                'boss', this.bossShieldReady && CombatRules.hasPower(this.ruleConfig(), CombatRules.POWERS.INTANGIBLE)
+            );
         }
 
         /**
@@ -730,6 +735,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             if (start.regenerated > 0) {
                 this.updateUI();
                 me.ui.pushHistoryLog('boss', this.strings.historylogregen.replace('{$a}', Math.round(start.regenerated)));
+            }
+            if (start.shieldArmed) {
+                this.updateUI();
+                me.ui.pushHistoryLog('boss', this.strings.historylogintangible);
             }
 
             me.time.delayedCall(800, this.executeBossTurn, [], this);

@@ -101,6 +101,12 @@ class combat_engine {
     /** @var string Power: the opponent recovers part of its max HP as each of its turns begins. */
     public const POWER_REGEN = 'regen';
 
+    /** @var string Power: the opponent's Shield arms by itself every few of its turns. */
+    public const POWER_INTANGIBLE = 'intangible';
+
+    /** @var int Every how many of its turns an opponent with the intangible power has its Shield armed. */
+    public const INTANGIBLE_EVERY = 10;
+
     /** @var string Power: the opponent's Swords hit harder on its first turn. */
     public const POWER_AMBUSH = 'ambush';
 
@@ -567,13 +573,14 @@ class combat_engine {
     /**
      * Everything that happens to a side as its turn begins, before it moves: its pending poison
      * tick (see resolve_poison_tick()); for the opponent, its turn count goes up (its first turn
-     * is 1), and with the regen power, while it still stands, REGEN_PERCENT of its max HP comes
-     * back, up to the max.
+     * is 1); with the intangible power, every INTANGIBLE_EVERY turns its Shield arms; and with the
+     * regen power, while it still stands, REGEN_PERCENT of its max HP comes back, up to the max.
      *
      * @param string $side 'player' or 'boss' — whose turn begins.
      * @param array $state Current combat state — copied, never mutated.
      * @param array $config Keys baseDamage, and bossPowers (optional).
-     * @return array ['state' => array, 'poisonTicked' => bool, 'regenerated' => float]
+     * @return array ['state' => array, 'poisonTicked' => bool, 'regenerated' => float, 'shieldArmed' => bool]
+     *  shieldArmed is true when the intangible power armed a Shield that was not armed yet.
      */
     public static function start_turn(string $side, array $state, array $config): array {
         $next = $state;
@@ -582,8 +589,13 @@ class combat_engine {
         $tick = self::resolve_poison_tick($next[$hpfield], $next[$roundsfield], (float) $config['baseDamage']);
         $next[$hpfield] = $tick['newHp'];
         $next[$roundsfield] = $tick['newPoisonRounds'];
+        $shieldarmed = false;
         if ($side === 'boss') {
             $next['bossTurnCount'] += 1;
+            if (self::has_power($config, self::POWER_INTANGIBLE) && $next['bossTurnCount'] % self::INTANGIBLE_EVERY === 0) {
+                $shieldarmed = !$next['bossShieldReady'];
+                $next['bossShieldReady'] = true;
+            }
         }
 
         $regenerated = 0.0;
@@ -594,7 +606,12 @@ class combat_engine {
             );
             $next['currentHp'] += $regenerated;
         }
-        return ['state' => $next, 'poisonTicked' => $tick['ticked'], 'regenerated' => $regenerated];
+        return [
+            'state' => $next,
+            'poisonTicked' => $tick['ticked'],
+            'regenerated' => $regenerated,
+            'shieldArmed' => $shieldarmed,
+        ];
     }
 
     /**

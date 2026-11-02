@@ -688,6 +688,34 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that an opponent with intangible arms its Shield every INTANGIBLE_EVERY of its turns,
+     * reporting it only when the Shield was not armed yet, and that the student's turns and an
+     * opponent without the power never arm it.
+     *
+     * @return void
+     */
+    public function test_intangible_arms_the_shield_every_few_turns(): void {
+        $config = array_merge(self::CONFIG, ['bossPowers' => [combat_engine::POWER_INTANGIBLE]]);
+        $before = fn(int $turn): array => array_merge($this->fresh_state(), ['bossTurnCount' => $turn - 1]);
+
+        $this->assertSame(10, combat_engine::INTANGIBLE_EVERY);
+        $tenth = combat_engine::start_turn('boss', $before(10), $config);
+        $this->assertTrue($tenth['state']['bossShieldReady']);
+        $this->assertTrue($tenth['shieldArmed']);
+
+        $ninth = combat_engine::start_turn('boss', $before(9), $config);
+        $this->assertFalse($ninth['state']['bossShieldReady']);
+        $this->assertFalse($ninth['shieldArmed']);
+
+        $already = combat_engine::start_turn('boss', array_merge($before(20), ['bossShieldReady' => true]), $config);
+        $this->assertTrue($already['state']['bossShieldReady']);
+        $this->assertFalse($already['shieldArmed']);
+
+        $this->assertFalse(combat_engine::start_turn('boss', $before(10), self::CONFIG)['state']['bossShieldReady']);
+        $this->assertFalse(combat_engine::start_turn('player', $before(11), $config)['state']['bossShieldReady']);
+    }
+
+    /**
      * Tests that an opponent with ambush doubles its Swords on its first turn, before its attack,
      * and on no other turn, and that the student's Swords never double.
      *

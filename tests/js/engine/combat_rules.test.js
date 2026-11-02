@@ -409,6 +409,22 @@ test('startTurn: the opponent counts its turns, from 1; the student never does',
     assert.equal(combatRules.startTurn('player', first, CONFIG).state.bossTurnCount, 1);
 });
 
+test('startTurn: an opponent with intangible arms its Shield every 10 of its turns', () => {
+    const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.INTANGIBLE]});
+    const before = turn => Object.assign(freshState(), {bossTurnCount: turn - 1});
+    const tenth = combatRules.startTurn('boss', before(10), config);
+    assert.equal(tenth.state.bossShieldReady, true);
+    assert.equal(tenth.shieldArmed, true);
+    const ninth = combatRules.startTurn('boss', before(9), config);
+    assert.equal(ninth.state.bossShieldReady, false);
+    assert.equal(ninth.shieldArmed, false);
+    const already = combatRules.startTurn('boss', Object.assign(before(20), {bossShieldReady: true}), config);
+    assert.equal(already.state.bossShieldReady, true);
+    assert.equal(already.shieldArmed, false);
+    assert.equal(combatRules.startTurn('boss', before(10), CONFIG).state.bossShieldReady, false);
+    assert.equal(combatRules.startTurn('player', before(11), config).state.bossShieldReady, false);
+});
+
 test('matchHitAmount: an opponent with ambush doubles its Swords on its first turn only', () => {
     const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.AMBUSH], bossAttack: 1.15});
     const onTurn = count => Object.assign(freshState(), {bossTurnCount: count});

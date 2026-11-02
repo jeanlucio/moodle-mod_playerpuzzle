@@ -1275,7 +1275,7 @@ final class game_page_service_test extends \advanced_testcase {
         $expected = [
             'golem' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield']],
             'goblin' => ['bosshp' => 200, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => ['ambush']],
-            'ghost' => ['bosshp' => 230, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => []],
+            'spider' => ['bosshp' => 230, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => ['fastgrimoire']],
             'vampire' => ['bosshp' => 240, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => ['drain']],
         ];
         foreach ($expected as $opponent => $values) {

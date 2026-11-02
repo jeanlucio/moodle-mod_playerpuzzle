@@ -167,6 +167,8 @@ const REPLAY_CASES = [
         student: 400, typeOffset: 0, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'ambush, a lost match', opponent: 'goblin', seed: 128, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 1, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
+    {name: 'intangible, a lost match', opponent: 'ghost', seed: 129, boss: 3000, damage: 12, coin: 10,
+        student: 400, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['wrong']},
     {name: 'drain, a lost match', opponent: 'vampire', seed: 127, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 4, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
     {name: 'final boss, drain and extra HP', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
@@ -186,6 +188,7 @@ const OPPONENT_MODIFIERS = {
     spider: {hp: 1.15, attack: 1, armor: 0},
     wolf: {hp: 1, attack: 1.15, armor: 0},
     vampire: {hp: 1.2, attack: 1, armor: 0},
+    ghost: {hp: 1, attack: 1, armor: 0},
 };
 
 // Attack and armor combinations for the rules that take them, including ones no opponent has
@@ -198,6 +201,7 @@ const OPPONENT_POWERS = {
     plant: ['rootheal'],
     slime: ['regen'],
     goblin: ['ambush'],
+    ghost: ['intangible'],
     vampire: ['drain'],
 };
 
@@ -206,7 +210,9 @@ const OPPONENT_POWERS = {
 const POWER_CONFIGS = [[], ['iceshield'], ['longpoison'], ['fastgrimoire'], ['unknown']];
 
 // Every power, gone through one by one by the per-piece gains. A new power is appended here.
-const EVERY_POWER = ['iceshield', 'longpoison', 'fastgrimoire', 'manaboost', 'rootheal', 'regen', 'drain', 'ambush'];
+const EVERY_POWER = [
+    'iceshield', 'longpoison', 'fastgrimoire', 'manaboost', 'rootheal', 'regen', 'drain', 'ambush', 'intangible',
+];
 
 const HIT_CONFIGS = [
     {},
@@ -427,6 +433,15 @@ function buildCombatVectors() {
             ambushRand.pick(HIT_CONFIGS));
         cases.push(recordCall('matchHitAmount', [
             ambushRand.pick(['player', 'boss', 'boss']), ambushRand.int(1, 60) * ambushRand.pick([1, 1.5, 2]), state, config,
+        ]));
+    }
+
+    const intangibleRand = randomSource(20261106);
+    for (let i = 0; i < 30; i++) {
+        const state = Object.assign(randomState(intangibleRand), {bossTurnCount: intangibleRand.int(0, 25)});
+        cases.push(recordCall('startTurn', [
+            intangibleRand.pick(['player', 'boss', 'boss']), state,
+            {baseDamage: intangibleRand.int(1, 60), bossPowers: intangibleRand.pick([[], ['intangible'], ['intangible', 'regen']])},
         ]));
     }
 

@@ -740,6 +740,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 this.updateUI();
                 me.ui.pushHistoryLog('boss', this.strings.historylogintangible);
             }
+            if (Math.round(start.looted) > 0) {
+                this.updateUI();
+                me.ui.pushHistoryLog('boss', this.strings.historylogloot.replace('{$a}', Math.round(start.looted)));
+            }
             if (start.breath) {
                 this.showBreath(start.breath);
                 if (this.checkGameOver()) {

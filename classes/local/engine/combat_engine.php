@@ -101,6 +101,15 @@ class combat_engine {
     /** @var string Power: the opponent recovers part of its max HP as each of its turns begins. */
     public const POWER_REGEN = 'regen';
 
+    /** @var string Power: every few of its turns, the opponent takes some of the student's coins. */
+    public const POWER_LOOT = 'loot';
+
+    /** @var int Every how many of its turns an opponent with the loot power takes the student's coins. */
+    public const LOOT_EVERY = 4;
+
+    /** @var int The percentage of the student's coins the loot takes each time. */
+    public const LOOT_PERCENT = 10;
+
     /** @var string Power: every few of its turns, the opponent lands a strong hit before it moves. */
     public const POWER_BREATH = 'breath';
 
@@ -585,16 +594,19 @@ class combat_engine {
      * is 1); with the intangible power, every INTANGIBLE_EVERY turns its Shield arms; with the
      * breath power, while it still stands, every BREATH_EVERY turns it hits the student for
      * BREATH_MULTIPLIER times the base damage, through its attack, the student's armor and Shield,
-     * and its own drain; and with the regen power, while it still stands, REGEN_PERCENT of its max
-     * HP comes back, up to the max. The caller checks whether the student survived the breath.
+     * and its own drain; with the loot power, every LOOT_EVERY turns it takes LOOT_PERCENT of the
+     * student's coins for itself; and with the regen power, while it still stands, REGEN_PERCENT of
+     * its max HP comes back, up to the max. The caller checks whether the student survived the
+     * breath.
      *
      * @param string $side 'player' or 'boss' — whose turn begins.
      * @param array $state Current combat state — copied, never mutated.
      * @param array $config Keys baseDamage, the phase's attack and armor (see hit_amount()), and
      *  bossPowers (optional).
      * @return array ['state' => array, 'poisonTicked' => bool, 'regenerated' => float, 'shieldArmed' => bool,
-     *  'breath' => array|null] shieldArmed is true when the intangible power armed a Shield that was not armed
-     *  yet; breath is null on a turn without one, otherwise ['hit', 'appliedAmount', 'shieldConsumed', 'drained'].
+     *  'breath' => array|null, 'looted' => float] shieldArmed is true when the intangible power armed a Shield
+     *  that was not armed yet; breath is null on a turn without one, otherwise ['hit', 'appliedAmount',
+     *  'shieldConsumed', 'drained']; looted is the coins taken, 0 if none.
      */
     public static function start_turn(string $side, array $state, array $config): array {
         $next = $state;
@@ -633,6 +645,13 @@ class combat_engine {
             ];
         }
 
+        $looted = 0.0;
+        if ($side === 'boss' && self::has_power($config, self::POWER_LOOT) && $next['bossTurnCount'] % self::LOOT_EVERY === 0) {
+            $looted = (float) ($next['playerGold'] * self::LOOT_PERCENT / 100);
+            $next['playerGold'] -= $looted;
+            $next['bossGold'] += $looted;
+        }
+
         $regenerated = 0.0;
         if ($side === 'boss' && self::has_power($config, self::POWER_REGEN) && $next['currentHp'] > 0) {
             $regenerated = (float) min(
@@ -647,6 +666,7 @@ class combat_engine {
             'regenerated' => $regenerated,
             'shieldArmed' => $shieldarmed,
             'breath' => $breath,
+            'looted' => $looted,
         ];
     }
 

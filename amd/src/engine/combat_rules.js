@@ -95,6 +95,8 @@
             INTANGIBLE: 'intangible',
             // Every few of its turns, the opponent lands a strong hit before it moves.
             BREATH: 'breath',
+            // Every few of its turns, the opponent takes some of the student's coins.
+            LOOT: 'loot',
         };
 
         // Rounds of poison a full Grimoire meter arms against the other side, and with the
@@ -113,6 +115,11 @@
         // How much mana each matched Orb gives, and for an opponent with the manaboost power.
         const ORB_MANA = 20;
         const BOOSTED_ORB_MANA = 30;
+
+        // Every how many of its turns an opponent with the loot power takes the student's coins, and
+        // the percentage of them it takes each time.
+        const LOOT_EVERY = 4;
+        const LOOT_PERCENT = 10;
 
         // Every how many of its turns an opponent with the breath power lands it, and how many times
         // the phase's base damage it hits for.
@@ -563,18 +570,19 @@
          * first turn is 1); with the intangible power, every INTANGIBLE_EVERY turns its Shield
          * arms; with the breath power, while it still stands, every BREATH_EVERY turns it hits
          * the student for BREATH_MULTIPLIER times the base damage, through its attack, the
-         * student's armor and Shield, and its own drain; and with the regen power, while it still
-         * stands, REGEN_PERCENT of its max HP comes back, up to the max. The caller checks
-         * whether the student survived the breath.
+         * student's armor and Shield, and its own drain; with the loot power, every LOOT_EVERY
+         * turns it takes LOOT_PERCENT of the student's coins for itself; and with the regen
+         * power, while it still stands, REGEN_PERCENT of its max HP comes back, up to the max.
+         * The caller checks whether the student survived the breath.
          *
          * @param {string} side 'player' or 'boss' — whose turn begins.
          * @param {object} state Current combat state — copied, never mutated.
          * @param {object} config {baseDamage}, the phase's attack and armor (see hitAmount());
          *  bossPowers is read.
          * @return {{state: object, poisonTicked: boolean, regenerated: number, shieldArmed: boolean,
-         *  breath: ?{hit: number, appliedAmount: number, shieldConsumed: boolean, drained: number}}}
-         *  shieldArmed is true when the intangible power armed a Shield that was not armed yet;
-         *  breath is null on a turn without one.
+         *  breath: ?{hit: number, appliedAmount: number, shieldConsumed: boolean, drained: number},
+         *  looted: number}} shieldArmed is true when the intangible power armed a Shield that was not
+         *  armed yet; breath is null on a turn without one; looted is the coins taken, 0 if none.
          */
         function startTurn(side, state, config) {
             const next = Object.assign({}, state);
@@ -606,12 +614,19 @@
                 breath = {hit, appliedAmount: applied.appliedAmount, shieldConsumed: applied.shieldConsumed, drained};
             }
 
+            let looted = 0;
+            if (side === 'boss' && hasPower(config, POWERS.LOOT) && next.bossTurnCount % LOOT_EVERY === 0) {
+                looted = next.playerGold * LOOT_PERCENT / 100;
+                next.playerGold -= looted;
+                next.bossGold += looted;
+            }
+
             let regenerated = 0;
             if (side === 'boss' && hasPower(config, POWERS.REGEN) && next.currentHp > 0) {
                 regenerated = Math.min(next.maxBossHp - next.currentHp, next.maxBossHp * REGEN_PERCENT / 100);
                 next.currentHp += regenerated;
             }
-            return {state: next, poisonTicked: tick.ticked, regenerated, shieldArmed, breath};
+            return {state: next, poisonTicked: tick.ticked, regenerated, shieldArmed, breath, looted};
         }
 
         /**

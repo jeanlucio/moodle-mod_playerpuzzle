@@ -189,7 +189,8 @@ final class opponents_test extends \advanced_testcase {
         $this->assertSame([combat_engine::POWER_DRAIN], opponents::powers('vampire'));
         $this->assertSame([combat_engine::POWER_AMBUSH], opponents::powers('goblin'));
         $this->assertSame([combat_engine::POWER_INTANGIBLE], opponents::powers('ghost'));
-        $this->assertSame([], opponents::powers('pirate'));
+        $this->assertSame([combat_engine::POWER_LOOT], opponents::powers('pirate'));
+        $this->assertSame([combat_engine::POWER_BREATH], opponents::powers('dragon'));
         $this->assertSame([], opponents::powers(''));
     }
 }

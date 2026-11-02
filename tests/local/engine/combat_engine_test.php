@@ -745,6 +745,30 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that an opponent with loot takes LOOT_PERCENT of the student's coins for itself every
+     * LOOT_EVERY of its turns, and nothing on other turns or without the power.
+     *
+     * @return void
+     */
+    public function test_loot_takes_part_of_the_students_coins_every_few_turns(): void {
+        $config = array_merge(self::CONFIG, ['bossPowers' => [combat_engine::POWER_LOOT]]);
+        $before = fn(int $turn): array => array_merge(
+            $this->fresh_state(),
+            ['bossTurnCount' => $turn - 1, 'playerGold' => 45.0, 'bossGold' => 20.0]
+        );
+
+        $this->assertSame([4, 10], [combat_engine::LOOT_EVERY, combat_engine::LOOT_PERCENT]);
+        $fourth = combat_engine::start_turn('boss', $before(4), $config);
+        $this->assertSame(4.5, $fourth['looted']);
+        $this->assertSame(40.5, $fourth['state']['playerGold']);
+        $this->assertSame(24.5, $fourth['state']['bossGold']);
+        $this->assertSame(0.0, combat_engine::start_turn('boss', $before(5), $config)['looted']);
+        $broke = array_merge($before(8), ['playerGold' => 0.0]);
+        $this->assertSame(0.0, combat_engine::start_turn('boss', $broke, $config)['looted']);
+        $this->assertSame(0.0, combat_engine::start_turn('boss', $before(4), self::CONFIG)['looted']);
+    }
+
+    /**
      * Tests that an opponent with ambush doubles its Swords on its first turn, before its attack,
      * and on no other turn, and that the student's Swords never double.
      *

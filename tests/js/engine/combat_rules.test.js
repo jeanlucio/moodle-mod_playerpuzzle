@@ -442,6 +442,18 @@ test('startTurn: an opponent with breath hits for 1.5x base damage every 10 turn
     assert.equal(combatRules.startTurn('boss', poisoned, config).breath, null);
 });
 
+test('startTurn: an opponent with loot takes 10% of the student\'s coins every 4 turns', () => {
+    const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.LOOT]});
+    const before = turn => Object.assign(freshState(), {bossTurnCount: turn - 1, playerGold: 45, bossGold: 20});
+    const fourth = combatRules.startTurn('boss', before(4), config);
+    assert.equal(fourth.looted, 4.5);
+    assert.equal(fourth.state.playerGold, 40.5);
+    assert.equal(fourth.state.bossGold, 24.5);
+    assert.equal(combatRules.startTurn('boss', before(5), config).looted, 0);
+    assert.equal(combatRules.startTurn('boss', Object.assign(before(8), {playerGold: 0}), config).looted, 0);
+    assert.equal(combatRules.startTurn('boss', before(4), CONFIG).looted, 0);
+});
+
 test('matchHitAmount: an opponent with ambush doubles its Swords on its first turn only', () => {
     const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.AMBUSH], bossAttack: 1.15});
     const onTurn = count => Object.assign(freshState(), {bossTurnCount: count});

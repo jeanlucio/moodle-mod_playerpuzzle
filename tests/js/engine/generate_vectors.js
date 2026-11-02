@@ -171,6 +171,8 @@ const REPLAY_CASES = [
         student: 400, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['wrong']},
     {name: 'breath, a lost match', opponent: 'dragon', seed: 130, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 2, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
+    {name: 'loot, a lost match', opponent: 'pirate', seed: 131, boss: 3000, damage: 12, coin: 10,
+        student: 400, typeOffset: 1, playerAnswers: ['wrong'], bossAnswers: ['wrong']},
     {name: 'drain, a lost match', opponent: 'vampire', seed: 127, boss: 3000, damage: 12, coin: 10,
         student: 400, typeOffset: 4, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
     {name: 'final boss, drain and extra HP', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
@@ -191,6 +193,7 @@ const OPPONENT_MODIFIERS = {
     wolf: {hp: 1, attack: 1.15, armor: 0},
     vampire: {hp: 1.2, attack: 1, armor: 0},
     ghost: {hp: 1, attack: 1, armor: 0},
+    pirate: {hp: 1, attack: 1.15, armor: 0},
 };
 
 // Attack and armor combinations for the rules that take them, including ones no opponent has
@@ -205,6 +208,7 @@ const OPPONENT_POWERS = {
     goblin: ['ambush'],
     ghost: ['intangible'],
     dragon: ['breath'],
+    pirate: ['loot'],
     vampire: ['drain'],
 };
 
@@ -215,7 +219,7 @@ const POWER_CONFIGS = [[], ['iceshield'], ['longpoison'], ['fastgrimoire'], ['un
 // Every power, gone through one by one by the per-piece gains. A new power is appended here.
 const EVERY_POWER = [
     'iceshield', 'longpoison', 'fastgrimoire', 'manaboost', 'rootheal', 'regen', 'drain', 'ambush', 'intangible',
-    'breath',
+    'breath', 'loot',
 ];
 
 const HIT_CONFIGS = [
@@ -456,6 +460,15 @@ function buildCombatVectors() {
             bossPowers: breathRand.pick([[], ['breath'], ['breath', 'drain'], ['breath', 'intangible']])},
             breathRand.pick(HIT_CONFIGS));
         cases.push(recordCall('startTurn', [breathRand.pick(['player', 'boss', 'boss', 'boss']), state, config]));
+    }
+
+    const lootRand = randomSource(20261108);
+    for (let i = 0; i < 30; i++) {
+        const state = Object.assign(randomState(lootRand), {bossTurnCount: lootRand.pick([3, 3, 7, 4, 11])});
+        cases.push(recordCall('startTurn', [
+            lootRand.pick(['player', 'boss', 'boss']), state,
+            {baseDamage: lootRand.int(1, 60), bossPowers: lootRand.pick([[], ['loot'], ['loot', 'regen']])},
+        ]));
     }
 
     return cases;

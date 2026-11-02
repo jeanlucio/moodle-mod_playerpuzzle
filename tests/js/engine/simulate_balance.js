@@ -86,8 +86,9 @@ function readOpponents() {
  * @param {object} modifiers The opponent's {hp, attack, armor}.
  * @param {Array<string>} powers The opponent's powers.
  * @param {number} accuracy The student's share of right answers.
- * @return {{finished: boolean, won: boolean, turns: number, hpLeft: number}} hpLeft is the
- *  student's HP share at the start of their last turn, which is what they finish a won match with.
+ * @return {{finished: boolean, won: boolean, turns: number, hpLeft: number, coins: number}} hpLeft
+ *  is the student's HP share at the start of their last turn, which is what they finish a won match
+ *  with; coins is what the match nets them (their coins minus the opponent's, never below 0).
  */
 function playMatch(seed, phase, modifiers, powers, accuracy) {
     const answers = Prng.create((seed * 7919) + 13);
@@ -116,11 +117,12 @@ function playMatch(seed, phase, modifiers, powers, accuracy) {
     const playerpuzzle = {basestudenthp: INSTANCE.basestudenthp, minquestions: 0};
     const {result} = ReplayMirror.record({attempt, playerpuzzle, modifiers, powers, poolEmpty: false, policy});
     if (!result) {
-        return {finished: false, won: false, turns, hpLeft: 0};
+        return {finished: false, won: false, turns, hpLeft: 0, coins: 0};
     }
     const {maxPlayerHp} = ReplayMirror.phaseSetup(attempt, playerpuzzle);
     const won = result.bossdefeated;
-    return {finished: true, won, turns, hpLeft: won ? lastState.currentPlayerHp / maxPlayerHp : 0};
+    const coins = Math.max(0, result.playergold - result.bossgold);
+    return {finished: true, won, turns, hpLeft: won ? lastState.currentPlayerHp / maxPlayerHp : 0, coins};
 }
 
 /**
@@ -131,13 +133,14 @@ function playMatch(seed, phase, modifiers, powers, accuracy) {
  * @param {object} modifiers See playMatch().
  * @param {Array<string>} powers See playMatch().
  * @param {number} accuracy See playMatch().
- * @return {{win: number, turns: number, hpLeft: number, unfinished: number}}
+ * @return {{win: number, turns: number, hpLeft: number, coins: number, unfinished: number}}
  */
 function playBatch(matches, phase, modifiers, powers, accuracy) {
     let wins = 0;
     let turns = 0;
     let hpLeft = 0;
     let unfinished = 0;
+    let coins = 0;
     for (let seed = 1; seed <= matches; seed++) {
         const match = playMatch(seed, phase, modifiers, powers, accuracy);
         if (!match.finished) {
@@ -145,17 +148,19 @@ function playBatch(matches, phase, modifiers, powers, accuracy) {
             continue;
         }
         turns += match.turns;
+        coins += match.coins;
         if (match.won) {
             wins++;
             hpLeft += match.hpLeft;
         }
     }
     const finished = matches - unfinished;
-    return {win: wins / finished, turns: turns / finished, hpLeft: wins ? hpLeft / wins : 0, unfinished};
+    return {win: wins / finished, turns: turns / finished, hpLeft: wins ? hpLeft / wins : 0, coins: coins / finished, unfinished};
 }
 
 const percent = value => `${Math.round(value * 100)}%`.padStart(4);
-const cell = batch => `${percent(batch.win)} ${batch.turns.toFixed(1).padStart(4)}t ${percent(batch.hpLeft)}hp`;
+const cell = batch => `${percent(batch.win)} ${batch.turns.toFixed(1).padStart(4)}t ${percent(batch.hpLeft)}hp `
+    + `${String(Math.round(batch.coins)).padStart(3)}c`;
 
 const matches = parseInt(process.argv[2] || '1000', 10);
 const accuracies = (process.argv[3] || '0.5,0.75,0.9').split(',').map(Number);
@@ -163,8 +168,8 @@ const opponents = readOpponents();
 
 for (const accuracy of accuracies) {
     process.stdout.write(`\nStudent right ${percent(accuracy)}, opponent right ${percent(OPPONENT_ACCURACY)}, `
-        + `${matches} matches per cell. Each cell: win rate, student turns, HP left on a win.\n`);
-    process.stdout.write('phase opponent | no profile      | profile only    | profile+power   | power effect\n');
+        + `${matches} matches per cell. Each cell: win rate, student turns, HP left on a win, net coins.\n`);
+    process.stdout.write('phase opponent | no profile           | profile only         | profile+power        | power effect\n');
     opponents.forEach(({key: name, modifiers, powers}, index) => {
         const phase = Math.min(index + 1, 10);
         const bare = playBatch(matches, phase, NO_MODIFIERS, [], accuracy);
@@ -175,6 +180,6 @@ for (const accuracy of accuracies) {
             : '';
         const unfinished = bare.unfinished + profiled.unfinished + (full ? full.unfinished : 0);
         process.stdout.write(`${String(phase).padStart(5)} ${name.padEnd(8)} | ${cell(bare)} | ${cell(profiled)} | `
-            + `${full ? cell(full) : '-'.padEnd(15)} | ${effect}${unfinished ? ` (${unfinished} unfinished)` : ''}\n`);
+            + `${full ? cell(full) : '-'.padEnd(20)} | ${effect}${unfinished ? ` (${unfinished} unfinished)` : ''}\n`);
     });
 }

@@ -37,7 +37,7 @@ use mod_playerpuzzle\local\sound_preferences;
 /**
  * Privacy provider for mod_playerpuzzle.
  *
- * Personal data is stored in playerpuzzle_attempts (userid, currentlevel, currentphase,
+ * Personal data is stored in playerpuzzle_attempts (userid, currentlevel, currentphase, campaign,
  * difficulty, bosshp_remaining, questions_correct, questions_total, score, status): one row
  * per attempt, tied to the specific activity instance the attempt was made in; and in
  * playerpuzzle_user_stock (consumable units a student currently owns for an instance's
@@ -94,6 +94,7 @@ class provider implements
             'userid'            => 'privacy:metadata:userid',
             'currentlevel'      => 'privacy:metadata:currentlevel',
             'currentphase'      => 'privacy:metadata:currentphase',
+            'campaign'          => 'privacy:metadata:campaign',
             'difficulty'        => 'privacy:metadata:difficulty',
             'bosshp_remaining'  => 'privacy:metadata:bosshp_remaining',
             'questions_correct' => 'privacy:metadata:questions_correct',
@@ -336,7 +337,7 @@ class provider implements
 
         [$insql, $inparams] = $DB->get_in_or_equal(array_keys($contexts), SQL_PARAMS_NAMED, 'ctx');
 
-        $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.difficulty, pa.bosshp_remaining,
+        $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.campaign, pa.difficulty, pa.bosshp_remaining,
                        pa.questions_correct, pa.questions_total, pa.coins_earned,
                        pa.boss_coins_earned, pa.combatstate, pa.movelog, pa.questionresults, pa.score, pa.status,
                        pa.timecreated, pa.timefinished, pa.timephasewon, ctx.id AS contextid
@@ -354,6 +355,7 @@ class provider implements
             $allattempts[$record->contextid][] = (object) [
                 'currentlevel'     => $record->currentlevel,
                 'currentphase'     => $record->currentphase,
+                'campaign'         => $record->campaign,
                 'difficulty'       => $record->difficulty,
                 'bosshpremaining'  => $record->bosshp_remaining,
                 'questionscorrect' => $record->questions_correct,

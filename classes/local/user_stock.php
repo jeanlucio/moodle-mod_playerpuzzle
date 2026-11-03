@@ -163,6 +163,21 @@ class user_stock {
     }
 
     /**
+     * Deletes one user's whole stock for an instance, PuzzleCoin included: a new Campaign starts with
+     * nothing. Nothing reads past rows of this table (it holds balances, not a history), so the rows
+     * go rather than staying at zero.
+     *
+     * @param int $userid User ID.
+     * @param int $playerpuzzleid Activity instance ID.
+     * @return void
+     */
+    public static function clear_for_user(int $userid, int $playerpuzzleid): void {
+        global $DB;
+
+        $DB->delete_records('playerpuzzle_user_stock', ['userid' => $userid, 'playerpuzzleid' => $playerpuzzleid]);
+    }
+
+    /**
      * Deletes every stock row for an instance, called by playerpuzzle_delete_instance().
      *
      * @param int $playerpuzzleid Activity instance ID.

@@ -74,15 +74,18 @@ final class game_page_service_test extends \advanced_testcase {
      *
      * @param int $instanceid Activity instance ID.
      * @param int $userid User ID.
+     * @param string $status Final status.
+     * @param int $campaign Campaign the attempt belongs to.
      * @return void
      */
-    private function make_finished_attempt(int $instanceid, int $userid): void {
+    private function make_finished_attempt(int $instanceid, int $userid, string $status = 'lost', int $campaign = 1): void {
         global $DB;
         $DB->insert_record('playerpuzzle_attempts', (object) [
             'playerpuzzleid' => $instanceid,
             'userid'         => $userid,
             'token'          => bin2hex(random_bytes(32)),
-            'status'         => 'lost',
+            'status'         => $status,
+            'campaign'       => $campaign,
             'timecreated'    => time(),
             'timefinished'   => time(),
         ]);
@@ -206,21 +209,94 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that Campaign mode counts finished attempts against maxattempts, and blocks
-     * once the limit is reached.
+     * Tests that running out of attempts ends the Campaign rather than the activity: with another
+     * Campaign allowed the student may play on, and with none left they are told they ran out of
+     * attempts.
      *
      * @return void
      */
-    public function test_check_attempt_limit_campaign_uses_maxattempts(): void {
-        [, $instance] = $this->make_cm_and_instance([
-            'gamemode'    => constants::GAMEMODE_CAMPAIGN,
-            'maxattempts' => 2,
+    public function test_check_attempt_limit_campaign_out_of_attempts_ends_the_campaign(): void {
+        [, $twocampaigns] = $this->make_cm_and_instance([
+            'gamemode'     => constants::GAMEMODE_CAMPAIGN,
+            'maxattempts'  => 2,
+            'maxcampaigns' => 2,
         ]);
-        $this->make_finished_attempt($instance->id, (int) $this->student->id);
-        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        [, $onecampaign] = $this->make_cm_and_instance([
+            'gamemode'     => constants::GAMEMODE_CAMPAIGN,
+            'maxattempts'  => 2,
+            'maxcampaigns' => 1,
+        ]);
+        foreach ([$twocampaigns, $onecampaign] as $instance) {
+            $this->make_finished_attempt($instance->id, (int) $this->student->id);
+            $this->make_finished_attempt($instance->id, (int) $this->student->id);
+        }
 
+        game_page_service::check_attempt_limit($twocampaigns, (int) $this->student->id, $this->returnurl);
+        $this->assertSame(
+            'maxattemptsreached',
+            game_page_service::campaign_limit_refusal($onecampaign, (int) $this->student->id)
+        );
+        $this->expectException(\moodle_exception::class);
+        game_page_service::check_attempt_limit($onecampaign, (int) $this->student->id, $this->returnurl);
+    }
+
+    /**
+     * Tests that a won Campaign spends one of maxcampaigns, whatever maxattempts is: the next Play
+     * would start another Campaign, which is refused once none is left.
+     *
+     * @return void
+     */
+    public function test_check_attempt_limit_campaign_counts_campaigns(): void {
+        [, $instance] = $this->make_cm_and_instance([
+            'gamemode'     => constants::GAMEMODE_CAMPAIGN,
+            'maxattempts'  => 0,
+            'maxcampaigns' => 2,
+        ]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id, 'lost');
+        $this->make_finished_attempt($instance->id, (int) $this->student->id, 'won');
+        $this->assertNull(game_page_service::campaign_limit_refusal($instance, (int) $this->student->id));
+
+        $this->make_finished_attempt($instance->id, (int) $this->student->id, 'won', 2);
+        $this->assertSame(
+            'maxcampaignsreached',
+            game_page_service::campaign_limit_refusal($instance, (int) $this->student->id)
+        );
         $this->expectException(\moodle_exception::class);
         game_page_service::check_attempt_limit($instance, (int) $this->student->id, $this->returnurl);
+    }
+
+    /**
+     * Tests that only a Play that would begin a Campaign after an earlier one ended needs the
+     * Lobby's confirmation: not the first Campaign, not a Campaign still being played, not a
+     * Single Match.
+     *
+     * @return void
+     */
+    public function test_needs_new_campaign_confirmation(): void {
+        global $DB;
+
+        [, $campaign] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxattempts' => 2]);
+        [, $single] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
+        $userid = (int) $this->student->id;
+
+        $this->assertFalse(game_page_service::needs_new_campaign_confirmation($campaign, $userid));
+        $this->make_finished_attempt($campaign->id, $userid);
+        $this->assertFalse(game_page_service::needs_new_campaign_confirmation($campaign, $userid));
+        $this->make_finished_attempt($campaign->id, $userid);
+        $this->assertTrue(game_page_service::needs_new_campaign_confirmation($campaign, $userid));
+
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $campaign->id,
+            'userid'         => $userid,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'inprogress',
+            'campaign'       => 2,
+            'timecreated'    => time(),
+        ]);
+        $this->assertFalse(game_page_service::needs_new_campaign_confirmation($campaign, $userid));
+
+        $this->make_finished_attempt($single->id, $userid, 'won');
+        $this->assertFalse(game_page_service::needs_new_campaign_confirmation($single, $userid));
     }
 
     /**
@@ -243,9 +319,9 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that an in-progress (unfinished) attempt never counts against the limit —
-     * only attempts already in a final status do, since an abandoned in-progress row is
-     * meant to be resumed, not to silently consume a slot.
+     * Tests that an in-progress (unfinished) attempt is never refused, even once the attempts and
+     * Campaigns are used up: Play only resumes it, and an abandoned in-progress row is meant to be
+     * resumed, not to silently consume a slot.
      *
      * @return void
      */
@@ -253,9 +329,11 @@ final class game_page_service_test extends \advanced_testcase {
         global $DB;
 
         [, $instance] = $this->make_cm_and_instance([
-            'gamemode'    => constants::GAMEMODE_CAMPAIGN,
-            'maxattempts' => 1,
+            'gamemode'     => constants::GAMEMODE_CAMPAIGN,
+            'maxattempts'  => 1,
+            'maxcampaigns' => 1,
         ]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
         $DB->insert_record('playerpuzzle_attempts', (object) [
             'playerpuzzleid' => $instance->id,
             'userid'         => $this->student->id,
@@ -276,8 +354,9 @@ final class game_page_service_test extends \advanced_testcase {
      */
     public function test_check_attempt_limit_ignores_demo_attempts(): void {
         [, $instance] = $this->make_cm_and_instance([
-            'gamemode'    => constants::GAMEMODE_CAMPAIGN,
-            'maxattempts' => 1,
+            'gamemode'     => constants::GAMEMODE_CAMPAIGN,
+            'maxattempts'  => 1,
+            'maxcampaigns' => 1,
         ]);
         for ($i = 0; $i < 5; $i++) {
             $this->make_finished_demo_attempt($instance->id, (int) $this->student->id);

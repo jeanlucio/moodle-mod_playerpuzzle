@@ -107,6 +107,10 @@
                     </h2>
                 </div>
 
+                {{#campaignnametext}}
+                <p class="pp-lobby-note">{{campaignnametext}}</p>
+                {{/campaignnametext}}
+
                 {{#isguest}}
                 <p class="pp-lobby-note">{{guestdemoonlytext}}</p>
                 {{/isguest}}
@@ -175,10 +179,26 @@
                 {{/noquestions}}
                 {{^noquestions}}
                 {{^isguest}}
-                <form method="post" action="{{playurl}}" id="pp-lobby-playform">
+                {{#newcampaigntext}}
+                <p class="pp-lobby-note" role="status">{{newcampaigntext}}</p>
+                {{/newcampaigntext}}
+                {{#campaignlimittext}}
+                <p class="pp-lobby-note" role="status">{{campaignlimittext}}</p>
+                {{/campaignlimittext}}
+                {{^campaignlimittext}}
+                <form
+                    method="post"
+                    action="{{playurl}}"
+                    id="pp-lobby-playform"
+                    {{#newcampaign}}data-confirm="{{newcampaignconfirmtext}}"{{/newcampaign}}
+                >
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    {{#newcampaign}}
+                    <input type="hidden" name="confirmnewcampaign" value="1">
+                    {{/newcampaign}}
                     <button type="submit" class="pp-lobby-play">{{playtext}}</button>
                 </form>
+                {{/campaignlimittext}}
                 {{/isguest}}
 
                 <form method="post" action="{{demourl}}">

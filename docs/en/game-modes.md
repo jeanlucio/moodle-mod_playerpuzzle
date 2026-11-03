@@ -5,9 +5,13 @@ The teacher picks one mode per activity instance.
 ## Campaign
 
 A continuous run through up to 10 **levels**, each split into 10 **phases**. Winning a phase
-never costs a new attempt — only a defeat does, and the configured **Maximum attempts** limit
-counts only attempts that ended in defeat, never a phase won along the way.
+never costs a new attempt — only a defeat does. **Maximum attempts** is the number of attempts in
+each Campaign.
 
+* **Playing again:** a Campaign ends when its last phase is won or its attempts run out (it keeps
+  the progress it reached). The student may then start another Campaign at Level 1, Phase 1, up to
+  **Maximum Campaigns** (1 to 10, or unlimited, the default). A new Campaign starts with the
+  student's PuzzleCoin and consumables back to zero, so the Lobby asks them to confirm it first.
 * **Resuming:** closing the browser mid-campaign and coming back resumes the exact level and
   phase the student was on. After a defeat, the next attempt resumes on that same level and phase
   rather than starting over.
@@ -40,19 +44,21 @@ Lobby for each match.
 The grade is always scaled by the activity's **Maximum Grade** (points, or no grade — scales are
 not supported), never by a fixed 100, and never changes with the difficulty chosen.
 
-**Campaign**
+**Campaign** — each Campaign scores on its own:
 
 ```
-grade = (furthest phase won ÷ total phases configured) × Maximum Grade
+Campaign score = (furthest phase won ÷ total phases configured) × Maximum Grade
 ```
 
-"Furthest phase won" is the highest level/phase the student has reached with a victory, across all
-their attempts — not a count of won attempts, because one continuous attempt can cover dozens of
-phases.
+"Furthest phase won" is the highest level/phase the student reached with a victory in that
+Campaign, across all of its attempts — not a count of won attempts, because one continuous attempt
+can cover dozens of phases. The teacher's **Grading method** combines the Campaigns: highest,
+average, first, last, or average over all required Campaigns. The first Campaign counts from the
+start; each later one only once it ends, so starting another never lowers the grade.
 
 **Single Match** — each match scores either the Maximum Grade (a win) or zero (a loss), and the
-teacher's **Grading method** combines the matches: highest, average, first, last, or average over
-all required matches (an unplayed match counts as zero).
+teacher's **Grading method** combines the matches the same way (in the average over all required
+matches, an unplayed match counts as zero).
 
 **Consider errors** — available once the activity requires a minimum number of questions. In
 Campaign, the progress rate is averaged with the share of questions answered correctly; in Single

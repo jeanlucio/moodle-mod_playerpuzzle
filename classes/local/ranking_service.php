@@ -31,10 +31,11 @@ use stdClass;
  * Ranks the students of one activity, scored against a fixed base rather than the activity's
  * own grade, so an activity set to "No grade" still gets a meaningful ranking.
  *
- * Campaign scores exactly like the grade (grade_calculator::campaign_score(): how far a
- * winning streak has reached, blended with question accuracy when errors count), ties broken
- * by fewer attempts. Single Match adds up every finished match's own score — engagement counts
- * here, unlike the grade's grademethod — ties broken by fewer matches, then less time played.
+ * Both modes add up what the student played — engagement counts here, unlike the grade's
+ * grademethod. Campaign adds up every Campaign's own score (grade_calculator::campaign_score():
+ * how far it reached, blended with question accuracy when errors count), the one being played
+ * included, so the total only ever grows; ties broken by fewer attempts. Single Match adds up
+ * every finished match's own score, ties broken by fewer matches, then less time played.
  *
  * Who appears follows the teacher report exactly (report_service::get_student_pool()):
  * enrolled students only, never staff, and only the viewer's own groups under SEPARATEGROUPS.
@@ -110,7 +111,8 @@ class ranking_service {
             "playerpuzzleid = :playerpuzzleid AND isdemo = 0 AND userid $insql",
             $params,
             'id ASC',
-            'id, userid, currentlevel, currentphase, status, questions_correct, questions_total, timecreated, timefinished'
+            'id, userid, currentlevel, currentphase, campaign, status, questions_correct, questions_total, '
+                . 'timecreated, timefinished'
         );
 
         $byuser = [];
@@ -137,15 +139,19 @@ class ranking_service {
     }
 
     /**
-     * Campaign: the grade's own formula against BASE_POINTS. A student appears once they
-     * have won a phase or finished an attempt — merely opening the game does not rank them.
+     * Campaign: the sum of every Campaign's own score against BASE_POINTS, so each complete
+     * Campaign adds BASE_POINTS. A student appears once they have won a phase or finished an
+     * attempt — merely opening the game does not rank them.
      *
      * @param stdClass $instance Activity instance.
      * @param stdClass[] $attempts The student's attempts.
      * @return array|null ['points', 'attempts', 'timeplayed'], or null when nothing to rank.
      */
     private static function score_campaign(stdClass $instance, array $attempts): ?array {
-        $points = grade_calculator::campaign_score($instance, $attempts, self::BASE_POINTS);
+        $points = 0.0;
+        foreach (campaigns::group($attempts) as $campaign) {
+            $points += grade_calculator::campaign_score($instance, $campaign, self::BASE_POINTS);
+        }
         $finished = array_filter($attempts, static fn(stdClass $a): bool => (int) $a->timefinished > 0);
         if ($points <= 0 && $finished === []) {
             return null;

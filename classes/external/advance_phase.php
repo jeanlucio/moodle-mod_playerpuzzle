@@ -239,9 +239,10 @@ class advance_phase extends external_api {
 
                 // Win-grant item, separate from the coin balance — granted on every phase win,
                 // not only the campaign's final one, mirroring hud_win_grant_item's own help
-                // text. XP is withheld when maxattempts is Unlimited (0), the same
+                // text. XP is withheld when maxcampaigns is Unlimited (0), the same
                 // anti-farming rule mod_playerwords already applies to its own infinite-round
-                // win grant. maxattempts is the right limit here: only a Campaign reaches this point.
+                // win grant: each phase is won once per Campaign, so only endless Campaigns make
+                // the wins endless. Only a Campaign reaches this point.
                 $grantitem = (int) $playerpuzzle->hud_win_grant_item;
                 if ($grantitem > 0 && $blockinstanceid !== null) {
                     hud_service::grant_item(
@@ -249,7 +250,7 @@ class advance_phase extends external_api {
                         (int) $USER->id,
                         $grantitem,
                         max(1, (int) $playerpuzzle->hud_win_grant_qty),
-                        (int) $playerpuzzle->maxattempts === 0
+                        (int) $playerpuzzle->maxcampaigns === 0
                     );
                 }
 

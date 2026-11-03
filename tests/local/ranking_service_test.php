@@ -154,6 +154,25 @@ final class ranking_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a student's Campaigns add up, the one being played included: a complete Campaign
+     * and a second one on Phase 6 rank at 150, above a single complete Campaign.
+     *
+     * @return void
+     */
+    public function test_campaign_adds_up_every_campaign(): void {
+        [$instance, $cm] = $this->make_instance();
+        $ana = $this->make_student('Ana');
+        $bruno = $this->make_student('Bruno');
+        $this->make_attempt($instance, $ana, ['currentphase' => 10, 'status' => 'won', 'timefinished' => 2000]);
+        $this->make_attempt($instance, $ana, ['currentphase' => 6, 'campaign' => 2]);
+        $this->make_attempt($instance, $bruno, ['currentphase' => 10, 'status' => 'won', 'timefinished' => 2000]);
+
+        $ranking = ranking_service::get_ranking($instance, $cm, (int) $ana->id);
+
+        $this->assertSame([fullname($ana) => '150', fullname($bruno) => '100'], $this->standings($ranking));
+    }
+
+    /**
      * Tests that a Campaign tie goes to whoever needed fewer attempts.
      *
      * @return void

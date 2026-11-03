@@ -29,6 +29,7 @@ namespace mod_playerpuzzle\local;
  * Tests for grade_calculator.
  *
  * @covers \mod_playerpuzzle\local\grade_calculator
+ * @covers \mod_playerpuzzle\local\campaigns
  */
 final class grade_calculator_test extends \basic_testcase {
     #[\Override]
@@ -54,6 +55,8 @@ final class grade_calculator_test extends \basic_testcase {
             'considererrors'     => 0,
             'maxlevels'          => 1,
             'max_single_matches' => 0,
+            'maxattempts'        => 0,
+            'maxcampaigns'       => 0,
         ], $overrides);
     }
 
@@ -540,5 +543,120 @@ final class grade_calculator_test extends \basic_testcase {
         ];
 
         $this->assertSame($expected, grade_calculator::calculate_user_datesubmitted($instance, $attempts));
+    }
+
+    /**
+     * Three Campaigns with one attempt allowed in each: the first won (100), the second lost on
+     * Phase 4 and so ended out of attempts (30), the third still being played on Phase 6.
+     *
+     * @return \stdClass[]
+     */
+    private function make_three_campaigns(): array {
+        return [
+            $this->make_attempt([
+                'campaign' => 1, 'currentphase' => 10, 'status' => 'won', 'timephasewon' => 1000, 'timefinished' => 1000,
+            ]),
+            $this->make_attempt([
+                'campaign' => 2, 'currentphase' => 4, 'status' => 'lost', 'timephasewon' => 2000, 'timefinished' => 2100,
+            ]),
+            $this->make_attempt([
+                'campaign' => 3, 'currentphase' => 6, 'status' => 'inprogress', 'timephasewon' => 3000, 'timefinished' => 0,
+            ]),
+        ];
+    }
+
+    /**
+     * Data provider for test_campaign_grade_combines_the_ended_campaigns().
+     *
+     * @return array
+     */
+    public static function campaign_grademethod_provider(): array {
+        global $CFG;
+        // Providers run before setUp(), so the constants::GRADE_* constants are not loaded yet.
+        require_once($CFG->dirroot . '/mod/playerpuzzle/lib.php');
+        return [
+            'highest' => [constants::GRADE_HIGHEST, 100.0, 1000],
+            'average of the ended campaigns' => [constants::GRADE_AVERAGE, 65.0, 2000],
+            'first' => [constants::GRADE_FIRST, 100.0, 1000],
+            'last ended campaign' => [constants::GRADE_LAST, 30.0, 2000],
+            'average over the four required' => [constants::GRADE_AVERAGE_ALL, 32.5, 2000],
+        ];
+    }
+
+    /**
+     * Campaign mode: the grademethod combines the Campaigns that ended, and the one still being
+     * played after them does not count yet, so starting it never lowered the grade. The submission
+     * date follows the Campaign that produces the grade.
+     *
+     * @dataProvider campaign_grademethod_provider
+     * @param int $grademethod constants::GRADE_* constant.
+     * @param float $expectedgrade Expected grade.
+     * @param int $expecteddate Expected submission time.
+     * @return void
+     */
+    public function test_campaign_grade_combines_the_ended_campaigns(
+        int $grademethod,
+        float $expectedgrade,
+        int $expecteddate
+    ): void {
+        $instance = $this->make_instance([
+            'grademethod' => $grademethod,
+            'maxlevels' => 1,
+            'maxattempts' => 1,
+            'maxcampaigns' => 4,
+        ]);
+        $attempts = $this->make_three_campaigns();
+
+        $this->assertEqualsWithDelta($expectedgrade, grade_calculator::calculate_user_grade($instance, $attempts), 0.001);
+        $this->assertSame($expecteddate, grade_calculator::calculate_user_datesubmitted($instance, $attempts));
+    }
+
+    /**
+     * Campaign mode: the first Campaign grades while it is still being played, or a student who never
+     * finishes it would have no grade.
+     *
+     * @return void
+     */
+    public function test_campaign_grade_counts_the_first_campaign_in_progress(): void {
+        $instance = $this->make_instance(['grademethod' => constants::GRADE_LAST, 'maxattempts' => 3]);
+        $attempts = [
+            $this->make_attempt(['campaign' => 1, 'currentphase' => 6, 'status' => 'lost', 'timephasewon' => 1000]),
+            $this->make_attempt(['campaign' => 1, 'currentphase' => 6, 'status' => 'inprogress']),
+        ];
+
+        $this->assertEqualsWithDelta(50.0, grade_calculator::calculate_user_grade($instance, $attempts), 0.001);
+    }
+
+    /**
+     * Campaign mode with unlimited attempts: a Campaign only ends when it is won, so one lost again
+     * and again after the first was won never counts.
+     *
+     * @return void
+     */
+    public function test_campaign_grade_ignores_a_later_campaign_not_yet_won(): void {
+        $instance = $this->make_instance(['grademethod' => constants::GRADE_AVERAGE, 'maxattempts' => 0]);
+        $attempts = [
+            $this->make_attempt(['campaign' => 1, 'currentphase' => 10, 'status' => 'won']),
+            $this->make_attempt(['campaign' => 2, 'currentphase' => 2, 'status' => 'lost']),
+            $this->make_attempt(['campaign' => 2, 'currentphase' => 2, 'status' => 'lost']),
+        ];
+
+        $this->assertEqualsWithDelta(100.0, grade_calculator::calculate_user_grade($instance, $attempts), 0.001);
+    }
+
+    /**
+     * Campaign mode, highest grade: of two Campaigns tied on the best score, the earlier one dates the
+     * grade, so a later equal Campaign never moves it.
+     *
+     * @return void
+     */
+    public function test_campaign_datesubmitted_highest_keeps_the_earliest_tie(): void {
+        $instance = $this->make_instance();
+        $attempts = [
+            $this->make_attempt(['campaign' => 1, 'currentphase' => 10, 'status' => 'won', 'timephasewon' => 1000]),
+            $this->make_attempt(['campaign' => 2, 'currentphase' => 10, 'status' => 'won', 'timephasewon' => 5000]),
+        ];
+
+        $this->assertSame(1000, grade_calculator::calculate_user_datesubmitted($instance, $attempts));
     }
 }

@@ -280,7 +280,7 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the win-grant's suppressxp check reads max_single_matches (not maxattempts)
+     * Tests that the win-grant's suppressxp check reads max_single_matches (not maxcampaigns)
      * in Single Match mode — a victory still grants the item even with max_single_matches
      * set to Unlimited (0); only the item's own XP is what would be withheld, which is
      * block_playerhud's own concern, not something this test can observe here.

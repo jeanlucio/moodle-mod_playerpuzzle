@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20261101" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20261103" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -18,7 +18,8 @@
         <FIELD NAME="bossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Damage dealt by boss per turn"/>
         <FIELD NAME="coingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Base coins per 3-piece Coin match; combo curve applies, does not scale by level/phase"/>
         <FIELD NAME="questioncategory" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Last Moodle question bank category id imported from via managequestions.php; 0 = none imported yet"/>
-        <FIELD NAME="maxattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Max attempts allowed (0 means unlimited)"/>
+        <FIELD NAME="maxattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Campaign mode only: attempts (defeats and restarts) allowed in each Campaign; running out ends that Campaign. 0 means unlimited"/>
+        <FIELD NAME="maxcampaigns" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Campaign mode only: how many Campaigns a student may play, each from Level 1 Phase 1 until it is won or runs out of attempts; 0 means unlimited"/>
         <FIELD NAME="hud_coin_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item ID a student can transfer from into PuzzleCoin (0 = unconfigured)"/>
         <FIELD NAME="hud_retry_cost_item" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="block_playerhud item charged from the 2nd attempt onwards (0 = free)"/>
         <FIELD NAME="hud_retry_cost_qty" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Quantity charged per retry"/>
@@ -55,6 +56,7 @@
         <FIELD NAME="token" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="Security token for anti-cheat verification"/>
         <FIELD NAME="currentlevel" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Level this attempt was played on (1-10)"/>
         <FIELD NAME="currentphase" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Phase this attempt was played on (1-10)"/>
+        <FIELD NAME="campaign" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Which of the student's Campaigns this attempt belongs to, 1 for the first; the next one starts after a Campaign is won or runs out of attempts. Always 1 in Single Match and for a Demo"/>
         <FIELD NAME="difficulty" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="normal" SEQUENCE="false" COMMENT="Student-chosen difficulty for this run: easy, normal or hard. Locked once the attempt is in progress"/>
         <FIELD NAME="isdemo" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether this is a disposable Demo attempt (Lobby's Jogar Demo button): fixed HP, never counted for grade/coins/completion/attempt-limit. Set once at creation from the request"/>
         <FIELD NAME="bosshp_remaining" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Boss HP left when game ended"/>

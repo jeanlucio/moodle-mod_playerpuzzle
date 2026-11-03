@@ -265,14 +265,15 @@ class save_progress extends external_api {
             $blockinstanceid = hud_service::get_block_instance_id((int) $playerpuzzle->course);
             if ($blockinstanceid !== null) {
                 // Win-grant item, separate from the coin balance. XP is withheld when the
-                // attempt limit relevant to this instance's own game mode is Unlimited (0) —
-                // the same anti-farming rule mod_playerwords already applies to its own
-                // infinite-round win grant.
+                // limit that bounds this game mode's wins is Unlimited (0) — the same
+                // anti-farming rule mod_playerwords already applies to its own infinite-round
+                // win grant. In a Campaign that is maxcampaigns: each phase is won once per
+                // Campaign, however many attempts it takes.
                 $grantitem = (int) $playerpuzzle->hud_win_grant_item;
                 if ($grantitem > 0) {
                     $relevantlimit = $playerpuzzle->gamemode === constants::GAMEMODE_SINGLE
                         ? (int) $playerpuzzle->max_single_matches
-                        : (int) $playerpuzzle->maxattempts;
+                        : (int) $playerpuzzle->maxcampaigns;
                     hud_service::grant_item(
                         $blockinstanceid,
                         (int) $USER->id,

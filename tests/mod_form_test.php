@@ -341,8 +341,8 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the Campaign-only fields (maxlevels, maxattempts) are registered to hide
-     * when gamemode is Single Match.
+     * Tests that the Campaign-only fields (maxlevels, maxattempts, maxcampaigns) are registered
+     * to hide when gamemode is Single Match.
      *
      * @return void
      */
@@ -355,11 +355,33 @@ final class mod_form_test extends \advanced_testcase {
 
         $this->assert_hideif_registered($mform, 'maxlevels', 'gamemode', 'eq', 'single');
         $this->assert_hideif_registered($mform, 'maxattempts', 'gamemode', 'eq', 'single');
+        $this->assert_hideif_registered($mform, 'maxcampaigns', 'gamemode', 'eq', 'single');
     }
 
     /**
-     * Tests that the Single Match-only fields (max_single_matches, the cooldown group,
-     * grademethod) are registered to hide when gamemode is Campaign.
+     * Tests that maxcampaigns offers Unlimited (the default) and 1 to 10, like PlayerWords' rounds.
+     *
+     * @return void
+     */
+    public function test_maxcampaigns_offers_unlimited_and_one_to_ten(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $mform = $this->build_form($instance, $cm);
+        $values = array_map(
+            static fn(array $option): int => (int) $option['attr']['value'],
+            $mform->getElement('maxcampaigns')->_options
+        );
+
+        $this->assertSame(range(0, 10), $values);
+        $this->assertSame(0, (int) $mform->getElement('maxcampaigns')->getValue()[0]);
+    }
+
+    /**
+     * Tests that the Single Match-only fields (max_single_matches, the cooldown group) are
+     * registered to hide when gamemode is Campaign, and grademethod, which combines Campaigns
+     * as well as matches, is not.
      *
      * @return void
      */
@@ -372,7 +394,10 @@ final class mod_form_test extends \advanced_testcase {
 
         $this->assert_hideif_registered($mform, 'max_single_matches', 'gamemode', 'eq', 'campaign');
         $this->assert_hideif_registered($mform, 'cooldowngroup', 'gamemode', 'eq', 'campaign');
-        $this->assert_hideif_registered($mform, 'grademethod', 'gamemode', 'eq', 'campaign');
+        $refclass = new \ReflectionClass($mform);
+        $prop = $refclass->getProperty('_hideifs');
+        $prop->setAccessible(true);
+        $this->assertNotContains('grademethod', $prop->getValue($mform)['gamemode']['eq']['campaign']);
     }
 
     /**

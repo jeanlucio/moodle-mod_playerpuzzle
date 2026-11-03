@@ -29,10 +29,9 @@ use stdClass;
 /**
  * Computes a student's final grade from their attempts, one independent formula per Modo
  * de Jogo — not a shared weighted blend. Each mode's own attempt shape drives what "did
- * well" means: Campaign is measured by how far a continuous winning streak has reached,
- * Single Match by how the individual matches scored, aggregated through the teacher's
- * chosen grademethod. Both scale against $instance->grade (the configured Nota Máxima),
- * never a hardcoded 100.
+ * well" means: a Campaign is measured by how far it reached, a Single Match by how it
+ * scored, and the teacher's chosen grademethod combines the student's Campaigns or matches.
+ * Both scale against $instance->grade (the configured Nota Máxima), never a hardcoded 100.
  */
 class grade_calculator {
     /**
@@ -54,7 +53,25 @@ class grade_calculator {
             return self::calculate_single_match_grade($instance, $attempts);
         }
 
-        return self::campaign_score($instance, $attempts, (float) $instance->grade);
+        return self::calculate_campaign_grade($instance, $attempts);
+    }
+
+    /**
+     * Campaign mode: each graded Campaign scores on its own (see campaign_score()), and the
+     * grademethod combines them, the way it combines Single Matches. Which Campaigns are graded is
+     * campaigns::graded(): the ended ones, and the first even while it is still being played.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param stdClass[] $attempts All attempts for this user on this instance.
+     * @return float
+     */
+    private static function calculate_campaign_grade(stdClass $instance, array $attempts): float {
+        $scores = array_map(
+            fn(array $campaign): float => self::campaign_score($instance, $campaign, (float) $instance->grade),
+            campaigns::graded($instance, $attempts)
+        );
+
+        return self::aggregate($instance, array_values($scores), (int) ($instance->maxcampaigns ?? 0));
     }
 
     /**
@@ -80,7 +97,42 @@ class grade_calculator {
     }
 
     /**
-     * Campaign mode submission time.
+     * Campaign mode submission time: the submission time of the Campaign that produces the grade,
+     * chosen the way single_match_datesubmitted() chooses a match — the best one for the highest
+     * grade (the earliest of any tie), the first or last one for those methods, and the latest of
+     * them all for both averages.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param stdClass[] $attempts All attempts for this user on this instance.
+     * @return int|null
+     */
+    private static function campaign_datesubmitted(stdClass $instance, array $attempts): ?int {
+        $graded = campaigns::graded($instance, $attempts);
+        $dates = array_map(fn(array $campaign): ?int => self::one_campaign_datesubmitted($instance, $campaign), $graded);
+
+        switch ((int) $instance->grademethod) {
+            case constants::GRADE_FIRST:
+                return reset($dates);
+            case constants::GRADE_LAST:
+                return end($dates);
+            case constants::GRADE_AVERAGE:
+            case constants::GRADE_AVERAGE_ALL:
+                $known = array_filter($dates);
+                return $known ? max($known) : null;
+            default:
+                $scores = array_map(fn(array $campaign): float => self::campaign_score($instance, $campaign, 1.0), $graded);
+                $best = max($scores);
+                $tied = array_filter(
+                    $dates,
+                    static fn(?int $date, int $number): bool => $date !== null && abs($scores[$number] - $best) < 1e-9,
+                    ARRAY_FILTER_USE_BOTH
+                );
+                return $tied ? min($tied) : null;
+        }
+    }
+
+    /**
+     * One Campaign's submission time.
      *
      * With Considerar Erros the accuracy half of the grade is pooled across every attempt,
      * so the grade depends on all of them, like an average: it was last submitted at the
@@ -90,10 +142,10 @@ class grade_calculator {
      * won at all, the zero grade came from the first fight that ended.
      *
      * @param stdClass $instance Activity instance.
-     * @param stdClass[] $attempts All attempts for this user on this instance.
+     * @param stdClass[] $attempts The attempts of that one Campaign.
      * @return int|null
      */
-    private static function campaign_datesubmitted(stdClass $instance, array $attempts): ?int {
+    private static function one_campaign_datesubmitted(stdClass $instance, array $attempts): ?int {
         if ((int) $instance->considererrors && (int) $instance->minquestions >= 1) {
             $latest = 0;
             foreach ($attempts as $attempt) {
@@ -159,17 +211,16 @@ class grade_calculator {
     }
 
     /**
-     * Campaign mode: the furthest phase a continuous winning streak has ever reached,
-     * across every attempt this user has made (a "Tentar Novamente" after a loss opens a
-     * new attempt row rather than reusing the old one), against the total phases
-     * configured. Never a count of `status = 'won'` rows — a single continuous attempt can
-     * cover dozens of phases of progress at once.
+     * One Campaign's score: the furthest phase it reached, across all of its attempts (a
+     * "Tentar Novamente" after a loss opens a new attempt row rather than reusing the old
+     * one), against the total phases configured. Never a count of `status = 'won'` rows — a
+     * single continuous attempt can cover dozens of phases of progress at once.
      *
      * Scaled against $base rather than always $instance->grade, so the ranking can reuse the
      * exact same formula against its own fixed base (see ranking_service::BASE_POINTS).
      *
      * @param stdClass $instance Activity instance.
-     * @param stdClass[] $attempts All attempts for this user on this instance.
+     * @param stdClass[] $attempts The attempts of one Campaign.
      * @param float $base What a complete campaign is worth.
      * @return float
      */
@@ -179,9 +230,9 @@ class grade_calculator {
         $progresspercent = min(100, ($wonordinal / $totalphases) * 100);
 
         if ((int) $instance->considererrors && (int) $instance->minquestions >= 1) {
-            // Aggregated across every attempt, not just the one that reached furthest —
-            // the question-accuracy component measures content engagement over the whole
-            // campaign, independent of which specific attempt made the most progress.
+            // Aggregated across every attempt of the Campaign, not just the one that reached
+            // furthest — the question-accuracy component measures content engagement over the
+            // whole Campaign, independent of which specific attempt made the most progress.
             $correct = array_sum(array_map(fn(stdClass $a): int => (int) $a->questions_correct, $attempts));
             $total = array_sum(array_map(fn(stdClass $a): int => (int) $a->questions_total, $attempts));
             $accuracypercent = $total > 0 ? ($correct / $total) * 100 : 100;
@@ -234,11 +285,26 @@ class grade_calculator {
             $finished
         );
 
+        return self::aggregate($instance, $scores, (int) $instance->max_single_matches);
+    }
+
+    /**
+     * Combines scores, in the order they were played, by the teacher's grademethod. For
+     * constants::GRADE_AVERAGE_ALL the divisor is the required count when the teacher set one
+     * (an unplayed Campaign or match counts as zero), or the number actually played when Unlimited
+     * (0), since there is then no fixed total to divide by.
+     *
+     * @param stdClass $instance Activity instance (grademethod).
+     * @param float[] $scores Scores, at least one, in play order.
+     * @param int $required The configured Campaign or match count, 0 for unlimited.
+     * @return float
+     */
+    private static function aggregate(stdClass $instance, array $scores, int $required): float {
         return match ((int) $instance->grademethod) {
             constants::GRADE_AVERAGE => array_sum($scores) / count($scores),
             constants::GRADE_FIRST => $scores[array_key_first($scores)],
             constants::GRADE_LAST => $scores[array_key_last($scores)],
-            constants::GRADE_AVERAGE_ALL => array_sum($scores) / self::average_all_divisor($instance, $scores),
+            constants::GRADE_AVERAGE_ALL => array_sum($scores) / ($required > 0 ? $required : count($scores)),
             default => max($scores),
         };
     }
@@ -265,20 +331,5 @@ class grade_calculator {
         $accuracy = $total > 0 ? ((int) $attempt->questions_correct / $total) : 1.0;
 
         return $base * $accuracy;
-    }
-
-    /**
-     * Divisor for constants::GRADE_AVERAGE_ALL: max_single_matches when configured (an
-     * unplayed match counts as zero), or the number of matches actually played when
-     * Unlimited (0) — there is no fixed total to divide by in that case.
-     *
-     * @param stdClass $instance Activity instance.
-     * @param float[] $scores Scores already computed for the matches actually played.
-     * @return int
-     */
-    private static function average_all_divisor(stdClass $instance, array $scores): int {
-        $configured = (int) $instance->max_single_matches;
-
-        return $configured > 0 ? $configured : count($scores);
     }
 }

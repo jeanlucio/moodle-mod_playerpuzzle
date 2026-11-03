@@ -55,6 +55,17 @@ $isdemo = optional_param('isdemo', 0, PARAM_BOOL);
 $returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
 \mod_playerpuzzle\local\game_page_service::check_guest_demo_only($isdemo, $returnurl, $context);
 
+// A new Campaign empties the student's PuzzleCoin and stock, so it only starts from the Lobby's own
+// "Start a new Campaign" button, after its warning. Any other way in (the end screen's "Play again"
+// once a Campaign ended) goes to the Lobby, which shows that warning.
+$newcampaignconfirmed = optional_param('confirmnewcampaign', 0, PARAM_BOOL);
+if (
+    !$isdemo && !$newcampaignconfirmed
+    && \mod_playerpuzzle\local\game_page_service::needs_new_campaign_confirmation($playerpuzzle, (int) $USER->id)
+) {
+    redirect($returnurl);
+}
+
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));
 $PAGE->set_heading(format_string($course->fullname));

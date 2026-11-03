@@ -58,12 +58,12 @@ class game_page_service {
 
     /**
      * Checks the attempt limit for the instance's own game mode, throwing when it has
-     * already been reached. Campaign counts finished attempts against `maxattempts`
-     * (failures/restarts across the whole campaign); Single Match counts finished
-     * attempts against `max_single_matches` (each match played, win or lose, spends one).
-     * Both are 0 = unlimited, and both only count attempts already in a final status —
-     * an abandoned in-progress row is resumed by resume_or_create_attempt_token(), never
-     * counted here.
+     * already been reached. Single Match counts finished attempts against
+     * `max_single_matches` (each match played, win or lose, spends one). Campaign limits the
+     * number of Campaigns (`maxcampaigns`): `maxattempts` is spent inside one Campaign and,
+     * once used up, ends it, so the next attempt starts the next Campaign, which is what this
+     * refuses past the limit. Both limits are 0 = unlimited, and an in-progress attempt is
+     * always resumed (resume_or_create_attempt_token()), never refused here.
      *
      * @param stdClass $instance Activity instance.
      * @param int $userid Current user ID.
@@ -74,14 +74,15 @@ class game_page_service {
     public static function check_attempt_limit(stdClass $instance, int $userid, moodle_url $returnurl): void {
         global $DB;
 
-        if ($instance->gamemode === constants::GAMEMODE_SINGLE) {
-            $limit = (int) $instance->max_single_matches;
-            $errorkey = 'maxsinglematchesreached';
-        } else {
-            $limit = (int) $instance->maxattempts;
-            $errorkey = 'maxattemptsreached';
+        if ($instance->gamemode !== constants::GAMEMODE_SINGLE) {
+            $refusal = self::campaign_limit_refusal($instance, $userid);
+            if ($refusal !== null) {
+                throw new moodle_exception($refusal, 'mod_playerpuzzle', $returnurl);
+            }
+            return;
         }
 
+        $limit = (int) $instance->max_single_matches;
         if ($limit <= 0) {
             return;
         }
@@ -94,8 +95,66 @@ class game_page_service {
             ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress']
         );
         if ($finishedattempts >= $limit) {
-            throw new moodle_exception($errorkey, 'mod_playerpuzzle', $returnurl);
+            throw new moodle_exception('maxsinglematchesreached', 'mod_playerpuzzle', $returnurl);
         }
+    }
+
+    /**
+     * Why a Campaign-mode student may not start another attempt, if they may not: the next attempt
+     * would begin a Campaign past `maxcampaigns`. The reason names how the last Campaign ended, so a
+     * student who ran out of attempts is told so rather than that they played every Campaign.
+     *
+     * @param stdClass $instance Activity instance (id, maxlevels, maxattempts, maxcampaigns).
+     * @param int $userid User ID.
+     * @return string|null The lang string key of the refusal, or null when the student may play.
+     */
+    public static function campaign_limit_refusal(stdClass $instance, int $userid): ?string {
+        $limit = (int) $instance->maxcampaigns;
+        if ($limit <= 0 || security::has_inprogress_attempt((int) $instance->id, $userid)) {
+            return null;
+        }
+
+        $start = self::next_campaign_start($instance, $userid);
+        if ($start->campaign <= $limit) {
+            return null;
+        }
+
+        return $start->ended === campaigns::ENDED_ATTEMPTS ? 'maxattemptsreached' : 'maxcampaignsreached';
+    }
+
+    /**
+     * Whether the student's next Play begins a new Campaign after an earlier one ended, which
+     * empties their PuzzleCoin balance and stock: play.php sends them back to the Lobby to confirm
+     * it unless the request already carries that confirmation. Never for a Single Match, nor while
+     * an attempt is in progress, which Play only resumes.
+     *
+     * @param stdClass $instance Activity instance (id, gamemode, maxlevels, maxattempts).
+     * @param int $userid User ID.
+     * @return bool
+     */
+    public static function needs_new_campaign_confirmation(stdClass $instance, int $userid): bool {
+        $campaign = $instance->gamemode === constants::GAMEMODE_CAMPAIGN;
+        if (!$campaign || security::has_inprogress_attempt((int) $instance->id, $userid)) {
+            return false;
+        }
+
+        return self::next_campaign_start($instance, $userid)->startsnew;
+    }
+
+    /**
+     * Where the student's next real attempt starts, see campaigns::next_start().
+     *
+     * @param stdClass $instance Activity instance (id, maxlevels, maxattempts).
+     * @param int $userid User ID.
+     * @return stdClass
+     */
+    public static function next_campaign_start(stdClass $instance, int $userid): stdClass {
+        return campaigns::next_start(
+            (int) $instance->id,
+            $userid,
+            max(1, (int) $instance->maxlevels),
+            (int) $instance->maxattempts
+        );
     }
 
     /**

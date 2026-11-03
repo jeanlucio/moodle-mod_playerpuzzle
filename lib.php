@@ -248,7 +248,7 @@ function playerpuzzle_update_grades(stdClass $playerpuzzle, int $userid = 0): vo
     // Demo attempts (fixed HP, disposable, repeatable at will) are excluded: they must never
     // contribute to a real grade — see security.php/game_page_service.php's own isdemo
     // exclusions for the same rule applied elsewhere.
-    $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.status,
+    $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.campaign, a.status,
                    a.questions_correct, a.questions_total, a.timefinished, a.timephasewon
               FROM {playerpuzzle_attempts} a
              WHERE a.playerpuzzleid = :instanceid AND a.isdemo = 0";
@@ -367,7 +367,12 @@ function playerpuzzle_update_instance(stdClass $playerpuzzle, ?moodleform $mform
     // gradebook were computed with the old values: recompute them now, as
     // quiz_update_instance() does, instead of leaving them stale until each student plays
     // again. Fields absent from the submitted data keep their stored value.
-    $gradefields = ['gamemode', 'grademethod', 'maxlevels', 'max_single_matches', 'considererrors', 'minquestions'];
+    // maxattempts decides when a Campaign has ended, and so which Campaigns grade (see
+    // campaigns::graded()); maxcampaigns is the divisor of the average over all of them.
+    $gradefields = [
+        'gamemode', 'grademethod', 'maxlevels', 'max_single_matches', 'maxattempts', 'maxcampaigns',
+        'considererrors', 'minquestions',
+    ];
     $old = $DB->get_record('playerpuzzle', ['id' => $playerpuzzle->id], implode(', ', $gradefields), MUST_EXIST);
     $gradingchanged = false;
     foreach ($gradefields as $field) {

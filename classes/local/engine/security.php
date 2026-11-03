@@ -24,9 +24,12 @@
 
 namespace mod_playerpuzzle\local\engine;
 
+use mod_playerpuzzle\local\campaigns;
 use mod_playerpuzzle\local\combat_state;
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\opponents;
 use mod_playerpuzzle\local\replay_credit;
+use mod_playerpuzzle\local\user_stock;
 
 /**
  * Security class to handle tokens and anti-cheat validations.
@@ -59,6 +62,8 @@ class security {
      * @param int $currentphase Phase this attempt starts on.
      * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Play Demo"
      *  button), never counted for grade/coins/completion/attempt-limit.
+     * @param int $campaign Which of the student's Campaigns this attempt belongs to (see
+     *  campaigns::next_start()); always 1 in Single Match and for a Demo.
      * @return string The generated secure token.
      */
     public static function generate_attempt_token(
@@ -67,7 +72,8 @@ class security {
         string $difficulty = 'normal',
         int $currentlevel = 1,
         int $currentphase = 1,
-        bool $isdemo = false
+        bool $isdemo = false,
+        int $campaign = 1
     ): string {
         global $DB;
 
@@ -83,6 +89,7 @@ class security {
         $attempt->status = 'inprogress';
         $attempt->currentlevel = $currentlevel;
         $attempt->currentphase = $currentphase;
+        $attempt->campaign = $campaign;
         $attempt->timecreated = time();
         $attempt->timemodified = $attempt->timecreated;
 
@@ -173,9 +180,9 @@ class security {
      * to always restart the entire campaign regardless of how far the student had gotten,
      * discarding real progress instead of just re-fighting the phase that was lost). When the
      * most recently finished attempt for this user/instance ended in 'lost', the new attempt
-     * starts back on that same level/phase instead of defaulting to 1/1. A 'won' attempt (the
-     * student cleared the whole campaign) starts a genuinely fresh run at 1/1, same as today —
-     * finishing the campaign is not "a loss to retry", it is completing it.
+     * starts back on that same level/phase instead of defaulting to 1/1. A Campaign that has
+     * ended (won, or out of attempts) is followed by the next Campaign at 1/1, and starting it
+     * empties the student's PuzzleCoin balance and stock (see campaigns::next_start()).
      *
      * Uses get_records() rather than get_record(): a site upgraded from before this method
      * existed may already have more than one stale in-progress row for the same user/
@@ -314,19 +321,26 @@ class security {
             ];
         }
 
-        if ($isdemo) {
-            // A Demo is always a fresh Level 1/Phase 1 fight — it never inherits a resume
-            // position from a prior loss, real or otherwise (determine_start_level() itself
-            // also excludes Demo rows from that calculation for real attempts, see its own
-            // docblock).
-            $startlevel = 1;
-            $startphase = 1;
-        } else {
-            [$startlevel, $startphase] = self::determine_start_level(
-                $playerpuzzleid,
-                $userid,
-                max(1, $maxlevels)
-            );
+        $startlevel = 1;
+        $startphase = 1;
+        $campaign = 1;
+        // A Demo is always a fresh Level 1/Phase 1 fight — it never inherits a resume position
+        // from a prior loss, real or otherwise (campaigns::next_start() also excludes Demo rows
+        // from that calculation for real attempts). A Single Match never leaves Level 1, Phase 1
+        // and has no Campaigns.
+        if (!$isdemo) {
+            $instance = $DB->get_record('playerpuzzle', ['id' => $playerpuzzleid], 'gamemode, maxattempts', MUST_EXIST);
+            if ($instance->gamemode === constants::GAMEMODE_CAMPAIGN) {
+                $start = campaigns::next_start($playerpuzzleid, $userid, max(1, $maxlevels), (int) $instance->maxattempts);
+                $startlevel = $start->level;
+                $startphase = $start->phase;
+                $campaign = $start->campaign;
+                if ($start->startsnew) {
+                    self::clear_stock_for_new_campaign($userid, $playerpuzzleid);
+                }
+            } else {
+                [$startlevel, $startphase] = self::determine_start_level($playerpuzzleid, $userid, max(1, $maxlevels));
+            }
         }
 
         $token = self::generate_attempt_token(
@@ -335,7 +349,8 @@ class security {
             $difficulty,
             $startlevel,
             $startphase,
-            $isdemo
+            $isdemo,
+            $campaign
         );
         $newrow = $DB->get_record(
             'playerpuzzle_attempts',
@@ -389,14 +404,31 @@ class security {
     }
 
     /**
-     * Determines the level/phase a brand new attempt should start on. Looks at the most
-     * recently *finished* attempt for this user/instance, regardless of its status: if it
-     * was 'lost' (or any other non-'won' final status, e.g. a future 'timeout'/'abandoned'),
-     * the new attempt resumes on that same level/phase; if it was 'won' (the student cleared
-     * the whole campaign) or there is no prior finished attempt at all, it starts fresh at
-     * 1/1. Deliberately looks at the single most recent finished attempt, not the most recent
-     * 'lost' one — a student who lost once, retried, and this time won the whole campaign must
-     * start the next attempt fresh, not jump back to that earlier loss.
+     * Empties a student's PuzzleCoin balance and consumable stock when a new Campaign starts: every
+     * Campaign begins from nothing, as the Lobby warned before the student confirmed it (see
+     * game_page_service::needs_new_campaign_confirmation()). Under the stock lock, so a purchase
+     * racing the start never lands half before and half after.
+     *
+     * @param int $userid User ID.
+     * @param int $playerpuzzleid Activity instance ID.
+     * @return void
+     * @throws \moodle_exception When the stock lock could not be acquired, so the new Campaign never
+     *  starts with the old balance still in place.
+     */
+    private static function clear_stock_for_new_campaign(int $userid, int $playerpuzzleid): void {
+        $cleared = self::with_locked_user_stock($userid, $playerpuzzleid, function () use ($userid, $playerpuzzleid): bool {
+            user_stock::clear_for_user($userid, $playerpuzzleid);
+            return true;
+        });
+        if ($cleared === false) {
+            throw new \moodle_exception('startbusy', 'mod_playerpuzzle');
+        }
+    }
+
+    /**
+     * Determines the level/phase a brand new attempt should start on: the phase the most recently
+     * finished attempt lost, or Level 1/Phase 1 when there is none or its Campaign has ended. See
+     * campaigns::next_start(), which this reads, for the full rule and which Campaign it belongs to.
      *
      * Only ever considers real (non-Demo) attempts: a Demo match is a disposable practice
      * fight, and a Demo loss must never change where a student's real Campaign run resumes.
@@ -404,40 +436,19 @@ class security {
      * @param int $playerpuzzleid The instance ID.
      * @param int $userid The user ID.
      * @param int $maxlevels The instance's current level count, already clamped to at least 1.
+     * @param int $maxattempts Attempts allowed in each Campaign, 0 for unlimited: spending the last
+     *  one ends the Campaign, so the next attempt starts the next one.
      * @return array{0: int, 1: int} [$level, $phase].
      */
-    public static function determine_start_level(int $playerpuzzleid, int $userid, int $maxlevels): array {
-        global $DB;
+    public static function determine_start_level(
+        int $playerpuzzleid,
+        int $userid,
+        int $maxlevels,
+        int $maxattempts = 0
+    ): array {
+        $start = campaigns::next_start($playerpuzzleid, $userid, $maxlevels, $maxattempts);
 
-        // Ordered by id, not just timecreated: two attempts finished within the same
-        // second (routine in a fast test run, and not impossible in real play either) sort
-        // in a database-dependent order on timecreated alone — MariaDB and PostgreSQL were
-        // observed to disagree on the tie, picking a different row as "most recent". The
-        // id, being a real auto-increment insertion order, breaks the tie deterministically.
-        $recent = $DB->get_records_select(
-            'playerpuzzle_attempts',
-            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0',
-            ['ppid' => $playerpuzzleid, 'uid' => $userid, 'inprogress' => 'inprogress'],
-            'timecreated DESC, id DESC',
-            'id, status, currentlevel, currentphase',
-            0,
-            1
-        );
-        $last = reset($recent);
-        if (!$last || $last->status === 'won') {
-            return [1, 1];
-        }
-
-        $level = (int) $last->currentlevel;
-        $phase = (int) $last->currentphase;
-        if ($level > $maxlevels) {
-            // The teacher has since reduced the level count below where the student had
-            // reached — clamp to the new ceiling and restart that level's own Phase 1, since
-            // the original phase reached no longer has a well-defined position to resume at.
-            return [$maxlevels, 1];
-        }
-
-        return [$level, $phase];
+        return [$start->level, $start->phase];
     }
 
     /**

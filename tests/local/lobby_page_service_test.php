@@ -492,21 +492,18 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that winning the whole campaign shows no resume line — a 'won' attempt starts
-     * the next one fresh at Level 1, Phase 1, same as never having played before.
+     * Ends the student's Campaign with a win.
      *
+     * @param \stdClass $instance Activity instance.
      * @return void
      */
-    public function test_build_page_data_no_resume_position_after_winning(): void {
+    private function win_campaign(\stdClass $instance): void {
         global $DB;
-
-        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         $won = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
             (int) $instance->id,
             (int) $this->student->id
         );
-        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 10, ['token' => $won]);
         $DB->set_field('playerpuzzle_attempts', 'currentphase', 10, ['token' => $won]);
         \mod_playerpuzzle\local\engine\security::validate_and_consume_token(
             $won,
@@ -514,6 +511,18 @@ final class lobby_page_service_test extends \advanced_testcase {
             (int) $this->student->id,
             'won'
         );
+    }
+
+    /**
+     * Tests that once a Campaign is won the Lobby says so and turns Play into "Start a new Campaign",
+     * warning that the PuzzleCoin and consumables go back to zero and sending the confirmation play.php
+     * requires.
+     *
+     * @return void
+     */
+    public function test_build_page_data_offers_a_new_campaign_after_winning(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0]);
+        $this->win_campaign($instance);
 
         $data = lobby_page_service::build_page_data(
             $cm,
@@ -523,7 +532,76 @@ final class lobby_page_service_test extends \advanced_testcase {
             \context_module::instance($cm->id)
         );
 
-        $this->assertArrayNotHasKey('progresstext', $data);
+        $this->assertSame(get_string('lobby_campaign_won', 'mod_playerpuzzle', 1), $data['progresstext']);
+        $this->assertTrue($data['newcampaign']);
+        $this->assertSame(get_string('lobby_newcampaign_button', 'mod_playerpuzzle'), $data['playtext']);
+        $this->assertSame(get_string('lobby_newcampaign_notice', 'mod_playerpuzzle'), $data['newcampaigntext']);
+        $this->assertArrayNotHasKey('campaignlimittext', $data);
+
+        $html = $this->render_lobby($data);
+        $this->assertStringContainsString('name="confirmnewcampaign" value="1"', $html);
+        $this->assertStringContainsString('data-confirm=', $html);
+    }
+
+    /**
+     * Tests that with every Campaign played the Lobby says so and offers no Play button.
+     *
+     * @return void
+     */
+    public function test_build_page_data_hides_play_when_no_campaign_is_left(): void {
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_CAMPAIGN,
+            'maxcampaigns' => 1,
+            'minquestions' => 0,
+        ]);
+        $this->win_campaign($instance);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertSame(get_string('maxcampaignsreached', 'mod_playerpuzzle'), $data['campaignlimittext']);
+        $this->assertArrayNotHasKey('newcampaign', $data);
+        $this->assertStringNotContainsString('id="pp-lobby-playform"', $this->render_lobby($data));
+    }
+
+    /**
+     * Tests that a Campaign after the first is named in the Lobby, so the student knows which one
+     * they are playing.
+     *
+     * @return void
+     */
+    public function test_build_page_data_names_a_later_campaign(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        $this->win_campaign($instance);
+        \mod_playerpuzzle\local\engine\security::resume_or_create_attempt_token((int) $instance->id, (int) $this->student->id);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertSame(get_string('lobby_campaignname', 'mod_playerpuzzle', 2), $data['campaignnametext']);
+        $this->assertSame(get_string('playgame', 'mod_playerpuzzle'), $data['playtext']);
+    }
+
+    /**
+     * Renders the Lobby template with page data.
+     *
+     * @param array $data lobby_page_service::build_page_data() result.
+     * @return string
+     */
+    private function render_lobby(array $data): string {
+        global $OUTPUT;
+
+        return $OUTPUT->render_from_template('mod_playerpuzzle/view_lobby', $data);
     }
 
     /**

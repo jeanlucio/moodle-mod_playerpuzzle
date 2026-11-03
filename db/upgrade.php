@@ -730,5 +730,58 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110100, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026110302) {
+        // A student may now play the Campaign again once it ends, as many times as the teacher allows,
+        // and every attempt records which of the student's Campaigns it belongs to.
+        $table = new xmldb_table('playerpuzzle');
+        $field = new xmldb_field('maxcampaigns', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'maxattempts');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('campaign', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '1', 'currentphase');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // A Campaign attempt that was won cleared the whole Campaign, and the next attempt started
+        // another one at Level 1, Phase 1: every attempt after a win belongs to the next Campaign.
+        // Only those rows change, since the column already defaults to the first.
+        $attempts = $DB->get_recordset_sql(
+            "SELECT a.id, a.playerpuzzleid, a.userid, a.status
+               FROM {playerpuzzle_attempts} a
+               JOIN {playerpuzzle} p ON p.id = a.playerpuzzleid
+              WHERE a.isdemo = 0 AND p.gamemode = :campaign
+           ORDER BY a.playerpuzzleid, a.userid, a.timecreated, a.id",
+            ['campaign' => 'campaign']
+        );
+        $owner = null;
+        $campaign = 1;
+        $idsbycampaign = [];
+        foreach ($attempts as $attempt) {
+            $key = $attempt->playerpuzzleid . '-' . $attempt->userid;
+            if ($key !== $owner) {
+                $owner = $key;
+                $campaign = 1;
+            }
+            if ($campaign > 1) {
+                $idsbycampaign[$campaign][] = (int) $attempt->id;
+            }
+            if ($attempt->status === 'won') {
+                $campaign++;
+            }
+        }
+        $attempts->close();
+        foreach ($idsbycampaign as $number => $ids) {
+            foreach (array_chunk($ids, 1000) as $chunk) {
+                [$insql, $params] = $DB->get_in_or_equal($chunk);
+                $DB->set_field_select('playerpuzzle_attempts', 'campaign', $number, "id $insql", $params);
+            }
+        }
+
+        upgrade_mod_savepoint(true, 2026110302, 'playerpuzzle');
+    }
+
     return true;
 }

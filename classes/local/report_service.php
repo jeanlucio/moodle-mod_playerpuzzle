@@ -72,7 +72,7 @@ class report_service {
         [$insql, $inparams] = $DB->get_in_or_equal(array_keys($students), SQL_PARAMS_NAMED, 'stu');
         // Demo attempts are excluded: they are disposable practice fights with fixed HP, and
         // must never appear in a teacher-facing report as if they were real submissions.
-        $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.difficulty, a.status,
+        $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.campaign, a.difficulty, a.status,
                        a.bosshp_remaining, a.questions_correct, a.questions_total, a.timefinished,
                        a.isdemo, a.frozenbasebosshp, a.frozenbossdamage, a.frozenopponent
                   FROM {playerpuzzle_attempts} a

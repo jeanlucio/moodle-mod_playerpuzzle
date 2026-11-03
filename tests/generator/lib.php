@@ -48,6 +48,7 @@ class mod_playerpuzzle_generator extends testing_module_generator {
             // 0 = none imported yet.
             'questioncategory'    => 0,
             'maxattempts'         => 0,
+            'maxcampaigns'        => 0,
             'hud_coin_item'       => 0,
             'hud_retry_cost_item' => 0,
             'hud_retry_cost_qty'  => 1,

@@ -27,7 +27,6 @@ namespace mod_playerpuzzle\local;
 use context_module;
 use core_useragent;
 use mod_playerpuzzle\local\engine\combat;
-use mod_playerpuzzle\local\engine\security;
 use moodle_url;
 use stdClass;
 
@@ -106,7 +105,7 @@ class lobby_page_service {
             'playerpuzzle_attempts',
             ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'status' => 'inprogress', 'isdemo' => 0],
             'timecreated DESC',
-            'id, currentlevel, currentphase, difficulty',
+            'id, currentlevel, currentphase, campaign, difficulty',
             0,
             1
         );
@@ -121,7 +120,8 @@ class lobby_page_service {
             $data['guestdemoonlytext'] = get_string('guestdemoonly', 'mod_playerpuzzle');
         }
         $data += self::build_shop_context((int) $course->id, $instance, $userid);
-        $data += self::build_progress_context($instance, $attempt, $userid);
+        // Merged rather than added: a Campaign that has ended renames the Play button.
+        $data = array_merge($data, self::build_progress_context($instance, $attempt, $userid));
         $data += self::build_minquestions_context($instance);
         $data += self::build_noquestions_context($instance, !empty($data['canmanagequestions']));
         $data += self::build_difficulty_context($attempt);
@@ -277,9 +277,13 @@ class lobby_page_service {
     /**
      * Builds the current Campaign progress context. With an in-progress attempt, shows its
      * live level/phase. With none, a new attempt about to be created might still not start
-     * at Level 1/Phase 1 — see security::determine_start_level() — so this shows where that
-     * next attempt will actually resume, rather than implying a fresh start when it is not
-     * one. Single Match mode has no levels/phases to show, so this is skipped entirely for it.
+     * at Level 1/Phase 1 — see campaigns::next_start() — so this shows where that next
+     * attempt will actually resume, rather than implying a fresh start when it is not one.
+     * When the last Campaign has ended, it says how, and either offers the next Campaign (the
+     * Play button becomes "Start a new Campaign", with its warning, see play.php) or says the
+     * activity allows no more. A Campaign after the first is named, so the student knows
+     * which one they are in. Single Match mode has no levels/phases to show, so this is
+     * skipped entirely for it.
      *
      * @param stdClass $instance Activity instance.
      * @param stdClass|null $attempt The most recent in-progress attempt, or null.
@@ -292,7 +296,7 @@ class lobby_page_service {
         }
 
         if ($attempt !== null) {
-            return [
+            return self::campaign_name_context((int) $attempt->campaign) + [
                 'progresstext' => get_string('lobby_currentprogress', 'mod_playerpuzzle', (object) [
                     'level' => $attempt->currentlevel,
                     'phase' => $attempt->currentphase,
@@ -300,21 +304,56 @@ class lobby_page_service {
             ];
         }
 
-        [$level, $phase] = security::determine_start_level(
-            (int) $instance->id,
-            $userid,
-            max(1, (int) $instance->maxlevels)
-        );
-        if ($level === 1 && $phase === 1) {
+        $start = game_page_service::next_campaign_start($instance, $userid);
+        if ($start->startsnew) {
+            $ended = $start->campaign - 1;
+            $data = [
+                'progresstext' => get_string(
+                    $start->ended === campaigns::ENDED_WON ? 'lobby_campaign_won' : 'lobby_campaign_outofattempts',
+                    'mod_playerpuzzle',
+                    $ended
+                ),
+            ];
+            $refusal = game_page_service::campaign_limit_refusal($instance, $userid);
+            if ($refusal !== null) {
+                $data['campaignlimittext'] = get_string($refusal, 'mod_playerpuzzle');
+                return $data;
+            }
+
+            return $data + [
+                'newcampaign' => true,
+                'newcampaigntext' => get_string('lobby_newcampaign_notice', 'mod_playerpuzzle'),
+                'newcampaignconfirmtext' => get_string('lobby_newcampaign_confirm', 'mod_playerpuzzle'),
+                'playtext' => get_string('lobby_newcampaign_button', 'mod_playerpuzzle'),
+            ];
+        }
+
+        $data = self::campaign_name_context($start->campaign);
+        if ($start->level === 1 && $start->phase === 1) {
+            return $data;
+        }
+
+        return $data + [
+            'progresstext' => get_string('lobby_resumeafterloss', 'mod_playerpuzzle', (object) [
+                'level' => $start->level,
+                'phase' => $start->phase,
+            ]),
+        ];
+    }
+
+    /**
+     * Names the Campaign the student is playing, from the second one on: the first needs no name
+     * while it is the only one.
+     *
+     * @param int $campaign Campaign number.
+     * @return array
+     */
+    private static function campaign_name_context(int $campaign): array {
+        if ($campaign < 2) {
             return [];
         }
 
-        return [
-            'progresstext' => get_string('lobby_resumeafterloss', 'mod_playerpuzzle', (object) [
-                'level' => $level,
-                'phase' => $phase,
-            ]),
-        ];
+        return ['campaignnametext' => get_string('lobby_campaignname', 'mod_playerpuzzle', $campaign)];
     }
 
     /**

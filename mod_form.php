@@ -174,6 +174,16 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addHelpButton('maxattempts', 'maxattempts', 'mod_playerpuzzle');
         $mform->hideIf('maxattempts', 'gamemode', 'eq', constants::GAMEMODE_SINGLE);
 
+        $campaignoptions = [0 => get_string('unlimited', 'mod_playerpuzzle')];
+        for ($i = 1; $i <= 10; $i++) {
+            $campaignoptions[$i] = $i;
+        }
+        $mform->addElement('select', 'maxcampaigns', get_string('maxcampaigns', 'mod_playerpuzzle'), $campaignoptions);
+        $mform->setType('maxcampaigns', PARAM_INT);
+        $mform->setDefault('maxcampaigns', 0);
+        $mform->addHelpButton('maxcampaigns', 'maxcampaigns', 'mod_playerpuzzle');
+        $mform->hideIf('maxcampaigns', 'gamemode', 'eq', constants::GAMEMODE_SINGLE);
+
         $mform->addElement('advcheckbox', 'show_ranking', get_string('show_ranking', 'mod_playerpuzzle'));
         $mform->setType('show_ranking', PARAM_INT);
         $mform->setDefault('show_ranking', 1);
@@ -189,7 +199,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $this->standard_grading_coursemodule_elements();
 
         // Placed here, right after the grade elements, mirroring mod_quiz's own
-        // "Grading method" field — the same concept (combining several attempts/matches
+        // "Grading method" field — the same concept (combining several Campaigns or matches
         // into one final grade) belongs in the Grade section, not among the gameplay
         // settings above.
         $mform->addElement(
@@ -201,7 +211,6 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('grademethod', PARAM_INT);
         $mform->setDefault('grademethod', constants::GRADE_HIGHEST);
         $mform->addHelpButton('grademethod', 'grademethod', 'mod_playerpuzzle');
-        $mform->hideIf('grademethod', 'gamemode', 'eq', constants::GAMEMODE_CAMPAIGN);
         $mform->hideIf('grademethod', 'grade[modgrade_type]', 'eq', 'none');
 
         $this->standard_coursemodule_elements();

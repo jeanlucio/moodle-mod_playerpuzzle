@@ -479,7 +479,7 @@ final class combat_engine_test extends \advanced_testcase {
 
     /**
      * Tests every question_outcome branch: a right answer is a critical hit on the other side, a
-     * wrong one resets the multiplier, and only the player pays WRONG_ANSWER_DAMAGE.
+     * wrong one resets the answering side's multiplier and costs no HP.
      *
      * @return void
      */
@@ -491,7 +491,7 @@ final class combat_engine_test extends \advanced_testcase {
             combat_engine::question_outcome('player', true, $state, self::CONFIG)
         );
         $this->assertSame(
-            ['hitBoss' => null, 'hitPlayer' => 30.0, 'resetPlayerMultiplier' => true, 'resetBossMultiplier' => false],
+            ['hitBoss' => null, 'hitPlayer' => null, 'resetPlayerMultiplier' => true, 'resetBossMultiplier' => false],
             combat_engine::question_outcome('player', false, $state, self::CONFIG)
         );
         $this->assertSame(
@@ -540,21 +540,17 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that armor softens a critical answer, the board Swords and the Sword consumable,
-     * but never the wrong-answer penalty or a poison tick.
+     * Tests that armor softens a critical answer, the board Swords and the Sword consumable, but
+     * never a poison tick.
      *
      * @return void
      */
-    public function test_armor_softens_hits_but_not_the_wrong_answer_penalty_or_poison(): void {
+    public function test_armor_softens_hits_but_not_poison(): void {
         $config = array_merge(self::CONFIG, ['bossArmor' => 0.25, 'playerArmor' => 0.25]);
         $state = $this->fresh_state();
 
         $this->assertSame(23.0, combat_engine::question_outcome('player', true, $state, $config)['hitBoss']);
         $this->assertSame(23.0, combat_engine::question_outcome('boss', true, $state, $config)['hitPlayer']);
-        $this->assertSame(
-            (float) combat_engine::WRONG_ANSWER_DAMAGE,
-            combat_engine::question_outcome('player', false, $state, $config)['hitPlayer']
-        );
         $this->assertSame(11.0, combat_engine::match_hit_amount('player', 15, $state, $config));
         $this->assertSame(8.0, combat_engine::resolve_consumable_effect('sword', $state, $config)['damageAmount']);
 

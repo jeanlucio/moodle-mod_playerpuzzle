@@ -325,12 +325,12 @@ test('hitAmount: a hit with no attack or armor keeps its exact value', () => {
     assert.equal(combatRules.hitAmount(33.3, 'boss', {bossArmor: 0.25}), 33.3);
 });
 
-test('armor softens a critical answer but never the wrong-answer penalty', () => {
+test('armor softens a critical answer; a wrong answer costs no HP', () => {
     const state = freshState();
     const config = Object.assign({}, CONFIG, {bossArmor: 0.25, playerArmor: 0.25});
     assert.equal(combatRules.questionOutcome('player', true, state, config).hitBoss, 23);
     assert.equal(combatRules.questionOutcome('boss', true, state, config).hitPlayer, 23);
-    assert.equal(combatRules.questionOutcome('player', false, state, config).hitPlayer, combatRules.WRONG_ANSWER_DAMAGE);
+    assert.equal(combatRules.questionOutcome('player', false, state, config).hitPlayer, null);
 });
 
 test('armor softens the board Swords and the Sword consumable', () => {

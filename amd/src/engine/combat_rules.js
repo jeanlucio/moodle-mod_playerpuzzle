@@ -66,9 +66,6 @@
         // answering side's own multiplier.
         const CRITICAL_MULTIPLIER = 3;
 
-        // A wrong player answer always costs this much HP, whatever the phase or difficulty.
-        const WRONG_ANSWER_DAMAGE = 30;
-
         // The most of a hit any armor can absorb, so a hit always does some damage.
         const ARMOR_CAP = 0.6;
 
@@ -603,7 +600,7 @@
          * A hit as it lands after the attacker's attack and the defender's armor: the attack
          * multiplies it, the armor takes away its share (never more than ARMOR_CAP), and the
          * result is rounded to a whole number. Only hits go through here (Swords from the board,
-         * critical answers, the Sword consumable); the wrong-answer penalty and poison do not.
+         * critical answers, the Sword consumable); poison does not.
          * A hit with no attack or armor to apply keeps its exact value, as before either
          * existed. The shield is checked afterwards, by resolveDamage().
          *
@@ -625,8 +622,8 @@
         /**
          * The HP an opponent with the drain power recovers from one of its hits: DRAIN_PERCENT of
          * the damage that hit actually dealt (nothing when the shield took it), up to its max HP.
-         * Only the opponent's hits drain (Swords from the board and critical answers), never the
-         * student's wrong-answer penalty or poison. The caller adds it to currentHp.
+         * Only the opponent's hits drain (Swords, critical answers, its breath and Sword), never
+         * poison. The caller adds it to currentHp.
          *
          * @param {number} appliedAmount The damage the hit dealt, from resolveDamage().
          * @param {object} state Current combat state: currentHp and maxBossHp are read.
@@ -642,8 +639,7 @@
 
         /**
          * What a judged question does: a right answer is a critical hit on the other side; a
-         * wrong one resets the answering side's multiplier, and costs the player
-         * WRONG_ANSWER_DAMAGE too (the boss has no HP penalty for a wrong guess). Returns the
+         * wrong one resets the answering side's multiplier and costs nothing else. Returns the
          * amounts only — applying a hit goes through resolveDamage(), like every other hit. A
          * side that is not hit gets null, not 0: a hit of 0 would still spend a ready shield.
          *
@@ -660,7 +656,6 @@
                 if (correct) {
                     outcome.hitBoss = hitAmount(config.baseDamage * CRITICAL_MULTIPLIER * state.playerMultiplier, 'player', config);
                 } else {
-                    outcome.hitPlayer = WRONG_ANSWER_DAMAGE;
                     outcome.resetPlayerMultiplier = true;
                 }
             } else if (correct) {
@@ -812,7 +807,6 @@
             STATE_FIELDS,
             RESUMABLE_FIELDS,
             CRITICAL_MULTIPLIER,
-            WRONG_ANSWER_DAMAGE,
             ARMOR_CAP,
             POWERS,
             hasPower,

@@ -56,9 +56,6 @@ class combat_engine {
     /** @var int A right answer's critical hit, in multiples of the phase's base damage. */
     public const CRITICAL_MULTIPLIER = 3;
 
-    /** @var int HP a wrong player answer always costs. */
-    public const WRONG_ANSWER_DAMAGE = 30;
-
     /** @var float The most of a hit any armor can absorb, so a hit always does some damage. */
     public const ARMOR_CAP = 0.6;
 
@@ -668,7 +665,7 @@ class combat_engine {
      * A hit as it lands after the attacker's attack and the defender's armor: the attack
      * multiplies it, the armor takes away its share (never more than ARMOR_CAP), and the result
      * is rounded halves up. Only hits go through here (Swords from the board, critical answers,
-     * the Sword consumable); the wrong-answer penalty and poison do not. A hit with no attack or
+     * the Sword consumable); poison does not. A hit with no attack or
      * armor to apply keeps its exact value. The shield is checked afterwards, by resolve_damage().
      *
      * @param float $amount The hit before attack and armor.
@@ -690,8 +687,8 @@ class combat_engine {
     /**
      * The HP an opponent with the drain power recovers from one of its hits: DRAIN_PERCENT of the
      * damage that hit actually dealt (nothing when the shield took it), up to its max HP. Only the
-     * opponent's hits drain (Swords from the board and critical answers), never the student's
-     * wrong-answer penalty or poison. The caller adds it to currentHp.
+     * opponent's hits drain (Swords, critical answers, its breath and Sword), never poison. The
+     * caller adds it to currentHp.
      *
      * @param float $appliedamount The damage the hit dealt, from resolve_damage().
      * @param array $state Current combat state: currentHp and maxBossHp are read.
@@ -707,7 +704,7 @@ class combat_engine {
 
     /**
      * What a judged question does: a right answer is a critical hit on the other side; a wrong
-     * one resets the answering side's multiplier, and costs the player WRONG_ANSWER_DAMAGE too.
+     * one resets the answering side's multiplier and costs nothing else.
      * Returns the amounts only — applying a hit goes through resolve_damage(). A side that is not
      * hit gets null, not 0: a hit of 0 would still spend a ready shield.
      *
@@ -728,7 +725,6 @@ class combat_engine {
                     $config
                 );
             } else {
-                $outcome['hitPlayer'] = (float) self::WRONG_ANSWER_DAMAGE;
                 $outcome['resetPlayerMultiplier'] = true;
             }
         } else if ($correct) {

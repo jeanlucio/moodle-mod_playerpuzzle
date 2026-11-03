@@ -541,7 +541,7 @@ final class replay_test extends \advanced_testcase {
 
     /**
      * Tests that a server outcome left unconsumed at the end of the match makes the replay
-     * inconclusive — here, a wrong answer the client reported as skipped to dodge its penalty.
+     * inconclusive — here, a wrong answer the client reported as skipped to keep its multiplier.
      *
      * @return void
      */

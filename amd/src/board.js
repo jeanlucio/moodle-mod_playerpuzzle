@@ -839,7 +839,7 @@ define([
                 if (me.combat.currentTurn === 'player') {
                     me.combat.applyDamageToBoss(scaledDamage);
                 } else {
-                    me.combat.applyDamageToPlayer(scaledDamage, true);
+                    me.combat.applyDamageToPlayer(scaledDamage);
                 }
             }
 

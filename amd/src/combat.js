@@ -708,14 +708,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Applies a hit to the student. An opponent with the drain power recovers part of what
-         * its own hits deal, never of the wrong-answer penalty.
+         * Applies one of the opponent's hits (Swords or a critical answer) to the student. An
+         * opponent with the drain power recovers part of what it deals.
          *
          * @param {number} amount The hit, already through attack and armor.
-         * @param {boolean} [byOpponent] Whether the opponent landed it (Swords or a critical answer).
          * @returns {{newHp: number, shieldConsumed: boolean, appliedAmount: number}} What landed.
          */
-        applyDamageToPlayer(amount, byOpponent = false) {
+        applyDamageToPlayer(amount) {
             const me = this.scene;
             const result = CombatRules.resolveDamage(this.currentPlayerHp, this.playerShieldReady, amount);
             this.currentPlayerHp = result.newHp;
@@ -723,12 +722,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 this.playerShieldReady = false;
                 me.ui.pushHistoryLog('player', this.strings.historylogshieldblock);
             }
-            if (byOpponent) {
-                const drained = CombatRules.drainAmount(result.appliedAmount, this.combatState(), this.ruleConfig());
-                if (drained > 0) {
-                    this.currentHp += drained;
-                    me.ui.pushHistoryLog('boss', this.strings.historylogdrain.replace('{$a}', Math.round(drained)));
-                }
+            const drained = CombatRules.drainAmount(result.appliedAmount, this.combatState(), this.ruleConfig());
+            if (drained > 0) {
+                this.currentHp += drained;
+                me.ui.pushHistoryLog('boss', this.strings.historylogdrain.replace('{$a}', Math.round(drained)));
             }
 
             this.updateUI();
@@ -1402,18 +1399,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                                 .removeClass('btn-outline-primary')
                                                 .addClass('btn-success text-white');
                                         }
-                                        ctx.applyDamageToPlayer(outcome.hitPlayer);
-                                        me.ui.pushHistoryLog(
-                                            'player', ctx.strings.historylogwronganswer.replace('{$a}', outcome.hitPlayer)
-                                        );
+                                        me.ui.pushHistoryLog('player', ctx.strings.historylogwronganswer);
                                         const lostMultiplier = ctx.playerMultiplier;
                                         if (outcome.resetPlayerMultiplier) {
                                             ctx.playerMultiplier = 1;
                                         }
                                         ctx.updateUI();
-                                        const wrongMsg = ctx.strings.playerwrong.replace('{$a}', outcome.hitPlayer);
                                         feedbackMsg = '<div class="alert alert-danger mt-2 mb-0">'
-                                            + `<strong>${wrongMsg}</strong></div>`;
+                                            + `<strong>${ctx.strings.playerwrong}</strong></div>`;
                                         if (lostMultiplier > 1) {
                                             const lostMsg = ctx.strings.playerlostmultiplier
                                                 .replace('{$a}', lostMultiplier.toFixed(1));
@@ -1494,7 +1487,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     me.ui.pushHistoryLog(
                                         'boss', ctx.strings.historylogcritical.replace('{$a}', Math.round(bossCritDamage))
                                     );
-                                    const taken = ctx.applyDamageToPlayer(bossCritDamage, true);
+                                    const taken = ctx.applyDamageToPlayer(bossCritDamage);
                                     const dmgMsg = taken.shieldConsumed
                                         ? ctx.strings.bosscorrectblocked
                                         : ctx.strings.bosscorrectfeedback.replace('{$a}', Math.round(taken.appliedAmount));

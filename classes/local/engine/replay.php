@@ -644,7 +644,7 @@ class replay {
             if ($applied['shieldConsumed']) {
                 $state['playerShieldReady'] = false;
             }
-            // A critical answer is the opponent's hit; the student's wrong-answer penalty is not.
+            // Only the opponent's critical answer hits the student, and it drains like its other hits.
             if ($side === 'boss') {
                 $state['currentHp'] += combat_engine::drain_amount($applied['appliedAmount'], $state, $config);
             }

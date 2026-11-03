@@ -449,6 +449,15 @@ test('startTurn: an opponent with loot takes 10% of the student\'s coins every 4
     assert.equal(fourth.looted, 4.5);
     assert.equal(fourth.state.playerGold, 40.5);
     assert.equal(fourth.state.bossGold, 24.5);
+    // 4.5 coins are 0.45 of a 10-coin match: a hit of 2 x 0.45 x the base damage of 10.
+    assert.deepEqual(fourth.raid, {hit: 9, appliedAmount: 9, shieldConsumed: false, drained: 0});
+    assert.equal(fourth.state.currentPlayerHp, 91);
+    const shielded = combatRules.startTurn('boss', Object.assign(before(4), {playerShieldReady: true}), config);
+    assert.equal(shielded.raid.shieldConsumed, true);
+    assert.equal(shielded.state.currentPlayerHp, 100);
+    assert.equal(combatRules.startTurn('boss', Object.assign(before(4), {playerGold: 0}), config).raid, null);
+    const noCoins = Object.assign({}, config, {coinGain: 0});
+    assert.equal(combatRules.startTurn('boss', before(4), noCoins).raid, null);
     assert.equal(combatRules.startTurn('boss', before(5), config).looted, 0);
     assert.equal(combatRules.startTurn('boss', Object.assign(before(8), {playerGold: 0}), config).looted, 0);
     assert.equal(combatRules.startTurn('boss', before(4), CONFIG).looted, 0);

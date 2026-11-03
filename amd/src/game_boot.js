@@ -522,6 +522,7 @@ define([
                     'historylogcoins', 'historylogcritical', 'historylogcriticalblocked', 'historylogcriticaltaken',
                     'historylogdrain', 'historylogempty', 'historylogintangible', 'historylogitempotion',
                     'historylogkit', 'historylogloot', 'historyloglooted',
+                    'historylograid', 'historylograidblocked', 'historylograidtaken',
                     'historylogheal', 'historylogmana', 'historylogmultiplier',
                     'historylogmultiplierlost', 'historylogpoisoncharge', 'historylogpoisontick',
                     'historylogpower_ambush', 'historylogpower_breath', 'historylogpower_drain',

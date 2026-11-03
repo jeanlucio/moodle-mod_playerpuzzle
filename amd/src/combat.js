@@ -685,8 +685,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * blocked!". A "+X HP" or "-X HP" always speaks of that side's own HP.
          *
          * @param {string} attacker 'player' or 'boss'.
-         * @param {string} kind 'strike' (board Swords), 'critical', 'sword' (the Sword item) or
-         *  'breath'.
+         * @param {string} kind 'strike' (board Swords), 'critical', 'sword' (the Sword item),
+         *  'breath' or 'raid' (the hit that comes with the pirate's loot).
          * @param {{shieldConsumed: boolean, appliedAmount: number}} result What landed.
          */
         logHit(attacker, kind, result) {
@@ -786,13 +786,19 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 this.updateUI();
                 me.ui.pushHistoryLog('boss', this.strings.historylogintangible);
             }
+            if (start.breath) {
+                this.showTurnStartHit('breath', start.breath);
+                if (this.checkGameOver()) {
+                    return;
+                }
+            }
             if (Math.round(start.looted) > 0) {
                 this.updateUI();
                 me.ui.pushHistoryLog('boss', this.strings.historylogloot.replace('{$a}', Math.round(start.looted)));
                 me.ui.pushHistoryLog('player', this.strings.historyloglooted.replace('{$a}', Math.round(start.looted)));
             }
-            if (start.breath) {
-                this.showBreath(start.breath);
+            if (start.raid) {
+                this.showTurnStartHit('raid', start.raid);
                 if (this.checkGameOver()) {
                     return;
                 }
@@ -808,25 +814,27 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Shows the opponent's breath, already applied by CombatRules.startTurn(): the lunge, the
-         * hit or the Shield that took it, and what its drain recovered.
+         * Shows a hit the opponent landed as its turn began, already applied by
+         * CombatRules.startTurn() (its breath, or the hit that came with its loot): the lunge,
+         * the hit or the Shield that took it, and what its drain recovered.
          *
-         * @param {{hit: number, appliedAmount: number, shieldConsumed: boolean, drained: number}} breath
+         * @param {string} kind 'breath' or 'raid' (see logHit()).
+         * @param {{hit: number, appliedAmount: number, shieldConsumed: boolean, drained: number}} hit
          */
-        showBreath(breath) {
+        showTurnStartHit(kind, hit) {
             const me = this.scene;
             this.updateUI();
             me.ui.lungeCharacter('boss', true);
-            this.logHit('boss', 'breath', breath);
-            if (breath.drained > 0) {
-                me.ui.pushHistoryLog('boss', this.strings.historylogdrain.replace('{$a}', Math.round(breath.drained)));
+            this.logHit('boss', kind, hit);
+            if (hit.drained > 0) {
+                me.ui.pushHistoryLog('boss', this.strings.historylogdrain.replace('{$a}', Math.round(hit.drained)));
             }
             Accessibility.announce(
                 this.strings.damagetaken
-                    .replace('{$a->damage}', Math.round(breath.appliedAmount))
+                    .replace('{$a->damage}', Math.round(hit.appliedAmount))
                     .replace('{$a->hp}', Math.round(this.currentPlayerHp))
             );
-            me.ui.hitCharacter('player', breath.shieldConsumed);
+            me.ui.hitCharacter('player', hit.shieldConsumed);
         }
 
         /**

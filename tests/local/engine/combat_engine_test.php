@@ -758,6 +758,15 @@ final class combat_engine_test extends \advanced_testcase {
         $this->assertSame(4.5, $fourth['looted']);
         $this->assertSame(40.5, $fourth['state']['playerGold']);
         $this->assertSame(24.5, $fourth['state']['bossGold']);
+        // 4.5 coins are 0.45 of a 10-coin match: a hit of 2 x 0.45 x the base damage of 10.
+        $this->assertEquals(['hit' => 9, 'appliedAmount' => 9, 'shieldConsumed' => false, 'drained' => 0], $fourth['raid']);
+        $this->assertEquals(91, $fourth['state']['currentPlayerHp']);
+        $shielded = combat_engine::start_turn('boss', array_merge($before(4), ['playerShieldReady' => true]), $config);
+        $this->assertTrue($shielded['raid']['shieldConsumed']);
+        $this->assertEquals(100, $shielded['state']['currentPlayerHp']);
+        $this->assertNull(combat_engine::start_turn('boss', array_merge($before(4), ['playerGold' => 0.0]), $config)['raid']);
+        $nocoins = array_merge($config, ['coinGain' => 0]);
+        $this->assertNull(combat_engine::start_turn('boss', $before(4), $nocoins)['raid']);
         $this->assertSame(0.0, combat_engine::start_turn('boss', $before(5), $config)['looted']);
         $broke = array_merge($before(8), ['playerGold' => 0.0]);
         $this->assertSame(0.0, combat_engine::start_turn('boss', $broke, $config)['looted']);

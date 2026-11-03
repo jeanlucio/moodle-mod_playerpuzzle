@@ -489,7 +489,9 @@ function buildCombatVectors() {
         const state = Object.assign(randomState(lootRand), {bossTurnCount: lootRand.pick([3, 3, 7, 4, 11])});
         cases.push(recordCall('startTurn', [
             lootRand.pick(['player', 'boss', 'boss']), state,
-            {baseDamage: lootRand.int(1, 60), bossPowers: lootRand.pick([[], ['loot'], ['loot', 'regen']])},
+            Object.assign({baseDamage: lootRand.int(1, 60), coinGain: lootRand.pick([0, 5, 10, 25]),
+                coinFactor: lootRand.pick([0.5, 1, 3]), bossPowers: lootRand.pick([[], ['loot'], ['loot', 'drain']])},
+            lootRand.pick(HIT_CONFIGS)),
         ]));
     }
 

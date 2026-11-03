@@ -146,6 +146,9 @@ class combat_engine {
     /** @var int The percentage of the student's coins the loot takes each time. */
     public const LOOT_PERCENT = 10;
 
+    /** @var float The loot's hit, in base damage per whole Coin match's worth of coins taken. */
+    public const LOOT_HIT_MULTIPLIER = 2;
+
     /** @var string Power: every few of its turns, the opponent lands a strong hit before it moves. */
     public const POWER_BREATH = 'breath';
 
@@ -566,6 +569,43 @@ class combat_engine {
     }
 
     /**
+     * The hit that comes with the loot — mirrors combat_rules.js::lootHit(): LOOT_HIT_MULTIPLIER
+     * times the base damage for each whole Coin match's worth of the coins taken, through the
+     * opponent's attack, the student's armor and Shield, and its own drain, on the state
+     * start_turn() is building. With no coins to pay, it never hits.
+     *
+     * @param array $next The state start_turn() is building (mutated in place).
+     * @param float $looted The coins taken.
+     * @param array $config The phase's rule config: baseDamage, coinGain, coinFactor and the attack
+     *  and armor (see hit_amount()) are read.
+     * @return array|null ['hit', 'appliedAmount', 'shieldConsumed', 'drained'], or null.
+     */
+    private static function loot_hit(array &$next, float $looted, array $config): ?array {
+        $coinmatch = ($config['coinGain'] ?? 0) * ($config['coinFactor'] ?? 1);
+        if (!($coinmatch > 0)) {
+            return null;
+        }
+        $hit = self::hit_amount(
+            $config['baseDamage'] * self::LOOT_HIT_MULTIPLIER * $looted / $coinmatch,
+            'boss',
+            $config
+        );
+        $applied = self::resolve_damage($next['currentPlayerHp'], $next['playerShieldReady'], $hit);
+        $next['currentPlayerHp'] = $applied['newHp'];
+        if ($applied['shieldConsumed']) {
+            $next['playerShieldReady'] = false;
+        }
+        $drained = self::drain_amount($applied['appliedAmount'], $next, $config);
+        $next['currentHp'] += $drained;
+        return [
+            'hit' => $hit,
+            'appliedAmount' => $applied['appliedAmount'],
+            'shieldConsumed' => $applied['shieldConsumed'],
+            'drained' => $drained,
+        ];
+    }
+
+    /**
      * The opponent's starting items for a phase (see ITEM_POTION_BELOW) — mirrors
      * combat_rules.js::opponentKit().
      *
@@ -752,13 +792,15 @@ class combat_engine {
      *
      * @param string $side 'player' or 'boss' — whose turn begins.
      * @param array $state Current combat state — copied, never mutated.
-     * @param array $config Keys baseDamage, the phase's attack and armor (see hit_amount()), and
-     *  bossPowers (optional).
+     * @param array $config Keys baseDamage, coinGain, coinFactor, the phase's attack and armor (see
+     *  hit_amount()), and bossPowers (optional).
      * @return array ['state' => array, 'poisonTicked' => bool, 'regenerated' => float, 'shieldArmed' => bool,
-     *  'breath' => array|null, 'looted' => float] shieldArmed is true when the intangible power armed a Shield
-     *  that was not armed yet; breath is null on a turn without one, otherwise ['hit', 'appliedAmount',
-     *  'shieldConsumed', 'drained']; looted is the coins taken, 0 if none; item is null, or the item the
-     *  opponent used as ['kind', 'amount', 'appliedAmount', 'shieldConsumed', 'drained'].
+     *  'breath' => array|null, 'looted' => float, 'raid' => array|null, 'item' => array|null]
+     *  shieldArmed is true when the intangible power armed a Shield that was not armed yet; breath is
+     *  null on a turn without one, otherwise ['hit', 'appliedAmount', 'shieldConsumed', 'drained'];
+     *  looted is the coins taken, 0 if none; raid is the hit that came with them (see loot_hit()),
+     *  shaped like breath, or null; item is null, or the item the opponent used as ['kind', 'amount',
+     *  'appliedAmount', 'shieldConsumed', 'drained'].
      */
     public static function start_turn(string $side, array $state, array $config): array {
         $next = $state;
@@ -803,6 +845,7 @@ class combat_engine {
             $next['playerGold'] -= $looted;
             $next['bossGold'] += $looted;
         }
+        $raid = $looted > 0 ? self::loot_hit($next, $looted, $config) : null;
 
         $regenerated = 0.0;
         if ($side === 'boss' && self::has_power($config, self::POWER_REGEN) && $next['currentHp'] > 0) {
@@ -820,6 +863,7 @@ class combat_engine {
             'shieldArmed' => $shieldarmed,
             'breath' => $breath,
             'looted' => $looted,
+            'raid' => $raid,
             'item' => $item,
         ];
     }

@@ -150,6 +150,10 @@
         const LOOT_EVERY = 4;
         const LOOT_PERCENT = 10;
 
+        // The loot comes with a hit worth this many times the base damage for each whole Coin
+        // match's worth of coins taken, so taking more coins hits harder.
+        const LOOT_HIT_MULTIPLIER = 2;
+
         // Every how many of its turns an opponent with the breath power lands it, and how many times
         // the phase's base damage it hits for.
         const BREATH_EVERY = 10;
@@ -673,7 +677,8 @@
          * arms; with the breath power, while it still stands, every BREATH_EVERY turns it hits
          * the student for BREATH_MULTIPLIER times the base damage, through its attack, the
          * student's armor and Shield, and its own drain; with the loot power, every LOOT_EVERY
-         * turns it takes LOOT_PERCENT of the student's coins for itself; and with the regen
+         * turns it takes LOOT_PERCENT of the student's coins for itself and hits for what it took
+         * (see lootHit()); and with the regen
          * power, while it still stands, REGEN_PERCENT of its max HP comes back, up to the max.
          * Last, the opponent may use one of its items (see opponentItemUse()). The caller checks
          * whether the student survived the breath or a Sword.
@@ -684,10 +689,11 @@
          *  bossPowers is read.
          * @return {{state: object, poisonTicked: boolean, regenerated: number, shieldArmed: boolean,
          *  breath: ?{hit: number, appliedAmount: number, shieldConsumed: boolean, drained: number},
-         *  looted: number, item: ?{kind: string, amount: number, appliedAmount: number,
-         *  shieldConsumed: boolean, drained: number}} shieldArmed is true when the intangible
-         *  power armed a Shield that was not armed yet; breath is null on a turn without one;
-         *  looted is the coins taken, 0 if none; item is the item the opponent used, or null.
+         *  looted: number, raid: ?object, item: ?{kind: string, amount: number,
+         *  appliedAmount: number, shieldConsumed: boolean, drained: number}} shieldArmed is true
+         *  when the intangible power armed a Shield that was not armed yet; breath is null on a
+         *  turn without one; looted is the coins taken, 0 if none; raid is the hit that came with
+         *  them, shaped like breath, or null; item is the item the opponent used, or null.
          */
         function startTurn(side, state, config) {
             const next = Object.assign({}, state);
@@ -725,6 +731,7 @@
                 next.playerGold -= looted;
                 next.bossGold += looted;
             }
+            const raid = looted > 0 ? lootHit(next, looted, config) : null;
 
             let regenerated = 0;
             if (side === 'boss' && hasPower(config, POWERS.REGEN) && next.currentHp > 0) {
@@ -732,7 +739,36 @@
                 next.currentHp += regenerated;
             }
             const item = useOpponentItem(side, next, config);
-            return {state: next, poisonTicked: tick.ticked, regenerated, shieldArmed, breath, looted, item};
+            return {state: next, poisonTicked: tick.ticked, regenerated, shieldArmed, breath, looted, raid, item};
+        }
+
+        /**
+         * The hit that comes with the loot: LOOT_HIT_MULTIPLIER times the base damage for each
+         * whole Coin match's worth of the coins taken, through the opponent's attack, the
+         * student's armor and Shield, and its own drain, on the state startTurn() is building.
+         * Measured in Coin matches, so how many coins a match pays does not change how hard it
+         * hits; with no coins to pay, it never hits.
+         *
+         * @param {object} next The state startTurn() is building (mutated in place).
+         * @param {number} looted The coins taken.
+         * @param {object} config The phase's rule config: baseDamage, coinGain, coinFactor and
+         *  the attack and armor (see hitAmount()) are read.
+         * @return {?{hit: number, appliedAmount: number, shieldConsumed: boolean, drained: number}}
+         */
+        function lootHit(next, looted, config) {
+            const coinMatch = (config.coinGain || 0) * (config.coinFactor || 1);
+            if (!(coinMatch > 0)) {
+                return null;
+            }
+            const hit = hitAmount(config.baseDamage * LOOT_HIT_MULTIPLIER * looted / coinMatch, 'boss', config);
+            const applied = resolveDamage(next.currentPlayerHp, next.playerShieldReady, hit);
+            next.currentPlayerHp = applied.newHp;
+            if (applied.shieldConsumed) {
+                next.playerShieldReady = false;
+            }
+            const drained = drainAmount(applied.appliedAmount, next, config);
+            next.currentHp += drained;
+            return {hit, appliedAmount: applied.appliedAmount, shieldConsumed: applied.shieldConsumed, drained};
         }
 
         /**

@@ -37,7 +37,8 @@ define(
     const FA_FONT_FAMILY = '"Font Awesome 6 Free"';
     const FA_VOLUME_HIGH = '\uf028';
     const FA_VOLUME_XMARK = '\uf6a9';
-    const FA_DRUM = '\uf569';
+    const FA_BELL = '\uf0f3';
+    const FA_BELL_SLASH = '\uf1f6';
 
     // The characters' idle breathing: how much taller they get at the top of a breath, and how
     // long half a breath lasts, in ms.
@@ -1200,18 +1201,18 @@ define(
         }
 
         /**
-         * Creates the Sound Effects button's icon as a Font Awesome drum glyph — a gear was used
-         * originally, but reads as a generic app-settings control rather than specifically
-         * "sound effects", so it was swapped for a drum. The on/off state is conveyed by
-         * dimming the whole icon's alpha (unchanged), not by swapping glyphs.
+         * Creates the Sound Effects button's icon as a Font Awesome bell, crossed out while the
+         * effects are off — the shape, not only a dimmer icon, tells the state, like the Music
+         * button's speaker beside it.
          *
          * @param {number} cx Center X.
          * @param {number} cy Center Y.
          * @param {number} r Badge radius — the icon's font size is scaled relative to it.
+         * @param {boolean} on Whether sound effects are on.
          * @return {Phaser.GameObjects.Text} The icon text object.
          */
-        createEffectsIcon(cx, cy, r) {
-            return this.scene.add.text(cx, cy, FA_DRUM, {
+        createEffectsIcon(cx, cy, r, on) {
+            return this.scene.add.text(cx, cy, on ? FA_BELL : FA_BELL_SLASH, {
                 fontFamily: FA_FONT_FAMILY,
                 fontStyle: '900',
                 fontSize: `${Math.round(r * 1.15)}px`,
@@ -1255,17 +1256,14 @@ define(
             });
 
             const badgeEffects = this.createButtonBadge(xEffects, y, r);
-            const iconEffects = this.createEffectsIcon(xEffects, y, r);
-            iconEffects.setAlpha(me.sfxOn ? 1 : 0.4);
+            const iconEffects = this.createEffectsIcon(xEffects, y, r, me.sfxOn);
             badgeEffects.on('pointerup', () => {
                 this.guardAgainstDoubleTap('effects', () => {
                     if (me.board && me.board.swipePiece !== null) {
                         return;
                     }
                     me.sfxOn = !me.sfxOn;
-                    // Dims the whole icon instead of redrawing a "muted" variant — mirrors the
-                    // fill-color dim the old text buttons used for the same purpose.
-                    iconEffects.setAlpha(me.sfxOn ? 1 : 0.4);
+                    iconEffects.setText(me.sfxOn ? FA_BELL : FA_BELL_SLASH);
                     const vol = me.sfxOn ? 1 : 0;
                     me.sfxSwap.setVolume(0.6 * vol);
                     me.sfxMatch.setVolume(0.5 * vol);

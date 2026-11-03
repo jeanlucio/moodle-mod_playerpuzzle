@@ -6,7 +6,7 @@
   atacar um oponente. Sete tipos de peça, cada uma com seu efeito — veja
   [Como o Combate Funciona](#combat).
 * **IA do oponente simétrica:** toda peça resolve exatamente do mesmo jeito no turno do oponente e no do
-  estudante — o oponente causa dano, acumula multiplicador de crítico, envenena, se protege, se cura e
+  estudante — o oponente causa dano, acumula multiplicador de crítico, enfeitiça, se protege, se cura e
   acumula a própria moeda.
 * **Desafios de pergunta:** encher a barra do Orbe de Mana abre uma pergunta; acertar é um ataque
   crítico, errar custa HP. Veja [Motor de Questões](#questions).

@@ -10,7 +10,7 @@ landscape layout on wider screens.
 3. Once the board settles, it becomes the **Opponent's turn**: a simple AI scans the board and
    executes one valid swap. Whatever it matches resolves through the exact same seven pieces and
    effects as the student's own turn (see below) — the opponent can deal damage, build up a
-   multiplier, poison the student, shield itself, heal, and bank gold, exactly like the student
+   multiplier, hex the student, shield itself, heal, and bank gold, exactly like the student
    does on their own turn.
 
 ## The Seven Pieces
@@ -21,7 +21,7 @@ who benefits changes (whoever's turn it currently is).
 | Piece | Effect |
 |-------|--------|
 | ⭐ Star | Adds +0.1 to a damage multiplier, stacking across turns; consumed on that side's critical hit and reset to 1 when that side answers a question wrong |
-| 📖 Spellbook | Fills a 0–100 poison meter of its own (+10 per piece); on reaching 100, arms 3 damage rounds against the **opponent** (one per their own turn) and resets, carrying over any overshoot |
+| 📖 Spellbook | Fills a 0–100 hex meter of its own (+10 per piece); on reaching 100, arms 3 damage rounds against the **opponent** (one per their own turn) and resets, carrying over any overshoot |
 | ❓ Question Orb | Fills a 100-point energy bar of its own for each side; reaching 100 pauses combat and opens the [Question Challenge](#questions) — the student answers for real, the opponent "answers" by picking an option at random, validated the same way server-side |
 | ⚔️ Swords | Direct damage to the **opponent** — no question needed. Scales with level/phase, and a 4- or 5-piece match deals 1.5x/2x the damage of a 3-piece match |
 | 🛡️ Shield | Fills a 0–100 meter of its own (+10 per piece); on reaching 100, negates the **next** hit that side takes in full, no matter how large, then resets |
@@ -75,7 +75,7 @@ or match:
 |---|---|:---:|:---:|
 | 🧪 Potion | Heals 1.25× the base damage | 8 | 3 |
 | 🛡️ Shield | Fills the Shield meter at once, arming the block of the next hit | 10 | 1 |
-| 🔮 Quick Magic | Fills the Grimoire meter at once, arming three poison rounds on the opponent | 12 | 1 |
+| 🔮 Quick Magic | Fills the Grimoire meter at once, arming three hex rounds on the opponent | 12 | 1 |
 | ⚔️ Sword | An extra attack of one base damage, without ending the turn | 10 | 3 |
 | 💡 Hint | Shows the hint of the open question, when it has one | 5 | no fixed limit |
 

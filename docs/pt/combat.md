@@ -10,7 +10,7 @@ adaptando a um layout paisagem em telas mais largas.
 3. Quando o tabuleiro estabiliza, é o **Turno do Oponente**: uma IA simples varre o tabuleiro e
    executa uma troca válida. O que ela combina resolve pelas mesmas sete peças e os mesmos
    efeitos do turno do estudante (veja abaixo) — o oponente pode causar dano, acumular
-   multiplicador, envenenar o estudante, se proteger, se curar e acumular moeda, exatamente como
+   multiplicador, enfeitiçar o estudante, se proteger, se curar e acumular moeda, exatamente como
    o estudante faz no próprio turno.
 
 ## As Sete Peças
@@ -21,7 +21,7 @@ muda é só quem ganha o efeito (quem estiver no turno atual).
 | Peça | Efeito |
 |------|--------|
 | ⭐ Estrela | Soma +0,1 a um multiplicador de dano, acumulando entre turnos; consumido no acerto crítico daquele lado e resetado a 1 quando esse lado erra uma pergunta |
-| 📖 Grimório | Enche um medidor de veneno próprio de 0–100 (+10 por peça); ao chegar em 100, arma 3 rodadas de dano contra o **oponente** (uma por turno dele) e reseta, preservando o excedente |
+| 📖 Grimório | Enche um medidor de feitiço próprio de 0–100 (+10 por peça); ao chegar em 100, arma 3 rodadas de dano contra o **oponente** (uma por turno dele) e reseta, preservando o excedente |
 | ❓ Orbe de Interrogação | Enche uma barra de energia de 100 pontos própria de cada lado; ao chegar em 100, pausa o combate e abre o [Desafio de Pergunta](#questions) — o estudante responde de verdade, o oponente "responde" escolhendo uma opção ao acaso, validada do mesmo jeito no servidor |
 | ⚔️ Espadas | Dano direto no **oponente** — sem precisar de pergunta. Escala com nível/fase, e uma combinação de 4 ou 5 peças causa 1,5x/2x o dano de uma combinação de 3 |
 | 🛡️ Escudo | Enche um medidor próprio de 0–100 (+10 por peça); ao chegar em 100, nega por completo o **próximo** golpe recebido por esse lado, não importa o valor, e reseta |
@@ -76,7 +76,7 @@ partida:
 |---|---|:---:|:---:|
 | 🧪 Poção | Cura 1,25× o dano base | 8 | 3 |
 | 🛡️ Escudo | Enche o medidor de Escudo de uma vez, armando o bloqueio do próximo golpe | 10 | 1 |
-| 🔮 Magia Rápida | Enche o medidor do Grimório de uma vez, armando três rodadas de veneno no oponente | 12 | 1 |
+| 🔮 Magia Rápida | Enche o medidor do Grimório de uma vez, armando três rodadas de feitiço no oponente | 12 | 1 |
 | ⚔️ Espada | Um ataque extra de um dano base, sem encerrar o turno | 10 | 3 |
 | 💡 Dica | Mostra a dica da pergunta aberta, quando ela tem uma | 5 | sem limite fixo |
 

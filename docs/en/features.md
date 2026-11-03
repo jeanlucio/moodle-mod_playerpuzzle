@@ -5,7 +5,7 @@
 * **Match-3 turn-based combat:** an 8×8 board (Phaser) where the student swaps pieces to attack a
   opponent. Seven piece types, each with its own effect — see [How Combat Works](#combat).
 * **Symmetric opponent AI:** every piece resolves exactly the same way on the opponent's turn as on the
-  student's — the opponent deals damage, stacks a critical-hit multiplier, poisons, shields itself,
+  student's — the opponent deals damage, stacks a critical-hit multiplier, hexes, shields itself,
   heals and banks its own gold.
 * **Question challenges:** filling the Mana Orb meter opens a question; a correct answer is a
   critical hit, a wrong one costs HP. See [Question Engine](#questions).

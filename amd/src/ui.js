@@ -1323,11 +1323,10 @@ define(
             this.txtBossGold.setText(`${Math.round(gold)}`);
             this.txtBossStar.setText(`x${multiplier.toFixed(1)}`);
 
-            // Poison ring: purple while filling toward the next trigger; turns red whenever a
-            // damage round is currently pending, regardless of the meter's own fresh progress.
+            // Grimoire ring: this side's own hex meter, filling toward the rounds it arms against
+            // the other side. Whether this side is itself hexed shows on its HP bar's badge.
             this.updateRing(
-                'bossGrimoire', L.bossGrimoireX, L.bossRingY, 'item1',
-                poisonRounds > 0 ? 1 : (poisonMeter / 100), poisonRounds > 0 ? 0xff3333 : 0x9933cc
+                'bossGrimoire', L.bossGrimoireX, L.bossRingY, 'item1', poisonMeter / 100, 0x9933cc
             );
             // Shield ring: blue while filling; forced to a full gold ring while a block is
             // armed, since the meter itself already reset to 0 the instant it triggered.
@@ -1353,8 +1352,7 @@ define(
             this.txtStar.setText(`x${multiplier.toFixed(1)}`);
 
             this.updateRing(
-                'playerGrimoire', L.playerGrimoireX, L.playerRingY, 'item1',
-                poisonRounds > 0 ? 1 : (poisonMeter / 100), poisonRounds > 0 ? 0xff3333 : 0x9933cc
+                'playerGrimoire', L.playerGrimoireX, L.playerRingY, 'item1', poisonMeter / 100, 0x9933cc
             );
             this.updateRing(
                 'playerShieldRing', L.playerShieldRingX, L.playerRingY, 'item4',

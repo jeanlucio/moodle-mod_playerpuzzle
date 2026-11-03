@@ -514,7 +514,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             }
 
             this.logTurnEffects(
-                result.damageDealt, result.coinsGained, result.healGained,
+                result.coinsGained, result.healGained,
                 result.multiplierGained, result.shieldGained, result.poisonGained, result.manaGained
             );
 
@@ -575,13 +575,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Appends one action-history line per non-zero effect resolved by this turn's match,
-         * to the acting side's own history panel (this.currentTurn). Damage is logged here
-         * even though it is only actually applied later by the caller (board.js, via
-         * applyDamageToBoss()/applyDamageToPlayer()) — the amount logged is exactly what will
-         * be applied, so this is not misleading, just slightly ahead of the HP bar update.
+         * Appends one action-history line per non-zero gain resolved by this turn's match, to
+         * the acting side's own history panel (this.currentTurn). The Swords' damage is logged
+         * where the hit lands (see logHit()), as it lands after attack, armor and Shield.
          *
-         * @param {number} damage Sword damage dealt this turn.
          * @param {number} coins Coin gained this turn.
          * @param {number} heal Potion healing applied this turn.
          * @param {number} multiplier Star multiplier gained this turn.
@@ -589,14 +586,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * @param {number} poison Poison meter gained this turn.
          * @param {number} mana Mana gained this turn.
          */
-        logTurnEffects(damage, coins, heal, multiplier, shield, poison, mana) {
+        logTurnEffects(coins, heal, multiplier, shield, poison, mana) {
             const s = this.strings;
             const side = this.currentTurn;
             const ui = this.scene.ui;
 
-            if (damage > 0) {
-                ui.pushHistoryLog(side, s.historylogattack.replace('{$a}', Math.round(damage)));
-            }
             if (coins > 0) {
                 ui.pushHistoryLog(side, s.historylogcoins.replace('{$a}', Math.round(coins)));
             }
@@ -604,7 +598,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 ui.pushHistoryLog(side, s.historylogheal.replace('{$a}', Math.round(heal)));
             }
             if (multiplier > 0) {
-                ui.pushHistoryLog(side, s.historylogmultiplier.replace('{$a}', multiplier.toFixed(1)));
+                const gained = multiplier.toLocaleString(document.documentElement.lang || undefined, {
+                    minimumFractionDigits: 1, maximumFractionDigits: 1,
+                });
+                ui.pushHistoryLog(side, s.historylogmultiplier.replace('{$a}', gained));
             }
             if (shield > 0) {
                 ui.pushHistoryLog(side, s.historylogshieldcharge.replace('{$a}', shield));
@@ -683,19 +680,44 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Applies a hit to the opponent.
+         * Logs a hit in both histories: the attacker's line with the damage it dealt, the
+         * defender's with the HP it lost, or, when a Shield took it, "blocked" and "Shield
+         * blocked!". A "+X HP" or "-X HP" always speaks of that side's own HP.
+         *
+         * @param {string} attacker 'player' or 'boss'.
+         * @param {string} kind 'strike' (board Swords), 'critical', 'sword' (the Sword item) or
+         *  'breath'.
+         * @param {{shieldConsumed: boolean, appliedAmount: number}} result What landed.
+         */
+        logHit(attacker, kind, result) {
+            const ui = this.scene.ui;
+            const s = this.strings;
+            const defender = attacker === 'player' ? 'boss' : 'player';
+            if (result.shieldConsumed) {
+                ui.pushHistoryLog(attacker, s[`historylog${kind}blocked`]);
+                ui.pushHistoryLog(defender, s.historylogshieldblock);
+                return;
+            }
+            const amount = Math.round(result.appliedAmount);
+            ui.pushHistoryLog(attacker, s[`historylog${kind}`].replace('{$a}', amount));
+            ui.pushHistoryLog(defender, s[`historylog${kind}taken`].replace('{$a}', amount));
+        }
+
+        /**
+         * Applies one of the student's hits to the opponent.
          *
          * @param {number} amount The hit, already through attack and armor.
+         * @param {string} [kind] What landed it, for the history (see logHit()).
          * @returns {{newHp: number, shieldConsumed: boolean, appliedAmount: number}} What landed.
          */
-        applyDamageToBoss(amount) {
+        applyDamageToBoss(amount, kind = 'strike') {
             const me = this.scene;
             const result = CombatRules.resolveDamage(this.currentHp, this.bossShieldReady, amount);
             this.currentHp = result.newHp;
             if (result.shieldConsumed) {
                 this.bossShieldReady = false;
-                me.ui.pushHistoryLog('boss', this.strings.historylogshieldblock);
             }
+            this.logHit('player', kind, result);
 
             this.updateUI();
             Accessibility.announce(
@@ -712,16 +734,17 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * opponent with the drain power recovers part of what it deals.
          *
          * @param {number} amount The hit, already through attack and armor.
+         * @param {string} [kind] What landed it, for the history (see logHit()).
          * @returns {{newHp: number, shieldConsumed: boolean, appliedAmount: number}} What landed.
          */
-        applyDamageToPlayer(amount) {
+        applyDamageToPlayer(amount, kind = 'strike') {
             const me = this.scene;
             const result = CombatRules.resolveDamage(this.currentPlayerHp, this.playerShieldReady, amount);
             this.currentPlayerHp = result.newHp;
             if (result.shieldConsumed) {
                 this.playerShieldReady = false;
-                me.ui.pushHistoryLog('player', this.strings.historylogshieldblock);
             }
+            this.logHit('boss', kind, result);
             const drained = CombatRules.drainAmount(result.appliedAmount, this.combatState(), this.ruleConfig());
             if (drained > 0) {
                 this.currentHp += drained;
@@ -766,6 +789,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             if (Math.round(start.looted) > 0) {
                 this.updateUI();
                 me.ui.pushHistoryLog('boss', this.strings.historylogloot.replace('{$a}', Math.round(start.looted)));
+                me.ui.pushHistoryLog('player', this.strings.historyloglooted.replace('{$a}', Math.round(start.looted)));
             }
             if (start.breath) {
                 this.showBreath(start.breath);
@@ -793,10 +817,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const me = this.scene;
             this.updateUI();
             me.ui.lungeCharacter('boss', true);
-            me.ui.pushHistoryLog('boss', this.strings.historylogbreath.replace('{$a}', Math.round(breath.hit)));
-            if (breath.shieldConsumed) {
-                me.ui.pushHistoryLog('player', this.strings.historylogshieldblock);
-            }
+            this.logHit('boss', 'breath', breath);
             if (breath.drained > 0) {
                 me.ui.pushHistoryLog('boss', this.strings.historylogdrain.replace('{$a}', Math.round(breath.drained)));
             }
@@ -825,10 +846,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 return;
             }
             me.ui.lungeCharacter('boss', false);
-            me.ui.pushHistoryLog('boss', this.strings.historylogitemsword.replace('{$a}', Math.round(item.amount)));
-            if (item.shieldConsumed) {
-                me.ui.pushHistoryLog('player', this.strings.historylogshieldblock);
-            }
+            this.logHit('boss', 'sword', item);
             if (item.drained > 0) {
                 me.ui.pushHistoryLog('boss', this.strings.historylogdrain.replace('{$a}', Math.round(item.drained)));
             }
@@ -1048,8 +1066,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 me.ui.pushHistoryLog('player', this.strings.historylogpoisoncharge.replace('{$a}', 100));
             } else if (type === 'sword') {
                 me.ui.lungeCharacter('player', false);
-                this.applyDamageToBoss(result.damageAmount);
-                me.ui.pushHistoryLog('player', this.strings.historylogattack.replace('{$a}', Math.round(result.damageAmount)));
+                this.applyDamageToBoss(result.damageAmount, 'sword');
             }
 
             return this.checkGameOver();
@@ -1336,8 +1353,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                             if (question.hashint) {
                                 const hintStock = ctx.consumableStock.hint || 0;
                                 const hintDisabled = !ctx.isdemo && hintStock <= 0;
+                                // A hint is bought in the Lobby's shop only, so without stock the
+                                // button says where to get one.
+                                const hintLabel = hintDisabled
+                                    ? ctx.strings.hintbuyinlobby
+                                    : ctx.strings.hintbutton.replace('{$a}', ctx.isdemo ? '∞' : hintStock);
                                 $('#playerpuzzle-btn-hint')
-                                    .text(ctx.strings.hintbutton.replace('{$a}', ctx.isdemo ? '∞' : hintStock))
+                                    .text(hintLabel)
                                     .prop('disabled', hintDisabled)
                                     .show()
                                     .on('click', () => ctx.requestHint(question.id));
@@ -1381,10 +1403,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                         // The scene is paused while the question is open: the
                                         // lunge and the recoil play as soon as it closes.
                                         me.ui.lungeCharacter('player', true);
-                                        const landed = ctx.applyDamageToBoss(critDamage);
-                                        me.ui.pushHistoryLog(
-                                            'player', ctx.strings.historylogcritical.replace('{$a}', Math.round(critDamage))
-                                        );
+                                        const landed = ctx.applyDamageToBoss(critDamage, 'critical');
                                         const rightMsg = landed.shieldConsumed
                                             ? ctx.strings.playercorrectblocked
                                             : ctx.strings.playercorrect.replace('{$a}', Math.round(landed.appliedAmount));
@@ -1484,10 +1503,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 if (isBossCorrect) {
                                     const bossCritDamage = outcome.hitPlayer;
                                     me.ui.lungeCharacter('boss', true);
-                                    me.ui.pushHistoryLog(
-                                        'boss', ctx.strings.historylogcritical.replace('{$a}', Math.round(bossCritDamage))
-                                    );
-                                    const taken = ctx.applyDamageToPlayer(bossCritDamage);
+                                    const taken = ctx.applyDamageToPlayer(bossCritDamage, 'critical');
                                     const dmgMsg = taken.shieldConsumed
                                         ? ctx.strings.bosscorrectblocked
                                         : ctx.strings.bosscorrectfeedback.replace('{$a}', Math.round(taken.appliedAmount));

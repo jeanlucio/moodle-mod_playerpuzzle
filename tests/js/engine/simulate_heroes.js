@@ -26,15 +26,21 @@
  * specialty is at the stage's cap.
  *
  * Usage: node tests/js/engine/simulate_heroes.js [--levels 1,3,10] [--runs 40] [--accuracy 0.75]
- *   [--difficulty normal] [--hero hp|attack|armor] [--price 12] [--rate 0.4] [--bonus 2] [--hp 3]
+ *   [--difficulty normal] [--hero hp|attack|armor] [--price 12] [--rate 0.4] [--bhp 0.05] [--hp 3]
  *   [--atk 1.6] [--arm 0.3] [--hpbasis base|phase] [--tries 6] [--policy specialty|balanced]
+ *
+ * With --power, no Campaign is played: for each level count it finds the HP and attack that win as
+ * often as the armor (--arm) does when a hero puts every buy into that one attribute, in the last
+ * quarter of the Campaign, so the three are worth the same. The armor is the reference because it has
+ * a ceiling the other two do not.
  *
  * --policy is how the simulated student orders their buys: the specialty to its cap first, or
  * whichever attribute is furthest behind.
  *
  * --rate is the buys per phase of the Campaign, per attribute (the whole Campaign allows
  * rate x phases); --hp/--atk/--arm are what the hero's HP multiple, attack multiple and armor reach
- * when every one of those buys is made; --bonus is the specialty's head start, in buys.
+ * when every one of those buys is made; --bhp/--batk/--barm are the head start the hero gets in its
+ * own specialty, as a share of that attribute's whole range (0.1 is a tenth of what it can reach).
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -73,7 +79,7 @@ const options = {
     heroes: (raw.hero || 'hp,attack,armor').split(','),
     price: parseFloat(raw.price || '12'),
     rate: parseFloat(raw.rate || '0.4'),
-    bonus: parseFloat(raw.bonus || '2'),
+    bonus: {hp: parseFloat(raw.bhp || '0.05'), attack: parseFloat(raw.batk || '0.05'), armor: parseFloat(raw.barm || '0.05')},
     hp: parseFloat(raw.hp || '3'),
     atk: parseFloat(raw.atk || '1.6'),
     arm: parseFloat(raw.arm || '0.3'),
@@ -121,7 +127,8 @@ function stageCap(hero) {
  * @return {{hp: number, attack: number, armor: number}}
  */
 function studentSide(hero, level, phase) {
-    const worth = attribute => hero.buys[attribute] + (hero.specialty === attribute ? options.bonus : 0);
+    const worth = attribute => hero.buys[attribute]
+        + (hero.specialty === attribute ? options.bonus[attribute] * hero.total : 0);
     const basis = options.hpbasis === 'phase' ? 1 + (0.3 * (level - 1)) + (0.05 * (phase - 1)) : 1;
     return {
         hp: Math.round(INSTANCE.basestudenthp * basis * (1 + (worth('hp') * hero.steps.hp))),
@@ -203,8 +210,80 @@ function playCampaign(run, levels, specialty) {
 
 const percent = value => `${Math.round(value * 100)}%`.padStart(4);
 
+/**
+ * How often a hero that put everything into one attribute wins the last quarter of the Campaign.
+ *
+ * @param {number} levels The activity's level count.
+ * @param {object} side The student's side to fight with.
+ * @param {number} samples Matches per phase.
+ * @return {number} Win rate, 0 to 1.
+ */
+function lateWinRate(levels, side, samples) {
+    const phases = levels * 10;
+    const first = Math.floor(phases * 0.75) + 1;
+    const step = Math.max(1, Math.floor((phases - first + 1) / 6));
+    let played = 0;
+    let wins = 0;
+    for (let k = first; k <= phases; k += step) {
+        const level = Math.floor((k - 1) / 10) + 1;
+        const phase = ((k - 1) % 10) + 1;
+        const opponent = opponents[k === phases ? opponents.length - 1 : phase - 1];
+        for (let seed = 1; seed <= samples; seed++) {
+            const match = playMatch({
+                seed: (seed * 7001) + k, level, phase, accuracy: options.accuracy, difficulty: options.difficulty,
+                modifiers: opponent.modifiers, powers: opponent.powers, opponent: opponent.key, student: side,
+            });
+            played++;
+            wins += match.finished && match.won ? 1 : 0;
+        }
+    }
+    return wins / played;
+}
+
+/**
+ * Finds the value of one attribute that wins as often as a target, by bisection.
+ *
+ * @param {number} levels The activity's level count.
+ * @param {string} attribute 'hp', 'attack' or 'armor'.
+ * @param {number} target The win rate to match.
+ * @return {number} The attribute value (an attack multiple, or an armor share), or NaN if out of reach.
+ */
+function matchPower(levels, attribute, target) {
+    const sides = {
+        hp: value => ({hp: Math.round(INSTANCE.basestudenthp * value), attack: 1, armor: 0}),
+        attack: value => ({hp: INSTANCE.basestudenthp, attack: value, armor: 0}),
+        armor: value => ({hp: INSTANCE.basestudenthp, attack: 1, armor: value}),
+    };
+    let [low, high] = {hp: [1, 80], attack: [1, 12], armor: [0, ARMOR_CAP]}[attribute];
+    if (lateWinRate(levels, sides[attribute](high), 40) < target) {
+        return NaN;
+    }
+    for (let i = 0; i < 9; i++) {
+        const mid = (low + high) / 2;
+        if (lateWinRate(levels, sides[attribute](mid), 40) < target) {
+            low = mid;
+        } else {
+            high = mid;
+        }
+    }
+    return (low + high) / 2;
+}
+
+if (raw.power !== undefined) {
+    options.levels.forEach(levels => {
+        // The armor is the reference: it has a ceiling the other two do not.
+        const target = lateWinRate(levels, {hp: INSTANCE.basestudenthp, attack: 1, armor: options.arm}, 40);
+        const hp = matchPower(levels, 'hp', target);
+        const attack = matchPower(levels, 'attack', target);
+        process.stdout.write(`${String(levels).padStart(2)} lv | all-in armor ${options.arm} wins ${percent(target)} `
+            + `of the last quarter | HP that matches it: x${hp.toFixed(2)} | attack that matches it: x${attack.toFixed(2)}\n`);
+    });
+    process.exit(0);
+}
+
 process.stdout.write(`Student right ${percent(options.accuracy)}, ${options.difficulty}; price ${options.price}, `
-    + `${options.rate} buys/phase, bonus ${options.bonus} buys, final HP x${options.hp} (${options.hpbasis}), `
+    + `${options.rate} buys/phase, specialty head start (share of the attribute's range) hp ${options.bonus.hp} `
+    + `attack ${options.bonus.attack} armor ${options.bonus.armor}, final HP x${options.hp} (${options.hpbasis}), `
     + `attack x${options.atk}, armor ${options.arm}, ${options.policy} buys; ${options.runs} Campaigns per cell.\n`);
 options.levels.forEach(levels => {
     options.heroes.forEach(specialty => {

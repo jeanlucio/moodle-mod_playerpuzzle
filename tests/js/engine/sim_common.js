@@ -29,6 +29,7 @@
 const childProcess = require('child_process');
 const path = require('path');
 const BoardRules = require('../../../amd/src/engine/board_rules.js');
+const CombatRules = require('../../../amd/src/engine/combat_rules.js');
 const Prng = require('../../../amd/src/engine/prng.js');
 const ReplayMirror = require('./replay_mirror.js');
 
@@ -82,25 +83,45 @@ function readOpponents() {
  * @param {string} params.difficulty 'easy', 'normal' or 'hard'.
  * @param {string} [params.opponent] The opponent's key (only the final boss's matters).
  * @param {number} [params.breathEvery] Every how many of its turns the opponent lands its breath, if not 10.
+ * @param {boolean} [params.careful] Whether the student picks their moves the way the Normal opponent does, by
+ *  the value of what each match gives, instead of playing the first Sword match.
+ * @param {function(object, object, object): ?string} [params.consume] Called each turn with the combat state, the
+ *  consumables already used this phase and the phase's rule config; returns the consumable to use, or null.
  * @param {{hp: number, attack: number, armor: number}} [params.student] The student's side as a phase
  *  freezes it; absent, the instance's own scaling with no attack or armor.
  * @return {{finished: boolean, won: boolean, turns: number, hpLeft: number, coins: number}} hpLeft
  *  is the student's HP share at the start of their last turn, which is what they finish a won match
  *  with; coins is what the match nets them (their coins minus the opponent's, never below 0).
  */
-function playMatch({seed, level, phase, modifiers, powers, accuracy, difficulty, opponent, student, breathEvery}) {
+function playMatch({
+    seed, level, phase, modifiers, powers, accuracy, difficulty, opponent, student, breathEvery, careful, consume,
+}) {
     const answers = Prng.create((seed * 7919) + 13);
     let lastState = null;
     let turns = 0;
+    let rules = null;
     const policy = {
         move(grid) {
             turns++;
+            if (careful && lastState) {
+                // The Normal opponent's own weights, from the student's side: a Potion is worth what they are
+                // hurt by, and a Shield less while one is armed.
+                const weights = CombatRules.opponentMoveWeights({
+                    bossShieldReady: lastState.playerShieldReady,
+                    currentHp: lastState.currentPlayerHp,
+                    maxBossHp: lastState.maxPlayerHp,
+                }, {difficulty: 'normal'});
+                const move = BoardRules.chooseMove(grid, ReplayMirror.ROWS, ReplayMirror.COLS, weights);
+                if (move) {
+                    return move;
+                }
+            }
             return BoardRules.findMove(grid, ReplayMirror.ROWS, ReplayMirror.COLS, 3)
                 || BoardRules.findMove(grid, ReplayMirror.ROWS, ReplayMirror.COLS, null);
         },
-        consumable(turnCount, state) {
+        consumable(turnCount, state, loggedUses) {
             lastState = state;
-            return null;
+            return consume ? consume(state, loggedUses, rules) : null;
         },
         question(side) {
             const rate = side === 'player' ? accuracy : OPPONENT_ACCURACY[difficulty];
@@ -121,6 +142,7 @@ function playMatch({seed, level, phase, modifiers, powers, accuracy, difficulty,
         attempt.frozenplayerarmor = student.armor;
     }
     const playerpuzzle = {basestudenthp: INSTANCE.basestudenthp, minquestions: 0};
+    rules = ReplayMirror.phaseSetup(attempt, playerpuzzle, modifiers, powers, breathEvery).config;
     const {result} = ReplayMirror.record({attempt, playerpuzzle, modifiers, powers, breathEvery, poolEmpty: false, policy});
     if (!result) {
         return {finished: false, won: false, turns, hpLeft: 0, coins: 0};

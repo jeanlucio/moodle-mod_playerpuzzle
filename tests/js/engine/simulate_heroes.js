@@ -17,8 +17,10 @@
  * Plays whole Campaigns with a hero that grows only by what the student buys, so the shop's pace,
  * price and effect can be tuned against numbers instead of guesses.
  *
- * A simulated student plays the way simulate_balance.js does (the first Sword match it finds, no
- * consumable, a fixed share of right answers), phase after phase from Level 1, Phase 1 to the last,
+ * A simulated student plays the way simulate_balance.js does (the first Sword match it finds, a fixed share of
+ * right answers), or, with --student careful, picks each move by the value of what it gives, the way the Normal
+ * opponent does. They buy consumables with a share of the coins (--cons) and use them by the rules of the game,
+ * phase after phase from Level 1, Phase 1 to the last,
  * through the real rules. Winning a phase pays its net coins; losing one pays nothing and retries the
  * same phase with the same hero. After every win the student spends all their coins, the hero's
  * specialty first and then whichever attribute is furthest behind. Purchases are limited by the stage
@@ -26,13 +28,18 @@
  * specialty is at the stage's cap.
  *
  * Usage: node tests/js/engine/simulate_heroes.js [--levels 1,3,10] [--runs 40] [--accuracy 0.75]
- *   [--difficulty normal] [--hero hp|attack|armor] [--price 12] [--rate 0.4] [--bhp 0.05] [--hp 3]
- *   [--atk 1.6] [--arm 0.3] [--hpbasis base|phase] [--tries 6] [--policy specialty|balanced]
+ *   [--difficulty normal] [--hero hp|attack|armor] [--price 12] [--rate 0.4] [--bhp 0.05] [--hp 2.4]
+ *   [--atk 1.9] [--arm 0.25] [--hpbasis base|phase] [--tries 30] [--policy balanced|specialty]
+ *   [--student careful|naive] [--cons 0.3] [--byphase 1]
  *
  * With --power, no Campaign is played: for each level count it finds the HP and attack that win as
  * often as the armor (--arm) does when a hero puts every buy into that one attribute, in the last
  * quarter of the Campaign, so the three are worth the same. The armor is the reference because it has
  * a ceiling the other two do not.
+ *
+ * --cons is the share of the coins won each phase that goes to Potions, Swords and a Shield, up to the most a
+ * phase can use of each; the rest goes to the hero's upgrades. --byphase also prints the first-try win rate of each
+ * phase of a level, over every level, which shows the order of the opponents.
  *
  * --policy is how the simulated student orders their buys: the specialty to its cap first, or
  * whichever attribute is furthest behind.
@@ -52,6 +59,7 @@
 'use strict';
 
 const {INSTANCE, readOpponents, fightWith, playMatch} = require('./sim_common.js');
+const CombatRules = require('../../../amd/src/engine/combat_rules.js');
 
 const ARMOR_CAP = 0.6;
 const ATTRIBUTES = ['hp', 'armor', 'attack'];
@@ -80,15 +88,32 @@ const options = {
     price: parseFloat(raw.price || '12'),
     rate: parseFloat(raw.rate || '0.4'),
     bonus: {hp: parseFloat(raw.bhp || '0.05'), attack: parseFloat(raw.batk || '0.05'), armor: parseFloat(raw.barm || '0.05')},
-    hp: parseFloat(raw.hp || '3'),
-    atk: parseFloat(raw.atk || '1.6'),
-    arm: parseFloat(raw.arm || '0.3'),
+    hp: raw.hp === undefined ? null : parseFloat(raw.hp),
+    atk: parseFloat(raw.atk || '1.9'),
+    arm: parseFloat(raw.arm || '0.25'),
     hpbasis: raw.hpbasis || 'base',
-    tries: parseInt(raw.tries || '6', 10),
-    policy: raw.policy || 'specialty',
+    tries: parseInt(raw.tries || '30', 10),
+    policy: raw.policy || 'balanced',
+    student: raw.student || 'careful',
+    cons: parseFloat(raw.cons || '0.3'),
+    byphase: raw.byphase !== undefined,
 };
 
+// What the shop charges for the consumables a simulated student buys (combat::consumable_price()).
+const CONSUMABLE_PRICES = {potion: 8, sword: 10, shield: 10};
+
 const opponents = readOpponents();
+
+/**
+ * What the HP multiple reaches when every buy is made: --hp, or the game's own, which grows with the levels
+ * so the hero keeps up with the opponents (heroes::HP_FINAL_BASE and HP_FINAL_PER_LEVEL).
+ *
+ * @param {number} levels The activity's level count.
+ * @return {number}
+ */
+function hpFinal(levels) {
+    return options.hp === null ? 2.4 + (0.62 * (levels - 1)) : options.hp;
+}
 
 /**
  * The hero for a Campaign of a given length: how many buys it allows and what each is worth.
@@ -102,7 +127,7 @@ function buildHero(levels, specialty) {
     const total = Math.max(1, Math.round(options.rate * phases));
     return {
         specialty, phases, total,
-        steps: {hp: (options.hp - 1) / total, attack: (options.atk - 1) / total, armor: options.arm / total},
+        steps: {hp: (hpFinal(levels) - 1) / total, attack: (options.atk - 1) / total, armor: options.arm / total},
         buys: {hp: 0, attack: 0, armor: 0},
         stage: 1,
     };
@@ -134,6 +159,56 @@ function studentSide(hero, level, phase) {
         hp: Math.round(INSTANCE.basestudenthp * basis * (1 + (worth('hp') * hero.steps.hp))),
         attack: 1 + (worth('attack') * hero.steps.attack),
         armor: Math.min(ARMOR_CAP, worth('armor') * hero.steps.armor),
+    };
+}
+
+/**
+ * Buys Potions, Swords and a Shield with a share of the coins, in turn, up to the most a phase can use of each.
+ *
+ * @param {object} stock The consumables in hand, changed in place.
+ * @param {number} coins Coins in hand.
+ * @return {number} Coins left.
+ */
+function buyConsumables(stock, coins) {
+    let budget = Math.floor(coins * options.cons);
+    let left = coins;
+    for (;;) {
+        const available = budget;
+        const wanted = Object.keys(CONSUMABLE_PRICES).filter(kind => stock[kind] < CombatRules.phaseLimit(kind)
+            && CONSUMABLE_PRICES[kind] <= available);
+        if (wanted.length === 0) {
+            return left;
+        }
+        // The kind the student has fewest of compared with what a phase can use.
+        wanted.sort((a, b) => (stock[a] / CombatRules.phaseLimit(a)) - (stock[b] / CombatRules.phaseLimit(b)));
+        stock[wanted[0]]++;
+        budget -= CONSUMABLE_PRICES[wanted[0]];
+        left -= CONSUMABLE_PRICES[wanted[0]];
+    }
+}
+
+/**
+ * The consumable a careful student uses this turn, by the rules the opponent's items follow: a Sword when it
+ * finishes the fight, a Potion when hurt below 40%, a Shield when below 60% with none armed.
+ *
+ * @param {object} stock The consumables in hand, changed in place when one is used.
+ * @return {function(object, object, object): ?string}
+ */
+function consumeFrom(stock) {
+    return (state, uses, rules) => {
+        const free = kind => stock[kind] > 0 && (uses[kind] || 0) < CombatRules.phaseLimit(kind);
+        let pick = null;
+        if (free('sword') && state.currentHp <= CombatRules.resolveConsumableEffect('sword', state, rules).damageAmount) {
+            pick = 'sword';
+        } else if (free('potion') && state.currentPlayerHp < state.maxPlayerHp * 0.4) {
+            pick = 'potion';
+        } else if (free('shield') && !state.playerShieldReady && state.currentPlayerHp < state.maxPlayerHp * 0.6) {
+            pick = 'shield';
+        }
+        if (pick) {
+            stock[pick]--;
+        }
+        return pick;
     };
 }
 
@@ -181,6 +256,9 @@ function playCampaign(run, levels, specialty) {
     let coins = 0;
     let triesTotal = 0;
     const firstTry = [];
+    const byPhase = [];
+    const stock = {potion: 0, sword: 0, shield: 0};
+    const consume = options.cons > 0 ? consumeFrom(stock) : undefined;
     for (let k = 1; k <= hero.phases; k++) {
         const level = Math.floor((k - 1) / 10) + 1;
         const phase = ((k - 1) % 10) + 1;
@@ -193,20 +271,23 @@ function playCampaign(run, levels, specialty) {
                 seed: (run * 100003) + (k * 131) + attempt, level, phase, accuracy: options.accuracy,
                 difficulty: options.difficulty, modifiers: fight.modifiers, powers: fight.powers,
                 breathEvery: fight.breathEvery, opponent: opponent.key, student: studentSide(hero, level, phase),
+                careful: options.student === 'careful', consume,
             });
             if (attempt === 1) {
                 firstTry.push(match.finished && match.won ? 1 : 0);
+                byPhase.push({index: k === hero.phases ? 11 : phase, won: match.finished && match.won ? 1 : 0});
             }
             if (match.finished && match.won) {
                 won = match;
             }
         }
         if (won === null) {
-            return {completed: k - 1, stuck: k, triesTotal, firstTry, hero, coins};
+            return {completed: k - 1, stuck: k, triesTotal, firstTry, byPhase, hero, coins};
         }
-        coins = shop(hero, coins + won.coins, k);
+        coins = options.cons > 0 ? buyConsumables(stock, coins + won.coins) : coins + won.coins;
+        coins = shop(hero, coins, k);
     }
-    return {completed: hero.phases, stuck: 0, triesTotal, firstTry, hero, coins};
+    return {completed: hero.phases, stuck: 0, triesTotal, firstTry, byPhase, hero, coins};
 }
 
 const percent = value => `${Math.round(value * 100)}%`.padStart(4);
@@ -286,8 +367,10 @@ if (raw.power !== undefined) {
 
 process.stdout.write(`Student right ${percent(options.accuracy)}, ${options.difficulty}; price ${options.price}, `
     + `${options.rate} buys/phase, specialty head start (share of the attribute's range) hp ${options.bonus.hp} `
-    + `attack ${options.bonus.attack} armor ${options.bonus.armor}, final HP x${options.hp} (${options.hpbasis}), `
-    + `attack x${options.atk}, armor ${options.arm}, ${options.policy} buys; ${options.runs} Campaigns per cell.\n`);
+    + `attack ${options.bonus.attack} armor ${options.bonus.armor}, final HP x${options.hp === null ? 'by level' : options.hp} `
+    + `(${options.hpbasis}), `
+    + `attack x${options.atk}, armor ${options.arm}, ${options.policy} buys, ${options.student} student, `
+    + `${Math.round(options.cons * 100)}% to consumables; ${options.runs} Campaigns per cell.\n`);
 options.levels.forEach(levels => {
     options.heroes.forEach(specialty => {
         const runs = [];
@@ -304,6 +387,16 @@ options.levels.forEach(levels => {
             return cells.length ? cells.reduce((sum, value) => sum + value, 0) / cells.length : 0;
         });
         const finished = runs.filter(result => result.stuck === 0).length / runs.length;
+        if (options.byphase) {
+            const rows = {};
+            runs.flatMap(result => result.byPhase).forEach(({index, won}) => {
+                rows[index] = rows[index] || [0, 0];
+                rows[index][0] += won;
+                rows[index][1]++;
+            });
+            process.stdout.write(`    first-try win by phase of the level: ${Object.keys(rows).map(index =>
+                `${index === '11' ? 'V' : index}:${Math.round((100 * rows[index][0]) / rows[index][1])}`).join(' ')}\n`);
+        }
         process.stdout.write(`${String(levels).padStart(2)} lv ${specialty.padEnd(6)} | finished ${percent(finished)} | `
             + `tries/phase ${(avg(result => result.triesTotal / Math.max(1, result.firstTry.length))).toFixed(2)} | `
             + `1st-try win by quarter ${quarters.map(percent).join(' ')} | stage ${avg(result => result.hero.stage).toFixed(1)} | `

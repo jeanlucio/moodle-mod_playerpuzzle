@@ -1032,3 +1032,21 @@ body.path-mod-playerpuzzle .pp-giveup-actions {
     gap: 0.5rem;
     margin-block-start: 1rem;
 }
+
+body.path-mod-playerpuzzle .pp-opponent-stats {
+    width: 100%;
+    margin-block: 0.5rem 1rem;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+body.path-mod-playerpuzzle .pp-opponent-stats th,
+body.path-mod-playerpuzzle .pp-opponent-stats td {
+    padding: 0.25rem 0.5rem;
+    border-block-end: 1px solid var(--gray-600, #6c757d);
+    text-align: end;
+}
+
+body.path-mod-playerpuzzle .pp-opponent-stats th[scope="row"] {
+    text-align: start;
+}

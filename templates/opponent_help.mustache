@@ -24,6 +24,7 @@
     * heading - The dialog's title
     * closelabel - The close button's text
     * name, spriteurl, phasetext, traits - See mod_playerpuzzle/opponent_card_body
+    * stats - The two sides' numbers: label, youlabel, opponentlabel and rows, each with label, you and opponent
 
     Example context (json):
     {
@@ -34,11 +35,41 @@
         "phasetext": "Level 1, Phase 2",
         "traits": [
             {"text": "It hits 15% harder."}
-        ]
+        ],
+        "stats": {
+            "label": "Your hero and the opponent",
+            "youlabel": "You",
+            "opponentlabel": "Opponent",
+            "rows": [
+                {"label": "HP", "you": 618, "opponent": 570},
+                {"label": "Attack", "you": "×1.90", "opponent": "×1.15"},
+                {"label": "Armor", "you": "25.0%", "opponent": "0.0%"}
+            ]
+        }
     }
 }}
 <dialog id="playerpuzzle-opponent-help" class="pp-opponent-help" aria-labelledby="pp-opponent-help-title">
     <h2 id="pp-opponent-help-title" class="pp-opponent-help-title">{{heading}}</h2>
     {{> mod_playerpuzzle/opponent_card_body }}
+    {{#stats}}
+    <table class="pp-opponent-stats" aria-label="{{label}}">
+        <thead>
+            <tr>
+                <td></td>
+                <th scope="col">{{youlabel}}</th>
+                <th scope="col">{{opponentlabel}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#rows}}
+            <tr>
+                <th scope="row">{{label}}</th>
+                <td>{{you}}</td>
+                <td>{{opponent}}</td>
+            </tr>
+            {{/rows}}
+        </tbody>
+    </table>
+    {{/stats}}
     <button type="button" class="btn btn-secondary" id="pp-opponent-help-close">{{closelabel}}</button>
 </dialog>

@@ -52,6 +52,29 @@ class user_hero {
     }
 
     /**
+     * The hero of the student's most recent Campaign that has one, for showing and pre-selecting it when the
+     * next Campaign is still to be started.
+     *
+     * @param int $playerpuzzleid Activity instance ID.
+     * @param int $userid User ID.
+     * @return stdClass|null The row, or null when the student has never had a Campaign hero.
+     */
+    public static function latest(int $playerpuzzleid, int $userid): ?stdClass {
+        global $DB;
+
+        $rows = $DB->get_records(
+            'playerpuzzle_heroes',
+            ['playerpuzzleid' => $playerpuzzleid, 'userid' => $userid],
+            'campaign DESC',
+            '*',
+            0,
+            1
+        );
+
+        return $rows ? reset($rows) : null;
+    }
+
+    /**
      * Chooses the hero of a Campaign: stage 1, nothing bought. Choosing again in the same Campaign changes
      * nothing, so a double submit never swaps a hero that already has purchases.
      *

@@ -268,6 +268,10 @@ final class opponent_card_test extends \advanced_testcase {
             'bosspowers' => ['longpoison'],
             'bossbreathevery' => 0,
             'bosskit' => ['potion' => 0, 'sword' => 0],
+            'studenthp' => 618,
+            'bosshp' => 570,
+            'playerattack' => 1.9,
+            'playerarmor' => 0.25,
         ];
         $card = opponent_card::for_fight($config);
 
@@ -277,6 +281,20 @@ final class opponent_card_test extends \advanced_testcase {
             $this->texts($card)
         );
 
+        $rows = array_column($card['stats']['rows'], null, 'label');
+        $hp = get_string('hero_attribute_hp', 'mod_playerpuzzle');
+        $attack = get_string('hero_attribute_attack', 'mod_playerpuzzle');
+        $armor = get_string('hero_attribute_armor', 'mod_playerpuzzle');
+        $this->assertSame([618, 570], [$rows[$hp]['you'], $rows[$hp]['opponent']]);
+        $this->assertSame(
+            ['×' . format_float(1.9, 2), '×' . format_float(1.15, 2)],
+            [$rows[$attack]['you'], $rows[$attack]['opponent']]
+        );
+        $this->assertSame(
+            [format_float(25, 1) . '%', format_float(0, 1) . '%'],
+            [$rows[$armor]['you'], $rows[$armor]['opponent']]
+        );
+
         $html = $OUTPUT->render_from_template(
             'mod_playerpuzzle/opponent_help',
             ['closelabel' => 'Close'] + $card
@@ -284,6 +302,8 @@ final class opponent_card_test extends \advanced_testcase {
         $this->assertStringContainsString('id="playerpuzzle-opponent-help"', $html);
         $this->assertStringContainsString(get_string('bossavatar_mummy', 'mod_playerpuzzle'), $html);
         $this->assertStringContainsString(get_string('power_longpoison', 'mod_playerpuzzle', 10), $html);
+        $this->assertStringContainsString('<th scope="col">' . get_string('opponent_stats_you', 'mod_playerpuzzle'), $html);
+        $this->assertStringContainsString('<td>618</td>', $html);
 
         $demo = opponent_card::for_fight(['bossavatar' => 'spider', 'isdemo' => true]);
         $this->assertSame([get_string('opponent_trait_none', 'mod_playerpuzzle')], $this->texts($demo));

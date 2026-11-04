@@ -121,6 +121,11 @@ final class hero_page_service_test extends \advanced_testcase {
         ]);
         $new = hero_page_service::build_page_data($cm, $instance, $userid, hero_page_service::MODE_CAMPAIGN, [], '');
         $this->assertSame(get_string('hero_intro_newcampaign', 'mod_playerpuzzle'), $new['intro']);
+        $this->assertSame(
+            ['magef'],
+            array_column(array_filter($new['heroes'], fn($hero) => $hero['checked']), 'key'),
+            'a new Campaign comes marked with the hero of the one that ended'
+        );
         $this->assertStringContainsString('/mod/playerpuzzle/view.php', $new['backurl'], 'a new Campaign starts at the Lobby');
     }
 

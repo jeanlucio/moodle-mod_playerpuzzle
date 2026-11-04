@@ -700,6 +700,30 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that between Campaigns the Lobby keeps showing the hero of the one that ended, not the picture the
+     * game had before heroes.
+     *
+     * @return void
+     */
+    public function test_the_lobby_keeps_the_last_hero_between_campaigns(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0]);
+        $userid = (int) $this->student->id;
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, $userid, 'magem');
+        $this->win_campaign($instance);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            $userid,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertArrayHasKey('newcampaign', $data);
+        $this->assertStringContainsString('/pix/heroes/magem1.webp', $data['heroimageurl']);
+    }
+
+    /**
      * Renders the Lobby template with page data.
      *
      * @param array $data lobby_page_service::build_page_data() result.

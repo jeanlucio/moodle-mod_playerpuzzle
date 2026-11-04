@@ -93,7 +93,10 @@ class hero_page_service {
         $intro = $campaign
             ? ($stage === game_page_service::HERO_NEW ? 'hero_intro_newcampaign' : 'hero_intro_campaign')
             : 'hero_intro_match';
-        $marked = $campaign ? '' : last_hero::get($userid);
+        // A new Campaign comes marked with the hero of the one that ended, and a Single Match with the last one
+        // chosen for it. The first Campaign has no hero to mark.
+        $previous = $campaign ? user_hero::latest((int) $instance->id, $userid) : null;
+        $marked = $campaign ? ($previous === null ? '' : $previous->hero) : last_hero::get($userid);
 
         $heroes = [];
         foreach (heroes::CATALOG as $key => $specialty) {

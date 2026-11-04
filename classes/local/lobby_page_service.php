@@ -302,7 +302,12 @@ class lobby_page_service {
             $data['playviahero'] = true;
         }
 
+        // Between Campaigns the Lobby keeps showing the hero of the one that ended, the one the next choice
+        // comes marked with, instead of the picture the game had before heroes.
         $hero = game_page_service::current_hero($instance, $userid);
+        if ($hero === null && $instance->gamemode === constants::GAMEMODE_CAMPAIGN) {
+            $hero = user_hero::latest((int) $instance->id, $userid);
+        }
         if ($hero !== null) {
             $data['heroimageurl'] = heroes::sprite_url(heroes::sprite($hero->hero, (int) $hero->stage))->out(false);
         }

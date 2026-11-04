@@ -115,7 +115,7 @@ class opponent_card {
      * @param array $config The config game_page_service::build_game_config() returns: bossavatar, gamemode,
      *  currentlevel, currentphase, isdemo and the opponent's side (bossattack, bossarmor, bosspowers,
      *  bossbreathevery, bosskit).
-     * @return array The card, see build().
+     * @return array The card, see build(), with the two sides' numbers in 'stats'.
      */
     public static function for_fight(array $config): array {
         $side = [
@@ -126,7 +126,7 @@ class opponent_card {
             'bosskit' => $config['bosskit'] ?? null,
         ];
 
-        return self::build(
+        $card = self::build(
             opponents::normalise((string) ($config['bossavatar'] ?? '')),
             ($config['gamemode'] ?? '') === constants::GAMEMODE_CAMPAIGN,
             (int) ($config['currentlevel'] ?? 1),
@@ -135,6 +135,45 @@ class opponent_card {
             !empty($config['isdemo']),
             'now'
         );
+        $card['stats'] = self::stats($config);
+
+        return $card;
+    }
+
+    /**
+     * The student's hero and the opponent side by side, with the numbers the fight is played with: max HP, the
+     * multiplier on the hits each lands and the share of each hit each absorbs.
+     *
+     * @param array $config The game page's config (studenthp, bosshp, playerattack, playerarmor, bossattack,
+     *  bossarmor).
+     * @return array ['label', 'youlabel', 'opponentlabel', 'rows' => [['label', 'you', 'opponent']]]
+     */
+    private static function stats(array $config): array {
+        $attack = static fn(float $value): string => '×' . format_float($value, 2);
+        $armor = static fn(float $value): string => format_float($value * 100, 1) . '%';
+
+        return [
+            'label' => get_string('opponent_stats_label', 'mod_playerpuzzle'),
+            'youlabel' => get_string('opponent_stats_you', 'mod_playerpuzzle'),
+            'opponentlabel' => get_string('opponent_stats_opponent', 'mod_playerpuzzle'),
+            'rows' => [
+                [
+                    'label' => get_string('hero_attribute_hp', 'mod_playerpuzzle'),
+                    'you' => (int) ($config['studenthp'] ?? 0),
+                    'opponent' => (int) ($config['bosshp'] ?? 0),
+                ],
+                [
+                    'label' => get_string('hero_attribute_attack', 'mod_playerpuzzle'),
+                    'you' => $attack((float) ($config['playerattack'] ?? 1.0)),
+                    'opponent' => $attack((float) ($config['bossattack'] ?? 1.0)),
+                ],
+                [
+                    'label' => get_string('hero_attribute_armor', 'mod_playerpuzzle'),
+                    'you' => $armor((float) ($config['playerarmor'] ?? 0.0)),
+                    'opponent' => $armor((float) ($config['bossarmor'] ?? 0.0)),
+                ],
+            ],
+        ];
     }
 
     /**

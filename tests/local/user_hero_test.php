@@ -55,6 +55,24 @@ final class user_hero_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the latest hero is the one of the most recent Campaign, and none for a student without one.
+     *
+     * @return void
+     */
+    public function test_the_latest_hero_is_the_one_of_the_most_recent_campaign(): void {
+        $ppid = (int) $this->instance->id;
+        $userid = (int) $this->student->id;
+        $this->assertNull(user_hero::latest($ppid, $userid));
+
+        user_hero::choose($ppid, $userid, 1, 'archerf');
+        user_hero::choose($ppid, $userid, 2, 'magem');
+        $other = $this->getDataGenerator()->create_and_enrol(get_course($this->instance->course), 'student');
+        user_hero::choose($ppid, (int) $other->id, 3, 'warriorf');
+
+        $this->assertSame('magem', user_hero::latest($ppid, $userid)->hero);
+    }
+
+    /**
      * Tests that choosing a hero starts it at stage 1 with nothing bought, that choosing again in the same
      * Campaign keeps the first one (and what it bought), and that the next Campaign has a hero of its own.
      *

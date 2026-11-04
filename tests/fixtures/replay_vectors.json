@@ -159,7 +159,7 @@
     },
     {
         "name": "level 2 phase 5",
-        "attempt": {"rngseed":104,"currentlevel":2,"currentphase":5,"difficulty":"normal","questionsTotal":3,"frozenbasebosshp":150,"frozenbossdamage":10,"frozencoingain":10},
+        "attempt": {"rngseed":104,"currentlevel":2,"currentphase":5,"difficulty":"normal","questionsTotal":2,"frozenbasebosshp":150,"frozenbossdamage":10,"frozencoingain":10},
         "playerpuzzle": {"minquestions":0,"basestudenthp":200},
         "events": [
             {"type":"move","r1":5,"c1":5,"r2":5,"c2":6},
@@ -188,29 +188,20 @@
             {"type":"question","side":"player","outcome":"answered"},
             {"type":"move","r1":4,"c1":2,"r2":5,"c2":2},
             {"type":"move","r1":0,"c1":5,"r2":1,"c2":5},
-            {"type":"question","side":"boss","outcome":"answered"},
-            {"type":"move","r1":3,"c1":5,"r2":4,"c2":5},
-            {"type":"move","r1":6,"c1":3,"r2":6,"c2":4},
-            {"type":"move","r1":0,"c1":3,"r2":0,"c2":4},
-            {"type":"move","r1":5,"c1":5,"r2":6,"c2":5},
-            {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
-            {"type":"question","side":"player","outcome":"answered"},
-            {"type":"move","r1":6,"c1":6,"r2":6,"c2":7},
-            {"type":"move","r1":0,"c1":0,"r2":0,"c2":1}
+            {"type":"question","side":"boss","outcome":"answered"}
         ],
         "outcomes": [
             {"side":"player","correct":false,"counted":true},
             {"side":"boss","correct":false,"counted":false},
             {"side":"player","correct":true,"counted":true},
-            {"side":"boss","correct":true,"counted":false},
-            {"side":"player","correct":false,"counted":true}
+            {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":134,"playergold":100,"bossgold":25,"bossdefeated":false}
+        "expected": {"damage":91,"playergold":80,"bossgold":15,"bossdefeated":false}
     },
     {
         "name": "level 3 phase 10",
-        "attempt": {"rngseed":105,"currentlevel":3,"currentphase":10,"difficulty":"normal","questionsTotal":2,"frozenbasebosshp":100,"frozenbossdamage":9,"frozencoingain":15},
+        "attempt": {"rngseed":105,"currentlevel":3,"currentphase":10,"difficulty":"normal","questionsTotal":1,"frozenbasebosshp":100,"frozenbossdamage":9,"frozencoingain":15},
         "playerpuzzle": {"minquestions":0,"basestudenthp":180},
         "events": [
             {"type":"move","r1":4,"c1":0,"r2":4,"c2":1},
@@ -224,20 +215,14 @@
             {"type":"question","side":"player","outcome":"answered"},
             {"type":"move","r1":2,"c1":4,"r2":3,"c2":4},
             {"type":"move","r1":4,"c1":3,"r2":5,"c2":3},
-            {"type":"question","side":"boss","outcome":"answered"},
-            {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
-            {"type":"move","r1":1,"c1":0,"r2":2,"c2":0},
-            {"type":"move","r1":1,"c1":2,"r2":2,"c2":2},
-            {"type":"move","r1":1,"c1":1,"r2":2,"c2":1},
-            {"type":"question","side":"player","outcome":"answered"}
+            {"type":"question","side":"boss","outcome":"answered"}
         ],
         "outcomes": [
             {"side":"player","correct":true,"counted":true},
-            {"side":"boss","correct":true,"counted":false},
-            {"side":"player","correct":true,"counted":true}
+            {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":290,"playergold":75,"bossgold":0,"bossdefeated":true}
+        "expected": {"damage":105,"playergold":45,"bossgold":0,"bossdefeated":false}
     },
     {
         "name": "revive with minquestions",
@@ -829,7 +814,7 @@
     },
     {
         "name": "easy, level 4",
-        "attempt": {"rngseed":114,"currentlevel":4,"currentphase":3,"difficulty":"easy","questionsTotal":3,"frozenbasebosshp":140,"frozenbossdamage":10,"frozencoingain":10},
+        "attempt": {"rngseed":114,"currentlevel":4,"currentphase":3,"difficulty":"easy","questionsTotal":2,"frozenbasebosshp":140,"frozenbossdamage":10,"frozencoingain":10},
         "playerpuzzle": {"minquestions":0,"basestudenthp":160},
         "events": [
             {"type":"move","r1":0,"c1":2,"r2":1,"c2":2},
@@ -856,22 +841,17 @@
             {"type":"move","r1":2,"c1":6,"r2":3,"c2":6},
             {"type":"question","side":"player","outcome":"answered"},
             {"type":"move","r1":2,"c1":5,"r2":2,"c2":6},
-            {"type":"question","side":"boss","outcome":"answered"},
-            {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
-            {"type":"move","r1":0,"c1":6,"r2":1,"c2":6},
-            {"type":"move","r1":3,"c1":4,"r2":4,"c2":4},
-            {"type":"question","side":"player","outcome":"answered"}
+            {"type":"question","side":"boss","outcome":"answered"}
         ],
         "outcomes": [
             {"side":"player","correct":true,"counted":true},
             {"side":"boss","correct":true,"counted":false},
             {"side":"boss","correct":false,"counted":false},
             {"side":"player","correct":true,"counted":true},
-            {"side":"boss","correct":true,"counted":false},
-            {"side":"player","correct":true,"counted":true}
+            {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":189,"playergold":15,"bossgold":15,"bossdefeated":true}
+        "expected": {"damage":129,"playergold":15,"bossgold":10,"bossdefeated":false}
     },
     {
         "name": "brute opponent",
@@ -1089,7 +1069,7 @@
     },
     {
         "name": "armored opponent, hard, level 2",
-        "attempt": {"rngseed":118,"currentlevel":2,"currentphase":5,"difficulty":"hard","questionsTotal":2,"frozenbasebosshp":110,"frozenbossdamage":9,"frozencoingain":10,"frozenopponent":"plant"},
+        "attempt": {"rngseed":118,"currentlevel":2,"currentphase":5,"difficulty":"hard","questionsTotal":1,"frozenbasebosshp":110,"frozenbossdamage":9,"frozencoingain":10,"frozenopponent":"plant"},
         "playerpuzzle": {"minquestions":0,"basestudenthp":320},
         "modifiers": {"hp":1,"attack":1,"armor":0.15},
         "powers": [
@@ -1116,32 +1096,18 @@
             {"type":"move","r1":0,"c1":3,"r2":1,"c2":3},
             {"type":"move","r1":1,"c1":4,"r2":2,"c2":4},
             {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
-            {"type":"move","r1":0,"c1":5,"r2":0,"c2":6},
-            {"type":"move","r1":1,"c1":0,"r2":2,"c2":0},
-            {"type":"move","r1":7,"c1":3,"r2":7,"c2":4},
-            {"type":"move","r1":2,"c1":1,"r2":2,"c2":2},
-            {"type":"move","r1":2,"c1":2,"r2":3,"c2":2},
-            {"type":"move","r1":3,"c1":4,"r2":4,"c2":4},
-            {"type":"move","r1":0,"c1":5,"r2":1,"c2":5},
-            {"type":"move","r1":3,"c1":2,"r2":4,"c2":2},
-            {"type":"move","r1":6,"c1":5,"r2":7,"c2":5},
-            {"type":"question","side":"player","outcome":"answered"},
-            {"type":"move","r1":1,"c1":4,"r2":2,"c2":4},
-            {"type":"move","r1":4,"c1":3,"r2":5,"c2":3},
-            {"type":"question","side":"boss","outcome":"answered"}
+            {"type":"move","r1":0,"c1":5,"r2":0,"c2":6}
         ],
         "outcomes": [
             {"side":"boss","correct":true,"counted":false},
-            {"side":"player","correct":true,"counted":true},
-            {"side":"player","correct":false,"counted":true},
-            {"side":"boss","correct":true,"counted":false}
+            {"side":"player","correct":true,"counted":true}
         ],
         "serveruses": {},
-        "expected": {"damage":211,"playergold":225,"bossgold":135,"bossdefeated":false}
+        "expected": {"damage":220,"playergold":90,"bossgold":135,"bossdefeated":false}
     },
     {
         "name": "brute opponent, minquestions",
-        "attempt": {"rngseed":119,"currentlevel":1,"currentphase":10,"difficulty":"normal","questionsTotal":3,"frozenbasebosshp":90,"frozenbossdamage":13,"frozencoingain":10,"frozenopponent":"dragon"},
+        "attempt": {"rngseed":119,"currentlevel":1,"currentphase":10,"difficulty":"normal","questionsTotal":1,"frozenbasebosshp":90,"frozenbossdamage":13,"frozencoingain":10,"frozenopponent":"dragon"},
         "playerpuzzle": {"minquestions":4,"basestudenthp":400},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
@@ -1173,39 +1139,16 @@
             {"type":"move","r1":0,"c1":0,"r2":1,"c2":0},
             {"type":"move","r1":0,"c1":3,"r2":0,"c2":4},
             {"type":"move","r1":3,"c1":4,"r2":3,"c2":5},
-            {"type":"question","side":"boss","outcome":"answered"},
-            {"type":"move","r1":3,"c1":0,"r2":4,"c2":0},
-            {"type":"question","side":"player","outcome":"answered"},
-            {"type":"move","r1":4,"c1":3,"r2":5,"c2":3},
-            {"type":"move","r1":1,"c1":2,"r2":2,"c2":2},
-            {"type":"move","r1":2,"c1":2,"r2":3,"c2":2},
-            {"type":"move","r1":1,"c1":6,"r2":2,"c2":6},
-            {"type":"move","r1":4,"c1":4,"r2":4,"c2":5},
-            {"type":"move","r1":1,"c1":4,"r2":1,"c2":5},
-            {"type":"move","r1":2,"c1":4,"r2":2,"c2":5},
-            {"type":"question","side":"player","outcome":"answered"},
-            {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
-            {"type":"move","r1":1,"c1":3,"r2":2,"c2":3},
-            {"type":"move","r1":0,"c1":4,"r2":0,"c2":5},
-            {"type":"move","r1":5,"c1":0,"r2":6,"c2":0},
-            {"type":"move","r1":0,"c1":0,"r2":0,"c2":1},
-            {"type":"move","r1":0,"c1":2,"r2":1,"c2":2},
-            {"type":"question","side":"boss","outcome":"answered"},
-            {"type":"move","r1":2,"c1":4,"r2":2,"c2":5},
-            {"type":"move","r1":0,"c1":5,"r2":0,"c2":6},
-            {"type":"move","r1":1,"c1":3,"r2":2,"c2":3}
+            {"type":"question","side":"boss","outcome":"answered"}
         ],
         "outcomes": [
             {"side":"boss","correct":true,"counted":false},
             {"side":"player","correct":true,"counted":true},
             {"side":"boss","correct":false,"counted":false},
-            {"side":"boss","correct":true,"counted":false},
-            {"side":"player","correct":false,"counted":true},
-            {"side":"player","correct":true,"counted":true},
-            {"side":"boss","correct":false,"counted":false}
+            {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":97,"playergold":90,"bossgold":55,"bossdefeated":false}
+        "expected": {"damage":0,"playergold":50,"bossgold":45,"bossdefeated":false}
     },
     {
         "name": "shield armed from the start, a lost match",
@@ -2793,28 +2736,14 @@
             {"type":"move","r1":1,"c1":5,"r2":2,"c2":5},
             {"type":"question","side":"player","outcome":"answered"},
             {"type":"move","r1":4,"c1":6,"r2":4,"c2":7},
-            {"type":"question","side":"boss","outcome":"answered"},
-            {"type":"move","r1":4,"c1":1,"r2":5,"c2":1},
-            {"type":"move","r1":5,"c1":4,"r2":5,"c2":5},
-            {"type":"move","r1":3,"c1":3,"r2":3,"c2":4},
-            {"type":"move","r1":1,"c1":3,"r2":1,"c2":4},
-            {"type":"question","side":"boss","outcome":"answered"},
-            {"type":"move","r1":4,"c1":1,"r2":5,"c2":1},
-            {"type":"move","r1":5,"c1":6,"r2":5,"c2":7},
-            {"type":"move","r1":5,"c1":0,"r2":6,"c2":0},
-            {"type":"move","r1":1,"c1":3,"r2":2,"c2":3},
-            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
-            {"type":"move","r1":2,"c1":6,"r2":3,"c2":6},
             {"type":"question","side":"boss","outcome":"answered"}
         ],
         "outcomes": [
             {"side":"player","correct":true,"counted":true},
-            {"side":"boss","correct":true,"counted":false},
-            {"side":"boss","correct":false,"counted":false},
             {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":44,"playergold":60,"bossgold":30,"bossdefeated":false}
+        "expected": {"damage":70,"playergold":15,"bossgold":15,"bossdefeated":false}
     },
     {
         "name": "frozen student side: more HP and attack",

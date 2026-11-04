@@ -180,9 +180,9 @@ final class security_test extends \advanced_testcase {
         $this->assertSame(7, $attempt->frozencoingain);
         $this->assertSame('goblin', $attempt->frozenopponent, 'the Campaign opponent of the attempt\'s own phase');
         $this->assertSame(
-            combat::calculate_student_hp((int) $instance->basestudenthp, 1, 2),
+            (int) $instance->basestudenthp,
             $attempt->frozenplayerhp,
-            'the student HP of the phase, scaled for its level and phase'
+            'the student HP of a phase without a hero is the base HP, whatever the level and phase'
         );
         $this->assertSame([1.0, 0.0], [$attempt->frozenplayerattack, $attempt->frozenplayerarmor]);
     }

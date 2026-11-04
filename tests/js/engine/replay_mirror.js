@@ -61,18 +61,6 @@ function scaleBoss(base, level, phase) {
     return Math.round(base * (1 + (0.5 * (level - 1)) + (0.1 * (phase - 1))));
 }
 
-/**
- * Mirrors combat::calculate_student_hp().
- *
- * @param {number} base Base student HP.
- * @param {number} level Current level.
- * @param {number} phase Current phase.
- * @return {number}
- */
-function scaleStudent(base, level, phase) {
-    return Math.round(base * (1 + (0.3 * (level - 1)) + (0.05 * (phase - 1))));
-}
-
 const DIFFICULTY_BOSS_FACTORS = {easy: 0.5, normal: 1.0, hard: 2.0};
 const DIFFICULTY_COIN_FACTORS = {easy: 0.5, normal: 1.0, hard: 3.0};
 
@@ -99,7 +87,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
     const bossFactor = DIFFICULTY_BOSS_FACTORS[attempt.difficulty] ?? 1.0;
     const scaledBossHp = Math.round(scaleBoss(attempt.frozenbasebosshp, level, phase) * bossFactor);
     // The student's side as the phase froze it (combat::phase_student()): an attempt without it falls
-    // back to the instance's own scaling, with no attack bonus and no armor.
+    // back to the instance's base HP, with no attack bonus and no armor.
     const frozenHp = attempt.frozenplayerhp || 0;
     const attack = frozenHp > 0 ? attempt.frozenplayerattack : 1;
     const armor = frozenHp > 0 ? attempt.frozenplayerarmor : 0;
@@ -124,7 +112,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             difficulty: attempt.difficulty || 'normal',
         },
         maxBossHp: Math.floor((scaledBossHp * modifiers.hp) + 0.5),
-        maxPlayerHp: frozenHp > 0 ? frozenHp : scaleStudent(playerpuzzle.basestudenthp, level, phase),
+        maxPlayerHp: frozenHp > 0 ? frozenHp : playerpuzzle.basestudenthp,
     };
 }
 

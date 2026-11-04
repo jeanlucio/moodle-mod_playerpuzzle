@@ -15,22 +15,37 @@ each Campaign.
 * **Resuming:** closing the browser mid-campaign and coming back resumes the exact level and
   phase the student was on. After a defeat, the next attempt resumes on that same level and phase
   rather than starting over.
-* **HP scaling:** both the opponent's and the student's maximum HP grow with the current level and
-  phase, using a fixed linear formula computed once on the server:
+* **Opponent scaling:** the opponent's maximum HP grows with the current level and phase, using a
+  fixed linear formula computed once on the server:
 
   | | Formula |
   |---|---|
   | Opponent HP | `base × (1 + 0.5 × (level − 1) + 0.1 × (phase − 1))` |
-  | Student HP | `base × (1 + 0.3 × (level − 1) + 0.05 × (phase − 1))` |
 
-  The opponent scales faster than the student — later phases are meant to feel harder, not just
-  longer. The opponent's damage scales the same way; the coin reward does not (see
-  [Combat](#combat)).
+  The opponent's damage scales the same way; the coin reward does not (see [Combat](#combat)). The
+  student does not grow by itself: they keep up by buying upgrades for their hero (see
+  [Heroes](#heroes)), and the student's HP starts from the activity's **Base student HP**.
 * **Advancing:** after winning a phase, the server checks that the reported fight really cleared
   that phase's opponent HP, rotates the token, and the student continues to the next phase. The same
   request cannot be replayed to skip several phases off one victory.
 * **Difficulty per phase:** the student picks a difficulty in the Lobby for the first phase and
   again on each "Phase complete" screen for the next one.
+
+## Heroes
+
+In a Campaign the student chooses one of six heroes on a screen of its own, the first one of the
+activity, and keeps it to the end of that Campaign; a new Campaign asks again. In a Single Match or a
+Demo the hero is only how the student looks, and a Single Match opens the choice with the hero last used.
+
+* **Specialty:** each hero is a specialist in HP (the mages), attack (the warriors) or armor (the
+  archers), and starts a little ahead in it, a twentieth of what that attribute can reach.
+* **Upgrades:** after each phase, and from the Lobby, the student spends PuzzleCoin on upgrades of HP,
+  attack or armor (12 coins each). What they buy counts from the next phase.
+* **Stages and evolution:** the hero has four looks. A stage caps how many upgrades of each attribute can
+  be bought, a quarter of the Campaign's total for each stage (the total grows with the number of
+  levels). At 25%, 50% and 75% of the Campaign the hero evolves for free, as soon as its specialty is
+  at the stage's cap, which opens the next stage's cap.
+* **The shop:** the same panel, with the consumables, in the Lobby and on the screen between phases.
 
 ## Single Match
 

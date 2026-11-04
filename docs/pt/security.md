@@ -6,9 +6,10 @@ pilares:
 
 ## 1. Servidor Como Fonte da Verdade
 
-O HP do oponente e do estudante pro nível/fase atuais são calculados uma única vez, no servidor
-(`combat::calculate_boss_hp()`/`calculate_student_hp()`), e entregues ao cliente como
-configuração somente-leitura. O cliente nunca os recalcula.
+O HP do oponente pro nível/fase atuais e o lado do estudante (HP, ataque e armadura do herói) são
+calculados uma única vez, no servidor, quando a fase começa (`combat::calculate_boss_hp()` e
+`combat::phase_student()`), e entregues ao cliente como configuração somente-leitura. O cliente nunca
+os recalcula, e o replay luta com os mesmos valores congelados.
 
 ## 2. Resultados Verificados
 

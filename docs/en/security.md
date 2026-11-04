@@ -5,9 +5,10 @@ none of it as trustworthy until the server confirms it, through three pillars:
 
 ## 1. Server as the Source of Truth
 
-Opponent and student HP for the current level/phase are computed once, server-side
-(`combat::calculate_boss_hp()`/`calculate_student_hp()`), and handed to the client as read-only
-configuration. The client never recalculates them.
+The opponent's HP for the current level/phase and the student's side (the hero's HP, attack and
+armor) are computed once, server-side, when the phase starts (`combat::calculate_boss_hp()` and
+`combat::phase_student()`), and handed to the client as read-only configuration. The client never
+recalculates them, and the replay fights with the same frozen values.
 
 ## 2. Verified Outcomes
 

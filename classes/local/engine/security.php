@@ -195,11 +195,11 @@ class security {
 
     /**
      * Freezes the student's side of the phase: the hero's HP, attack and armor, and the sprite it fights
-     * with, when the student has a hero in this Campaign, and otherwise the HP the instance scales to with
-     * no attack bonus and no armor. Only a real Campaign attempt has a hero to read; the sprite of a
+     * with, when the student has a hero in this Campaign, and otherwise the instance's base HP with no
+     * attack bonus and no armor. Only a real Campaign attempt has a hero to read; the sprite of a
      * Single Match or Demo is a choice made when it starts, and left as it is.
      *
-     * @param \stdClass $attempt Attempt object to populate (userid, campaign, currentlevel, currentphase).
+     * @param \stdClass $attempt Attempt object to populate (userid, campaign, isdemo).
      * @param \stdClass $playerpuzzle The instance record (id, gamemode, maxlevels, basestudenthp).
      * @return void
      */
@@ -214,11 +214,7 @@ class security {
         }
 
         if ($hero === null) {
-            $attempt->frozenplayerhp = combat::calculate_student_hp(
-                (int) $playerpuzzle->basestudenthp,
-                (int) $attempt->currentlevel,
-                (int) $attempt->currentphase
-            );
+            $attempt->frozenplayerhp = (int) $playerpuzzle->basestudenthp;
             $attempt->frozenplayerattack = 1.0;
             $attempt->frozenplayerarmor = 0.0;
             return;

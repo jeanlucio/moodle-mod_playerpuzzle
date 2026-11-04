@@ -16,22 +16,37 @@ Campanha.
 * **Retomada:** fechar o navegador no meio da campanha e voltar retoma exatamente o nível e a fase
   em que o estudante estava. Depois de uma derrota, a próxima tentativa retoma nesse mesmo nível e
   fase, em vez de recomeçar do zero.
-* **Escalonamento de HP:** o HP máximo do oponente e do estudante cresce com o nível e a fase atuais,
-  por uma fórmula linear fixa calculada uma única vez no servidor:
+* **Escalonamento do oponente:** o HP máximo do oponente cresce com o nível e a fase atuais, por uma
+  fórmula linear fixa calculada uma única vez no servidor:
 
   | | Fórmula |
   |---|---|
   | HP do oponente | `base × (1 + 0,5 × (nível − 1) + 0,1 × (fase − 1))` |
-  | HP do estudante | `base × (1 + 0,3 × (nível − 1) + 0,05 × (fase − 1))` |
 
-  O oponente escala mais rápido que o estudante — as fases finais devem parecer mais difíceis, não só
-  mais longas. O dano do oponente escala do mesmo jeito; a recompensa em moedas não (veja
-  [Combate](#combat)).
+  O dano do oponente escala do mesmo jeito; a recompensa em moedas não (veja [Combate](#combat)). O
+  estudante não cresce sozinho: ele acompanha comprando melhorias para o herói (veja
+  [Heróis](#herois)), e o HP dele parte do **HP base do estudante** da atividade.
 * **Avanço:** depois de vencer uma fase, o servidor confere se a luta reportada realmente zerou o
   HP do oponente daquela fase, rotaciona o token, e o estudante segue para a próxima. A mesma
   requisição não pode ser reproduzida para pular várias fases a partir de uma vitória.
 * **Dificuldade por fase:** o estudante escolhe a dificuldade no Lobby para a primeira fase e de
   novo, a cada tela "Fase concluída", para a seguinte.
+
+## Heróis
+
+Na Campanha o estudante escolhe um de seis heróis numa tela própria, a primeira da atividade, e fica com
+ele até o fim daquela Campanha; uma Campanha nova pergunta de novo. Na Partida Única e na Demo o herói é só
+o visual do estudante, e a Partida Única abre a escolha com o último herói usado.
+
+* **Especialidade:** cada herói é especialista em HP (os magos), ataque (os guerreiros) ou armadura (os
+  arqueiros), e começa um pouco à frente nela, um vigésimo do que aquele atributo pode alcançar.
+* **Melhorias:** depois de cada fase, e pelo Lobby, o estudante gasta PuzzleCoin em melhorias de HP, ataque
+  ou armadura (12 moedas cada). O que ele compra vale a partir da próxima fase.
+* **Estágios e evolução:** o herói tem quatro visuais. Cada estágio limita quantas melhorias de cada
+  atributo podem ser compradas, um quarto do total da Campanha por estágio (o total cresce com o número de
+  níveis). Em 25%, 50% e 75% da Campanha o herói evolui de graça, assim que a especialidade dele está no
+  teto do estágio, o que libera o teto do estágio seguinte.
+* **A loja:** o mesmo painel, com os consumíveis, no Lobby e na tela entre as fases.
 
 ## Partida Única
 

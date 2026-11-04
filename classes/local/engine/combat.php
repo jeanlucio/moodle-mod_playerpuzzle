@@ -28,11 +28,13 @@ use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\opponents;
 
 /**
- * Calculates boss/student HP scaling by level and phase (Campaign mode only).
+ * Calculates the opponent's HP scaling by level and phase (Campaign mode only), and reads what the student
+ * fights a phase with.
  *
  * Single Match mode has no scaling: its attempts always carry currentlevel =
- * currentphase = 1, which these formulas map back to the configured base HP unchanged,
- * so callers never need to branch on gamemode themselves.
+ * currentphase = 1, which the formulas map back to the configured base HP unchanged,
+ * so callers never need to branch on gamemode themselves. The student's HP does not scale: it grows
+ * only with what they buy for their hero (see mod_playerpuzzle\local\heroes).
  */
 class combat {
     /**
@@ -44,16 +46,6 @@ class combat {
      * HP growth per phase within a level, applied to the boss.
      */
     private const PHASE_HP_FACTOR = 0.1;
-
-    /**
-     * HP growth per level, applied to the student.
-     */
-    private const LEVEL_STUDENT_FACTOR = 0.3;
-
-    /**
-     * HP growth per phase within a level, applied to the student.
-     */
-    private const PHASE_STUDENT_FACTOR = 0.05;
 
     /**
      * Boss HP and boss damage multiplier per student-chosen difficulty. Applied on top of
@@ -172,7 +164,7 @@ class combat {
      * The student's side of a phase as it was fixed when the phase started: max HP, the multiplier on
      * the hits they land and the share of each hit they take that their armor absorbs. Read by the
      * server replay and by the page that starts the live client, so both fight with the same numbers.
-     * A row from before these were frozen has no HP stored; it falls back to the instance's own scaling,
+     * A row from before these were frozen has no HP stored; it falls back to the instance's base HP,
      * with no attack bonus and no armor.
      *
      * @param \stdClass $attempt The attempt row (currentlevel, currentphase, frozenplayerhp,
@@ -191,31 +183,10 @@ class combat {
         }
 
         return [
-            'maxhp' => self::calculate_student_hp(
-                (int) $instance->basestudenthp,
-                (int) $attempt->currentlevel,
-                (int) $attempt->currentphase
-            ),
+            'maxhp' => (int) $instance->basestudenthp,
             'attack' => 1.0,
             'armor' => 0.0,
         ];
-    }
-
-    /**
-     * Calculates the student HP for a given level/phase, scaled from the teacher-configured
-     * base HP.
-     *
-     * @param int $basehp Base student HP configured by the teacher (Level 1, Phase 1).
-     * @param int $level Current level (1-10).
-     * @param int $phase Current phase within the level (1-10).
-     * @return int The scaled student HP.
-     */
-    public static function calculate_student_hp(int $basehp, int $level, int $phase): int {
-        return (int) round($basehp * (
-            1
-            + self::LEVEL_STUDENT_FACTOR * ($level - 1)
-            + self::PHASE_STUDENT_FACTOR * ($phase - 1)
-        ));
     }
 
     /**

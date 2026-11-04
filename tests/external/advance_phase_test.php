@@ -296,8 +296,8 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the response's bosshp/studenthp are scaled for the new phase, not the
-     * one just left.
+     * Tests that the response's bosshp is scaled for the new phase, not the one just left, and that the
+     * studenthp is the base HP: it does not grow with the phase.
      *
      * @return void
      */
@@ -314,11 +314,11 @@ final class advance_phase_test extends \advanced_testcase {
             'bosscoinsearnedsofar' => 0,
         ]);
 
-        // Level 1, Phase 2 with base 100: boss 110, student 105 — one phase step past
-        // the Phase 1 baseline.
+        // Level 1, Phase 2 with base 100: boss 110, one phase step past the Phase 1 baseline. The student
+        // stays at the base 100: they only grow with the hero they buy for.
         $this->assertFalse($result['error']);
         $this->assertSame(110, $result['data']['bosshp']);
-        $this->assertSame(105, $result['data']['studenthp']);
+        $this->assertSame(100, $result['data']['studenthp']);
     }
 
     /**
@@ -461,8 +461,8 @@ final class advance_phase_test extends \advanced_testcase {
         $this->assertSame('hard', $result['data']['difficulty']);
         // Phase 2 boss HP is 100 * (1 + 0.1) = 110; Hard doubles it to 220.
         $this->assertSame(220, $result['data']['bosshp']);
-        // Student HP is never touched by difficulty: 100 * (1 + 0.05) = 105.
-        $this->assertSame(105, $result['data']['studenthp']);
+        // Student HP is never touched by difficulty, nor by the phase.
+        $this->assertSame(100, $result['data']['studenthp']);
         $this->assertSame('hard', $DB->get_field('playerpuzzle_attempts', 'difficulty', ['token' => $result['data']['token']]));
     }
 

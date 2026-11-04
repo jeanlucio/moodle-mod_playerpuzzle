@@ -52,23 +52,6 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
-     * Tests calculate_student_hp() against every value in the same worked example table.
-     *
-     * @return void
-     */
-    public function test_calculate_student_hp_matches_worked_examples(): void {
-        $this->assertSame(100, combat::calculate_student_hp(100, 1, 1));
-        $this->assertSame(120, combat::calculate_student_hp(100, 1, 5));
-        $this->assertSame(145, combat::calculate_student_hp(100, 1, 10));
-        $this->assertSame(220, combat::calculate_student_hp(100, 5, 1));
-        $this->assertSame(240, combat::calculate_student_hp(100, 5, 5));
-        $this->assertSame(265, combat::calculate_student_hp(100, 5, 10));
-        $this->assertSame(370, combat::calculate_student_hp(100, 10, 1));
-        $this->assertSame(390, combat::calculate_student_hp(100, 10, 5));
-        $this->assertSame(415, combat::calculate_student_hp(100, 10, 10));
-    }
-
-    /**
      * Tests that Level 1, Phase 1 (Single Match mode's fixed currentlevel/currentphase)
      * always returns the base HP unchanged, for any base value — the property that lets
      * callers use these formulas unconditionally without branching on gamemode.
@@ -77,7 +60,6 @@ final class combat_test extends \basic_testcase {
      */
     public function test_level_one_phase_one_returns_base_hp_unchanged(): void {
         $this->assertSame(1000, combat::calculate_boss_hp(1000, 1, 1));
-        $this->assertSame(250, combat::calculate_student_hp(250, 1, 1));
     }
 
     /**
@@ -88,7 +70,6 @@ final class combat_test extends \basic_testcase {
      */
     public function test_zero_base_hp_scales_to_zero(): void {
         $this->assertSame(0, combat::calculate_boss_hp(0, 10, 10));
-        $this->assertSame(0, combat::calculate_student_hp(0, 10, 10));
     }
 
     /**
@@ -252,7 +233,7 @@ final class combat_test extends \basic_testcase {
 
     /**
      * Tests that phase_student() reads what the phase froze, and that an attempt from before the
-     * student's side was frozen falls back to the instance's own scaling with no attack or armor.
+     * student's side was frozen falls back to the instance's base HP with no attack or armor.
      *
      * @return void
      */
@@ -269,7 +250,7 @@ final class combat_test extends \basic_testcase {
             'frozenplayerhp' => 0, 'frozenplayerattack' => '3.000', 'frozenplayerarmor' => '0.500',
             'currentlevel' => 2, 'currentphase' => 6,
         ]), $instance);
-        $this->assertSame(['maxhp' => combat::calculate_student_hp(100, 2, 6), 'attack' => 1.0, 'armor' => 0.0], $legacy);
+        $this->assertSame(['maxhp' => 100, 'attack' => 1.0, 'armor' => 0.0], $legacy, 'no growth with the level');
     }
 
     /**

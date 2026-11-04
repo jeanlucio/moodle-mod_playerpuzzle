@@ -139,7 +139,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // Every combat field (CombatRules.STATE_FIELDS) starts from the same initial state
             // the server replay starts from. The studenthp/bosshp config values are already
             // scaled server-side for the attempt's current level/phase
-            // (combat::calculate_boss_hp()/calculate_student_hp()) — Single Match always resolves
+            // (combat::calculate_boss_hp() and the student's hero) — Single Match always resolves
             // to the base HP unchanged, so no branching is needed here for game mode.
             Object.assign(this, CombatRules.initialState(
                 parseInt(gameConfig.studenthp) || 100,

@@ -739,8 +739,8 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that build_game_config() resolves the scaled boss/student HP for the
-     * attempt's own level/phase, not the raw configured base.
+     * Tests that build_game_config() resolves the scaled boss HP for the attempt's own level/phase, not the
+     * raw configured base, and gives the student the base HP, which does not scale.
      *
      * @return void
      */
@@ -768,10 +768,11 @@ final class game_page_service_test extends \advanced_testcase {
 
         $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
 
-        // Level 5, Phase 1 with base 100: boss 300, student 220. The opponent frozen when the
+        // Level 5, Phase 1 with base 100: boss 300, student 100, since the student's HP does not grow with
+        // the level, only with the hero they buy for. The opponent frozen when the
         // attempt started is the slime, which has no profile.
         $this->assertSame(300, $config['bosshp']);
-        $this->assertSame(220, $config['studenthp']);
+        $this->assertSame(100, $config['studenthp']);
         // Combat damage reuses the same boss HP growth curve: base 10 -> 30 at Level 5/Phase 1.
         $this->assertSame(30, $config['bossdamage']);
         $this->assertSame(5, $config['currentlevel']);

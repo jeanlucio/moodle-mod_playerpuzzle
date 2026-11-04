@@ -12,7 +12,7 @@
         <FIELD NAME="intro" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="General introduction of the playerpuzzle activity"/>
         <FIELD NAME="introformat" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Format of the intro field"/>
         <FIELD NAME="maxlevels" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Number of levels enabled (1-10); each level has 10 phases"/>
-        <FIELD NAME="basestudenthp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Base student HP at Level 1 Phase 1; scales automatically per phase"/>
+        <FIELD NAME="basestudenthp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Base student HP: what a Single Match student has, and what a Campaign hero's HP grows from by what it buys"/>
         <FIELD NAME="bossavatar" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="slime" SEQUENCE="false" COMMENT="Single Match opponent: one of the keys in classes/local/opponents.php"/>
         <FIELD NAME="basebosshp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Base boss HP at Level 1 Phase 1; scales automatically per phase"/>
         <FIELD NAME="bossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Damage dealt by boss per turn"/>

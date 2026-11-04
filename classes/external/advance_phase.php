@@ -34,6 +34,7 @@ use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\security;
+use mod_playerpuzzle\local\hero_shop;
 use mod_playerpuzzle\local\hud_service;
 use mod_playerpuzzle\local\move_log;
 use mod_playerpuzzle\local\replay_credit;
@@ -265,6 +266,14 @@ class advance_phase extends external_api {
                 // opponent frozen for the phase that starts now.
                 $attempt->currentlevel = $newlevel;
                 $attempt->currentphase = $newphase;
+                // The milestone of a new stage may have just been passed with the specialty already at the
+                // cap: the hero evolves for free, before the next phase freezes its side.
+                $evolved = hero_shop::evolve(
+                    $playerpuzzle,
+                    (int) $USER->id,
+                    (int) $attempt->campaign,
+                    (($newlevel - 1) * 10) + $newphase - 1
+                );
                 security::seed_replay_state($attempt, $playerpuzzle);
                 $attempt->phaserestarts = 0;
 
@@ -290,6 +299,8 @@ class advance_phase extends external_api {
                     'bosshp'       => combat::phase_opponent($attempt, $playerpuzzle)['maxbosshp'],
                     'studenthp'    => combat::phase_student($attempt, $playerpuzzle)['maxhp'],
                     'coinsbanked'  => $coinsbanked,
+                    'heroevolved'  => $evolved,
+                    'herosprite'   => (string) ($attempt->frozenhero ?? ''),
                 ];
             }
         );
@@ -326,6 +337,8 @@ class advance_phase extends external_api {
             'bosshp'       => combat::phase_opponent($attempt, $playerpuzzle)['maxbosshp'],
             'studenthp'    => combat::phase_student($attempt, $playerpuzzle)['maxhp'],
             'coinsbanked'  => 0,
+            'heroevolved'  => false,
+            'herosprite'   => (string) ($attempt->frozenhero ?? ''),
         ];
     }
 
@@ -348,6 +361,8 @@ class advance_phase extends external_api {
             'bosshp'       => new external_value(PARAM_INT, 'Scaled boss HP for the new phase'),
             'studenthp'    => new external_value(PARAM_INT, 'Scaled student HP for the new phase'),
             'coinsbanked'  => new external_value(PARAM_INT, 'PuzzleCoin banked for this phase'),
+            'heroevolved'  => new external_value(PARAM_BOOL, 'Whether the hero evolved on entering the new phase'),
+            'herosprite'   => new external_value(PARAM_ALPHANUM, 'The sprite the hero fights the new phase with, if any'),
         ]);
     }
 }

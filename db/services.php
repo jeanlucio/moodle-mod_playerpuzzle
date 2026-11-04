@@ -81,6 +81,14 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_buy_upgrade' => [
+        'classname'    => 'mod_playerpuzzle\external\buy_upgrade',
+        'methodname'   => 'execute',
+        'description'  => 'Buys 1 upgrade of HP, attack or armor for the student\'s Campaign hero, spending PuzzleCoin.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
     'mod_playerpuzzle_transfer_hud_coins' => [
         'classname'    => 'mod_playerpuzzle\external\transfer_hud_coins',
         'methodname'   => 'execute',

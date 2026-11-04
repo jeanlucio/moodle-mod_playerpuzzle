@@ -148,6 +148,52 @@ class security {
     }
 
     /**
+     * Whether a phase has not been played yet: no move or answer is logged and nothing is saved to resume,
+     * so what it froze at the start can still change without any replay noticing.
+     *
+     * @param \stdClass $attempt An attempt row (moveseq, movelog, combatstate, questionresults).
+     * @return bool
+     */
+    public static function is_fresh_phase(\stdClass $attempt): bool {
+        return (int) $attempt->moveseq === 0
+            && in_array($attempt->movelog, [null, '', '[]'], true)
+            && empty($attempt->combatstate)
+            && empty($attempt->questionresults);
+    }
+
+    /**
+     * Freezes the student's side again for a phase that has not been played yet, so what the student buys
+     * between phases counts for the phase about to start. A phase already under way keeps what it
+     * started with, which the replay of its moves depends on.
+     *
+     * @param int $attemptid The attempt.
+     * @param \stdClass $playerpuzzle The instance record (id, gamemode, maxlevels, basestudenthp).
+     * @return bool Whether the phase was fresh and now holds the student's current side.
+     */
+    public static function refresh_student_side(int $attemptid, \stdClass $playerpuzzle): bool {
+        global $DB;
+
+        $refreshed = self::with_attempt_lock($attemptid, function () use ($DB, $attemptid, $playerpuzzle): bool {
+            $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
+            if ($attempt->status !== 'inprogress' || !self::is_fresh_phase($attempt)) {
+                return false;
+            }
+            self::freeze_student_side($attempt, $playerpuzzle);
+            $DB->update_record('playerpuzzle_attempts', (object) [
+                'id' => $attemptid,
+                'frozenplayerhp' => $attempt->frozenplayerhp,
+                'frozenplayerattack' => $attempt->frozenplayerattack,
+                'frozenplayerarmor' => $attempt->frozenplayerarmor,
+                'frozenhero' => $attempt->frozenhero ?? null,
+                'timemodified' => time(),
+            ]);
+            return true;
+        });
+
+        return $refreshed === true;
+    }
+
+    /**
      * Freezes the student's side of the phase: the hero's HP, attack and armor, and the sprite it fights
      * with, when the student has a hero in this Campaign, and otherwise the HP the instance scales to with
      * no attack bonus and no armor. Only a real Campaign attempt has a hero to read; the sprite of a

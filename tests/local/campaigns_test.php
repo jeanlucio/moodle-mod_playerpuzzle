@@ -164,6 +164,29 @@ final class campaigns_test extends \advanced_testcase {
     }
 
     /**
+     * Tests how many phases of a Campaign the student has won: the furthest an attempt got, counting only the
+     * phases before the one an unfinished attempt sits on, and the last one too for a won attempt; a Demo and
+     * another Campaign never count.
+     *
+     * @return void
+     */
+    public function test_phases_won_is_the_furthest_any_attempt_got(): void {
+        $ppid = (int) $this->instance->id;
+        $userid = (int) $this->student->id;
+        $this->assertSame(0, campaigns::phases_won($ppid, $userid, 1));
+
+        $this->finish('lost', 1, 1, 5);
+        $this->assertSame(4, campaigns::phases_won($ppid, $userid, 1));
+        $this->finish('lost', 1, 2, 3, 1);
+        $this->finish('lost', 2, 2, 9);
+        $this->assertSame(4, campaigns::phases_won($ppid, $userid, 1), 'a Demo and another Campaign never count');
+        $this->assertSame(18, campaigns::phases_won($ppid, $userid, 2));
+
+        $this->finish('won', 1, 2, 10);
+        $this->assertSame(20, campaigns::phases_won($ppid, $userid, 1), 'a won attempt cleared its last phase');
+    }
+
+    /**
      * Tests is_finished() and graded() on attempts held in memory.
      *
      * @return void

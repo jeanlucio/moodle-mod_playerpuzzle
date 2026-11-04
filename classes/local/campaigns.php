@@ -98,6 +98,34 @@ class campaigns {
     }
 
     /**
+     * How many phases of a Campaign the student has won: the furthest any of its attempts got. An attempt
+     * that is not won is sitting on the phase it is fighting, so only the ones before it count; a won attempt
+     * cleared its last phase too.
+     *
+     * @param int $playerpuzzleid Activity instance ID.
+     * @param int $userid User ID.
+     * @param int $campaign Campaign number.
+     * @return int Phases won, 0 or more.
+     */
+    public static function phases_won(int $playerpuzzleid, int $userid, int $campaign): int {
+        global $DB;
+
+        $attempts = $DB->get_records(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $playerpuzzleid, 'userid' => $userid, 'campaign' => $campaign, 'isdemo' => 0],
+            '',
+            'id, status, currentlevel, currentphase'
+        );
+        $won = 0;
+        foreach ($attempts as $attempt) {
+            $ordinal = (((int) $attempt->currentlevel - 1) * 10) + (int) $attempt->currentphase;
+            $won = max($won, $attempt->status === 'won' ? $ordinal : $ordinal - 1);
+        }
+
+        return max(0, $won);
+    }
+
+    /**
      * Groups attempts by Campaign, the first Campaign first. An attempt read without the column (an
      * older caller) counts as the first Campaign.
      *

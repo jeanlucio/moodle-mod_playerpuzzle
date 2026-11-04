@@ -216,6 +216,62 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that advancing past a milestone with the specialty at the stage's cap evolves the hero, for
+     * free, before the next phase freezes its side: the answer says so and the new phase fights with the
+     * evolved sprite. Winning phase 3 of a one-level Campaign is its first milestone.
+     *
+     * @return void
+     */
+    public function test_advance_phase_evolves_the_hero_at_a_milestone(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['maxlevels' => 1]);
+        $this->setUser($this->student);
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, (int) $this->student->id, 'magef');
+        $row = $DB->get_record('playerpuzzle_heroes', ['playerpuzzleid' => $instance->id], '*', MUST_EXIST);
+        $DB->set_field('playerpuzzle_heroes', 'hpbuys', 1, ['id' => $row->id]);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 3);
+
+        $result = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 10,
+            'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+        $this->assertSame(4, $result['data']['currentphase']);
+        $this->assertTrue($result['data']['heroevolved']);
+        $this->assertSame('magef2', $result['data']['herosprite']);
+        $this->assertSame(2, (int) $DB->get_field('playerpuzzle_heroes', 'stage', ['id' => $row->id]));
+        $this->assertSame(
+            'magef2',
+            $DB->get_field('playerpuzzle_attempts', 'frozenhero', ['token' => $result['data']['token']])
+        );
+    }
+
+    /**
+     * Tests that a milestone with the specialty short of the cap evolves nothing.
+     *
+     * @return void
+     */
+    public function test_advance_phase_does_not_evolve_without_the_specialty_at_the_cap(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['maxlevels' => 1]);
+        $this->setUser($this->student);
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, (int) $this->student->id, 'magef');
+        $token = $this->put_attempt_at((int) $instance->id, 1, 3);
+
+        $result = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 10,
+            'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['data']['heroevolved']);
+        $this->assertSame('magef1', $result['data']['herosprite']);
+        $this->assertSame(1, (int) $DB->get_field('playerpuzzle_heroes', 'stage', ['playerpuzzleid' => $instance->id]));
+    }
+
+    /**
      * Tests that advancing from Phase 10 rolls over to the next level, Phase 1.
      *
      * @return void

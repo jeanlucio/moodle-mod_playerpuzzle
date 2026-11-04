@@ -214,7 +214,9 @@ body.path-mod-playerpuzzle .pp-question-modal-footer {
  * board, so the dialog's own ::backdrop stays transparent instead of double-dimming.
  */
 body.path-mod-playerpuzzle .pp-phase-modal {
-    max-width: 420px;
+    max-width: 36rem;
+    max-height: calc(100% - 2rem);
+    overflow-y: auto;
     width: calc(100% - 2rem);
     padding: 2rem 1.5rem;
     border: 2px solid var(--warning, #ffc107);
@@ -892,4 +894,53 @@ body.path-mod-playerpuzzle .pp-hero-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+}
+
+/**
+ * The shop on the screen between phases and in the Lobby, and the hero in it.
+ */
+body.path-mod-playerpuzzle .pp-phase-shop {
+    color: var(--white, #fff);
+}
+
+body.path-mod-playerpuzzle .pp-phase-shop-title {
+    font-size: 1.5rem;
+    margin-block-end: 1rem;
+}
+
+body.path-mod-playerpuzzle .pp-hero-shop {
+    margin-block-start: 1rem;
+}
+
+body.path-mod-playerpuzzle .pp-hero-shop-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-block-end: 0.5rem;
+    text-align: start;
+}
+
+body.path-mod-playerpuzzle .pp-hero-shop-card span {
+    display: block;
+}
+
+body.path-mod-playerpuzzle .pp-hero-shop-image {
+    flex: none;
+}
+
+body.path-mod-playerpuzzle .pp-hero-evolved {
+    font-weight: 700;
+}
+
+body.path-mod-playerpuzzle .pp-hero-buy,
+body.path-mod-playerpuzzle .pp-lobby-buy {
+    white-space: nowrap;
+}
+
+body.path-mod-playerpuzzle .pp-hero-soldout {
+    font-style: italic;
+}
+
+body.path-mod-playerpuzzle .pp-shop-error {
+    margin-block-end: 0.5rem;
 }

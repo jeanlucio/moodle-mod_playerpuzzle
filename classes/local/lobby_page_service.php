@@ -123,6 +123,7 @@ class lobby_page_service {
             $data['guestdemoonlytext'] = get_string('guestdemoonly', 'mod_playerpuzzle');
         }
         $data += self::build_shop_context((int) $course->id, $instance, $userid);
+        $data += hero_shop::context($instance, $userid);
         // Merged rather than added: a Campaign that has ended renames the Play button.
         $data = array_merge($data, self::build_progress_context($instance, $attempt, $userid));
         // Merged too: the student's hero replaces the default picture.
@@ -229,7 +230,7 @@ class lobby_page_service {
      * @param int $userid Current user ID.
      * @return array
      */
-    private static function build_shop_context(int $courseid, stdClass $instance, int $userid): array {
+    public static function build_shop_context(int $courseid, stdClass $instance, int $userid): array {
         $data = [];
         $playerpuzzleid = (int) $instance->id;
 

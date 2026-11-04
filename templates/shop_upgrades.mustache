@@ -1,0 +1,96 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_playerpuzzle/shop_upgrades
+
+    The hero and the upgrades that can be bought for it, in the shop of the Lobby and of the screen between
+    phases.
+
+    Context variables required for this template:
+    * upgradestitle - The section's heading
+    * herocard - The hero: name, spriteurl, stagetext and currenttext
+    * upgrades - One row for each attribute: attribute, label, boughttext, effecttext, price, buylabel,
+      arialabel, soldout and soldouttext
+    * evolvehint - What the next evolution needs
+    * phasenote - A note when a phase is under way, empty otherwise
+
+    Example context (json):
+    {
+        "upgradestitle": "Hero upgrades",
+        "herocard": {
+            "name": "Female mage",
+            "spriteurl": "/mod/playerpuzzle/pix/heroes/magef1.webp",
+            "stagetext": "Stage 1 of 4",
+            "currenttext": "HP 107 · Attack ×1.00 · Armor 0%"
+        },
+        "upgrades": [
+            {
+                "attribute": "hp",
+                "label": "HP",
+                "boughttext": "0 of 1 bought",
+                "effecttext": "+35% of the base HP",
+                "price": 12,
+                "buylabel": "Buy",
+                "arialabel": "Buy a HP upgrade for 12 coins",
+                "soldout": false,
+                "soldouttext": "Evolve to buy more"
+            }
+        ],
+        "evolvehint": "Evolves after phase 3 of the Campaign, once its specialty (HP) has 1 upgrades.",
+        "phasenote": ""
+    }
+}}
+<section class="pp-hero-shop" aria-labelledby="pp-hero-shop-title">
+    <h4 id="pp-hero-shop-title" class="pp-lobby-shop-title">{{upgradestitle}}</h4>
+    {{#herocard}}
+    <div class="pp-hero-shop-card">
+        <img class="pp-hero-shop-image" src="{{spriteurl}}" alt="" width="72" height="72">
+        <div>
+            <strong class="pp-hero-shop-name">{{name}}</strong>
+            <span class="pp-hero-shop-stage">{{stagetext}}</span>
+            <span class="pp-hero-shop-current">{{currenttext}}</span>
+        </div>
+    </div>
+    {{/herocard}}
+    <p class="pp-hero-evolved" role="status" hidden></p>
+    <ul class="pp-lobby-shop-list">
+        {{#upgrades}}
+        <li class="pp-lobby-shop-item pp-hero-upgrade" data-attribute="{{attribute}}">
+            <span class="pp-lobby-shop-name">{{label}}</span>
+            <span class="pp-lobby-shop-owned">{{boughttext}} · {{effecttext}}</span>
+            {{#soldout}}
+            <span class="pp-hero-soldout">{{soldouttext}}</span>
+            {{/soldout}}
+            {{^soldout}}
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-primary pp-hero-buy"
+                data-attribute="{{attribute}}"
+                aria-label="{{arialabel}}"
+            >
+                {{buylabel}}
+                <span class="pp-lobby-shop-price" aria-hidden="true">🪙{{price}}</span>
+            </button>
+            {{/soldout}}
+        </li>
+        {{/upgrades}}
+    </ul>
+    <p class="pp-lobby-note">{{evolvehint}}</p>
+    {{#phasenote}}
+    <p class="pp-lobby-note" role="status">{{phasenote}}</p>
+    {{/phasenote}}
+</section>

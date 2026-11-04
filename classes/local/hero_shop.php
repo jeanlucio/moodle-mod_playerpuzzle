@@ -105,6 +105,123 @@ class hero_shop {
     }
 
     /**
+     * What the shop shows of the hero: who it is, the numbers it fights with, one row for each attribute with
+     * what has been bought, what a buy adds and its price, and what the next evolution needs. A stage's cap
+     * shows an attribute as sold out until the hero evolves.
+     *
+     * @param stdClass $instance Activity instance (id, gamemode, maxlevels, maxattempts, basestudenthp).
+     * @param int $userid User ID.
+     * @return array Template data to merge into the shop's, empty when the student has no Campaign hero.
+     */
+    public static function context(stdClass $instance, int $userid): array {
+        $hero = game_page_service::current_hero($instance, $userid);
+        if ($hero === null) {
+            return [];
+        }
+
+        $maxlevels = (int) $instance->maxlevels;
+        $stage = (int) $hero->stage;
+        $buys = user_hero::buys($hero);
+        $cap = heroes::stage_cap($maxlevels, $stage);
+        $side = heroes::attributes($hero->hero, $buys, $maxlevels, (int) $instance->basestudenthp);
+
+        $rows = [];
+        foreach (heroes::ATTRIBUTES as $attribute) {
+            $label = get_string('hero_attribute_' . $attribute, 'mod_playerpuzzle');
+            $rows[] = [
+                'attribute' => $attribute,
+                'label' => $label,
+                'boughttext' => get_string('shop_upgrade_bought', 'mod_playerpuzzle', (object) [
+                    'bought' => $buys[$attribute],
+                    'cap' => $cap,
+                ]),
+                'effecttext' => get_string(
+                    'shop_upgrade_effect_' . $attribute,
+                    'mod_playerpuzzle',
+                    format_float(heroes::step($attribute, $maxlevels) * 100, 1)
+                ),
+                'price' => heroes::PRICE,
+                'buylabel' => get_string('lobby_buy', 'mod_playerpuzzle'),
+                'arialabel' => get_string('shop_upgrade_arialabel', 'mod_playerpuzzle', (object) [
+                    'label' => $label,
+                    'price' => heroes::PRICE,
+                ]),
+                'soldout' => $buys[$attribute] >= $cap,
+                'soldouttext' => get_string('shop_upgrade_soldout', 'mod_playerpuzzle'),
+            ];
+        }
+
+        return [
+            'hasupgrades' => true,
+            'upgradestitle' => get_string('shop_upgrades_title', 'mod_playerpuzzle'),
+            'herocard' => [
+                'name' => get_string('hero_name_' . $hero->hero, 'mod_playerpuzzle'),
+                'spriteurl' => heroes::sprite_url(heroes::sprite($hero->hero, $stage))->out(false),
+                'stagetext' => get_string('shop_hero_stage', 'mod_playerpuzzle', (object) [
+                    'stage' => $stage,
+                    'total' => heroes::STAGES,
+                ]),
+                'currenttext' => get_string('shop_hero_current', 'mod_playerpuzzle', (object) [
+                    'hp' => $side['hp'],
+                    'attack' => format_float($side['attack'], 2),
+                    'armor' => format_float($side['armor'] * 100, 1),
+                ]),
+            ],
+            'upgrades' => $rows,
+            'evolvehint' => self::evolve_hint($instance, $userid, $hero),
+            'phasenote' => self::phase_in_progress($instance, $userid) ? get_string('shop_phase_note', 'mod_playerpuzzle') : '',
+        ];
+    }
+
+    /**
+     * What the hero's next evolution needs, in words.
+     *
+     * @param stdClass $instance Activity instance (id, maxlevels).
+     * @param int $userid User ID.
+     * @param stdClass $hero The hero's row.
+     * @return string
+     */
+    private static function evolve_hint(stdClass $instance, int $userid, stdClass $hero): string {
+        $stage = (int) $hero->stage;
+        if ($stage >= heroes::STAGES) {
+            return get_string('shop_evolve_max', 'mod_playerpuzzle');
+        }
+
+        $maxlevels = (int) $instance->maxlevels;
+        $needs = (object) [
+            'phase' => heroes::milestone($maxlevels, $stage),
+            'count' => heroes::stage_cap($maxlevels, $stage),
+            'attribute' => get_string('hero_attribute_' . heroes::specialty($hero->hero), 'mod_playerpuzzle'),
+        ];
+        $passed = campaigns::phases_won((int) $instance->id, $userid, (int) $hero->campaign) >= $needs->phase;
+
+        return get_string($passed ? 'shop_evolve_waiting' : 'shop_evolve_hint', 'mod_playerpuzzle', $needs);
+    }
+
+    /**
+     * Whether the student has a phase under way, one that what they buy cannot reach.
+     *
+     * @param stdClass $instance Activity instance (id).
+     * @param int $userid User ID.
+     * @return bool
+     */
+    private static function phase_in_progress(stdClass $instance, int $userid): bool {
+        global $DB;
+
+        $inprogress = $DB->get_records(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'status' => 'inprogress', 'isdemo' => 0],
+            'timecreated DESC, id DESC',
+            '*',
+            0,
+            1
+        );
+        $attempt = reset($inprogress);
+
+        return $attempt && !security::is_fresh_phase($attempt);
+    }
+
+    /**
      * Moves the hero up the stages it has earned, called when the Campaign advances a phase: the milestone may
      * have been passed with the specialty already at the cap.
      *

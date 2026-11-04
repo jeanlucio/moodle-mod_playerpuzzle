@@ -224,34 +224,7 @@
             {{^isguest}}
             <section id="pp-lobby-shop" class="pp-lobby-view" aria-labelledby="pp-lobby-shop-title" hidden>
                 <h3 id="pp-lobby-shop-title" class="pp-lobby-view-title" tabindex="-1">{{shoptitle}}</h3>
-                <div class="pp-lobby-stats">
-                    <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
-                            <circle cx="12" cy="12" r="5.4" fill="none" stroke="#8a611c" stroke-width="1.2"/>
-                        </svg>
-                        <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
-                    </span>
-                </div>
-                <div class="pp-lobby-shop" data-cmid="{{cmid}}">
-                    <ul class="pp-lobby-shop-list">
-                        {{#shopitems}}
-                        <li class="pp-lobby-shop-item" data-type="{{type}}">
-                            <span class="pp-lobby-shop-name">{{label}}</span>
-                            <span class="pp-lobby-shop-owned" data-role="owned">{{ownedtext}}</span>
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-outline-primary pp-lobby-buy"
-                                data-type="{{type}}"
-                                aria-label="{{arialabel}}"
-                            >
-                                {{buylabel}}
-                                <span class="pp-lobby-shop-price" aria-hidden="true">🪙{{price}}</span>
-                            </button>
-                        </li>
-                        {{/shopitems}}
-                    </ul>
-                </div>
+                {{> mod_playerpuzzle/shop_panel }}
 
                 {{#hastransfer}}
                 <div class="pp-lobby-transfer" data-cmid="{{cmid}}">

@@ -14,9 +14,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Lobby loadout shop: buys 1 unit of a consumable type (spending PuzzleCoin) and transfers
- * PlayerHUD coins into PuzzleCoin, updating the balances already on the page instead of
- * reloading it.
+ * The shop, in the Lobby and on the screen between phases: buys 1 unit of a consumable type or 1 upgrade of
+ * the hero (spending PuzzleCoin) and transfers PlayerHUD coins into PuzzleCoin, updating what is already
+ * on the page instead of reloading it.
  *
  * @module     mod_playerpuzzle/lobby_shop
  * @copyright  2026 Jean Lúcio
@@ -44,6 +44,26 @@ const updateCoinChips = async(newbalance) => {
     document.querySelectorAll('[data-role="coinchip"]').forEach((el) => {
         el.setAttribute('aria-label', label);
     });
+};
+
+/**
+ * Tells the student why a purchase was refused. A native dialog opened with showModal(), like the screen
+ * between phases, sits above every Moodle modal, so a refusal there is written into the shop itself; anywhere
+ * else it is a Moodle alert.
+ *
+ * @param {HTMLElement} button The button that was clicked.
+ * @param {string} title The alert's title.
+ * @param {string} message What the server said.
+ * @return {Promise<void>}
+ */
+const showRefusal = async(button, title, message) => {
+    const notice = button.closest('.pp-shop-panel')?.querySelector('.pp-shop-error');
+    if (notice && button.closest('dialog')) {
+        notice.textContent = message;
+        notice.hidden = false;
+        return;
+    }
+    Notification.alert(title, message);
 };
 
 /**
@@ -76,8 +96,49 @@ const buy = async(cmid, button) => {
         // anticipated workflow outcome the server already explains via its own
         // moodle_exception message, not an unexpected bug — Notification.alert() shows
         // that message directly.
-        Notification.alert(await getString('lobby_shop_title', 'mod_playerpuzzle'), error.message);
+        await showRefusal(button, await getString('lobby_shop_title', 'mod_playerpuzzle'), error.message);
     } finally {
+        button.disabled = false;
+    }
+};
+
+/**
+ * Buys 1 upgrade of the clicked button's attribute for the hero, then redraws the shop from the server, which
+ * is where the new counts, caps and balance are worked out. A purchase that makes the hero evolve says so
+ * and, in the Lobby, shows the hero's new look.
+ *
+ * @param {number} cmid Course module id.
+ * @param {HTMLElement} button The clicked "Buy" button.
+ * @return {Promise<void>}
+ */
+const buyUpgrade = async(cmid, button) => {
+    const panel = button.closest('.pp-shop-panel');
+
+    button.disabled = true;
+    try {
+        const result = await Ajax.call([{
+            methodname: 'mod_playerpuzzle_buy_upgrade',
+            args: {cmid, attribute: button.dataset.attribute},
+        }])[0];
+        await updateCoinChips(result.newcoinbalance);
+
+        const {html} = await Ajax.call([{methodname: 'mod_playerpuzzle_get_shop', args: {cmid}}])[0];
+        const holder = document.createElement('template');
+        holder.innerHTML = html;
+        const fresh = holder.content.firstElementChild;
+        panel.replaceWith(fresh);
+
+        if (result.evolved) {
+            const notice = fresh.querySelector('.pp-hero-evolved');
+            notice.textContent = await getString('shop_hero_evolved', 'mod_playerpuzzle');
+            notice.hidden = false;
+            const lobbyHero = document.querySelector('.pp-lobby-hero img');
+            if (lobbyHero) {
+                lobbyHero.src = `${M.cfg.wwwroot}/mod/playerpuzzle/pix/heroes/${result.sprite}.webp`;
+            }
+        }
+    } catch (error) {
+        await showRefusal(button, await getString('shop_upgrades_title', 'mod_playerpuzzle'), error.message);
         button.disabled = false;
     }
 };
@@ -125,16 +186,30 @@ const transfer = async(cmid, button) => {
     }
 };
 
+/** @type {boolean} Whether the click handler is already on the document. */
+let wired = false;
+
 /**
- * Wires every "Buy" button and the "Transfer" button in the Lobby.
+ * Wires every "Buy" button and the "Transfer" button of the shop, once however many times it is called: the
+ * Lobby calls it when it loads and the screen between phases when it opens the shop.
  *
  * @param {number} cmid Course module id.
  */
 export const init = (cmid) => {
+    if (wired) {
+        return;
+    }
+    wired = true;
     document.addEventListener('click', (event) => {
         const buyButton = event.target.closest('.pp-lobby-buy');
         if (buyButton) {
             buy(cmid, buyButton);
+            return;
+        }
+
+        const upgradeButton = event.target.closest('.pp-hero-buy');
+        if (upgradeButton) {
+            buyUpgrade(cmid, upgradeButton);
             return;
         }
 

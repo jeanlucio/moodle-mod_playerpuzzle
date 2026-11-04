@@ -1172,6 +1172,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 btnreview: strings.debriefreview,
                 btncontinue: strings.btncontinue,
                 btnexitgame: strings.btnexitgame,
+                btnstartphase: strings.btnstartphase,
+                shoptitle: strings.phaseshoptitle,
                 difficultylabel: strings.phasedifficulty,
                 difficultychoices: this.difficultyChoices(),
             };
@@ -1246,18 +1248,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 });
             };
 
-            $('#btn-pp-continue-phase').on('click', () => performAdvance(res => {
-                // Announce the transition for screen-reader users, then give it a beat to
-                // be read before the full page reload wipes the live region.
-                const total = parseInt(this.gameConfig.maxlevels, 10) * 10 || 10;
-                Accessibility.announce(
-                    strings.phaseadvanced
-                        .replace('{$a->level}', res.currentlevel)
-                        .replace('{$a->phase}', res.currentphase)
-                        .replace('{$a->total}', total)
-                );
-                me.time.delayedCall(1600, () => this.submitRestartForm());
-            }));
+            // The win is banked and the next phase is ready but not started: this is the moment the shop is
+            // for, since what the student buys now is frozen into the phase the page reloads into.
+            $('#btn-pp-continue-phase').on('click', () => performAdvance(res => this.showPhaseShop(res)));
             $('#btn-pp-exit-phase').on('click', () => performAdvance(() => {
                 window.location.href = this.gameConfig.viewurl;
             }));
@@ -1673,6 +1666,56 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;
             });
+        }
+
+        /**
+         * The step after the phase's win is banked: the shop, the same one as the Lobby's, with the hero's
+         * upgrades, before the next phase starts. Says so when the hero evolved on entering the phase.
+         * If the shop cannot be read the game goes on rather than stay stuck here.
+         *
+         * @param {object} res The advance_phase response (currentlevel, currentphase, heroevolved).
+         * @return {Promise<void>}
+         */
+        async showPhaseShop(res) {
+            const strings = this.strings;
+            const cmid = this.gameConfig.cmid;
+            const total = parseInt(this.gameConfig.maxlevels, 10) * 10 || 10;
+            const startNext = () => {
+                // Announce the transition for screen-reader users, then give it a beat to be read
+                // before the full page reload wipes the live region.
+                Accessibility.announce(
+                    strings.phaseadvanced
+                        .replace('{$a->level}', res.currentlevel)
+                        .replace('{$a->phase}', res.currentphase)
+                        .replace('{$a->total}', total)
+                );
+                this.scene.time.delayedCall(1600, () => this.submitRestartForm());
+            };
+
+            try {
+                const shop = await Ajax.call([{methodname: 'mod_playerpuzzle_get_shop', args: {cmid}}])[0];
+                document.getElementById('pp-phase-shop-body').innerHTML = shop.html;
+            } catch (error) {
+                startNext();
+                return;
+            }
+
+            if (res.heroevolved) {
+                const notice = document.getElementById('pp-phase-hero-evolved');
+                notice.textContent = strings.shop_hero_evolved;
+                notice.hidden = false;
+            }
+            // Loaded only now: the shop's own click handler is needed on this screen and nowhere else in the game.
+            const LobbyShop = await new Promise(resolve => require(['mod_playerpuzzle/lobby_shop'], resolve));
+            LobbyShop.init(cmid);
+            document.getElementById('pp-phase-main').hidden = true;
+            document.getElementById('pp-phase-shop').hidden = false;
+            const start = document.getElementById('btn-pp-start-phase');
+            start.addEventListener('click', () => {
+                start.disabled = true;
+                startNext();
+            });
+            start.focus();
         }
 
         /**

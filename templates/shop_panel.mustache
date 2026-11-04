@@ -1,0 +1,81 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_playerpuzzle/shop_panel
+
+    The shop, the same in the Lobby and on the screen between phases: the PuzzleCoin balance, the consumables
+    and, in a Campaign with a hero, the hero's upgrades.
+
+    Context variables required for this template:
+    * cmid - The course module id
+    * coinstext - The balance as read to a screen reader
+    * coinvalue - The balance
+    * shopitems - The consumables, each with type, label, ownedtext, price, buylabel and arialabel
+    * hasupgrades - Whether the hero's upgrades are shown, with the variables of mod_playerpuzzle/shop_upgrades
+
+    Example context (json):
+    {
+        "cmid": 1,
+        "coinstext": "PuzzleCoin: 40",
+        "coinvalue": 40,
+        "shopitems": [
+            {
+                "type": "potion",
+                "label": "Potion",
+                "ownedtext": "Owned: 0",
+                "price": 8,
+                "buylabel": "Buy",
+                "arialabel": "Buy Potion for 8 coins"
+            }
+        ],
+        "hasupgrades": false
+    }
+}}
+<div class="pp-shop-panel" data-cmid="{{cmid}}">
+    <p class="pp-shop-error alert alert-danger" role="alert" hidden></p>
+    <div class="pp-lobby-stats">
+        <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
+                <circle cx="12" cy="12" r="5.4" fill="none" stroke="#8a611c" stroke-width="1.2"/>
+            </svg>
+            <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
+        </span>
+    </div>
+    <div class="pp-lobby-shop" data-cmid="{{cmid}}">
+        <ul class="pp-lobby-shop-list">
+            {{#shopitems}}
+            <li class="pp-lobby-shop-item" data-type="{{type}}">
+                <span class="pp-lobby-shop-name">{{label}}</span>
+                <span class="pp-lobby-shop-owned" data-role="owned">{{ownedtext}}</span>
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary pp-lobby-buy"
+                    data-type="{{type}}"
+                    aria-label="{{arialabel}}"
+                >
+                    {{buylabel}}
+                    <span class="pp-lobby-shop-price" aria-hidden="true">🪙{{price}}</span>
+                </button>
+            </li>
+            {{/shopitems}}
+        </ul>
+    </div>
+    {{#hasupgrades}}
+    {{> mod_playerpuzzle/shop_upgrades }}
+    {{/hasupgrades}}
+</div>

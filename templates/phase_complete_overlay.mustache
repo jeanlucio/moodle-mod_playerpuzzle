@@ -29,6 +29,8 @@
         "btnreview": "Review questions",
         "btncontinue": "Continue",
         "btnexitgame": "Exit game",
+        "btnstartphase": "Start the next phase",
+        "shoptitle": "Get ready for the next phase",
         "difficultylabel": "Difficulty for the next phase",
         "difficultychoices": [
             {"value": "easy", "label": "Easy", "checked": false},
@@ -38,6 +40,7 @@
     }
 }}
 <dialog id="playerpuzzle-phasecomplete" class="pp-phase-modal">
+    <div id="pp-phase-main">
     <div class="d-flex flex-column justify-content-center align-items-center">
         <h1 class="display-4 pp-bold text-warning mb-3">{{msg}}</h1>
         <p class="lead text-white mb-4">
@@ -63,5 +66,14 @@
                 {{btnexitgame}}
             </button>
         </div>
+    </div>
+    </div>
+    <div id="pp-phase-shop" class="pp-phase-shop" hidden>
+        <h2 class="pp-phase-shop-title">{{shoptitle}}</h2>
+        <p id="pp-phase-hero-evolved" class="pp-hero-evolved" role="status" hidden></p>
+        <div id="pp-phase-shop-body"></div>
+        <button id="btn-pp-start-phase" class="btn btn-primary btn-lg shadow">
+            {{btnstartphase}}
+        </button>
     </div>
 </dialog>

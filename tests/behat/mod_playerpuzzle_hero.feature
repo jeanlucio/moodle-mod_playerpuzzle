@@ -91,3 +91,23 @@ Feature: A student chooses a hero
     Then I should see "Campaign 2"
     And I should see "Play Game"
     And I should not see "Start a new Campaign"
+
+  Scenario: Buying a hero upgrade in the Lobby shop spends PuzzleCoin and uses up the stage's buy
+    Given the following "activities" exist:
+      | activity     | course | name         | minquestions |
+      | playerpuzzle | C1     | Dungeon Quiz | 0            |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
+    And the following "mod_playerpuzzle > user stocks" exist:
+      | playerpuzzle | user     | consumabletype | quantity |
+      | Dungeon Quiz | student1 | coin           | 40       |
+    And I log in as "student1"
+    And I am on the "Dungeon Quiz" "playerpuzzle activity" page
+    And I click on "Shop" "button"
+    And I should see "Hero upgrades"
+    When I click on ".pp-hero-upgrade[data-attribute='hp'] .pp-hero-buy" "css_element"
+    Then I should see "1 of 1 bought" in the ".pp-hero-upgrade[data-attribute='hp']" "css_element"
+    And I should see "Evolve to buy more" in the ".pp-hero-upgrade[data-attribute='hp']" "css_element"
+    And I should see "28" in the ".pp-shop-panel [data-role='coinvalue']" "css_element"
+    And ".pp-hero-upgrade[data-attribute='attack'] .pp-hero-buy" "css_element" should exist

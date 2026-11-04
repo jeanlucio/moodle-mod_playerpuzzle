@@ -81,6 +81,14 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_get_shop' => [
+        'classname'    => 'mod_playerpuzzle\external\get_shop',
+        'methodname'   => 'execute',
+        'description'  => 'Returns the shop panel (consumables and hero upgrades) rendered for the current student.',
+        'type'         => 'read',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
     'mod_playerpuzzle_buy_upgrade' => [
         'classname'    => 'mod_playerpuzzle\external\buy_upgrade',
         'methodname'   => 'execute',

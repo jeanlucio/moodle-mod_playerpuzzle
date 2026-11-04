@@ -186,12 +186,13 @@ final class campaigns_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that starting a new Campaign empties the student's PuzzleCoin and stock and numbers the
-     * attempt, while resuming the first Campaign after a defeat keeps both.
+     * Tests that an attempt of a new Campaign is numbered after the one before it, starts at Level 1, Phase 1
+     * and leaves the student's PuzzleCoin and stock alone: emptying them is done when the student chooses
+     * the hero that starts the Campaign (game_page_service::choose_campaign_hero()), not by the attempt.
      *
      * @return void
      */
-    public function test_a_new_campaign_starts_with_an_empty_stock(): void {
+    public function test_a_new_campaign_attempt_is_numbered_and_keeps_the_stock(): void {
         global $DB;
 
         $userid = (int) $this->student->id;
@@ -212,8 +213,8 @@ final class campaigns_test extends \advanced_testcase {
 
         $this->assertSame(2, (int) $DB->get_field('playerpuzzle_attempts', 'campaign', ['id' => $next->attemptid]));
         $this->assertSame([1, 1], [$next->currentlevel, $next->currentphase]);
-        $this->assertSame(0, user_stock::get_quantity($userid, $instanceid, user_stock::CURRENCY_TYPE));
-        $this->assertSame(0, user_stock::get_quantity($userid, $instanceid, 'potion'));
+        $this->assertSame(40, user_stock::get_quantity($userid, $instanceid, user_stock::CURRENCY_TYPE));
+        $this->assertSame(2, user_stock::get_quantity($userid, $instanceid, 'potion'));
         $this->assertSame(7, user_stock::get_quantity((int) $other->id, $instanceid, user_stock::CURRENCY_TYPE));
     }
 

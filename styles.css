@@ -826,3 +826,70 @@ body.path-mod-playerpuzzle .pp-demo-walkthrough::backdrop {
 body.path-mod-playerpuzzle .badge.pp-status-disabled {
     color: var(--bs-dark, #000);
 }
+
+/**
+ * The hero choice screen (hero.php).
+ */
+body.path-mod-playerpuzzle .pp-hero-page {
+    max-width: 40rem;
+    margin-inline: auto;
+}
+
+body.path-mod-playerpuzzle .pp-hero-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 0.75rem;
+    border: 0;
+    padding: 0;
+    margin: 0 0 1rem;
+}
+
+body.path-mod-playerpuzzle .pp-hero-card {
+    position: relative;
+}
+
+body.path-mod-playerpuzzle .pp-hero-radio {
+    position: absolute;
+    top: 0.5rem;
+    inset-inline-start: 0.5rem;
+    z-index: 1;
+}
+
+body.path-mod-playerpuzzle .pp-hero-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    margin: 0;
+    padding: 1.5rem 0.5rem 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid var(--bs-border-color, #dee2e6);
+    border-radius: 0.5rem;
+    background-color: var(--bs-body-bg, #fff);
+}
+
+body.path-mod-playerpuzzle .pp-hero-radio:checked + .pp-hero-label {
+    border-color: var(--bs-primary, #0f6cbf);
+    box-shadow: 0 0 0 2px var(--bs-primary, #0f6cbf);
+}
+
+body.path-mod-playerpuzzle .pp-hero-radio:focus-visible + .pp-hero-label {
+    outline: 3px solid var(--bs-primary, #0f6cbf);
+    outline-offset: 2px;
+}
+
+body.path-mod-playerpuzzle .pp-hero-image {
+    max-width: 100%;
+    height: auto;
+}
+
+body.path-mod-playerpuzzle .pp-hero-name {
+    font-weight: 700;
+}
+
+body.path-mod-playerpuzzle .pp-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}

@@ -64,11 +64,14 @@ class lobby_page_service {
 
         $data = [
             'playurl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
+            // A Single Match, a Demo and a new Campaign choose their hero first, on hero.php, which sends
+            // the choice on to play.php or saves it, see hero_page_service.
+            'herourl' => (new moodle_url('/mod/playerpuzzle/hero.php', $playparams))->out(false),
             'playtext' => get_string('playgame', 'mod_playerpuzzle'),
             // The Lobby's on-demand practice fight: reuses play.php's own
             // isdemo flag, posted as a hidden field rather than a query param — same pattern
             // as the real Play form's difficulty choice.
-            'demourl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
+            'demourl' => (new moodle_url('/mod/playerpuzzle/hero.php', $playparams))->out(false),
             'playdemotext' => get_string('playdemo', 'mod_playerpuzzle'),
             'sesskey' => sesskey(),
             'readytext' => get_string('lobby_ready', 'mod_playerpuzzle'),
@@ -122,6 +125,8 @@ class lobby_page_service {
         $data += self::build_shop_context((int) $course->id, $instance, $userid);
         // Merged rather than added: a Campaign that has ended renames the Play button.
         $data = array_merge($data, self::build_progress_context($instance, $attempt, $userid));
+        // Merged too: the student's hero replaces the default picture.
+        $data = array_merge($data, self::build_play_context($instance, $attempt, $userid, !empty($data['newcampaign'])));
         $data += self::build_minquestions_context($instance);
         $data += self::build_noquestions_context($instance, !empty($data['canmanagequestions']));
         $data += self::build_difficulty_context($attempt);
@@ -275,13 +280,43 @@ class lobby_page_service {
     }
 
     /**
+     * Where the Play button goes and which hero shows. A Single Match without an attempt to resume and a new
+     * Campaign pick their hero first; everything else plays on, the Campaign with the hero the student
+     * already has, which also stands in the Lobby in the place of the default picture.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param stdClass|null $attempt The most recent in-progress real attempt, or null.
+     * @param int $userid Current user ID.
+     * @param bool $newcampaign Whether Play starts a new Campaign.
+     * @return array
+     */
+    private static function build_play_context(stdClass $instance, ?stdClass $attempt, int $userid, bool $newcampaign): array {
+        $data = [];
+        if ($newcampaign) {
+            $data['playmode'] = hero_page_service::MODE_CAMPAIGN;
+            $data['playviahero'] = true;
+        } else if ($instance->gamemode === constants::GAMEMODE_SINGLE && $attempt === null) {
+            $data['playmode'] = hero_page_service::MODE_SINGLE;
+            $data['playviahero'] = true;
+        }
+
+        $hero = game_page_service::current_hero($instance, $userid);
+        if ($hero !== null) {
+            $data['heroimageurl'] = heroes::sprite_url(heroes::sprite($hero->hero, (int) $hero->stage))->out(false);
+        }
+
+        return $data;
+    }
+
+    /**
      * Builds the current Campaign progress context. With an in-progress attempt, shows its
      * live level/phase. With none, a new attempt about to be created might still not start
      * at Level 1/Phase 1 — see campaigns::next_start() — so this shows where that next
      * attempt will actually resume, rather than implying a fresh start when it is not one.
      * When the last Campaign has ended, it says how, and either offers the next Campaign (the
-     * Play button becomes "Start a new Campaign", with its warning, see play.php) or says the
-     * activity allows no more. A Campaign after the first is named, so the student knows
+     * Play button becomes "Start a new Campaign", with its warning, and goes on to the choice of
+     * hero) or says the activity allows no more. Once the hero of the next Campaign is chosen,
+     * that Campaign is under way and Play is Play again. A Campaign after the first is named, so the student knows
      * which one they are in. Single Match mode has no levels/phases to show, so this is
      * skipped entirely for it.
      *
@@ -305,7 +340,9 @@ class lobby_page_service {
         }
 
         $start = game_page_service::next_campaign_start($instance, $userid);
-        if ($start->startsnew) {
+        // A Campaign whose hero was already chosen is started: the choice is what starts it.
+        $unconfirmed = $start->startsnew && user_hero::get((int) $instance->id, $userid, $start->campaign) === null;
+        if ($unconfirmed) {
             $ended = $start->campaign - 1;
             $data = [
                 'progresstext' => get_string(

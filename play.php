@@ -55,15 +55,25 @@ $isdemo = optional_param('isdemo', 0, PARAM_BOOL);
 $returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
 \mod_playerpuzzle\local\game_page_service::check_guest_demo_only($isdemo, $returnurl, $context);
 
-// A new Campaign empties the student's PuzzleCoin and stock, so it only starts from the Lobby's own
-// "Start a new Campaign" button, after its warning. Any other way in (the end screen's "Play again"
-// once a Campaign ended) goes to the Lobby, which shows that warning.
-$newcampaignconfirmed = optional_param('confirmnewcampaign', 0, PARAM_BOOL);
+// A Campaign attempt needs the student's hero for that Campaign. Without one (the end screen's "Play again"
+// once a Campaign ended, or a stale link) the Lobby is where the choice, and the warning a new Campaign
+// comes with, belong.
 if (
-    !$isdemo && !$newcampaignconfirmed
-    && \mod_playerpuzzle\local\game_page_service::needs_new_campaign_confirmation($playerpuzzle, (int) $USER->id)
+    !$isdemo
+    && \mod_playerpuzzle\local\game_page_service::hero_stage($playerpuzzle, (int) $USER->id)
+        !== \mod_playerpuzzle\local\game_page_service::HERO_NONE
 ) {
     redirect($returnurl);
+}
+
+// The hero a Single Match or a Demo is fought with, from the choice screen; the Campaign's hero is the
+// student's own row. Only a hero from the catalog counts, and the last one chosen for a Single Match is
+// remembered, never one for a Demo.
+$hero = optional_param('hero', '', PARAM_ALPHANUM);
+if (!\mod_playerpuzzle\local\heroes::is_valid($hero)) {
+    $hero = array_key_first(\mod_playerpuzzle\local\heroes::CATALOG);
+} else if (!$isdemo && $playerpuzzle->gamemode === constants::GAMEMODE_SINGLE) {
+    \mod_playerpuzzle\local\last_hero::set((int) $USER->id, $hero);
 }
 
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
@@ -97,7 +107,8 @@ $jsconfig = \mod_playerpuzzle\local\game_page_service::start_game(
     $ismobile,
     $difficulty,
     $isdemo,
-    $returnurl
+    $returnurl,
+    $hero
 );
 
 // Phaser itself is loaded dynamically from inside game_boot.js (mirrors

@@ -21,6 +21,9 @@ Feature: PlayerPuzzle smoke test
       | playerpuzzle   | C1     | Dungeon Quiz | 0            |
 
   Scenario: Student opens the lobby and can start the game
+    Given the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
     When I log in as "student1"
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
     Then I should see "Play Game"
@@ -31,6 +34,9 @@ Feature: PlayerPuzzle smoke test
     Given the following "activities" exist:
       | activity     | course | name       | minquestions |
       | playerpuzzle | C1     | Empty Quiz | 3            |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Empty Quiz   | student1 | magef |
     When I log in as "student1"
     And I am on the "Empty Quiz" "playerpuzzle activity" page
     Then I should see "This activity has no questions yet"

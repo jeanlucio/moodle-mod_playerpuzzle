@@ -31,6 +31,7 @@ use core_privacy\local\request\contextlist;
 use core_privacy\local\request\transform;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
+use mod_playerpuzzle\local\last_hero;
 use mod_playerpuzzle\local\seen_opponents;
 use mod_playerpuzzle\local\sound_preferences;
 
@@ -174,6 +175,7 @@ class provider implements
             'privacy:metadata:preference:speech'
         );
         $collection->add_user_preference(seen_opponents::PREFERENCE, 'privacy:metadata:preference:seenopponents');
+        $collection->add_user_preference(last_hero::PREFERENCE, 'privacy:metadata:preference:lasthero');
 
         return $collection;
     }
@@ -197,6 +199,14 @@ class provider implements
                 seen_opponents::PREFERENCE,
                 implode(', ', $seen),
                 get_string('privacy:metadata:preference:seenopponents', 'mod_playerpuzzle')
+            );
+        }
+        if (last_hero::get($userid) !== '') {
+            writer::export_user_preference(
+                'mod_playerpuzzle',
+                last_hero::PREFERENCE,
+                get_string('hero_name_' . last_hero::get($userid), 'mod_playerpuzzle'),
+                get_string('privacy:metadata:preference:lasthero', 'mod_playerpuzzle')
             );
         }
         foreach (sound_preferences::TYPES as $type) {

@@ -54,7 +54,8 @@
         "difficultycurrent": "",
         "speechenabled": false,
         "speechlabel": "Speak game announcements aloud",
-        "demourl": "/mod/playerpuzzle/play.php?id=1&isdemo=1",
+        "demourl": "/mod/playerpuzzle/hero.php?id=1",
+        "herourl": "/mod/playerpuzzle/hero.php?id=1",
         "playdemotext": "Play Demo",
         "canmanagequestions": true,
         "managequestionsurl": "/mod/playerpuzzle/managequestions.php?id=1",
@@ -188,11 +189,14 @@
                 {{^campaignlimittext}}
                 <form
                     method="post"
-                    action="{{playurl}}"
+                    action="{{#playviahero}}{{herourl}}{{/playviahero}}{{^playviahero}}{{playurl}}{{/playviahero}}"
                     id="pp-lobby-playform"
                     {{#newcampaign}}data-confirm="{{newcampaignconfirmtext}}"{{/newcampaign}}
                 >
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    {{#playmode}}
+                    <input type="hidden" name="mode" value="{{playmode}}">
+                    {{/playmode}}
                     {{#newcampaign}}
                     <input type="hidden" name="confirmnewcampaign" value="1">
                     {{/newcampaign}}
@@ -203,7 +207,7 @@
 
                 <form method="post" action="{{demourl}}">
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
-                    <input type="hidden" name="isdemo" value="1">
+                    <input type="hidden" name="mode" value="demo">
                     <button type="submit" class="pp-lobby-playdemo">{{playdemotext}}</button>
                 </form>
                 {{/noquestions}}

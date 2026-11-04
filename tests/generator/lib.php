@@ -91,6 +91,34 @@ class mod_playerpuzzle_generator extends testing_module_generator {
     }
 
     /**
+     * Chooses the hero of a student's Campaign, as the choice screen does, and optionally pins its stage and
+     * what it bought. Backs the "mod_playerpuzzle > heroes" Behat generator step.
+     *
+     * @param array $record Fields: playerpuzzleid, userid, hero; optional campaign (1 when absent), stage,
+     *  hpbuys, attackbuys, armorbuys.
+     * @return void
+     */
+    public function create_hero(array $record): void {
+        global $DB;
+
+        $row = \mod_playerpuzzle\local\user_hero::choose(
+            (int) $record['playerpuzzleid'],
+            (int) $record['userid'],
+            (int) ($record['campaign'] ?? 1) ?: 1,
+            (string) $record['hero']
+        );
+        $update = ['id' => $row->id];
+        foreach (['stage', 'hpbuys', 'attackbuys', 'armorbuys'] as $field) {
+            if (isset($record[$field]) && $record[$field] !== '') {
+                $update[$field] = (int) $record[$field];
+            }
+        }
+        if (count($update) > 1) {
+            $DB->update_record('playerpuzzle_heroes', (object) $update);
+        }
+    }
+
+    /**
      * Creates an in-progress attempt the same way a real Play does, then pins what makes it
      * reproducible: the PRNG seed of its current phase (so the board, and every piece falling
      * afterwards, is known in advance) and, optionally, the engine version it was started

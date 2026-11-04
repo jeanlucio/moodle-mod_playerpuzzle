@@ -40,6 +40,16 @@ require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/playerpuzzle:view', $context);
 
+// A Campaign student without a hero starts on the choice screen, before the Lobby. A Campaign that has
+// ended offers its next one from the Lobby instead, with a warning first (see lobby_page_service).
+if (
+    !is_guest($context, (int) $USER->id)
+    && \mod_playerpuzzle\local\game_page_service::hero_stage($playerpuzzle, (int) $USER->id)
+        === \mod_playerpuzzle\local\game_page_service::HERO_FIRST
+) {
+    redirect(new moodle_url('/mod/playerpuzzle/hero.php', ['id' => $cm->id, 'mode' => 'campaign']));
+}
+
 // Log the visit, so the course reports see opens that never turn into a match.
 $event = \mod_playerpuzzle\event\course_module_viewed::create([
     'objectid' => $playerpuzzle->id,

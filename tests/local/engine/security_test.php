@@ -188,6 +188,39 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
+     * Tests the hero a Single Match or Demo is fought with: a hero of the catalog becomes the sprite of its
+     * first stage, anything else leaves none, a resumed attempt keeps the one it started with, and a
+     * Campaign attempt takes none from the request, only from the student's own hero.
+     *
+     * @return void
+     */
+    public function test_the_hero_of_a_match_is_frozen_when_it_starts(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $single = $generator->create_instance(['course' => $course->id, 'gamemode' => 'single']);
+        $campaign = $generator->create_instance(['course' => $course->id, 'gamemode' => 'campaign']);
+        $user = $this->getDataGenerator()->create_user();
+
+        $token = security::generate_attempt_token((int) $single->id, (int) $user->id, 'normal', 1, 1, false, 1, 'magem');
+        $this->assertSame('magem1', $DB->get_field('playerpuzzle_attempts', 'frozenhero', ['token' => $token]));
+        $token = security::generate_attempt_token((int) $single->id, (int) $user->id, 'normal', 1, 1, false, 1, 'dragon');
+        $this->assertNull($DB->get_field('playerpuzzle_attempts', 'frozenhero', ['token' => $token]));
+        $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $single->id]);
+
+        $first = security::resume_or_create_attempt_token((int) $single->id, (int) $user->id, 'normal', 1, false, 'archerf');
+        $resumed = security::resume_or_create_attempt_token((int) $single->id, (int) $user->id, 'normal', 1, false, 'warriorm');
+        $this->assertSame(['archerf1', 'archerf1'], [$first->frozenhero, $resumed->frozenhero]);
+
+        $demo = security::resume_or_create_attempt_token((int) $single->id, (int) $user->id, 'normal', 1, true, 'magef');
+        $this->assertSame('magef1', $demo->frozenhero);
+
+        $bare = security::resume_or_create_attempt_token((int) $campaign->id, (int) $user->id, 'normal', 1, false, 'magef');
+        $this->assertSame('', $bare->frozenhero, 'a Campaign never reads the hero from the request');
+    }
+
+    /**
      * Tests that a phase keeps the student HP it started with when the teacher edits the base HP
      * afterwards, and that a resumed attempt carries what it froze.
      *

@@ -120,6 +120,17 @@ final class heroes {
     }
 
     /**
+     * Where a sprite is served from. The art is WebP, which image_url() does not resolve, so it is
+     * linked directly, as the opponents' and stages' are.
+     *
+     * @param string $sprite A sprite key, see self::sprite().
+     * @return \moodle_url
+     */
+    public static function sprite_url(string $sprite): \moodle_url {
+        return new \moodle_url('/mod/playerpuzzle/pix/heroes/' . $sprite . '.webp');
+    }
+
+    /**
      * How many buys of each attribute a whole Campaign allows.
      *
      * @param int $maxlevels The activity's level count.

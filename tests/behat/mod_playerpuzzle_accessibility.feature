@@ -17,6 +17,9 @@ Feature: PlayerPuzzle accessible board
     And the following "activities" exist:
       | activity     | course | name         | minquestions |
       | playerpuzzle | C1     | Dungeon Quiz | 0            |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
     And I log in as "student1"
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
     And I click on "Play Game" "button"

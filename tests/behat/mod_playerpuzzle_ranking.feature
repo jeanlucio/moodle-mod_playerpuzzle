@@ -26,6 +26,9 @@ Feature: PlayerPuzzle class ranking in the Lobby
     Given the following "activities" exist:
       | activity     | course | name         | maxlevels | minquestions |
       | playerpuzzle | C1     | Dungeon Quiz | 1         | 0            |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
     And the following "mod_playerpuzzle > attempts" exist:
       | playerpuzzle | user     | rngseed | currentphase |
       | Dungeon Quiz | student1 | 1       | 4            |
@@ -47,6 +50,9 @@ Feature: PlayerPuzzle class ranking in the Lobby
     Given the following "activities" exist:
       | activity     | course | name         | show_ranking | minquestions |
       | playerpuzzle | C1     | Dungeon Quiz | 0            | 0            |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
     And I log in as "student1"
     When I am on the "Dungeon Quiz" "playerpuzzle activity" page
     Then "Ranking" "button" should not exist
@@ -65,6 +71,9 @@ Feature: PlayerPuzzle class ranking in the Lobby
     And the following "activities" exist:
       | activity     | course | name         | maxlevels | groupmode | minquestions |
       | playerpuzzle | C1     | Dungeon Quiz | 1         | 1         | 0            |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
     And the following "mod_playerpuzzle > attempts" exist:
       | playerpuzzle | user     | rngseed | currentphase |
       | Dungeon Quiz | student1 | 1       | 4            |

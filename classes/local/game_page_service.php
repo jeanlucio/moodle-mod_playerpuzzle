@@ -122,23 +122,123 @@ class game_page_service {
         return $start->ended === campaigns::ENDED_ATTEMPTS ? 'maxattemptsreached' : 'maxcampaignsreached';
     }
 
+    /** @var string The Campaign has its hero, or there is no Campaign to start: nothing to choose. */
+    public const HERO_NONE = 'none';
+
+    /** @var string The first Campaign, or one in progress that has no hero: the choice screen comes first. */
+    public const HERO_FIRST = 'first';
+
+    /** @var string A new Campaign after an earlier one ended: the Lobby asks to confirm it, then the choice. */
+    public const HERO_NEW = 'new';
+
     /**
-     * Whether the student's next Play begins a new Campaign after an earlier one ended, which
-     * empties their PuzzleCoin balance and stock: play.php sends them back to the Lobby to confirm
-     * it unless the request already carries that confirmation. Never for a Single Match, nor while
-     * an attempt is in progress, which Play only resumes.
+     * What the student must still do before a Campaign attempt can start: choose the hero of the Campaign
+     * they are about to play. A Campaign that has ended, with another allowed, is a new one: choosing its
+     * hero is what starts it, so the Lobby warns first (see choose_campaign_hero()). Never for a Single
+     * Match, which has no Campaign, and nothing while the activity allows no more Campaigns.
      *
-     * @param stdClass $instance Activity instance (id, gamemode, maxlevels, maxattempts).
+     * @param stdClass $instance Activity instance (id, gamemode, maxlevels, maxattempts, maxcampaigns).
+     * @param int $userid User ID.
+     * @return string One of the self::HERO_* constants.
+     */
+    public static function hero_stage(stdClass $instance, int $userid): string {
+        if ($instance->gamemode !== constants::GAMEMODE_CAMPAIGN || self::campaign_limit_refusal($instance, $userid) !== null) {
+            return self::HERO_NONE;
+        }
+
+        $campaign = self::campaign_to_play($instance, $userid);
+        if (user_hero::get((int) $instance->id, $userid, $campaign->number) !== null) {
+            return self::HERO_NONE;
+        }
+
+        return $campaign->startsnew ? self::HERO_NEW : self::HERO_FIRST;
+    }
+
+    /**
+     * Whether the student's next Play begins a new Campaign after an earlier one ended and has not yet
+     * been confirmed: the Lobby warns that it empties their PuzzleCoin and stock, and only then goes on
+     * to the choice of hero.
+     *
+     * @param stdClass $instance Activity instance (id, gamemode, maxlevels, maxattempts, maxcampaigns).
      * @param int $userid User ID.
      * @return bool
      */
     public static function needs_new_campaign_confirmation(stdClass $instance, int $userid): bool {
-        $campaign = $instance->gamemode === constants::GAMEMODE_CAMPAIGN;
-        if (!$campaign || security::has_inprogress_attempt((int) $instance->id, $userid)) {
-            return false;
+        return self::hero_stage($instance, $userid) === self::HERO_NEW;
+    }
+
+    /**
+     * Chooses the hero of the Campaign the student is about to play, or is playing without one. Starting
+     * a Campaign after an earlier one ended empties the student's PuzzleCoin and consumables, and that
+     * happens here, once, under the stock lock so a purchase racing it never lands half on each side.
+     *
+     * @param stdClass $instance Activity instance (id, gamemode, maxlevels, maxattempts).
+     * @param int $userid User ID.
+     * @param string $hero A key of heroes::CATALOG.
+     * @return stdClass The Campaign's hero row.
+     * @throws moodle_exception When the stock lock could not be acquired, so the new Campaign never
+     *  starts with the old balance still in place.
+     */
+    public static function choose_campaign_hero(stdClass $instance, int $userid, string $hero): stdClass {
+        $ppid = (int) $instance->id;
+        $campaign = self::campaign_to_play($instance, $userid);
+        if (!$campaign->startsnew || user_hero::get($ppid, $userid, $campaign->number) !== null) {
+            return user_hero::choose($ppid, $userid, $campaign->number, $hero);
         }
 
-        return self::next_campaign_start($instance, $userid)->startsnew;
+        $row = security::with_locked_user_stock($userid, $ppid, function () use ($ppid, $userid, $campaign, $hero): stdClass {
+            user_stock::clear_for_user($userid, $ppid);
+            return user_hero::choose($ppid, $userid, $campaign->number, $hero);
+        });
+        if ($row === false) {
+            throw new moodle_exception('startbusy', 'mod_playerpuzzle');
+        }
+
+        return $row;
+    }
+
+    /**
+     * The hero of the Campaign the student is playing, for showing it in the Lobby.
+     *
+     * @param stdClass $instance Activity instance (id, gamemode, maxlevels, maxattempts).
+     * @param int $userid User ID.
+     * @return stdClass|null The hero row, or null in a Single Match or while the Campaign has none.
+     */
+    public static function current_hero(stdClass $instance, int $userid): ?stdClass {
+        if ($instance->gamemode !== constants::GAMEMODE_CAMPAIGN) {
+            return null;
+        }
+
+        return user_hero::get((int) $instance->id, $userid, self::campaign_to_play($instance, $userid)->number);
+    }
+
+    /**
+     * Which Campaign the student's next Campaign attempt belongs to: the one with an attempt in progress,
+     * or else the one that attempt would start (see campaigns::next_start()).
+     *
+     * @param stdClass $instance Activity instance (id, maxlevels, maxattempts).
+     * @param int $userid User ID.
+     * @return stdClass ->number (the Campaign) and ->startsnew (whether it begins after an earlier one ended).
+     */
+    private static function campaign_to_play(stdClass $instance, int $userid): stdClass {
+        global $DB;
+
+        $inprogress = $DB->get_records(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'status' => 'inprogress', 'isdemo' => 0],
+            'timecreated DESC, id DESC',
+            'id, campaign',
+            0,
+            1
+        );
+        $attempt = reset($inprogress);
+        if ($attempt) {
+            return (object) ['number' => (int) $attempt->campaign, 'startsnew' => false];
+        }
+
+        $start = self::next_campaign_start($instance, $userid);
+
+        return (object) ['number' => $start->campaign, 'startsnew' => $start->startsnew];
     }
 
     /**
@@ -322,6 +422,7 @@ class game_page_service {
      * @param string $difficulty Student-chosen difficulty for a fresh attempt.
      * @param bool $isdemo Whether this is a disposable Demo attempt.
      * @param moodle_url $returnurl URL to send the student back to when a gate rejects the attempt.
+     * @param string $hero The hero a new Single Match or Demo is fought with, see build_game_config().
      * @return array JS game config for game_boot.js, see build_game_config().
      * @throws moodle_exception When a gate rejects the attempt, or another start of the same student
      *  does not finish in time.
@@ -334,19 +435,20 @@ class game_page_service {
         bool $ismobile,
         string $difficulty,
         bool $isdemo,
-        moodle_url $returnurl
+        moodle_url $returnurl,
+        string $hero = ''
     ): array {
         if ($isdemo) {
             self::check_has_questions($instance, $returnurl);
-            return self::build_game_config($cm, $instance, $context, $userid, $ismobile, $difficulty, true);
+            return self::build_game_config($cm, $instance, $context, $userid, $ismobile, $difficulty, true, $hero);
         }
 
         $config = security::with_locked_attempt_start(
             $userid,
             (int) $instance->id,
-            function () use ($cm, $instance, $context, $userid, $ismobile, $difficulty, $returnurl): array {
+            function () use ($cm, $instance, $context, $userid, $ismobile, $difficulty, $returnurl, $hero): array {
                 self::check_can_start_attempt($instance, $userid, $returnurl);
-                return self::build_game_config($cm, $instance, $context, $userid, $ismobile, $difficulty, false);
+                return self::build_game_config($cm, $instance, $context, $userid, $ismobile, $difficulty, false, $hero);
             }
         );
         if ($config === false) {
@@ -376,6 +478,8 @@ class game_page_service {
      * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Play Demo"
      *  button) — fixed HP on both sides, always Level 1/Phase 1, never counted for grade,
      *  coins, completion, or the attempt limit.
+     * @param string $hero The hero a new Single Match or Demo is fought with (a key of heroes::CATALOG);
+     *  a Campaign fights with the student's own, and a resumed attempt with the one it started with.
      * @return array JS game config for game_boot.js.
      */
     public static function build_game_config(
@@ -385,7 +489,8 @@ class game_page_service {
         int $userid,
         bool $ismobile,
         string $difficulty = 'normal',
-        bool $isdemo = false
+        bool $isdemo = false,
+        string $hero = ''
     ): array {
         global $OUTPUT;
 
@@ -394,7 +499,8 @@ class game_page_service {
             $userid,
             $difficulty,
             (int) $instance->maxlevels,
-            $isdemo
+            $isdemo,
+            $hero
         );
         $difficulty = $attemptinfo->difficulty;
 
@@ -451,7 +557,10 @@ class game_page_service {
             ? $attemptinfo->frozenopponent
             : opponents::for_phase($instance, $attemptinfo->currentlevel, $attemptinfo->currentphase);
         $bossurl = opponents::sprite_url($opponent)->out(false);
-        $playerurl = $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false);
+        // The hero the phase was started with; a row from before heroes existed keeps the old picture.
+        $playerurl = $attemptinfo->frozenhero !== ''
+            ? heroes::sprite_url($attemptinfo->frozenhero)->out(false)
+            : $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false);
 
         // A phase no move has been played in yet: just started, advanced to, or started again
         // (after a defeat, or on a newer engine). Its opponent's powers are listed in the

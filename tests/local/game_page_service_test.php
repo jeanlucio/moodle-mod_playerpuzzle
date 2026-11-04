@@ -300,6 +300,105 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests what a Campaign student still has to do about their hero: choose it first thing, in the first
+     * Campaign and in one in progress that has none; confirm and choose it for a Campaign after one ended;
+     * nothing once it is chosen, in a Single Match or when no Campaign is left to play.
+     *
+     * @return void
+     */
+    public function test_hero_stage(): void {
+        [, $campaign] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxattempts' => 1, 'maxcampaigns' => 2,
+        ]);
+        [, $single] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
+        $userid = (int) $this->student->id;
+
+        $this->assertSame(game_page_service::HERO_FIRST, game_page_service::hero_stage($campaign, $userid));
+        $this->assertSame(game_page_service::HERO_NONE, game_page_service::hero_stage($single, $userid));
+
+        game_page_service::choose_campaign_hero($campaign, $userid, 'magef');
+        $this->assertSame(game_page_service::HERO_NONE, game_page_service::hero_stage($campaign, $userid));
+
+        $this->make_finished_attempt($campaign->id, $userid);
+        $this->assertSame(game_page_service::HERO_NEW, game_page_service::hero_stage($campaign, $userid));
+        $this->assertTrue(game_page_service::needs_new_campaign_confirmation($campaign, $userid));
+
+        game_page_service::choose_campaign_hero($campaign, $userid, 'archerm');
+        $this->assertSame(game_page_service::HERO_NONE, game_page_service::hero_stage($campaign, $userid));
+        $this->assertFalse(game_page_service::needs_new_campaign_confirmation($campaign, $userid));
+
+        $this->make_finished_attempt($campaign->id, $userid, 'lost', 2);
+        $this->assertSame(
+            game_page_service::HERO_NONE,
+            game_page_service::hero_stage($campaign, $userid),
+            'both Campaigns played: nothing is left to start'
+        );
+    }
+
+    /**
+     * Tests that choosing the hero of a new Campaign empties the student's PuzzleCoin and consumables, once
+     * and for that student only, while choosing the hero of the first Campaign leaves them alone.
+     *
+     * @return void
+     */
+    public function test_choosing_the_hero_of_a_new_campaign_empties_the_stock(): void {
+        [, $campaign] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        $userid = (int) $this->student->id;
+        $other = $this->getDataGenerator()->create_user();
+        user_stock::credit($userid, (int) $campaign->id, user_stock::CURRENCY_TYPE, 40);
+        user_stock::credit($userid, (int) $campaign->id, 'potion', 2);
+        user_stock::credit((int) $other->id, (int) $campaign->id, user_stock::CURRENCY_TYPE, 7);
+
+        game_page_service::choose_campaign_hero($campaign, $userid, 'magef');
+        $this->assertSame(40, user_stock::get_quantity($userid, (int) $campaign->id, user_stock::CURRENCY_TYPE));
+
+        $this->make_finished_attempt($campaign->id, $userid, 'won');
+        $hero = game_page_service::choose_campaign_hero($campaign, $userid, 'warriorf');
+
+        $this->assertSame(2, (int) $hero->campaign);
+        $this->assertSame(0, user_stock::get_quantity($userid, (int) $campaign->id, user_stock::CURRENCY_TYPE));
+        $this->assertSame(0, user_stock::get_quantity($userid, (int) $campaign->id, 'potion'));
+        $this->assertSame(7, user_stock::get_quantity((int) $other->id, (int) $campaign->id, user_stock::CURRENCY_TYPE));
+
+        // Choosing again changes neither the hero nor the stock bought since.
+        user_stock::credit($userid, (int) $campaign->id, user_stock::CURRENCY_TYPE, 5);
+        $again = game_page_service::choose_campaign_hero($campaign, $userid, 'archerf');
+        $this->assertSame('warriorf', $again->hero);
+        $this->assertSame(5, user_stock::get_quantity($userid, (int) $campaign->id, user_stock::CURRENCY_TYPE));
+    }
+
+    /**
+     * Tests that the game loads the sprite of the hero the phase was started with, the Campaign's own at its
+     * stage, the one picked for a Single Match, and the old picture for an attempt from before heroes.
+     *
+     * @return void
+     */
+    public function test_build_game_config_loads_the_heroes_sprite(): void {
+        global $DB;
+
+        [$cm, $campaign] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        [$singlecm, $single] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_SINGLE, 'minquestions' => 0,
+        ]);
+        $userid = (int) $this->student->id;
+
+        $context = \context_module::instance($cm->id);
+        $legacy = game_page_service::build_game_config($cm, $campaign, $context, $userid, false);
+        $this->assertStringNotContainsString('pix/heroes', $legacy['playerurl']);
+        $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $campaign->id]);
+
+        $row = game_page_service::choose_campaign_hero($campaign, $userid, 'magef');
+        $DB->set_field('playerpuzzle_heroes', 'stage', 3, ['id' => $row->id]);
+        $config = game_page_service::build_game_config($cm, $campaign, $context, $userid, false);
+        $this->assertStringContainsString('/mod/playerpuzzle/pix/heroes/magef3.webp', $config['playerurl']);
+
+        $singlecontext = \context_module::instance($singlecm->id);
+        $args = [$singlecm, $single, $singlecontext, $userid, false, 'normal', false, 'archerm'];
+        $match = game_page_service::build_game_config(...$args);
+        $this->assertStringContainsString('/mod/playerpuzzle/pix/heroes/archerm1.webp', $match['playerurl']);
+    }
+
+    /**
      * Tests that Single Match mode counts finished attempts against
      * max_single_matches, entirely independent of maxattempts (which is
      * Campaign-only and hidden from the form in this mode).

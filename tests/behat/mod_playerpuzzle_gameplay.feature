@@ -22,6 +22,9 @@ Feature: PlayerPuzzle pre-match loadout shop
     And the following "activities" exist:
       | activity     | course | name         | minquestions |
       | playerpuzzle | C1     | Dungeon Quiz | 0            |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
 
   Scenario: The Lobby shows the PuzzleCoin balance and the loadout shop
     Given the following "mod_playerpuzzle > user stocks" exist:

@@ -133,7 +133,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertSame(get_string('playgame', 'mod_playerpuzzle'), $data['playtext']);
         $this->assertStringContainsString('play.php', $data['playurl']);
         $this->assertSame(get_string('playdemo', 'mod_playerpuzzle'), $data['playdemotext']);
-        $this->assertStringContainsString('play.php', $data['demourl']);
+        $this->assertStringContainsString('hero.php', $data['demourl']);
         $this->assertSame(get_string('lobby_puzzlecoinbalance', 'mod_playerpuzzle', 0), $data['coinstext']);
         $this->assertSame(0, $data['coinvalue']);
         $this->assertCount(5, $data['shopitems']);
@@ -414,7 +414,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         );
 
         $this->assertSame(get_string('playdemo', 'mod_playerpuzzle'), $data['playdemotext']);
-        $this->assertStringContainsString('play.php', $data['demourl']);
+        $this->assertStringContainsString('hero.php', $data['demourl']);
     }
 
     /**
@@ -590,6 +590,113 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $this->assertSame(get_string('lobby_campaignname', 'mod_playerpuzzle', 2), $data['campaignnametext']);
         $this->assertSame(get_string('playgame', 'mod_playerpuzzle'), $data['playtext']);
+    }
+
+    /**
+     * Tests where the Play and Demo buttons go: a Single Match with nothing to resume and the Demo choose
+     * their hero first, on hero.php, naming their mode; a Single Match with an attempt to resume goes
+     * straight on to play.php.
+     *
+     * @return void
+     */
+    public function test_play_goes_through_the_hero_screen_when_a_hero_is_to_be_chosen(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'minquestions' => 0]);
+        $context = \context_module::instance($cm->id);
+        $userid = (int) $this->student->id;
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $html = $this->render_lobby($data);
+        $this->assertSame('single', $data['playmode']);
+        $this->assertMatchesRegularExpression('~<form[^>]*action="[^"]*hero\.php[^"]*"[^>]*id="pp-lobby-playform"~', $html);
+        $this->assertStringContainsString('name="mode" value="single"', $html);
+        $this->assertStringContainsString('name="mode" value="demo"', $html);
+
+        \mod_playerpuzzle\local\engine\security::generate_attempt_token((int) $instance->id, $userid);
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $html = $this->render_lobby($data);
+        $this->assertArrayNotHasKey('playmode', $data);
+        $this->assertMatchesRegularExpression('~<form[^>]*action="[^"]*play\.php[^"]*"[^>]*id="pp-lobby-playform"~', $html);
+    }
+
+    /**
+     * Tests that a Campaign student's hero stands in the Lobby at its current stage, and that Play goes
+     * straight on to play.php.
+     *
+     * @return void
+     */
+    public function test_the_lobby_shows_the_campaign_hero(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0]);
+        $userid = (int) $this->student->id;
+        $row = \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, $userid, 'archerf');
+        $DB->set_field('playerpuzzle_heroes', 'stage', 2, ['id' => $row->id]);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            $userid,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertStringContainsString('/mod/playerpuzzle/pix/heroes/archerf2.webp', $data['heroimageurl']);
+        $this->assertArrayNotHasKey('playmode', $data);
+        $this->assertStringContainsString('play.php', $data['playurl']);
+    }
+
+    /**
+     * Tests that starting a new Campaign goes through the hero screen, carrying the confirmation, in the
+     * Campaign mode.
+     *
+     * @return void
+     */
+    public function test_a_new_campaign_goes_through_the_hero_screen(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0]);
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, (int) $this->student->id, 'magem');
+        $this->win_campaign($instance);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+        $html = $this->render_lobby($data);
+
+        $this->assertSame('campaign', $data['playmode']);
+        $this->assertMatchesRegularExpression('~<form[^>]*action="[^"]*hero\.php[^"]*"[^>]*id="pp-lobby-playform"~', $html);
+        $this->assertStringContainsString('name="mode" value="campaign"', $html);
+        $this->assertStringContainsString('name="confirmnewcampaign" value="1"', $html);
+    }
+
+    /**
+     * Tests that once the hero of the next Campaign is chosen the Lobby no longer offers to start it:
+     * that Campaign is under way, named, with a plain Play button.
+     *
+     * @return void
+     */
+    public function test_a_chosen_hero_starts_the_next_campaign(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0]);
+        $userid = (int) $this->student->id;
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, $userid, 'magem');
+        $this->win_campaign($instance);
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, $userid, 'archerm');
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            $userid,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertArrayNotHasKey('newcampaign', $data);
+        $this->assertSame(get_string('lobby_campaignname', 'mod_playerpuzzle', 2), $data['campaignnametext']);
+        $this->assertSame(get_string('playgame', 'mod_playerpuzzle'), $data['playtext']);
+        $this->assertArrayNotHasKey('playmode', $data);
+        $this->assertStringContainsString('/pix/heroes/archerm1.webp', $data['heroimageurl']);
     }
 
     /**

@@ -30,6 +30,7 @@ use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
+use mod_playerpuzzle\local\last_hero;
 use mod_playerpuzzle\local\seen_opponents;
 use mod_playerpuzzle\local\sound_preferences;
 
@@ -125,6 +126,23 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $this->assertContains(sound_preferences::preference_name('sfx'), $keys);
         $this->assertContains(sound_preferences::preference_name('speech'), $keys);
         $this->assertContains(seen_opponents::PREFERENCE, $keys);
+        $this->assertContains(last_hero::PREFERENCE, $keys);
+    }
+
+    /**
+     * Tests that the hero a user last chose for a Single Match exports as one preference, by its name.
+     *
+     * @return void
+     */
+    public function test_export_user_preferences_last_hero(): void {
+        $user = $this->getDataGenerator()->create_user();
+        last_hero::set((int) $user->id, 'archerf');
+
+        provider::export_user_preferences((int) $user->id);
+
+        $prefs = (array) writer::with_context(\context_system::instance())->get_user_preferences('mod_playerpuzzle');
+        $this->assertCount(1, $prefs);
+        $this->assertSame(get_string('hero_name_archerf', 'mod_playerpuzzle'), $prefs[last_hero::PREFERENCE]->value);
     }
 
     /**

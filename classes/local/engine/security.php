@@ -31,7 +31,6 @@ use mod_playerpuzzle\local\heroes;
 use mod_playerpuzzle\local\opponents;
 use mod_playerpuzzle\local\replay_credit;
 use mod_playerpuzzle\local\user_hero;
-use mod_playerpuzzle\local\user_stock;
 
 /**
  * Security class to handle tokens and anti-cheat validations.
@@ -66,6 +65,8 @@ class security {
      *  button), never counted for grade/coins/completion/attempt-limit.
      * @param int $campaign Which of the student's Campaigns this attempt belongs to (see
      *  campaigns::next_start()); always 1 in Single Match and for a Demo.
+     * @param string $hero The hero a Single Match or Demo is fought with, a key of heroes::CATALOG; a
+     *  Campaign attempt takes its hero from the student's row instead, and ignores this.
      * @return string The generated secure token.
      */
     public static function generate_attempt_token(
@@ -75,7 +76,8 @@ class security {
         int $currentlevel = 1,
         int $currentphase = 1,
         bool $isdemo = false,
-        int $campaign = 1
+        int $campaign = 1,
+        string $hero = ''
     ): string {
         global $DB;
 
@@ -92,6 +94,9 @@ class security {
         $attempt->currentlevel = $currentlevel;
         $attempt->currentphase = $currentphase;
         $attempt->campaign = $campaign;
+        if (heroes::is_valid($hero)) {
+            $attempt->frozenhero = heroes::sprite($hero, 1);
+        }
         $attempt->timecreated = time();
         $attempt->timemodified = $attempt->timecreated;
 
@@ -227,8 +232,9 @@ class security {
      * discarding real progress instead of just re-fighting the phase that was lost). When the
      * most recently finished attempt for this user/instance ended in 'lost', the new attempt
      * starts back on that same level/phase instead of defaulting to 1/1. A Campaign that has
-     * ended (won, or out of attempts) is followed by the next Campaign at 1/1, and starting it
-     * empties the student's PuzzleCoin balance and stock (see campaigns::next_start()).
+     * ended (won, or out of attempts) is followed by the next Campaign at 1/1 (see
+     * campaigns::next_start()); the student's PuzzleCoin and stock are emptied when they choose the
+     * hero that starts it (game_page_service::choose_campaign_hero()).
      *
      * Uses get_records() rather than get_record(): a site upgraded from before this method
      * existed may already have more than one stale in-progress row for the same user/
@@ -249,6 +255,8 @@ class security {
      * @param bool $isdemo Whether this is a disposable Demo attempt (Lobby's "Play Demo"
      *  button). A Demo request only ever resumes another in-progress Demo, never a real
      *  attempt, and vice versa — the two are entirely separate resume namespaces.
+     * @param string $hero The hero a new Single Match or Demo is fought with; ignored when an attempt
+     *  is resumed (it keeps the one it started with) and for a Campaign (the student's own hero).
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned,
      *  ->combatstate, ->rngseed, ->moveseq, ->frozenbasebosshp, ->frozenbossdamage,
@@ -262,7 +270,8 @@ class security {
         int $userid,
         string $difficulty = 'normal',
         int $maxlevels = 10,
-        bool $isdemo = false
+        bool $isdemo = false,
+        string $hero = ''
     ): \stdClass {
         global $DB;
 
@@ -374,6 +383,7 @@ class security {
         $startlevel = 1;
         $startphase = 1;
         $campaign = 1;
+        $matchhero = $hero;
         // A Demo is always a fresh Level 1/Phase 1 fight — it never inherits a resume position
         // from a prior loss, real or otherwise (campaigns::next_start() also excludes Demo rows
         // from that calculation for real attempts). A Single Match never leaves Level 1, Phase 1
@@ -385,9 +395,7 @@ class security {
                 $startlevel = $start->level;
                 $startphase = $start->phase;
                 $campaign = $start->campaign;
-                if ($start->startsnew) {
-                    self::clear_stock_for_new_campaign($userid, $playerpuzzleid);
-                }
+                $matchhero = '';
             } else {
                 [$startlevel, $startphase] = self::determine_start_level($playerpuzzleid, $userid, max(1, $maxlevels));
             }
@@ -400,7 +408,8 @@ class security {
             $startlevel,
             $startphase,
             $isdemo,
-            $campaign
+            $campaign,
+            $matchhero
         );
         $newrow = $DB->get_record(
             'playerpuzzle_attempts',
@@ -456,28 +465,6 @@ class security {
         $DB->delete_records_select('playerpuzzle_attempt_questions', "attemptid IN ($ids)", $params);
         $DB->delete_records_select('playerpuzzle_attempt_consumables', "attemptid IN ($ids)", $params);
         $DB->delete_records_select('playerpuzzle_attempts', $stale, $params);
-    }
-
-    /**
-     * Empties a student's PuzzleCoin balance and consumable stock when a new Campaign starts: every
-     * Campaign begins from nothing, as the Lobby warned before the student confirmed it (see
-     * game_page_service::needs_new_campaign_confirmation()). Under the stock lock, so a purchase
-     * racing the start never lands half before and half after.
-     *
-     * @param int $userid User ID.
-     * @param int $playerpuzzleid Activity instance ID.
-     * @return void
-     * @throws \moodle_exception When the stock lock could not be acquired, so the new Campaign never
-     *  starts with the old balance still in place.
-     */
-    private static function clear_stock_for_new_campaign(int $userid, int $playerpuzzleid): void {
-        $cleared = self::with_locked_user_stock($userid, $playerpuzzleid, function () use ($userid, $playerpuzzleid): bool {
-            user_stock::clear_for_user($userid, $playerpuzzleid);
-            return true;
-        });
-        if ($cleared === false) {
-            throw new \moodle_exception('startbusy', 'mod_playerpuzzle');
-        }
     }
 
     /**

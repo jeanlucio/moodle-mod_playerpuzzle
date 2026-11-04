@@ -52,6 +52,8 @@ o visual do estudante, e a Partida Única abre a escolha com o último herói us
   a fase já existe, os itens que ele traz). O cartão do chefão final diz também que ele se adapta ao seu
   herói. O estudante pode recolher o cartão. Durante a luta, o botão **?** no alto do palco abre o mesmo
   cartão, para reler os poderes depois do primeiro encontro, quando o aviso do jogo já não aparece.
+* **Desistir:** o botão de bandeira no alto do palco pede confirmação e então encerra a partida como
+  derrota: uma tentativa é gasta e as moedas ganhas naquela fase se perdem. Na Demo, a partida só termina.
 
 ## Partida Única
 

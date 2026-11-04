@@ -40,6 +40,7 @@ define(
     const FA_BELL = '\uf0f3';
     const FA_BELL_SLASH = '\uf1f6';
     const FA_QUESTION = '\u003f';
+    const FA_FLAG = '\uf024';
 
     // The characters' idle breathing: how much taller they get at the top of a breath, and how
     // long half a breath lasts, in ms.
@@ -1202,15 +1203,17 @@ define(
         }
 
         /**
-         * Creates the opponent help button's icon: a Font Awesome question mark.
+         * Creates a top button's icon as a Font Awesome glyph: the opponent help's question mark and the
+         * give up button's flag.
          *
          * @param {number} cx Center X.
          * @param {number} cy Center Y.
          * @param {number} r Badge radius — the icon's font size is scaled relative to it.
+         * @param {string} glyph The glyph, one of the FA_* constants.
          * @return {Phaser.GameObjects.Text} The icon text object.
          */
-        createHelpIcon(cx, cy, r) {
-            return this.scene.add.text(cx, cy, FA_QUESTION, {
+        createGlyphIcon(cx, cy, r, glyph) {
+            return this.scene.add.text(cx, cy, glyph, {
                 fontFamily: FA_FONT_FAMILY,
                 fontStyle: '900',
                 fontSize: `${Math.round(r * 1.15)}px`,
@@ -1266,14 +1269,27 @@ define(
             const xEffects = xExpand - gap;
             const xMusic = xEffects - gap;
             const xHelp = xMusic - gap;
+            const xGiveUp = xHelp - gap;
 
+            const badgeGiveUp = this.createButtonBadge(xGiveUp, y, r);
+            this.createGlyphIcon(xGiveUp, y, r, FA_FLAG);
+            badgeGiveUp.on('pointerup', () => {
+                this.guardAgainstDoubleTap('giveup', () => this.scene.combat.openGiveUpDialog());
+            });
             const badgeHelp = this.createButtonBadge(xHelp, y, r);
-            this.createHelpIcon(xHelp, y, r);
+            this.createGlyphIcon(xHelp, y, r, FA_QUESTION);
             badgeHelp.on('pointerup', () => {
                 this.guardAgainstDoubleTap('help', () => this.openOpponentHelp());
             });
             document.getElementById('pp-opponent-help-close')?.addEventListener('click', () => {
                 document.getElementById('playerpuzzle-opponent-help').close();
+            });
+            document.getElementById('pp-giveup-cancel')?.addEventListener('click', () => {
+                document.getElementById('playerpuzzle-giveup').close();
+            });
+            document.getElementById('pp-giveup-confirm')?.addEventListener('click', () => {
+                document.getElementById('playerpuzzle-giveup').close();
+                this.scene.combat.giveUp();
             });
 
             const badgeMusic = this.createButtonBadge(xMusic, y, r);

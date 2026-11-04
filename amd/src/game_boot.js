@@ -336,10 +336,12 @@ define([
             // desktop treatment a wide browser window would.
             containerDOM.classList.toggle('pp-canvas-desktop', isDesk);
             containerDOM.appendChild(document.getElementById('playerpuzzle-modal'));
-            const opponentHelp = document.getElementById('playerpuzzle-opponent-help');
-            if (opponentHelp) {
-                containerDOM.appendChild(opponentHelp);
-            }
+            ['playerpuzzle-opponent-help', 'playerpuzzle-giveup'].forEach(id => {
+                const dialog = document.getElementById(id);
+                if (dialog) {
+                    containerDOM.appendChild(dialog);
+                }
+            });
 
             this.ui.L = L;
             // Sets this.musicOn/this.sfxOn from the loaded user preference (defaulting to

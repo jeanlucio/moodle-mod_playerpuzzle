@@ -1600,4 +1600,31 @@ final class game_page_service_test extends \advanced_testcase {
         $this->assertSame(0, $demo['minquestions']);
         $this->assertSame(3, $real['minquestions']);
     }
+
+    /**
+     * Tests the give up confirmation: a real match says what it costs, a Demo says only that it ends, and the
+     * game's layout carries the dialog with both buttons.
+     *
+     * @return void
+     */
+    public function test_the_give_up_dialog(): void {
+        global $OUTPUT;
+
+        $real = game_page_service::giveup_dialog(false);
+        $demo = game_page_service::giveup_dialog(true);
+
+        $this->assertSame(get_string('giveup_text', 'mod_playerpuzzle'), $real['text']);
+        $this->assertSame(get_string('giveup_demo', 'mod_playerpuzzle'), $demo['text']);
+        $this->assertSame($real['title'], $demo['title']);
+
+        $html = $OUTPUT->render_from_template('mod_playerpuzzle/game_layout', [
+            'loadingtext' => 'Loading',
+            'gameconfig' => '{}',
+            'giveup' => $real,
+        ]);
+        $this->assertStringContainsString('id="playerpuzzle-giveup"', $html);
+        $this->assertStringContainsString('id="pp-giveup-confirm"', $html);
+        $this->assertStringContainsString('id="pp-giveup-cancel"', $html);
+        $this->assertStringContainsString(get_string('giveup_text', 'mod_playerpuzzle'), $html);
+    }
 }

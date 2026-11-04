@@ -1583,11 +1583,41 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             }, 250);
         }
 
+        /**
+         * Opens the confirmation that comes before giving up. Nothing opens once the match has ended.
+         */
+        openGiveUpDialog() {
+            const dialog = document.getElementById('playerpuzzle-giveup');
+            if (!this.matchSaved && dialog && !dialog.open) {
+                dialog.showModal();
+            }
+        }
+
+        /**
+         * Gives up the match: it ends as a defeat, the way running out of HP ends it, so the server counts the
+         * attempt and discards the phase's coins and the student gets the usual defeat screen.
+         */
+        giveUp() {
+            if (!this.matchSaved) {
+                this.showEndScreen(false);
+            }
+        }
+
         async showEndScreen(victory) {
+            // The match can end by itself while a dialog is open or an opponent's move is still playing out.
+            if (this.matchSaved) {
+                return;
+            }
             const me = this.scene;
             const strings = this.strings;
             const viewurl = this.gameConfig.viewurl;
             me.input.enabled = false;
+            ['playerpuzzle-giveup', 'playerpuzzle-opponent-help'].forEach(id => {
+                const dialog = document.getElementById(id);
+                if (dialog && dialog.open) {
+                    dialog.close();
+                }
+            });
             // The save_progress call below consumes the attempt's token and carries every event
             // still pending, so any later checkpoint could only fail against the spent token.
             this.matchSaved = true;

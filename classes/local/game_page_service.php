@@ -663,6 +663,22 @@ class game_page_service {
     }
 
     /**
+     * What the dialog that confirms giving up a match says. Giving up ends the attempt as a defeat, with the
+     * attempt spent and the phase's coins lost; a Demo grants and costs nothing, so it says only that it ends.
+     *
+     * @param bool $isdemo Whether the match is a Demo.
+     * @return array Template data for mod_playerpuzzle/giveup_dialog.
+     */
+    public static function giveup_dialog(bool $isdemo): array {
+        return [
+            'title' => get_string('giveup_title', 'mod_playerpuzzle'),
+            'text' => get_string($isdemo ? 'giveup_demo' : 'giveup_text', 'mod_playerpuzzle'),
+            'confirmlabel' => get_string('giveup_confirm', 'mod_playerpuzzle'),
+            'cancellabel' => get_string('giveup_cancel', 'mod_playerpuzzle'),
+        ];
+    }
+
+    /**
      * Rebuilds a resumed attempt's current phase through the server-side replay, storing any
      * event the replay had to add (a question judged or a consumable counted before the
      * reload, but never logged) — under the attempt's lock, like every other writer of its

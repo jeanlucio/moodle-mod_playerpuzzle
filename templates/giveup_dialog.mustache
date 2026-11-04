@@ -1,0 +1,44 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_playerpuzzle/giveup_dialog
+
+    The confirmation that comes before giving up a match, a native <dialog> opened from the stage's flag button.
+    It is moved inside the game's container when the game boots, so it also shows in full screen.
+
+    Context variables required for this template:
+    * title - The dialog's title
+    * text - What giving up costs
+    * confirmlabel - The button that gives up
+    * cancellabel - The button that goes back to the match
+
+    Example context (json):
+    {
+        "title": "Give up the match?",
+        "text": "This counts as a defeat: one attempt is spent and the coins earned in this phase are lost.",
+        "confirmlabel": "Give up",
+        "cancellabel": "Keep playing"
+    }
+}}
+<dialog id="playerpuzzle-giveup" class="pp-giveup" aria-labelledby="pp-giveup-title" aria-describedby="pp-giveup-text">
+    <h2 id="pp-giveup-title" class="pp-giveup-title">{{title}}</h2>
+    <p id="pp-giveup-text">{{text}}</p>
+    <div class="pp-giveup-actions">
+        <button type="button" class="btn btn-danger" id="pp-giveup-confirm">{{confirmlabel}}</button>
+        <button type="button" class="btn btn-secondary" id="pp-giveup-cancel" autofocus>{{cancellabel}}</button>
+    </div>
+</dialog>

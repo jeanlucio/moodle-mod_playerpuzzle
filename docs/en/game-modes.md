@@ -51,6 +51,8 @@ Demo the hero is only how the student looks, and a Single Match opens the choice
   the phase exists, the items it brings). The final boss's card also says it adapts to your hero. The
   student can fold the card away. During the fight, the **?** button at the top of the stage opens the same
   card, so the powers can be read again after the first meeting, when the game's notice no longer shows.
+* **Giving up:** the flag button at the top of the stage asks for confirmation and then ends the match as a
+  defeat: one attempt is spent and the coins earned in that phase are lost. A Demo just ends.
 
 ## Single Match
 

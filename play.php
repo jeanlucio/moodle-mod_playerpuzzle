@@ -122,6 +122,7 @@ $templatedata = [
     'opponenthelp' => [
         'closelabel' => get_string('close', 'mod_playerpuzzle'),
     ] + \mod_playerpuzzle\local\opponent_card::for_fight($jsconfig),
+    'giveup' => \mod_playerpuzzle\local\game_page_service::giveup_dialog(!empty($jsconfig['isdemo'])),
 ];
 
 echo $OUTPUT->header();

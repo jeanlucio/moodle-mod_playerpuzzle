@@ -23,6 +23,7 @@
     * loadingtext - The text shown while the game loads
     * gameconfig - The game's config, as JSON
     * opponenthelp - The opponent's card for the help dialog, with the variables of mod_playerpuzzle/opponent_help
+    * giveup - The give up confirmation, with the variables of mod_playerpuzzle/giveup_dialog
 
     Example context (json):
     {
@@ -35,6 +36,12 @@
             "spriteurl": "/mod/playerpuzzle/pix/opponents/goblin.webp",
             "phasetext": "",
             "traits": [{"text": "Nothing sets it apart."}]
+        },
+        "giveup": {
+            "title": "Give up the match?",
+            "text": "This counts as a defeat.",
+            "confirmlabel": "Give up",
+            "cancellabel": "Keep playing"
         }
     }
 }}
@@ -69,4 +76,7 @@
     {{#opponenthelp}}
     {{> mod_playerpuzzle/opponent_help }}
     {{/opponenthelp}}
+    {{#giveup}}
+    {{> mod_playerpuzzle/giveup_dialog }}
+    {{/giveup}}
 </div>

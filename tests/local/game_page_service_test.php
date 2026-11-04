@@ -1522,7 +1522,8 @@ final class game_page_service_test extends \advanced_testcase {
             'golem' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield']],
             'goblin' => ['bosshp' => 200, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => ['ambush']],
             'spider' => ['bosshp' => 230, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => ['fastgrimoire']],
-            'vampire' => ['bosshp' => 240, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => ['drain']],
+            // A Single Match with no hero chosen: the final boss fights it as the warrior, with armor.
+            'vampire' => ['bosshp' => 240, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['drain']],
         ];
         foreach ($expected as $opponent => $values) {
             [$cm, $instance] = $this->make_cm_and_instance([
@@ -1542,6 +1543,35 @@ final class game_page_service_test extends \advanced_testcase {
                 'bosspowers' => $config['bosspowers'],
             ], $opponent);
             $this->assertSame(10, $config['bossdamage'], 'the profile never changes the base damage');
+        }
+    }
+
+    /**
+     * Tests that the final boss's second power follows the hero a Single Match is fought with, down to the
+     * rhythm of its breath, which the client plays by.
+     *
+     * @return void
+     */
+    public function test_build_game_config_gives_the_final_boss_a_power_against_the_hero(): void {
+        $expected = [
+            'warriorm' => [0.15, ['drain'], 0],
+            'archerf' => [0.0, ['drain', 'fastgrimoire'], 0],
+            'magem' => [0.0, ['drain', 'breath'], 12],
+        ];
+        foreach ($expected as $hero => $values) {
+            [$cm, $instance] = $this->make_cm_and_instance([
+                'gamemode' => constants::GAMEMODE_SINGLE, 'minquestions' => 0, 'bossavatar' => 'vampire',
+            ]);
+            $context = \context_module::instance($cm->id);
+            $args = [$cm, $instance, $context, (int) $this->student->id, false, 'normal', false, $hero];
+
+            $config = game_page_service::build_game_config(...$args);
+
+            $this->assertSame(
+                $values,
+                [$config['bossarmor'], $config['bosspowers'], $config['bossbreathevery']],
+                $hero
+            );
         }
     }
 

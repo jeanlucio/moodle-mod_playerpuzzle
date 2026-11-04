@@ -635,6 +635,7 @@ class game_page_service {
             // that explains each one when the phase starts.
             'bosspowers'           => $opponentside['bosspowers'],
             // The Potions and Swords the opponent starts the phase with (none in a Demo).
+            'bossbreathevery'      => $opponentside['bossbreathevery'],
             'bosskit'              => $opponentside['bosskit'],
             // Deliberately not scaled by level/phase, unlike bossdamage above: a teacher's
             // fixed-price consumable shop would otherwise get proportionally cheaper as a

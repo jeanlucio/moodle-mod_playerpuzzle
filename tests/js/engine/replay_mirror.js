@@ -79,9 +79,10 @@ const NO_MODIFIERS = {hp: 1, attack: 1, armor: 0};
  * @param {object} playerpuzzle Instance fields: basestudenthp.
  * @param {object} modifiers The frozen opponent's {hp, attack, armor}.
  * @param {Array<string>} powers The frozen opponent's powers.
+ * @param {number} breathEvery Every how many of its turns the opponent lands its breath, 0 for the default.
  * @return {{config: object, maxBossHp: number, maxPlayerHp: number}}
  */
-function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []) {
+function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = [], breathEvery = 0) {
     const level = attempt.currentlevel;
     const phase = attempt.currentphase;
     const bossFactor = DIFFICULTY_BOSS_FACTORS[attempt.difficulty] ?? 1.0;
@@ -107,6 +108,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             bossAttack: modifiers.attack,
             bossArmor: modifiers.armor,
             bossPowers: powers,
+            ...(breathEvery ? {bossBreathEvery: breathEvery} : {}),
             // The final boss's key, as classes/local/opponents.php::FINAL_BOSS names it.
             bossKit: CombatRules.opponentKit(level, attempt.difficulty || 'normal', attempt.frozenopponent === 'vampire'),
             difficulty: attempt.difficulty || 'normal',
@@ -131,6 +133,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
  * @param {object} params.playerpuzzle See phaseSetup(), plus minquestions.
  * @param {object} [params.modifiers] See phaseSetup(); none when absent.
  * @param {Array<string>} [params.powers] See phaseSetup(); none when absent.
+ * @param {number} [params.breathEvery] See phaseSetup(); the default rhythm when absent.
  * @param {Array} params.events Recorded events (verifying), or [] (recording).
  * @param {Array} params.outcomes Server outcomes {side, correct, counted} (verifying), or [].
  * @param {object} params.serverUses Consumable uses the server counted, by type.
@@ -138,10 +141,10 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
  * @param {object|null} params.policy Recording policy, or null to verify.
  * @return {{result: object|null, events: Array, outcomes: Array, serverUses: object}}
  */
-function runPhase({attempt, playerpuzzle, modifiers, powers, events, outcomes, serverUses, poolEmpty, policy}) {
+function runPhase({attempt, playerpuzzle, modifiers, powers, breathEvery, events, outcomes, serverUses, poolEmpty, policy}) {
     const rng = Prng.create(attempt.rngseed);
     const grid = BoardRules.generateGrid(ROWS, COLS, null, rng);
-    const {config, maxBossHp, maxPlayerHp} = phaseSetup(attempt, playerpuzzle, modifiers, powers);
+    const {config, maxBossHp, maxPlayerHp} = phaseSetup(attempt, playerpuzzle, modifiers, powers, breathEvery);
     const recording = policy !== null && policy !== undefined;
     const uses = Object.assign({}, serverUses);
 

@@ -177,6 +177,14 @@ const REPLAY_CASES = [
         student: 400, typeOffset: 4, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
     {name: 'final boss, drain and extra HP', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
         level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
+    // The final boss fights the student's hero with a second power of its own: the armor against the strong
+    // in attack, the fast Grimoire against the strong in armor, the breath at its own rhythm against the strong in HP.
+    {name: 'final boss against a warrior: armor', opponent: 'vampire', hero: 'warriorf4', seed: 143, boss: 400,
+        damage: 12, coin: 10, student: 300, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['right', 'wrong']},
+    {name: 'final boss against an archer: fast Grimoire', opponent: 'vampire', hero: 'archerm3', seed: 144, boss: 400,
+        damage: 12, coin: 10, student: 300, typeOffset: 3, playerAnswers: ['right', 'wrong'], bossAnswers: ['right', 'wrong']},
+    {name: 'final boss against a mage: breath', opponent: 'vampire', hero: 'magem2', seed: 145, boss: 2500,
+        damage: 14, coin: 10, student: 300, typeOffset: 1, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
     // The instance's base HP is deliberately far from the frozen one: the phase fights with what it froze.
     {name: 'frozen student side: more HP and attack', seed: 140, boss: 300, damage: 12, coin: 10, student: 40,
         frozenStudent: {hp: 260, attack: 1.3, armor: 0}, typeOffset: 0, playerAnswers: ['right', 'wrong'],
@@ -205,6 +213,49 @@ const OPPONENT_MODIFIERS = {
     ghost: {hp: 1, attack: 1, armor: 0},
     pirate: {hp: 1, attack: 1.15, armor: 0},
 };
+
+// What the final boss adds by the specialty of the student's hero, and the specialty of each hero, as
+// opponents::counter() and heroes::CATALOG have them: replay_vectors_test.php checks each case's copy
+// against the server's.
+const FINAL_BOSS_COUNTERS = {
+    attack: {armor: 0.15, powers: [], breathevery: 0},
+    armor: {armor: 0, powers: ['fastgrimoire'], breathevery: 0},
+    hp: {armor: 0, powers: ['breath'], breathevery: 12},
+};
+const HERO_SPECIALTY = {
+    warriorf: 'attack', warriorm: 'attack', magef: 'hp', magem: 'hp', archerm: 'armor', archerf: 'armor',
+};
+
+/**
+ * What an opponent adds to its fight because of the student's hero: only the final boss has anything, and a
+ * student whose hero is not known is fought as the warrior.
+ *
+ * @param {string} opponent The opponent's key.
+ * @param {string} sprite The hero's sprite the phase froze, or ''.
+ * @return {{armor: number, powers: Array<string>, breathevery: number}}
+ */
+function counterFor(opponent, sprite) {
+    if (opponent !== 'vampire') {
+        return {armor: 0, powers: [], breathevery: 0};
+    }
+    return FINAL_BOSS_COUNTERS[HERO_SPECIALTY[sprite.replace(/\d+$/, '')] || 'attack'];
+}
+
+/**
+ * The modifiers, powers and breath rhythm an opponent fights with once its counter is added.
+ *
+ * @param {object} modifiers The opponent's own {hp, attack, armor}.
+ * @param {Array<string>} powers The opponent's own powers.
+ * @param {{armor: number, powers: Array<string>, breathevery: number}} counter See counterFor().
+ * @return {{modifiers: object, powers: Array<string>, breathEvery: number}}
+ */
+function withCounter(modifiers, powers, counter) {
+    return {
+        modifiers: Object.assign({}, modifiers, {armor: modifiers.armor + counter.armor}),
+        powers: [...new Set([...powers, ...counter.powers])],
+        breathEvery: counter.breathevery,
+    };
+}
 
 // Attack and armor combinations for the rules that take them, including ones no opponent has
 // today (the student's own, an armor past the cap) so the rule itself is covered.
@@ -494,6 +545,19 @@ function buildCombatVectors() {
         cases.push(recordCall('startTurn', ['boss', randomState(itemRand), config]));
     }
 
+    // The breath at a rhythm of its own, as the final boss has against a hero strong in HP.
+    [{}, {bossBreathEvery: 0}, {bossBreathEvery: 6}, {bossBreathEvery: 12}].forEach(config => {
+        cases.push(recordCall('breathEvery', [config]));
+    });
+    const rhythmRand = randomSource(20261111);
+    for (let i = 0; i < 30; i++) {
+        const state = Object.assign(randomState(rhythmRand), {bossTurnCount: rhythmRand.pick([5, 6, 9, 11, 12, 23, 24])});
+        const config = Object.assign({baseDamage: rhythmRand.int(1, 60), bossPowers: ['breath']}, rhythmRand.pick([
+            {}, {bossBreathEvery: 6}, {bossBreathEvery: 12}, {bossBreathEvery: 12, bossArmor: 0.15},
+        ]));
+        cases.push(recordCall('startTurn', ['boss', state, config]));
+    }
+
     const lootRand = randomSource(20261108);
     for (let i = 0; i < 30; i++) {
         const state = Object.assign(randomState(lootRand), {bossTurnCount: lootRand.pick([3, 3, 7, 4, 11])});
@@ -527,8 +591,12 @@ function buildReplayVectors() {
         };
         const modifiers = spec.opponent ? OPPONENT_MODIFIERS[spec.opponent] : undefined;
         const powers = spec.opponent ? OPPONENT_POWERS[spec.opponent] || [] : undefined;
+        const counter = spec.opponent ? counterFor(spec.opponent, spec.hero || '') : undefined;
         if (spec.opponent) {
             attempt.frozenopponent = spec.opponent;
+        }
+        if (spec.hero) {
+            attempt.frozenhero = spec.hero;
         }
         if (spec.frozenStudent) {
             attempt.frozenplayerhp = spec.frozenStudent.hp;
@@ -537,8 +605,10 @@ function buildReplayVectors() {
         }
         const playerpuzzle = {minquestions: spec.minquestions || 0, basestudenthp: spec.student};
 
+        const fights = spec.opponent ? withCounter(modifiers, powers, counter) : {};
         const recorded = ReplayMirror.record({
-            attempt, playerpuzzle, modifiers, powers, poolEmpty: true, policy: makePolicy(spec),
+            attempt, playerpuzzle, modifiers: fights.modifiers, powers: fights.powers, breathEvery: fights.breathEvery,
+            poolEmpty: true, policy: makePolicy(spec),
         });
         if (recorded.result === null) {
             throw new Error(`Replay case "${spec.name}" did not reach a conclusive end.`);
@@ -553,6 +623,7 @@ function buildReplayVectors() {
         if (modifiers) {
             vector.modifiers = modifiers;
             vector.powers = powers;
+            vector.counter = counter;
         }
         return Object.assign(vector, {
             events: recorded.events,
@@ -598,7 +669,9 @@ function serialise(vectors) {
     return `${lines.join('\n')}\n`;
 }
 
-module.exports = {COMBAT_FIXTURE, REPLAY_FIXTURE, buildCombatVectors, buildReplayVectors, serialise, serialiseCalls};
+module.exports = {
+    COMBAT_FIXTURE, REPLAY_FIXTURE, buildCombatVectors, buildReplayVectors, serialise, serialiseCalls, withCounter,
+};
 
 if (require.main === module) {
     fs.writeFileSync(COMBAT_FIXTURE, serialiseCalls(buildCombatVectors()));

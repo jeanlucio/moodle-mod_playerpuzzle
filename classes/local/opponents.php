@@ -88,6 +88,27 @@ class opponents {
     /** @var array The final boss has no profile, only more HP than the phase gives. */
     private const FINAL_BOSS_MODIFIERS = ['hp' => 1.2, 'attack' => 1.0, 'armor' => 0.0];
 
+    /** @var int Every how many of its turns the final boss breathes against a hero strong in HP. */
+    public const FINAL_BOSS_BREATH_EVERY = 12;
+
+    /**
+     * @var array What the final boss adds, by the specialty of the student's hero, to what it fights with: the
+     *  second power it has besides the drain, the one that gets in the way of that hero most. Each reuses a power
+     *  of another opponent, none is exclusive: the armor of the armored profile against the strong in attack,
+     *  the fast Grimoire of the spider against the strong in armor (poison goes through armor), and the dragon's
+     *  breath at a rhythm of its own against the strong in HP. Sized by simulated matches, so that each costs
+     *  the student about the same.
+     */
+    private const FINAL_BOSS_COUNTERS = [
+        heroes::ATTACK => ['armor' => 0.15, 'powers' => [], 'breathevery' => 0],
+        heroes::ARMOR => ['armor' => 0.0, 'powers' => [combat_engine::POWER_FASTGRIMOIRE], 'breathevery' => 0],
+        heroes::HP => [
+            'armor' => 0.0,
+            'powers' => [combat_engine::POWER_BREATH],
+            'breathevery' => self::FINAL_BOSS_BREATH_EVERY,
+        ],
+    ];
+
     /**
      * @var array The powers of each opponent. The rules of each live in combat_rules.js and its
      *  PHP twin combat_engine.php, which name them and receive the list in the phase's config.
@@ -184,6 +205,25 @@ class opponents {
         }
         $profile = self::profile($key);
         return $profile === null ? self::NO_MODIFIERS : self::PROFILE_MODIFIERS[$profile];
+    }
+
+    /**
+     * What an opponent adds to its fight because of the student's hero: only the final boss has anything. A
+     * student with no hero to read (an attempt from before heroes existed) is fought as the warrior, the
+     * character the game had before.
+     *
+     * @param string $key An opponent key.
+     * @param string $sprite The hero's sprite the phase froze, see heroes::sprite(), or ''.
+     * @return array ['armor' => float, 'powers' => string[], 'breathevery' => int], every one neutral for
+     *  an opponent with nothing to add.
+     */
+    public static function counter(string $key, string $sprite): array {
+        if ($key !== self::FINAL_BOSS) {
+            return ['armor' => 0.0, 'powers' => [], 'breathevery' => 0];
+        }
+        $hero = heroes::of_sprite($sprite);
+
+        return self::FINAL_BOSS_COUNTERS[$hero === '' ? heroes::ATTACK : heroes::specialty($hero)];
     }
 
     /**

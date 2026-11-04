@@ -154,8 +154,8 @@
         // match's worth of coins taken, so taking more coins hits harder.
         const LOOT_HIT_MULTIPLIER = 2;
 
-        // Every how many of its turns an opponent with the breath power lands it, and how many times
-        // the phase's base damage it hits for.
+        // Every how many of its turns an opponent with the breath power lands it (unless the phase's config
+        // sets its own rhythm, bossBreathEvery), and how many times the phase's base damage it hits for.
         const BREATH_EVERY = 10;
         const BREATH_MULTIPLIER = 1.5;
 
@@ -170,6 +170,17 @@
 
         // The percentage of its max HP an opponent with the regen power recovers per turn.
         const REGEN_PERCENT = 1;
+
+        /**
+         * Every how many of its turns the opponent lands its breath: the phase's own rhythm when the config
+         * sets one (the final boss's, which depends on the hero), the default otherwise.
+         *
+         * @param {object} config The phase's rule config; bossBreathEvery is optional.
+         * @return {number}
+         */
+        function breathEvery(config) {
+            return config.bossBreathEvery || BREATH_EVERY;
+        }
 
         /**
          * Whether the opponent has a power this phase.
@@ -674,7 +685,8 @@
          * Everything that happens to a side as its turn begins, before it moves: its pending
          * poison tick (see resolvePoisonTick()); for the opponent, its turn count goes up (its
          * first turn is 1); with the intangible power, every INTANGIBLE_EVERY turns its Shield
-         * arms; with the breath power, while it still stands, every BREATH_EVERY turns it hits
+         * arms; with the breath power, while it still stands, every BREATH_EVERY turns (or the config's
+         * bossBreathEvery) it hits
          * the student for BREATH_MULTIPLIER times the base damage, through its attack, the
          * student's armor and Shield, and its own drain; with the loot power, every LOOT_EVERY
          * turns it takes LOOT_PERCENT of the student's coins for itself and hits for what it took
@@ -713,7 +725,7 @@
 
             let breath = null;
             if (side === 'boss' && hasPower(config, POWERS.BREATH) && next.currentHp > 0
-                    && next.bossTurnCount % BREATH_EVERY === 0) {
+                    && next.bossTurnCount % breathEvery(config) === 0) {
                 const hit = hitAmount(config.baseDamage * BREATH_MULTIPLIER, 'boss', config);
                 const applied = resolveDamage(next.currentPlayerHp, next.playerShieldReady, hit);
                 next.currentPlayerHp = applied.newHp;
@@ -846,6 +858,7 @@
             ARMOR_CAP,
             POWERS,
             hasPower,
+            breathEvery,
             initialState,
             comboMultiplier,
             pieceGains,

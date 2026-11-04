@@ -120,6 +120,20 @@ final class heroes {
     }
 
     /**
+     * The hero a sprite belongs to.
+     *
+     * @param string $sprite A sprite key, see self::sprite(), or ''.
+     * @return string A key of self::CATALOG, or '' when the sprite names no hero.
+     */
+    public static function of_sprite(string $sprite): string {
+        if (!preg_match('/^([a-z]+)\d+$/', $sprite, $matches)) {
+            return '';
+        }
+
+        return self::is_valid($matches[1]) ? $matches[1] : '';
+    }
+
+    /**
      * Where a sprite is served from. The art is WebP, which image_url() does not resolve, so it is
      * linked directly, as the opponents' and stages' are.
      *

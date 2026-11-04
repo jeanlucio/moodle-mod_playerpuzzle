@@ -416,6 +416,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             return {
                 baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor,
                 bossAttack: this.bossAttack, bossArmor: this.bossArmor, bossPowers: this.bossPowers,
+                // Every how many of its turns the opponent breathes, when it has a rhythm of its own (0: the default).
+                bossBreathEvery: parseInt(this.gameConfig.bossbreathevery, 10) || 0,
                 // The student's own attack and armor, fixed when the phase started (1 and 0 with no bonus).
                 playerAttack: parseFloat(this.gameConfig.playerattack) || 1,
                 playerArmor: parseFloat(this.gameConfig.playerarmor) || 0,
@@ -442,14 +444,17 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const kit = this.ruleConfig().bossKit;
             const hasKit = kit.potion > 0 || kit.sword > 0;
             const fillKit = text => text.replace('{$a->potions}', kit.potion).replace('{$a->swords}', kit.sword);
-            const notices = this.bossPowers.map(power => this.strings[`power_${power}`]).filter(Boolean);
+            const breathEvery = CombatRules.breathEvery(this.ruleConfig());
+            const notices = this.bossPowers
+                .map(power => this.strings[`power_${power}`]?.replace('{$a}', breathEvery))
+                .filter(Boolean);
             if (hasKit) {
                 notices.push(fillKit(this.strings.opponentkit));
             }
             this.bossPowers.forEach(power => {
                 const line = this.strings[`historylogpower_${power}`];
                 if (line) {
-                    this.scene.ui.pushHistoryLog('boss', line);
+                    this.scene.ui.pushHistoryLog('boss', line.replace('{$a}', breathEvery));
                 }
             });
             if (hasKit) {

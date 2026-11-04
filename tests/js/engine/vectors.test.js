@@ -48,11 +48,13 @@ test('replay_vectors.json matches what the JavaScript engine records today', () 
 
 test('every recorded match verifies through the mirror as recorded', () => {
     for (const vector of JSON.parse(fs.readFileSync(Generator.REPLAY_FIXTURE, 'utf8'))) {
+        const fights = vector.modifiers ? Generator.withCounter(vector.modifiers, vector.powers, vector.counter) : {};
         const derived = ReplayMirror.derive({
             attempt: vector.attempt,
             playerpuzzle: vector.playerpuzzle,
-            modifiers: vector.modifiers,
-            powers: vector.powers,
+            modifiers: fights.modifiers,
+            powers: fights.powers,
+            breathEvery: fights.breathEvery,
             events: vector.events,
             outcomes: vector.outcomes,
             serverUses: vector.serveruses,

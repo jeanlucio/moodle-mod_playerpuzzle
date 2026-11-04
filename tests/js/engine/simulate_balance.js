@@ -44,7 +44,7 @@
 
 'use strict';
 
-const {OPPONENT_ACCURACY, NO_MODIFIERS, readOpponents, playMatch: playOne} = require('./sim_common.js');
+const {OPPONENT_ACCURACY, NO_MODIFIERS, readOpponents, fightWith, playMatch: playOne} = require('./sim_common.js');
 
 /**
  * Plays one match at Level 1.
@@ -111,11 +111,15 @@ for (const difficulty of difficulties) {
             + 'Each cell: win rate, student turns, HP left on a win, net coins.\n');
         process.stdout.write('phase opponent | no profile           | profile only         | '
             + 'profile+power        | power effect\n');
-        opponents.forEach(({key: name, modifiers, powers}, index) => {
+        opponents.forEach((opponent, index) => {
+            const {key: name, modifiers} = opponent;
+            // The final boss's second power depends on the student's hero, which this simulator has none of:
+            // it fights the warrior's, as the server does for a student with no hero.
+            const {modifiers: fullModifiers, powers} = fightWith(opponent);
             const phase = Math.min(index + 1, 10);
             const bare = playBatch(matches, phase, NO_MODIFIERS, [], accuracy, difficulty);
             const profiled = playBatch(matches, phase, modifiers, [], accuracy, difficulty);
-            const full = powers.length ? playBatch(matches, phase, modifiers, powers, accuracy, difficulty) : null;
+            const full = powers.length ? playBatch(matches, phase, fullModifiers, powers, accuracy, difficulty) : null;
             const effect = full
                 ? `${Math.round((full.win - profiled.win) * 100)} pts, ${(full.turns - profiled.turns).toFixed(1)} turns`
                 : '';

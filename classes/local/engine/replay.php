@@ -186,6 +186,9 @@ class replay {
             'bossKit' => $opponent['bosskit'],
             'difficulty' => $difficulty,
         ];
+        if ($opponent['bossbreathevery'] > 0) {
+            $config['bossBreathEvery'] = $opponent['bossbreathevery'];
+        }
         $student = combat::phase_student($attempt, $playerpuzzle);
         // Only a phase with something to apply carries the keys, so the config stays what it was for
         // a student with no bonus.

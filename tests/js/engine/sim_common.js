@@ -46,11 +46,13 @@ const NO_MODIFIERS = {hp: 1, attack: 1, armor: 0};
  * Asks the server's own class for every opponent, in Campaign order with the final boss last, and
  * what each fights with.
  *
- * @return {Array<{key: string, modifiers: object, powers: Array<string>}>}
+ * @return {Array<{key: string, modifiers: object, powers: Array<string>, counters: object}>} counters is what the
+ *  opponent adds against a hero strong in attack, armor or HP (only the final boss adds anything).
  */
 function readOpponents() {
     const script = `
         require 'classes/local/engine/combat_engine.php';
+        require 'classes/local/heroes.php';
         require 'classes/local/opponents.php';
         $class = 'mod_playerpuzzle\\\\local\\\\opponents';
         $keys = array_merge($class::CAMPAIGN_ORDER, [$class::FINAL_BOSS]);
@@ -58,6 +60,11 @@ function readOpponents() {
             'key' => $key,
             'modifiers' => $class::modifiers($key),
             'powers' => $class::powers($key),
+            'counters' => [
+                'attack' => $class::counter($key, 'warriorf1'),
+                'armor' => $class::counter($key, 'archerm1'),
+                'hp' => $class::counter($key, 'magef1'),
+            ],
         ], $keys));`;
     return JSON.parse(childProcess.execFileSync('php', ['-r', script], {cwd: PLUGIN_ROOT, encoding: 'utf8'}));
 }
@@ -74,13 +81,14 @@ function readOpponents() {
  * @param {number} params.accuracy The student's share of right answers.
  * @param {string} params.difficulty 'easy', 'normal' or 'hard'.
  * @param {string} [params.opponent] The opponent's key (only the final boss's matters).
+ * @param {number} [params.breathEvery] Every how many of its turns the opponent lands its breath, if not 10.
  * @param {{hp: number, attack: number, armor: number}} [params.student] The student's side as a phase
  *  freezes it; absent, the instance's own scaling with no attack or armor.
  * @return {{finished: boolean, won: boolean, turns: number, hpLeft: number, coins: number}} hpLeft
  *  is the student's HP share at the start of their last turn, which is what they finish a won match
  *  with; coins is what the match nets them (their coins minus the opponent's, never below 0).
  */
-function playMatch({seed, level, phase, modifiers, powers, accuracy, difficulty, opponent, student}) {
+function playMatch({seed, level, phase, modifiers, powers, accuracy, difficulty, opponent, student, breathEvery}) {
     const answers = Prng.create((seed * 7919) + 13);
     let lastState = null;
     let turns = 0;
@@ -113,7 +121,7 @@ function playMatch({seed, level, phase, modifiers, powers, accuracy, difficulty,
         attempt.frozenplayerarmor = student.armor;
     }
     const playerpuzzle = {basestudenthp: INSTANCE.basestudenthp, minquestions: 0};
-    const {result} = ReplayMirror.record({attempt, playerpuzzle, modifiers, powers, poolEmpty: false, policy});
+    const {result} = ReplayMirror.record({attempt, playerpuzzle, modifiers, powers, breathEvery, poolEmpty: false, policy});
     if (!result) {
         return {finished: false, won: false, turns, hpLeft: 0, coins: 0};
     }
@@ -123,4 +131,21 @@ function playMatch({seed, level, phase, modifiers, powers, accuracy, difficulty,
     return {finished: true, won, turns, hpLeft: won ? lastState.currentPlayerHp / maxPlayerHp : 0, coins};
 }
 
-module.exports = {OPPONENT_ACCURACY, INSTANCE, NO_MODIFIERS, readOpponents, playMatch};
+/**
+ * What an opponent fights a hero with: its own modifiers and powers plus what it adds against the hero's
+ * specialty. Without a hero it is the warrior, as on the server.
+ *
+ * @param {{modifiers: object, powers: Array<string>, counters: object}} opponent An entry of readOpponents().
+ * @param {string} [specialty] 'attack', 'armor' or 'hp'.
+ * @return {{modifiers: object, powers: Array<string>, breathEvery: number}}
+ */
+function fightWith(opponent, specialty = 'attack') {
+    const counter = opponent.counters[specialty];
+    return {
+        modifiers: Object.assign({}, opponent.modifiers, {armor: opponent.modifiers.armor + counter.armor}),
+        powers: [...new Set([...opponent.powers, ...counter.powers])],
+        breathEvery: counter.breathevery,
+    };
+}
+
+module.exports = {OPPONENT_ACCURACY, INSTANCE, NO_MODIFIERS, readOpponents, fightWith, playMatch};

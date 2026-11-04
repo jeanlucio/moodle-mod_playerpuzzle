@@ -180,7 +180,7 @@ final class combat_test extends \basic_testcase {
         $this->assertSame(
             [
                 'maxbosshp' => 340, 'basedamage' => 34, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => ['ambush'],
-                'bosskit' => ['potion' => 1, 'sword' => 1],
+                'bossbreathevery' => 0, 'bosskit' => ['potion' => 1, 'sword' => 1],
             ],
             $brute
         );
@@ -189,7 +189,7 @@ final class combat_test extends \basic_testcase {
         $this->assertSame(
             [
                 'maxbosshp' => 100, 'basedamage' => 10, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield'],
-                'bosskit' => ['potion' => 0, 'sword' => 0],
+                'bossbreathevery' => 0, 'bosskit' => ['potion' => 0, 'sword' => 0],
             ],
             $armored
         );
@@ -225,6 +225,7 @@ final class combat_test extends \basic_testcase {
         $this->assertSame(
             [
                 'maxbosshp' => 200, 'basedamage' => 20, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => [],
+                'bossbreathevery' => 0,
                 'bosskit' => ['potion' => 0, 'sword' => 0],
             ],
             $old
@@ -254,6 +255,43 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
+     * Tests that phase_opponent() gives the final boss the second power its student's hero calls for, on top of
+     * its drain and its extra HP, and gives every other opponent nothing of the kind.
+     *
+     * @return void
+     */
+    public function test_phase_opponent_gives_the_final_boss_a_power_against_the_hero(): void {
+        $instance = (object) ['basebosshp' => 100, 'bossdamage' => 10];
+        $boss = fn(string $hero) => combat::phase_opponent(
+            $this->make_attempt(['frozenopponent' => 'vampire', 'frozenhero' => $hero]),
+            $instance
+        );
+
+        $warrior = $boss('warriorf3');
+        $this->assertSame(
+            [0.15, [combat_engine::POWER_DRAIN], 0],
+            [$warrior['bossarmor'], $warrior['bosspowers'], $warrior['bossbreathevery']]
+        );
+        $archer = $boss('archerm1');
+        $this->assertSame(
+            [0.0, [combat_engine::POWER_DRAIN, combat_engine::POWER_FASTGRIMOIRE], 0],
+            [$archer['bossarmor'], $archer['bosspowers'], $archer['bossbreathevery']]
+        );
+        $mage = $boss('magef4');
+        $this->assertSame(
+            [0.0, [combat_engine::POWER_DRAIN, combat_engine::POWER_BREATH], 12],
+            [$mage['bossarmor'], $mage['bosspowers'], $mage['bossbreathevery']]
+        );
+        $this->assertSame($warrior['bossarmor'], $boss('')['bossarmor'], 'no hero: fought as the warrior');
+
+        $dragon = combat::phase_opponent(
+            $this->make_attempt(['frozenopponent' => 'dragon', 'frozenhero' => 'magef4']),
+            $instance
+        );
+        $this->assertSame([[combat_engine::POWER_BREATH], 0], [$dragon['bosspowers'], $dragon['bossbreathevery']]);
+    }
+
+    /**
      * Tests that a Demo fights at the fixed HP with no profile, no powers, no items and no difficulty.
      *
      * @return void
@@ -266,7 +304,8 @@ final class combat_test extends \basic_testcase {
         ]), $instance);
         $this->assertSame(
             [
-                'maxbosshp' => combat::DEMO_HP, 'basedamage' => 12, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => [],
+                'maxbosshp' => combat::DEMO_HP, 'basedamage' => 12, 'bossattack' => 1.0, 'bossarmor' => 0.0,
+                'bosspowers' => [], 'bossbreathevery' => 0,
                 'bosskit' => ['potion' => 0, 'sword' => 0],
             ],
             $demo

@@ -224,6 +224,17 @@ class combat_engine {
     }
 
     /**
+     * Every how many of its turns the opponent lands its breath: the phase's own rhythm when the config sets
+     * one (the final boss's, which depends on the hero), BREATH_EVERY otherwise.
+     *
+     * @param array $config The phase's rule config; key bossBreathEvery, optional.
+     * @return int
+     */
+    public static function breath_every(array $config): int {
+        return (int) ($config['bossBreathEvery'] ?? 0) ?: self::BREATH_EVERY;
+    }
+
+    /**
      * Combo-size multiplier for pieces whose effect scales with match size (Sword/Coin).
      *
      * @param int $size Number of pieces in the matched run.
@@ -783,7 +794,7 @@ class combat_engine {
      * Everything that happens to a side as its turn begins, before it moves: its pending poison
      * tick (see resolve_poison_tick()); for the opponent, its turn count goes up (its first turn
      * is 1); with the intangible power, every INTANGIBLE_EVERY turns its Shield arms; with the
-     * breath power, while it still stands, every BREATH_EVERY turns it hits the student for
+     * breath power, while it still stands, every BREATH_EVERY turns (or the config's bossBreathEvery) it hits the student for
      * BREATH_MULTIPLIER times the base damage, through its attack, the student's armor and Shield,
      * and its own drain; with the loot power, every LOOT_EVERY turns it takes LOOT_PERCENT of the
      * student's coins for itself; and with the regen power, while it still stands, REGEN_PERCENT of
@@ -821,7 +832,7 @@ class combat_engine {
         $breath = null;
         if (
             $side === 'boss' && self::has_power($config, self::POWER_BREATH) && $next['currentHp'] > 0
-            && $next['bossTurnCount'] % self::BREATH_EVERY === 0
+            && $next['bossTurnCount'] % self::breath_every($config) === 0
         ) {
             $hit = self::hit_amount($config['baseDamage'] * self::BREATH_MULTIPLIER, 'boss', $config);
             $applied = self::resolve_damage($next['currentPlayerHp'], $next['playerShieldReady'], $hit);

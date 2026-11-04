@@ -51,7 +51,7 @@
 
 'use strict';
 
-const {INSTANCE, readOpponents, playMatch} = require('./sim_common.js');
+const {INSTANCE, readOpponents, fightWith, playMatch} = require('./sim_common.js');
 
 const ARMOR_CAP = 0.6;
 const ATTRIBUTES = ['hp', 'armor', 'attack'];
@@ -188,10 +188,11 @@ function playCampaign(run, levels, specialty) {
         let won = null;
         for (let attempt = 1; attempt <= options.tries && won === null; attempt++) {
             triesTotal++;
+            const fight = fightWith(opponent, hero.specialty);
             const match = playMatch({
                 seed: (run * 100003) + (k * 131) + attempt, level, phase, accuracy: options.accuracy,
-                difficulty: options.difficulty, modifiers: opponent.modifiers, powers: opponent.powers,
-                opponent: opponent.key, student: studentSide(hero, level, phase),
+                difficulty: options.difficulty, modifiers: fight.modifiers, powers: fight.powers,
+                breathEvery: fight.breathEvery, opponent: opponent.key, student: studentSide(hero, level, phase),
             });
             if (attempt === 1) {
                 firstTry.push(match.finished && match.won ? 1 : 0);
@@ -228,10 +229,12 @@ function lateWinRate(levels, side, samples) {
         const level = Math.floor((k - 1) / 10) + 1;
         const phase = ((k - 1) % 10) + 1;
         const opponent = opponents[k === phases ? opponents.length - 1 : phase - 1];
+        const fight = fightWith(opponent);
         for (let seed = 1; seed <= samples; seed++) {
             const match = playMatch({
                 seed: (seed * 7001) + k, level, phase, accuracy: options.accuracy, difficulty: options.difficulty,
-                modifiers: opponent.modifiers, powers: opponent.powers, opponent: opponent.key, student: side,
+                modifiers: fight.modifiers, powers: fight.powers, breathEvery: fight.breathEvery, opponent: opponent.key,
+                student: side,
             });
             played++;
             wins += match.finished && match.won ? 1 : 0;

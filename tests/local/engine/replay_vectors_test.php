@@ -95,6 +95,11 @@ final class replay_vectors_test extends \advanced_testcase {
             opponents::modifiers($fields['frozenopponent'])
         );
         $this->assertSame($vector['powers'] ?? [], opponents::powers($fields['frozenopponent']));
+        // What the final boss adds because of the student's hero is the server's own too.
+        $this->assertEquals(
+            $vector['counter'] ?? ['armor' => 0, 'powers' => [], 'breathevery' => 0],
+            opponents::counter($fields['frozenopponent'], (string) ($fields['frozenhero'] ?? ''))
+        );
 
         $attempt = (object) array_merge($fields, [
             'id' => $attemptid,

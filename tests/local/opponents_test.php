@@ -174,6 +174,31 @@ final class opponents_test extends \advanced_testcase {
     }
 
     /**
+     * Tests what the final boss adds by the specialty of the student's hero, at any stage of it: the armor
+     * against the strong in attack, the fast Grimoire against the strong in armor, the breath at the boss's own
+     * rhythm against the strong in HP; and that a student with no hero is fought as the warrior.
+     *
+     * @return void
+     */
+    public function test_final_boss_counters_the_heros_specialty(): void {
+        $none = ['armor' => 0.0, 'powers' => [], 'breathevery' => 0];
+        $boss = opponents::FINAL_BOSS;
+
+        $this->assertSame(['armor' => 0.15, 'powers' => [], 'breathevery' => 0], opponents::counter($boss, 'warriorf1'));
+        $this->assertSame(
+            ['armor' => 0.0, 'powers' => [combat_engine::POWER_FASTGRIMOIRE], 'breathevery' => 0],
+            opponents::counter($boss, 'archerm4')
+        );
+        $breath = ['armor' => 0.0, 'powers' => [combat_engine::POWER_BREATH], 'breathevery' => opponents::FINAL_BOSS_BREATH_EVERY];
+        $this->assertSame($breath, opponents::counter($boss, 'magef2'));
+        $this->assertNotSame(combat_engine::BREATH_EVERY, opponents::FINAL_BOSS_BREATH_EVERY, 'a rhythm of its own');
+        $this->assertSame(opponents::counter($boss, 'warriorm1'), opponents::counter($boss, ''), 'no hero: the warrior');
+        $this->assertSame(opponents::counter($boss, 'warriorm1'), opponents::counter($boss, 'dragon3'), 'not a hero');
+        $this->assertSame($none, opponents::counter('dragon', 'magef2'), 'only the final boss adds anything');
+        $this->assertSame($none, opponents::counter('', 'magef2'));
+    }
+
+    /**
      * Tests each opponent's powers, and that an opponent without a power,
      * or an attempt that never had its opponent frozen, has none.
      *

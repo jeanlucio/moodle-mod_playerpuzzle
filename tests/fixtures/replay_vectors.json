@@ -861,6 +861,7 @@
         "powers": [
             "ambush"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":5,"c1":1,"r2":5,"c2":2},
             {"type":"move","r1":0,"c1":3,"r2":1,"c2":3},
@@ -917,6 +918,7 @@
         "powers": [
             "iceshield"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":1,"c1":0,"r2":1,"c2":1},
             {"type":"consumable","kind":"sword"},
@@ -989,6 +991,7 @@
         "powers": [
             "regen"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":1,"c1":5,"r2":2,"c2":5},
             {"type":"move","r1":0,"c1":4,"r2":0,"c2":5},
@@ -1075,6 +1078,7 @@
         "powers": [
             "rootheal"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":0,"c1":6,"r2":0,"c2":7},
             {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
@@ -1113,6 +1117,7 @@
         "powers": [
             "breath"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":4,"c1":4,"r2":5,"c2":4},
             {"type":"move","r1":2,"c1":1,"r2":3,"c2":1},
@@ -1158,6 +1163,7 @@
         "powers": [
             "iceshield"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
             {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
@@ -1190,6 +1196,7 @@
         "powers": [
             "longpoison"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":1,"c1":4,"r2":2,"c2":4},
             {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
@@ -1336,6 +1343,7 @@
         "powers": [
             "fastgrimoire"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":7,"c1":4,"r2":7,"c2":5},
             {"type":"move","r1":0,"c1":1,"r2":0,"c2":2},
@@ -1490,6 +1498,7 @@
         "powers": [
             "manaboost"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":1,"c1":0,"r2":2,"c2":0},
             {"type":"move","r1":2,"c1":2,"r2":3,"c2":2},
@@ -1571,6 +1580,7 @@
         "powers": [
             "rootheal"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":4,"c1":5,"r2":4,"c2":6},
             {"type":"move","r1":4,"c1":6,"r2":5,"c2":6},
@@ -1742,6 +1752,7 @@
         "powers": [
             "regen"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":0,"c1":5,"r2":0,"c2":6},
             {"type":"move","r1":0,"c1":1,"r2":0,"c2":2},
@@ -1937,6 +1948,7 @@
         "powers": [
             "ambush"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":1,"c1":5,"r2":1,"c2":6},
             {"type":"move","r1":4,"c1":0,"r2":4,"c2":1},
@@ -2181,6 +2193,7 @@
         "powers": [
             "intangible"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":4,"c1":4,"r2":4,"c2":5},
             {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
@@ -2377,6 +2390,7 @@
         "powers": [
             "breath"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":2,"c1":7,"r2":3,"c2":7},
             {"type":"move","r1":4,"c1":1,"r2":5,"c2":1},
@@ -2522,6 +2536,7 @@
         "powers": [
             "loot"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":1,"c1":7,"r2":2,"c2":7},
             {"type":"move","r1":2,"c1":2,"r2":3,"c2":2},
@@ -2614,6 +2629,7 @@
         "powers": [
             "drain"
         ],
+        "counter": {"armor":0.15,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":2,"c1":2,"r2":3,"c2":2},
             {"type":"move","r1":0,"c1":2,"r2":1,"c2":2},
@@ -2718,7 +2734,7 @@
             {"side":"player","correct":false,"counted":true}
         ],
         "serveruses": {},
-        "expected": {"damage":102,"playergold":150,"bossgold":120,"bossdefeated":false}
+        "expected": {"damage":87,"playergold":150,"bossgold":120,"bossdefeated":false}
     },
     {
         "name": "final boss, drain and extra HP",
@@ -2728,6 +2744,7 @@
         "powers": [
             "drain"
         ],
+        "counter": {"armor":0.15,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":6,"c1":4,"r2":7,"c2":4},
             {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
@@ -2743,7 +2760,227 @@
             {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":70,"playergold":15,"bossgold":15,"bossdefeated":false}
+        "expected": {"damage":50,"playergold":15,"bossgold":15,"bossdefeated":false}
+    },
+    {
+        "name": "final boss against a warrior: armor",
+        "attempt": {"rngseed":143,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":7,"frozenbasebosshp":400,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"vampire","frozenhero":"warriorf4"},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":300},
+        "modifiers": {"hp":1.2,"attack":1,"armor":0},
+        "powers": [
+            "drain"
+        ],
+        "counter": {"armor":0.15,"powers":[],"breathevery":0},
+        "events": [
+            {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
+            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
+            {"type":"move","r1":2,"c1":3,"r2":2,"c2":4},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":1,"r2":1,"c2":1},
+            {"type":"move","r1":3,"c1":4,"r2":3,"c2":5},
+            {"type":"move","r1":1,"c1":2,"r2":2,"c2":2},
+            {"type":"move","r1":4,"c1":4,"r2":5,"c2":4},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":0,"c1":4,"r2":0,"c2":5},
+            {"type":"move","r1":2,"c1":4,"r2":2,"c2":5},
+            {"type":"move","r1":2,"c1":2,"r2":2,"c2":3},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":2,"r2":1,"c2":2},
+            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
+            {"type":"move","r1":0,"c1":5,"r2":1,"c2":5},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":1,"c1":1,"r2":2,"c2":1},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":0,"c1":0,"r2":1,"c2":0},
+            {"type":"move","r1":0,"c1":7,"r2":1,"c2":7},
+            {"type":"move","r1":2,"c1":6,"r2":3,"c2":6},
+            {"type":"move","r1":2,"c1":6,"r2":2,"c2":7},
+            {"type":"move","r1":0,"c1":5,"r2":0,"c2":6},
+            {"type":"move","r1":1,"c1":5,"r2":2,"c2":5},
+            {"type":"move","r1":2,"c1":5,"r2":2,"c2":6},
+            {"type":"move","r1":0,"c1":0,"r2":1,"c2":0},
+            {"type":"move","r1":3,"c1":5,"r2":4,"c2":5},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
+            {"type":"move","r1":5,"c1":5,"r2":5,"c2":6},
+            {"type":"move","r1":1,"c1":3,"r2":2,"c2":3},
+            {"type":"move","r1":4,"c1":4,"r2":4,"c2":5},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":3,"r2":0,"c2":4},
+            {"type":"move","r1":1,"c1":6,"r2":2,"c2":6},
+            {"type":"move","r1":7,"c1":2,"r2":7,"c2":3},
+            {"type":"move","r1":4,"c1":0,"r2":4,"c2":1},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":2,"c1":1,"r2":2,"c2":2},
+            {"type":"move","r1":2,"c1":4,"r2":3,"c2":4},
+            {"type":"move","r1":0,"c1":5,"r2":1,"c2":5},
+            {"type":"move","r1":0,"c1":4,"r2":0,"c2":5},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":2,"c1":0,"r2":2,"c2":1},
+            {"type":"move","r1":1,"c1":0,"r2":1,"c2":1},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":3,"r2":0,"c2":4},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":3,"c1":4,"r2":3,"c2":5},
+            {"type":"move","r1":0,"c1":2,"r2":1,"c2":2},
+            {"type":"move","r1":1,"c1":2,"r2":1,"c2":3},
+            {"type":"move","r1":0,"c1":1,"r2":0,"c2":2},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
+            {"type":"question","side":"boss","outcome":"answered"}
+        ],
+        "outcomes": [
+            {"side":"player","correct":true,"counted":true},
+            {"side":"boss","correct":true,"counted":false},
+            {"side":"player","correct":false,"counted":true},
+            {"side":"player","correct":true,"counted":true},
+            {"side":"boss","correct":false,"counted":false},
+            {"side":"boss","correct":true,"counted":false},
+            {"side":"player","correct":false,"counted":true},
+            {"side":"boss","correct":false,"counted":false},
+            {"side":"player","correct":true,"counted":true},
+            {"side":"boss","correct":true,"counted":false},
+            {"side":"player","correct":false,"counted":true},
+            {"side":"boss","correct":false,"counted":false},
+            {"side":"player","correct":true,"counted":true},
+            {"side":"boss","correct":true,"counted":false}
+        ],
+        "serveruses": {},
+        "expected": {"damage":74,"playergold":100,"bossgold":40,"bossdefeated":false}
+    },
+    {
+        "name": "final boss against an archer: fast Grimoire",
+        "attempt": {"rngseed":144,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":5,"frozenbasebosshp":400,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"vampire","frozenhero":"archerm3"},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":300},
+        "modifiers": {"hp":1.2,"attack":1,"armor":0},
+        "powers": [
+            "drain"
+        ],
+        "counter": {"armor":0,"powers":["fastgrimoire"],"breathevery":0},
+        "events": [
+            {"type":"move","r1":0,"c1":6,"r2":0,"c2":7},
+            {"type":"move","r1":6,"c1":3,"r2":7,"c2":3},
+            {"type":"move","r1":0,"c1":4,"r2":0,"c2":5},
+            {"type":"move","r1":2,"c1":5,"r2":2,"c2":6},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":4,"r2":0,"c2":5},
+            {"type":"move","r1":3,"c1":6,"r2":4,"c2":6},
+            {"type":"move","r1":3,"c1":4,"r2":3,"c2":5},
+            {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
+            {"type":"move","r1":0,"c1":1,"r2":0,"c2":2},
+            {"type":"move","r1":3,"c1":3,"r2":3,"c2":4},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":1,"c1":2,"r2":1,"c2":3},
+            {"type":"move","r1":0,"c1":3,"r2":0,"c2":4},
+            {"type":"move","r1":1,"c1":4,"r2":1,"c2":5},
+            {"type":"move","r1":1,"c1":4,"r2":2,"c2":4},
+            {"type":"move","r1":0,"c1":5,"r2":0,"c2":6},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
+            {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
+            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
+            {"type":"move","r1":1,"c1":6,"r2":2,"c2":6},
+            {"type":"move","r1":4,"c1":5,"r2":5,"c2":5},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":2,"c1":0,"r2":2,"c2":1},
+            {"type":"move","r1":0,"c1":0,"r2":0,"c2":1},
+            {"type":"move","r1":5,"c1":6,"r2":5,"c2":7},
+            {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
+            {"type":"move","r1":2,"c1":5,"r2":2,"c2":6},
+            {"type":"move","r1":1,"c1":6,"r2":1,"c2":7},
+            {"type":"move","r1":3,"c1":5,"r2":4,"c2":5},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":1,"r2":0,"c2":2},
+            {"type":"move","r1":5,"c1":6,"r2":5,"c2":7},
+            {"type":"move","r1":0,"c1":0,"r2":1,"c2":0},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":2,"c1":6,"r2":3,"c2":6},
+            {"type":"move","r1":0,"c1":5,"r2":1,"c2":5},
+            {"type":"move","r1":0,"c1":5,"r2":1,"c2":5},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":3,"c1":2,"r2":4,"c2":2},
+            {"type":"move","r1":1,"c1":3,"r2":2,"c2":3},
+            {"type":"move","r1":0,"c1":1,"r2":1,"c2":1},
+            {"type":"move","r1":1,"c1":1,"r2":1,"c2":2},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":1,"c1":0,"r2":1,"c2":1},
+            {"type":"move","r1":2,"c1":4,"r2":3,"c2":4},
+            {"type":"move","r1":2,"c1":2,"r2":3,"c2":2},
+            {"type":"move","r1":6,"c1":3,"r2":7,"c2":3},
+            {"type":"question","side":"player","outcome":"answered"}
+        ],
+        "outcomes": [
+            {"side":"player","correct":true,"counted":true},
+            {"side":"player","correct":false,"counted":true},
+            {"side":"boss","correct":true,"counted":false},
+            {"side":"player","correct":true,"counted":true},
+            {"side":"boss","correct":false,"counted":false},
+            {"side":"boss","correct":true,"counted":false},
+            {"side":"player","correct":false,"counted":true},
+            {"side":"boss","correct":false,"counted":false},
+            {"side":"boss","correct":true,"counted":false},
+            {"side":"boss","correct":false,"counted":false},
+            {"side":"player","correct":true,"counted":true}
+        ],
+        "serveruses": {},
+        "expected": {"damage":151,"playergold":110,"bossgold":70,"bossdefeated":false}
+    },
+    {
+        "name": "final boss against a mage: breath",
+        "attempt": {"rngseed":145,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":3,"frozenbasebosshp":2500,"frozenbossdamage":14,"frozencoingain":10,"frozenopponent":"vampire","frozenhero":"magem2"},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":300},
+        "modifiers": {"hp":1.2,"attack":1,"armor":0},
+        "powers": [
+            "drain"
+        ],
+        "counter": {"armor":0,"powers":["breath"],"breathevery":12},
+        "events": [
+            {"type":"move","r1":1,"c1":2,"r2":1,"c2":3},
+            {"type":"move","r1":0,"c1":4,"r2":0,"c2":5},
+            {"type":"move","r1":7,"c1":1,"r2":7,"c2":2},
+            {"type":"move","r1":1,"c1":1,"r2":1,"c2":2},
+            {"type":"move","r1":2,"c1":2,"r2":2,"c2":3},
+            {"type":"move","r1":1,"c1":5,"r2":1,"c2":6},
+            {"type":"move","r1":0,"c1":0,"r2":0,"c2":1},
+            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":0,"c1":3,"r2":1,"c2":3},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":0,"c1":3,"r2":0,"c2":4},
+            {"type":"move","r1":2,"c1":5,"r2":2,"c2":6},
+            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
+            {"type":"move","r1":4,"c1":5,"r2":5,"c2":5},
+            {"type":"move","r1":0,"c1":0,"r2":0,"c2":1},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":4,"c1":3,"r2":4,"c2":4},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":6,"c1":1,"r2":6,"c2":2},
+            {"type":"question","side":"player","outcome":"answered"},
+            {"type":"move","r1":2,"c1":6,"r2":2,"c2":7},
+            {"type":"move","r1":2,"c1":3,"r2":2,"c2":4},
+            {"type":"move","r1":1,"c1":3,"r2":1,"c2":4},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":3,"c1":7,"r2":4,"c2":7},
+            {"type":"move","r1":0,"c1":6,"r2":1,"c2":6},
+            {"type":"move","r1":1,"c1":4,"r2":2,"c2":4},
+            {"type":"move","r1":4,"c1":2,"r2":5,"c2":2},
+            {"type":"move","r1":1,"c1":1,"r2":2,"c2":1}
+        ],
+        "outcomes": [
+            {"side":"player","correct":false,"counted":true},
+            {"side":"boss","correct":true,"counted":false},
+            {"side":"player","correct":false,"counted":true},
+            {"side":"boss","correct":false,"counted":false},
+            {"side":"player","correct":false,"counted":true},
+            {"side":"boss","correct":true,"counted":false}
+        ],
+        "serveruses": {},
+        "expected": {"damage":0,"playergold":30,"bossgold":35,"bossdefeated":false}
     },
     {
         "name": "frozen student side: more HP and attack",
@@ -2827,6 +3064,7 @@
         "powers": [
             "ambush"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":1,"c1":3,"r2":1,"c2":4},
             {"type":"move","r1":6,"c1":2,"r2":6,"c2":3},
@@ -2871,6 +3109,7 @@
         "powers": [
             "breath"
         ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
         "events": [
             {"type":"move","r1":1,"c1":2,"r2":2,"c2":2},
             {"type":"move","r1":6,"c1":0,"r2":6,"c2":1},

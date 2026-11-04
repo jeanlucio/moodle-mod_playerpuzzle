@@ -51,6 +51,19 @@ final class heroes_test extends \basic_testcase {
     }
 
     /**
+     * Tests that a sprite names its hero, whatever its stage, and that anything else names none.
+     *
+     * @return void
+     */
+    public function test_a_sprite_names_its_hero(): void {
+        $this->assertSame('archerf', heroes::of_sprite('archerf4'));
+        $this->assertSame('magem', heroes::of_sprite(heroes::sprite('magem', 2)));
+        $this->assertSame('', heroes::of_sprite(''));
+        $this->assertSame('', heroes::of_sprite('dragon3'));
+        $this->assertSame('', heroes::of_sprite('magef'), 'a hero without a stage is not a sprite');
+    }
+
+    /**
      * Data provider for the caps and milestones of Campaigns of different lengths.
      *
      * @return array

@@ -783,5 +783,49 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110302, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026110303) {
+        // The student's side of a phase (max HP, attack, armor) is fixed when the phase starts, like the
+        // opponent's, so the server replay fights with what the live client did.
+        $table = new xmldb_table('playerpuzzle_attempts');
+        // Name, type, length, default and the field each one follows.
+        $definitions = [
+            ['frozenplayerhp', XMLDB_TYPE_INTEGER, '10', '0', 'frozenopponent'],
+            ['frozenplayerattack', XMLDB_TYPE_NUMBER, '6, 3', '1.000', 'frozenplayerhp'],
+            ['frozenplayerarmor', XMLDB_TYPE_NUMBER, '6, 3', '0.000', 'frozenplayerattack'],
+        ];
+        foreach ($definitions as [$name, $type, $length, $default, $previous]) {
+            $field = new xmldb_field($name, $type, $length, null, XMLDB_NOTNULL, null, $default, $previous);
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        // A phase in progress keeps the HP it was started with: the instance's base HP, which a teacher
+        // may have edited since, scaled for its level and phase. Finished attempts are never replayed.
+        $inprogress = $DB->get_recordset_sql(
+            "SELECT a.id, a.currentlevel, a.currentphase, p.basestudenthp
+               FROM {playerpuzzle_attempts} a
+               JOIN {playerpuzzle} p ON p.id = a.playerpuzzleid
+              WHERE a.status = :status AND a.isdemo = 0",
+            ['status' => 'inprogress']
+        );
+        $idsbyhp = [];
+        foreach ($inprogress as $attempt) {
+            $hp = (int) round($attempt->basestudenthp * (
+                1 + 0.3 * ($attempt->currentlevel - 1) + 0.05 * ($attempt->currentphase - 1)
+            ));
+            $idsbyhp[$hp][] = (int) $attempt->id;
+        }
+        $inprogress->close();
+        foreach ($idsbyhp as $hp => $ids) {
+            foreach (array_chunk($ids, 1000) as $chunk) {
+                [$insql, $params] = $DB->get_in_or_equal($chunk);
+                $DB->set_field_select('playerpuzzle_attempts', 'frozenplayerhp', $hp, "id $insql", $params);
+            }
+        }
+
+        upgrade_mod_savepoint(true, 2026110303, 'playerpuzzle');
+    }
+
     return true;
 }

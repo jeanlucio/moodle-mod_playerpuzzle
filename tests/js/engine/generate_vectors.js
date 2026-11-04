@@ -177,6 +177,16 @@ const REPLAY_CASES = [
         student: 400, typeOffset: 4, playerAnswers: ['wrong'], bossAnswers: ['right', 'wrong']},
     {name: 'final boss, drain and extra HP', opponent: 'vampire', seed: 120, boss: 100, damage: 9, coin: 15, student: 180,
         level: 3, phase: 10, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
+    // The instance's base HP is deliberately far from the frozen one: the phase fights with what it froze.
+    {name: 'frozen student side: more HP and attack', seed: 140, boss: 300, damage: 12, coin: 10, student: 40,
+        frozenStudent: {hp: 260, attack: 1.3, armor: 0}, typeOffset: 0, playerAnswers: ['right', 'wrong'],
+        bossAnswers: ['wrong', 'right']},
+    {name: 'frozen student side: armor against a goblin', opponent: 'goblin', seed: 141, boss: 250, damage: 14, coin: 10,
+        student: 40, frozenStudent: {hp: 180, attack: 1, armor: 0.3}, typeOffset: 2, playerAnswers: ['right', 'wrong'],
+        bossAnswers: ['right', 'right']},
+    {name: 'frozen student side: attack and armor, a lost match', opponent: 'dragon', seed: 142, boss: 3000, damage: 14,
+        coin: 10, student: 500, frozenStudent: {hp: 120, attack: 1.15, armor: 0.15}, typeOffset: 1,
+        playerAnswers: ['wrong'], bossAnswers: ['right']},
 ];
 
 // The profile modifiers of the opponents the replay cases fight. The table itself lives only on
@@ -519,6 +529,11 @@ function buildReplayVectors() {
         const powers = spec.opponent ? OPPONENT_POWERS[spec.opponent] || [] : undefined;
         if (spec.opponent) {
             attempt.frozenopponent = spec.opponent;
+        }
+        if (spec.frozenStudent) {
+            attempt.frozenplayerhp = spec.frozenStudent.hp;
+            attempt.frozenplayerattack = spec.frozenStudent.attack;
+            attempt.frozenplayerarmor = spec.frozenStudent.armor;
         }
         const playerpuzzle = {minquestions: spec.minquestions || 0, basestudenthp: spec.student};
 

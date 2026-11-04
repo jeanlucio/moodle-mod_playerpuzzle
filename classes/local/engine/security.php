@@ -96,7 +96,7 @@ class security {
         $playerpuzzle = $DB->get_record(
             'playerpuzzle',
             ['id' => $playerpuzzleid],
-            'basebosshp, bossdamage, coingain, gamemode, maxlevels, bossavatar',
+            'basebosshp, basestudenthp, bossdamage, coingain, gamemode, maxlevels, bossavatar',
             MUST_EXIST
         );
         self::seed_replay_state($attempt, $playerpuzzle);
@@ -120,7 +120,7 @@ class security {
      * @param \stdClass $playerpuzzle The instance record — basebosshp/bossdamage/coingain
      *  are read from it and frozen for this phase, so a later teacher edit mid-match cannot
      *  desync a replay of an already-played phase; gamemode/maxlevels/bossavatar decide the
-     *  phase's opponent, frozen for the same reason.
+     *  phase's opponent, and basestudenthp the student's HP, frozen for the same reason.
      * @return void
      */
     public static function seed_replay_state(\stdClass $attempt, \stdClass $playerpuzzle): void {
@@ -137,6 +137,13 @@ class security {
             (int) $attempt->currentlevel,
             (int) $attempt->currentphase
         );
+        $attempt->frozenplayerhp = combat::calculate_student_hp(
+            (int) $playerpuzzle->basestudenthp,
+            (int) $attempt->currentlevel,
+            (int) $attempt->currentphase
+        );
+        $attempt->frozenplayerattack = 1.0;
+        $attempt->frozenplayerarmor = 0.0;
     }
 
     /**
@@ -316,6 +323,9 @@ class security {
                 'frozenbossdamage' => (int) $attempt->frozenbossdamage,
                 'frozencoingain' => (int) $attempt->frozencoingain,
                 'frozenopponent' => (string) ($attempt->frozenopponent ?? ''),
+                'frozenplayerhp' => (int) $attempt->frozenplayerhp,
+                'frozenplayerattack' => (float) $attempt->frozenplayerattack,
+                'frozenplayerarmor' => (float) $attempt->frozenplayerarmor,
                 'isdemo' => (bool) $attempt->isdemo,
                 'isnew' => false,
             ];
@@ -355,7 +365,8 @@ class security {
         $newrow = $DB->get_record(
             'playerpuzzle_attempts',
             ['token' => $token],
-            'id, isdemo, rngseed, moveseq, frozenbasebosshp, frozenbossdamage, frozencoingain, frozenopponent',
+            'id, isdemo, rngseed, moveseq, frozenbasebosshp, frozenbossdamage, frozencoingain, frozenopponent, '
+                . 'frozenplayerhp, frozenplayerattack, frozenplayerarmor',
             MUST_EXIST
         );
 
@@ -375,6 +386,9 @@ class security {
             'frozenbossdamage' => (int) $newrow->frozenbossdamage,
             'frozencoingain' => (int) $newrow->frozencoingain,
             'frozenopponent' => (string) ($newrow->frozenopponent ?? ''),
+            'frozenplayerhp' => (int) $newrow->frozenplayerhp,
+            'frozenplayerattack' => (float) $newrow->frozenplayerattack,
+            'frozenplayerarmor' => (float) $newrow->frozenplayerarmor,
             'isdemo' => (bool) $newrow->isdemo,
             'isnew' => true,
         ];

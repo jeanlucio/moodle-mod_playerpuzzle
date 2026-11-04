@@ -409,12 +409,16 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * The phase's rule config as the pure rules take it.
          *
          * @returns {{baseDamage: number, coinGain: number, coinFactor: number, bossAttack: number, bossArmor: number,
-         *  bossPowers: Array<string>, bossKit: {potion: number, sword: number}, difficulty: string}}
+         *  playerAttack: number, playerArmor: number, bossPowers: Array<string>,
+         *  bossKit: {potion: number, sword: number}, difficulty: string}}
          */
         ruleConfig() {
             return {
                 baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor,
                 bossAttack: this.bossAttack, bossArmor: this.bossArmor, bossPowers: this.bossPowers,
+                // The student's own attack and armor, fixed when the phase started (1 and 0 with no bonus).
+                playerAttack: parseFloat(this.gameConfig.playerattack) || 1,
+                playerArmor: parseFloat(this.gameConfig.playerarmor) || 0,
                 // The Potions and Swords the opponent starts the phase with, none in a Demo.
                 bossKit: this.gameConfig.bosskit || {potion: 0, sword: 0},
                 difficulty: this.gameConfig.difficulty || 'normal',

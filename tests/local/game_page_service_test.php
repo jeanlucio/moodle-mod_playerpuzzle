@@ -660,8 +660,12 @@ final class game_page_service_test extends \advanced_testcase {
             (int) $instance->id,
             (int) $this->student->id
         );
-        $DB->set_field('playerpuzzle_attempts', 'currentlevel', 5, ['token' => $token]);
-        $DB->set_field('playerpuzzle_attempts', 'currentphase', 1, ['token' => $token]);
+        // The attempt reaches Level 5 the way a real one does: the phase starts, and freezes its values.
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $attempt->currentlevel = 5;
+        $attempt->currentphase = 1;
+        \mod_playerpuzzle\local\engine\security::seed_replay_state($attempt, $instance);
+        $DB->update_record('playerpuzzle_attempts', $attempt);
 
         $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
 

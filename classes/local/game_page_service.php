@@ -417,13 +417,11 @@ class game_page_service {
         $bossdamage = $opponentside['basedamage'];
         if ($isdemo) {
             $studenthp = combat::DEMO_HP;
+            $student = ['attack' => 1.0, 'armor' => 0.0];
             $coingain = (int) $instance->coingain;
         } else {
-            $studenthp = combat::calculate_student_hp(
-                (int) $instance->basestudenthp,
-                $attemptinfo->currentlevel,
-                $attemptinfo->currentphase
-            );
+            $student = combat::phase_student($attemptinfo, $instance);
+            $studenthp = $student['maxhp'];
             $coingain = $attemptinfo->frozencoingain;
         }
 
@@ -514,6 +512,10 @@ class game_page_service {
             'maxlevels'            => (int) $instance->maxlevels,
             'bosshp'               => $bosshp,
             'studenthp'            => $studenthp,
+            // The multiplier on the hits the student lands and the share of each hit they take that
+            // their armor absorbs, fixed when the phase started like the HP above.
+            'playerattack'         => $student['attack'],
+            'playerarmor'          => $student['armor'],
             'bossdamage'           => $bossdamage,
             // The opponent profile's multiplier on the hits it lands and the share of each hit it
             // takes that its armor absorbs (1 and 0 without a profile). The client only uses them

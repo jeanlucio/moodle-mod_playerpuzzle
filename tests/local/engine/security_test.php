@@ -163,6 +163,9 @@ final class security_test extends \advanced_testcase {
             'frozenbasebosshp' => 1,
             'frozenbossdamage' => 1,
             'frozencoingain' => 1,
+            'frozenplayerhp' => 1,
+            'frozenplayerattack' => 9.0,
+            'frozenplayerarmor' => 0.9,
         ];
 
         security::seed_replay_state($attempt, $instance);
@@ -176,6 +179,34 @@ final class security_test extends \advanced_testcase {
         $this->assertSame(6, $attempt->frozenbossdamage);
         $this->assertSame(7, $attempt->frozencoingain);
         $this->assertSame('goblin', $attempt->frozenopponent, 'the Campaign opponent of the attempt\'s own phase');
+        $this->assertSame(
+            combat::calculate_student_hp((int) $instance->basestudenthp, 1, 2),
+            $attempt->frozenplayerhp,
+            'the student HP of the phase, scaled for its level and phase'
+        );
+        $this->assertSame([1.0, 0.0], [$attempt->frozenplayerattack, $attempt->frozenplayerarmor]);
+    }
+
+    /**
+     * Tests that a phase keeps the student HP it started with when the teacher edits the base HP
+     * afterwards, and that a resumed attempt carries what it froze.
+     *
+     * @return void
+     */
+    public function test_student_side_is_frozen_when_the_phase_starts(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $instance = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')
+            ->create_instance(['course' => $course->id, 'basestudenthp' => 100]);
+        $user = $this->getDataGenerator()->create_user();
+
+        $created = security::resume_or_create_attempt_token((int) $instance->id, (int) $user->id);
+        $DB->set_field('playerpuzzle', 'basestudenthp', 500, ['id' => $instance->id]);
+        $resumed = security::resume_or_create_attempt_token((int) $instance->id, (int) $user->id);
+
+        $this->assertSame(100, $created->frozenplayerhp);
+        $this->assertSame([100, 1.0, 0.0], [$resumed->frozenplayerhp, $resumed->frozenplayerattack, $resumed->frozenplayerarmor]);
     }
 
     /**

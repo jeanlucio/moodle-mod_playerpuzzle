@@ -251,6 +251,28 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
+     * Tests that phase_student() reads what the phase froze, and that an attempt from before the
+     * student's side was frozen falls back to the instance's own scaling with no attack or armor.
+     *
+     * @return void
+     */
+    public function test_phase_student_reads_the_frozen_side_and_falls_back_to_the_instance(): void {
+        $instance = (object) ['basestudenthp' => 100];
+
+        $frozen = combat::phase_student($this->make_attempt([
+            'frozenplayerhp' => 240, 'frozenplayerattack' => '1.150', 'frozenplayerarmor' => '0.250',
+            'currentlevel' => 3, 'currentphase' => 4,
+        ]), $instance);
+        $this->assertSame(['maxhp' => 240, 'attack' => 1.15, 'armor' => 0.25], $frozen);
+
+        $legacy = combat::phase_student($this->make_attempt([
+            'frozenplayerhp' => 0, 'frozenplayerattack' => '3.000', 'frozenplayerarmor' => '0.500',
+            'currentlevel' => 2, 'currentphase' => 6,
+        ]), $instance);
+        $this->assertSame(['maxhp' => combat::calculate_student_hp(100, 2, 6), 'attack' => 1.0, 'armor' => 0.0], $legacy);
+    }
+
+    /**
      * Tests that a Demo fights at the fixed HP with no profile, no powers, no items and no difficulty.
      *
      * @return void

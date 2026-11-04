@@ -73,9 +73,10 @@ class provider implements
      * this attempt), always 0 outside of a live in-progress fight and carrying no narrative
      * value to a personal-data export — the same category as isdemo, not personal data
      * about the user. rngseed/moveseq/engineversion/frozenbasebosshp/frozenbossdamage/
-     * frozencoingain/frozenopponent are anti-cheat replay plumbing (a PRNG seed, a sequence
-     * counter, the plugin version and instance config frozen at the start of the phase, and
-     * the opponent that config gave the phase) — technical
+     * frozencoingain/frozenopponent/frozenplayerhp/frozenplayerattack/frozenplayerarmor are
+     * anti-cheat replay plumbing (a PRNG seed, a sequence counter, the plugin version and
+     * instance config frozen at the start of the phase, the opponent that config gave the
+     * phase, and the student's own max HP, attack and armor for it) — technical
      * state the server needs to verify a match, carrying no information about the user
      * themselves, the same category as currentquestionid. movelog (the ordered log of board
      * swaps and question resolutions for the current phase) is different: it is a record of

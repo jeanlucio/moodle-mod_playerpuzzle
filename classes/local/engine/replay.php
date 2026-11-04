@@ -186,16 +186,17 @@ class replay {
             'bossKit' => $opponent['bosskit'],
             'difficulty' => $difficulty,
         ];
+        $student = combat::phase_student($attempt, $playerpuzzle);
+        // Only a phase with something to apply carries the keys, so the config stays what it was for
+        // a student with no bonus.
+        if ($student['attack'] !== 1.0) {
+            $config['playerAttack'] = $student['attack'];
+        }
+        if ($student['armor'] !== 0.0) {
+            $config['playerArmor'] = $student['armor'];
+        }
         $maxbosshp = $opponent['maxbosshp'];
-        // Note: basestudenthp is not one of the columns frozen at phase start (only the boss-side
-        // config feeds the damage/coin totals this derives): a teacher edit to it mid-phase
-        // could make this value disagree with what the live client used for its own
-        // maxPlayerHp. The only consequence is that a "player defeated" terminal state might
-        // be reached earlier or later here than it truly was client-side — this never affects
-        // the boss-damage/coin totals derived on a win, and on a loss it can only ever make
-        // this method less likely to reach a confident terminal state (falling back to the
-        // existing plausibility check), never more likely to return a wrong value.
-        $maxplayerhp = combat::calculate_student_hp((int) $playerpuzzle->basestudenthp, $level, $phase);
+        $maxplayerhp = $student['maxhp'];
 
         $state = combat_engine::initial_state((float) $maxplayerhp, (float) $maxbosshp, $config);
 

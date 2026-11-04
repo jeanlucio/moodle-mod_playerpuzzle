@@ -98,8 +98,21 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
     const phase = attempt.currentphase;
     const bossFactor = DIFFICULTY_BOSS_FACTORS[attempt.difficulty] ?? 1.0;
     const scaledBossHp = Math.round(scaleBoss(attempt.frozenbasebosshp, level, phase) * bossFactor);
+    // The student's side as the phase froze it (combat::phase_student()): an attempt without it falls
+    // back to the instance's own scaling, with no attack bonus and no armor.
+    const frozenHp = attempt.frozenplayerhp || 0;
+    const attack = frozenHp > 0 ? attempt.frozenplayerattack : 1;
+    const armor = frozenHp > 0 ? attempt.frozenplayerarmor : 0;
+    const playerSide = {};
+    if (attack !== 1) {
+        playerSide.playerAttack = attack;
+    }
+    if (armor !== 0) {
+        playerSide.playerArmor = armor;
+    }
     return {
         config: {
+            ...playerSide,
             baseDamage: Math.round(scaleBoss(attempt.frozenbossdamage, level, phase) * bossFactor),
             coinGain: attempt.frozencoingain,
             coinFactor: DIFFICULTY_COIN_FACTORS[attempt.difficulty] ?? 1.0,
@@ -111,7 +124,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             difficulty: attempt.difficulty || 'normal',
         },
         maxBossHp: Math.floor((scaledBossHp * modifiers.hp) + 0.5),
-        maxPlayerHp: scaleStudent(playerpuzzle.basestudenthp, level, phase),
+        maxPlayerHp: frozenHp > 0 ? frozenHp : scaleStudent(playerpuzzle.basestudenthp, level, phase),
     };
 }
 

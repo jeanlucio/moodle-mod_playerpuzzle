@@ -288,11 +288,7 @@ class advance_phase extends external_api {
                     'currentphase' => $newphase,
                     'difficulty'   => $newdifficulty,
                     'bosshp'       => combat::phase_opponent($attempt, $playerpuzzle)['maxbosshp'],
-                    'studenthp'    => combat::calculate_student_hp(
-                        (int) $playerpuzzle->basestudenthp,
-                        $newlevel,
-                        $newphase
-                    ),
+                    'studenthp'    => combat::phase_student($attempt, $playerpuzzle)['maxhp'],
                     'coinsbanked'  => $coinsbanked,
                 ];
             }
@@ -328,7 +324,7 @@ class advance_phase extends external_api {
             'currentphase' => $phase,
             'difficulty'   => (string) $attempt->difficulty,
             'bosshp'       => combat::phase_opponent($attempt, $playerpuzzle)['maxbosshp'],
-            'studenthp'    => combat::calculate_student_hp((int) $playerpuzzle->basestudenthp, $level, $phase),
+            'studenthp'    => combat::phase_student($attempt, $playerpuzzle)['maxhp'],
             'coinsbanked'  => 0,
         ];
     }

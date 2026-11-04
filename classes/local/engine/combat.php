@@ -169,6 +169,39 @@ class combat {
     }
 
     /**
+     * The student's side of a phase as it was fixed when the phase started: max HP, the multiplier on
+     * the hits they land and the share of each hit they take that their armor absorbs. Read by the
+     * server replay and by the page that starts the live client, so both fight with the same numbers.
+     * A row from before these were frozen has no HP stored; it falls back to the instance's own scaling,
+     * with no attack bonus and no armor.
+     *
+     * @param \stdClass $attempt The attempt row (currentlevel, currentphase, frozenplayerhp,
+     *  frozenplayerattack, frozenplayerarmor).
+     * @param \stdClass $instance The instance record (basestudenthp).
+     * @return array ['maxhp' => int, 'attack' => float, 'armor' => float]
+     */
+    public static function phase_student(\stdClass $attempt, \stdClass $instance): array {
+        $frozenhp = (int) ($attempt->frozenplayerhp ?? 0);
+        if ($frozenhp > 0) {
+            return [
+                'maxhp' => $frozenhp,
+                'attack' => (float) $attempt->frozenplayerattack,
+                'armor' => (float) $attempt->frozenplayerarmor,
+            ];
+        }
+
+        return [
+            'maxhp' => self::calculate_student_hp(
+                (int) $instance->basestudenthp,
+                (int) $attempt->currentlevel,
+                (int) $attempt->currentphase
+            ),
+            'attack' => 1.0,
+            'armor' => 0.0,
+        ];
+    }
+
+    /**
      * Calculates the student HP for a given level/phase, scaled from the teacher-configured
      * base HP.
      *

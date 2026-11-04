@@ -77,6 +77,7 @@
         <FIELD NAME="frozenplayerhp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Student max HP snapshotted at the start of this phase, so the server replay fights with the HP the live client did; 0 on a row from before this was frozen (the replay then derives it from the instance)"/>
         <FIELD NAME="frozenplayerattack" TYPE="number" LENGTH="6" NOTNULL="true" DEFAULT="1.000" SEQUENCE="false" DECIMALS="3" COMMENT="Student attack multiplier snapshotted at the start of this phase, same reasoning as frozenplayerhp"/>
         <FIELD NAME="frozenplayerarmor" TYPE="number" LENGTH="6" NOTNULL="true" DEFAULT="0.000" SEQUENCE="false" DECIMALS="3" COMMENT="Share of each hit the student's armor absorbs, snapshotted at the start of this phase, same reasoning as frozenplayerhp"/>
+        <FIELD NAME="frozenhero" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Sprite of the hero the student fights this phase with (hero key and stage, e.g. archerf2), fixed when the phase starts; empty before heroes existed"/>
         <FIELD NAME="questionresults" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of this phase's question outcomes as decided server-side by validate_answer ({side, correct, counted}), in order; the replay takes outcomes from here, never from the client's own event log. Reset alongside rngseed"/>
         <FIELD NAME="phaserestarts" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="How many times the current phase was restarted because its claimed victory could not be verified; capped, reset when the attempt advances to a new phase"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" DECIMALS="5" SEQUENCE="false" COMMENT="Final calculated grade"/>
@@ -152,6 +153,29 @@
       </INDEXES>
     </TABLE>
 
+    <TABLE NAME="playerpuzzle_heroes" COMMENT="The hero a student plays in one Campaign of an activity: which one, its stage and the attribute upgrades bought with PuzzleCoin">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to user"/>
+        <FIELD NAME="playerpuzzleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to playerpuzzle"/>
+        <FIELD NAME="campaign" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Which of the student's Campaigns this hero plays, as in playerpuzzle_attempts.campaign"/>
+        <FIELD NAME="hero" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="A key of mod_playerpuzzle\local\heroes::CATALOG; fixed for the whole Campaign"/>
+        <FIELD NAME="stage" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Visual stage, 1 to 4; only ever goes up"/>
+        <FIELD NAME="hpbuys" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="HP upgrades bought; the worth of each is a constant of the code"/>
+        <FIELD NAME="attackbuys" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Attack upgrades bought"/>
+        <FIELD NAME="armorbuys" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Armor upgrades bought"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="playerpuzzleid" TYPE="foreign" FIELDS="playerpuzzleid" REFTABLE="playerpuzzle" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="userid-playerpuzzleid-campaign" UNIQUE="true" FIELDS="userid, playerpuzzleid, campaign"/>
+      </INDEXES>
+    </TABLE>
     <TABLE NAME="playerpuzzle_questions" COMMENT="PlayerPuzzle's own question bank: manually entered and/or AI-generated questions, per instance">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>

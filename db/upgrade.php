@@ -827,5 +827,36 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110303, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026110304) {
+        // The student picks a hero: a row per Campaign for what it has bought, and the sprite a phase fights with.
+        $table = new xmldb_table('playerpuzzle_heroes');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('playerpuzzleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('campaign', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '1');
+            $table->add_field('hero', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('stage', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '1');
+            $table->add_field('hpbuys', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('attackbuys', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('armorbuys', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+            $table->add_key('playerpuzzleid', XMLDB_KEY_FOREIGN, ['playerpuzzleid'], 'playerpuzzle', ['id']);
+            $table->add_index('userid-playerpuzzleid-campaign', XMLDB_INDEX_UNIQUE, ['userid', 'playerpuzzleid', 'campaign']);
+            $dbman->create_table($table);
+        }
+
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('frozenhero', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'frozenplayerarmor');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026110304, 'playerpuzzle');
+    }
+
     return true;
 }

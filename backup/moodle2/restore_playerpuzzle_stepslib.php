@@ -62,6 +62,10 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
                 'playerpuzzle_stockitem',
                 '/activity/playerpuzzle/stockitems/stockitem'
             );
+            $paths[] = new restore_path_element(
+                'playerpuzzle_heroitem',
+                '/activity/playerpuzzle/heroitems/heroitem'
+            );
         }
 
         // Wrap with the generic '/activity' path so the base class's process_activity()
@@ -343,6 +347,28 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         }
 
         $DB->insert_record('playerpuzzle_user_stock', $data);
+    }
+
+    /**
+     * Restores the hero of a student's Campaign (only when userinfo is enabled). Skipped when the owning
+     * user was not part of this restore — same rule as process_playerpuzzle_stockitem().
+     *
+     * @param array|object $data XML data for this element.
+     * @return void
+     */
+    public function process_playerpuzzle_heroitem(array|object $data): void {
+        global $DB;
+
+        $data = (object) $data;
+
+        $data->playerpuzzleid = $this->get_new_parentid('playerpuzzle');
+        $data->userid = $this->get_mappingid('user', $data->userid);
+
+        if (empty($data->userid)) {
+            return;
+        }
+
+        $DB->insert_record('playerpuzzle_heroes', $data);
     }
 
     /**

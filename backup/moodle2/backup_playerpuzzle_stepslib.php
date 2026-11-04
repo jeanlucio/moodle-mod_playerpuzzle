@@ -98,6 +98,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'frozenplayerhp',
             'frozenplayerattack',
             'frozenplayerarmor',
+            'frozenhero',
             'questionresults',
             'phaserestarts',
             'score',
@@ -126,6 +127,19 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
 
         // Loadout stock is keyed by userid+playerpuzzleid directly, not by attempt — a
         // sibling of attempts under the root, not a child of it.
+        $heroitems = new backup_nested_element('heroitems');
+        $heroitem = new backup_nested_element('heroitem', ['id'], [
+            'userid',
+            'campaign',
+            'hero',
+            'stage',
+            'hpbuys',
+            'attackbuys',
+            'armorbuys',
+            'timecreated',
+            'timemodified',
+        ]);
+
         $stockitems = new backup_nested_element('stockitems');
         $stockitem = new backup_nested_element('stockitem', ['id'], [
             'userid',
@@ -181,6 +195,8 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             $consumables->add_child($consumable);
             $playerpuzzle->add_child($stockitems);
             $stockitems->add_child($stockitem);
+            $playerpuzzle->add_child($heroitems);
+            $heroitems->add_child($heroitem);
         }
 
         // Connect elements to database tables.
@@ -211,6 +227,10 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
                 'playerpuzzle_user_stock',
                 ['playerpuzzleid' => backup::VAR_ACTIVITYID]
             );
+            $heroitem->set_source_table(
+                'playerpuzzle_heroes',
+                ['playerpuzzleid' => backup::VAR_ACTIVITYID]
+            );
         }
 
         // Annotate files embedded in the intro editor field, if any.
@@ -239,6 +259,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
         if ($userinfo) {
             $attempt->annotate_ids('user', 'userid');
             $stockitem->annotate_ids('user', 'userid');
+            $heroitem->annotate_ids('user', 'userid');
             // Questionid now points at this activity's own bank (see the Wave 1 revert to a
             // single question source) — never the real Moodle question bank, so it must be
             // resolved via the playerpuzzle_bankquestion mapping, not the generic 'question'

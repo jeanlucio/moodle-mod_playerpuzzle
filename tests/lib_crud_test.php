@@ -313,6 +313,27 @@ final class lib_crud_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that deleting an instance also deletes the heroes of its students.
+     *
+     * @return void
+     */
+    public function test_delete_instance_also_deletes_the_heroes(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $other = $generator->create_instance(['course' => $course->id]);
+        \mod_playerpuzzle\local\user_hero::choose((int) $instance->id, 2, 1, 'magef');
+        \mod_playerpuzzle\local\user_hero::choose((int) $other->id, 2, 1, 'magef');
+
+        $this->assertTrue(playerpuzzle_delete_instance($instance->id));
+
+        $this->assertSame(0, $DB->count_records('playerpuzzle_heroes', ['playerpuzzleid' => $instance->id]));
+        $this->assertSame(1, $DB->count_records('playerpuzzle_heroes', ['playerpuzzleid' => $other->id]));
+    }
+
+    /**
      * Tests that deleting a non-existent instance returns false without erroring.
      *
      * @return void

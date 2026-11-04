@@ -41,7 +41,8 @@ use mod_playerpuzzle\local\sound_preferences;
  * difficulty, bosshp_remaining, questions_correct, questions_total, score, status): one row
  * per attempt, tied to the specific activity instance the attempt was made in; and in
  * playerpuzzle_user_stock (consumable units a student currently owns for an instance's
- * pre-match loadout). PlayerPuzzle keeps no currency data of its own — coins still live in
+ * pre-match loadout) and playerpuzzle_heroes (the hero a student plays in a Campaign and what they
+ * bought for it). PlayerPuzzle keeps no currency data of its own — coins still live in
  * block_playerhud, which declares that personal data independently. playerpuzzle_questions.
  * addedby links a teacher/manager to the questions they authored — discovered, exported and,
  * on deletion, anonymized in place (the question itself stays: it is course content other
@@ -73,7 +74,7 @@ class provider implements
      * this attempt), always 0 outside of a live in-progress fight and carrying no narrative
      * value to a personal-data export — the same category as isdemo, not personal data
      * about the user. rngseed/moveseq/engineversion/frozenbasebosshp/frozenbossdamage/
-     * frozencoingain/frozenopponent/frozenplayerhp/frozenplayerattack/frozenplayerarmor are
+     * frozencoingain/frozenopponent/frozenplayerhp/frozenplayerattack/frozenplayerarmor/frozenhero are
      * anti-cheat replay plumbing (a PRNG seed, a sequence counter, the plugin version and
      * instance config frozen at the start of the phase, the opponent that config gave the
      * phase, and the student's own max HP, attack and armor for it) — technical
@@ -148,6 +149,17 @@ class provider implements
             'consumabletype' => 'privacy:metadata:us:consumabletype',
             'quantity'       => 'privacy:metadata:us:quantity',
         ], 'privacy:metadata:playerpuzzle_user_stock');
+
+        // Only id, userid and playerpuzzleid (structural FK, scoped by instance/user on every call) are
+        // excluded. The hero is the student's own choice and what they bought for it.
+        $collection->add_database_table('playerpuzzle_heroes', [
+            'campaign'   => 'privacy:metadata:hr:campaign',
+            'hero'       => 'privacy:metadata:hr:hero',
+            'stage'      => 'privacy:metadata:hr:stage',
+            'hpbuys'     => 'privacy:metadata:hr:hpbuys',
+            'attackbuys' => 'privacy:metadata:hr:attackbuys',
+            'armorbuys'  => 'privacy:metadata:hr:armorbuys',
+        ], 'privacy:metadata:playerpuzzle_heroes');
 
         $collection->add_user_preference(
             sound_preferences::preference_name('music'),
@@ -237,6 +249,19 @@ class provider implements
                        JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
                        JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
                       WHERE us.userid = :userid";
+        $herosql = "SELECT ctx.id
+                      FROM {playerpuzzle_heroes} hr
+                      JOIN {playerpuzzle} pp ON pp.id = hr.playerpuzzleid
+                      JOIN {modules} m ON m.name = :activityname
+                      JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                      JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
+                     WHERE hr.userid = :userid";
+        $contextlist->add_from_sql($herosql, [
+            'activityname' => 'playerpuzzle',
+            'modlevel'     => CONTEXT_MODULE,
+            'userid'       => $userid,
+        ]);
+
         $contextlist->add_from_sql($stocksql, [
             'activityname' => 'playerpuzzle',
             'modlevel'     => CONTEXT_MODULE,
@@ -295,6 +320,19 @@ class provider implements
                        JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
                        JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
                       WHERE ctx.id = :contextid";
+        $herosql = "SELECT hr.userid
+                      FROM {playerpuzzle_heroes} hr
+                      JOIN {playerpuzzle} pp ON pp.id = hr.playerpuzzleid
+                      JOIN {modules} m ON m.name = :activityname
+                      JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                      JOIN {context} ctx ON ctx.instanceid = cm.id AND ctx.contextlevel = :modlevel
+                     WHERE ctx.id = :contextid";
+        $userlist->add_from_sql('userid', $herosql, [
+            'activityname' => 'playerpuzzle',
+            'modlevel'     => CONTEXT_MODULE,
+            'contextid'    => $context->id,
+        ]);
+
         $userlist->add_from_sql('userid', $stocksql, [
             'activityname' => 'playerpuzzle',
             'modlevel'     => CONTEXT_MODULE,
@@ -470,6 +508,37 @@ class provider implements
             );
         }
 
+        $herosql = "SELECT hr.campaign, hr.hero, hr.stage, hr.hpbuys, hr.attackbuys, hr.armorbuys, ctx.id AS contextid
+                      FROM {playerpuzzle_heroes} hr
+                      JOIN {playerpuzzle} pp ON pp.id = hr.playerpuzzleid
+                      JOIN {modules} m ON m.name = 'playerpuzzle'
+                      JOIN {course_modules} cm ON cm.instance = pp.id AND cm.module = m.id
+                      JOIN {context} ctx ON ctx.instanceid = cm.id
+                     WHERE ctx.id $insql
+                       AND hr.userid = :userid
+                  ORDER BY hr.campaign";
+        $herorecords = $DB->get_recordset_sql($herosql, array_merge($inparams, ['userid' => $userid]));
+
+        $allheroes = [];
+        foreach ($herorecords as $row) {
+            $allheroes[$row->contextid][] = (object) [
+                'campaign'   => (int) $row->campaign,
+                'hero'       => $row->hero,
+                'stage'      => (int) $row->stage,
+                'hpbuys'     => (int) $row->hpbuys,
+                'attackbuys' => (int) $row->attackbuys,
+                'armorbuys'  => (int) $row->armorbuys,
+            ];
+        }
+        $herorecords->close();
+
+        foreach ($allheroes as $contextid => $heroes) {
+            writer::with_context($contexts[$contextid])->export_data(
+                [get_string('privacy:metadata:playerpuzzle_heroes', 'mod_playerpuzzle')],
+                (object) ['heroes' => $heroes]
+            );
+        }
+
         $questionssql = "SELECT pq.id, pq.qtype, pq.questiontext, pq.source, pq.approved, pq.timecreated,
                                  ctx.id AS contextid
                             FROM {playerpuzzle_questions} pq
@@ -523,6 +592,7 @@ class provider implements
         self::delete_consumable_uses('playerpuzzleid = :ppid', ['ppid' => (int) $cm->instance]);
         $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $cm->instance]);
         $DB->delete_records('playerpuzzle_user_stock', ['playerpuzzleid' => $cm->instance]);
+        $DB->delete_records('playerpuzzle_heroes', ['playerpuzzleid' => $cm->instance]);
         self::anonymize_question_authorship('playerpuzzleid = :ppid', ['ppid' => (int) $cm->instance]);
     }
 
@@ -610,6 +680,7 @@ class provider implements
         self::delete_consumable_uses($where, $params);
         $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
         $DB->delete_records_select('playerpuzzle_user_stock', $where, $params);
+        $DB->delete_records_select('playerpuzzle_heroes', $where, $params);
         self::anonymize_question_authorship('addedby = :userid AND playerpuzzleid ' . $insql, array_merge(
             $inparams,
             ['userid' => $userid]
@@ -646,6 +717,7 @@ class provider implements
         self::delete_consumable_uses($where, $params);
         $DB->delete_records_select('playerpuzzle_attempts', $where, $params);
         $DB->delete_records_select('playerpuzzle_user_stock', $where, $params);
+        $DB->delete_records_select('playerpuzzle_heroes', $where, $params);
         self::anonymize_question_authorship(
             'playerpuzzleid = :playerpuzzleid AND addedby ' . $insql,
             array_merge(['playerpuzzleid' => (int) $cm->instance], $inparams)

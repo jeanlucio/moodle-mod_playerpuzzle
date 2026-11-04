@@ -81,6 +81,7 @@ final class lib_reset_userdata_test extends \advanced_testcase {
             'attemptid' => $attemptid, 'consumabletype' => 'sword', 'timesused' => 1,
         ]);
         user_stock::credit((int) $student->id, (int) $instance->id, user_stock::CURRENCY_TYPE, 25);
+        \mod_playerpuzzle\local\user_hero::choose((int) $instance->id, (int) $student->id, 1, 'warriorm');
         grade_update('mod/playerpuzzle', $course->id, 'mod', 'playerpuzzle', $instance->id, 0, [
             $student->id => ['userid' => $student->id, 'rawgrade' => 80],
         ], ['gradetype' => GRADE_TYPE_VALUE, 'grademax' => 100, 'grademin' => 0]);
@@ -137,6 +138,7 @@ final class lib_reset_userdata_test extends \advanced_testcase {
         $this->assertSame(0, $DB->count_records('playerpuzzle_attempt_questions', ['attemptid' => $instance->attemptid]));
         $this->assertSame(0, $DB->count_records('playerpuzzle_attempt_consumables', ['attemptid' => $instance->attemptid]));
         $this->assertSame(0, user_stock::get_quantity((int) $student->id, (int) $instance->id, user_stock::CURRENCY_TYPE));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_heroes', ['playerpuzzleid' => $instance->id]));
         $this->assertEquals(COMPLETION_INCOMPLETE, $completion->get_state('completionattempts'));
         $this->assertNull($this->gradebook_grade($course, $instance, $student));
         $this->assertContains(

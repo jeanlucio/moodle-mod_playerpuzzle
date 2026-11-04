@@ -186,7 +186,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
      * opaque anti-replay value with no personal information; timemodified always
      * mirrors timecreated or timefinished, both already declared; rngseed/moveseq/
      * engineversion/frozenbasebosshp/frozenbossdamage/frozencoingain/frozenopponent/
-     * frozenplayerhp/frozenplayerattack/frozenplayerarmor are
+     * frozenplayerhp/frozenplayerattack/frozenplayerarmor/frozenhero are
      * anti-cheat replay plumbing, not personal data (movelog, the actual gameplay actions, IS
      * declared — see the doc comment for why it is treated differently from its
      * siblings). Asserted against
@@ -202,7 +202,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $documentedexclusions = [
             'playerpuzzleid', 'token', 'timemodified', 'isdemo', 'currentquestionid',
             'rngseed', 'moveseq', 'engineversion', 'frozenbasebosshp', 'frozenbossdamage', 'frozencoingain',
-            'frozenopponent', 'frozenplayerhp', 'frozenplayerattack', 'frozenplayerarmor', 'phaserestarts',
+            'frozenopponent', 'frozenplayerhp', 'frozenplayerattack', 'frozenplayerarmor', 'frozenhero', 'phaserestarts',
         ];
 
         $collection = provider::get_metadata(new collection('mod_playerpuzzle'));
@@ -644,6 +644,75 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
 
         provider::delete_data_for_user(new approved_contextlist($user, 'mod_playerpuzzle', [$context->id]));
         $this->assertSame(0, $DB->count_records('playerpuzzle_user_stock', ['userid' => $user->id]));
+    }
+
+    /**
+     * Tests that every real column of playerpuzzle_heroes (minus the structural id, userid and
+     * playerpuzzleid) is declared in get_metadata(), asserted against the real schema so a future column
+     * silently added without a privacy decision fails this test.
+     *
+     * @return void
+     */
+    public function test_get_metadata_declares_every_column_of_heroes(): void {
+        global $DB;
+
+        $collection = provider::get_metadata(new collection('mod_playerpuzzle'));
+        $item = null;
+        foreach ($collection->get_collection() as $entry) {
+            if ($entry->get_name() === 'playerpuzzle_heroes') {
+                $item = $entry;
+            }
+        }
+        $this->assertNotNull($item);
+        $declared = array_keys($item->get_privacy_fields());
+
+        $real = array_diff(
+            array_keys($DB->get_columns('playerpuzzle_heroes')),
+            ['id', 'userid', 'playerpuzzleid', 'timecreated', 'timemodified']
+        );
+        $this->assertEqualsCanonicalizing($real, $declared);
+    }
+
+    /**
+     * Tests that a student's heroes, one for each Campaign, are found, exported and deleted, with no attempt
+     * needed.
+     *
+     * @return void
+     */
+    public function test_heroes_are_found_exported_and_deleted(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $cm = $this->make_cm($course);
+        $user = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        \mod_playerpuzzle\local\user_hero::choose((int) $cm->id, (int) $user->id, 1, 'archerf');
+        \mod_playerpuzzle\local\user_hero::choose((int) $cm->id, (int) $user->id, 2, 'magem');
+        \mod_playerpuzzle\local\user_hero::choose((int) $cm->id, (int) $other->id, 1, 'warriorf');
+
+        $context = \context_module::instance($cm->cmid);
+        $this->assertContains((string) $context->id, provider::get_contexts_for_userid($user->id)->get_contextids());
+        $userlist = new \core_privacy\local\request\userlist($context, 'mod_playerpuzzle');
+        provider::get_users_in_context($userlist);
+        $this->assertContains((int) $user->id, $userlist->get_userids());
+
+        provider::export_user_data(new approved_contextlist($user, 'mod_playerpuzzle', [$context->id]));
+        $data = writer::with_context($context)->get_data([
+            get_string('privacy:metadata:playerpuzzle_heroes', 'mod_playerpuzzle'),
+        ]);
+        $this->assertSame(['archerf', 'magem'], array_column($data->heroes, 'hero'));
+        $this->assertSame([1, 2], array_column($data->heroes, 'campaign'));
+
+        provider::delete_data_for_user(new approved_contextlist($user, 'mod_playerpuzzle', [$context->id]));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_heroes', ['userid' => $user->id]));
+        $this->assertSame(1, $DB->count_records('playerpuzzle_heroes', ['userid' => $other->id]));
+
+        provider::delete_data_for_users(new approved_userlist($context, 'mod_playerpuzzle', [$other->id]));
+        $this->assertSame(0, $DB->count_records('playerpuzzle_heroes'));
+
+        \mod_playerpuzzle\local\user_hero::choose((int) $cm->id, (int) $user->id, 1, 'magef');
+        provider::delete_data_for_all_users_in_context($context);
+        $this->assertSame(0, $DB->count_records('playerpuzzle_heroes'));
     }
 
     /**

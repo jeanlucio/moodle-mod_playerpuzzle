@@ -747,6 +747,47 @@ final class backup_restore_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a full course backup/restore carries a student's hero of each Campaign, with what it bought,
+     * to the restored activity and the student's mapped account, and that the restored attempt keeps the
+     * sprite it fought with.
+     *
+     * @return void
+     */
+    public function test_backup_restore_preserves_the_heroes(): void {
+        global $DB;
+
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+        $instance = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')
+            ->create_instance(['course' => $course->id]);
+        $first = \mod_playerpuzzle\local\user_hero::choose((int) $instance->id, (int) $user->id, 1, 'archerf');
+        $DB->update_record('playerpuzzle_heroes', (object) [
+            'id' => $first->id, 'stage' => 3, 'hpbuys' => 4, 'attackbuys' => 5, 'armorbuys' => 6,
+        ]);
+        \mod_playerpuzzle\local\user_hero::choose((int) $instance->id, (int) $user->id, 2, 'magem');
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id, 'userid' => $user->id, 'token' => bin2hex(random_bytes(32)),
+            'status' => 'inprogress', 'frozenhero' => 'archerf3', 'frozenplayerhp' => 180, 'timecreated' => time(),
+        ]);
+
+        $this->setAdminUser();
+        $newcourse = $this->backup_and_restore_into_new_course($course);
+
+        $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+        $heroes = $DB->get_records('playerpuzzle_heroes', ['playerpuzzleid' => $newinstance->id], 'campaign');
+        $this->assertSame(['archerf', 'magem'], array_values(array_column($heroes, 'hero')));
+        $restored = reset($heroes);
+        $this->assertSame(
+            [(int) $user->id, 3, 4, 5, 6],
+            [(int) $restored->userid, (int) $restored->stage, (int) $restored->hpbuys, (int) $restored->attackbuys,
+                (int) $restored->armorbuys]
+        );
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['playerpuzzleid' => $newinstance->id], '*', MUST_EXIST);
+        $this->assertSame(['archerf3', 180], [$attempt->frozenhero, (int) $attempt->frozenplayerhp]);
+    }
+
+    /**
      * Skips the current test when block_playerhud is not installed.
      *
      * @return void

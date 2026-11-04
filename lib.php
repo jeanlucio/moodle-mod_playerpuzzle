@@ -425,6 +425,7 @@ function playerpuzzle_delete_instance(int $id): bool {
     );
     $DB->delete_records('playerpuzzle_questions', ['playerpuzzleid' => $playerpuzzle->id]);
     \mod_playerpuzzle\local\user_stock::delete_for_instance((int) $playerpuzzle->id);
+    \mod_playerpuzzle\local\user_hero::delete_for_instance((int) $playerpuzzle->id);
     $DB->delete_records('playerpuzzle', ['id' => $playerpuzzle->id]);
     $DB->delete_records('event', ['modulename' => 'playerpuzzle', 'instance' => $playerpuzzle->id]);
 
@@ -462,7 +463,8 @@ function playerpuzzle_reset_course_form_defaults(stdClass $course): array {
  * Core clears the completion and the grades by itself but only asks the activities that define this
  * function to clear their own data. Left behind, the attempts would satisfy the completion rule again,
  * spend the attempt limit and bring the old grade back for a student enrolled again, and the stock of
- * PuzzleCoin and consumables would stay with them. The questions, being the teacher's content, stay.
+ * PuzzleCoin and consumables and the heroes would stay with them. The questions, being the teacher's content,
+ * stay.
  *
  * @param stdClass $data Reset form data, must contain courseid.
  * @return array Status rows for the course reset report.
@@ -486,6 +488,7 @@ function playerpuzzle_reset_userdata(stdClass $data): array {
     $DB->delete_records_select('playerpuzzle_attempt_consumables', "attemptid IN ($attempts)", $inparams);
     $DB->delete_records_select('playerpuzzle_attempts', "playerpuzzleid $insql", $inparams);
     $DB->delete_records_select('playerpuzzle_user_stock', "playerpuzzleid $insql", $inparams);
+    $DB->delete_records_select('playerpuzzle_heroes', "playerpuzzleid $insql", $inparams);
 
     foreach ($instances as $instance) {
         playerpuzzle_grade_item_update($instance, 'reset');

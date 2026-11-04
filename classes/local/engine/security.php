@@ -27,8 +27,10 @@ namespace mod_playerpuzzle\local\engine;
 use mod_playerpuzzle\local\campaigns;
 use mod_playerpuzzle\local\combat_state;
 use mod_playerpuzzle\local\constants;
+use mod_playerpuzzle\local\heroes;
 use mod_playerpuzzle\local\opponents;
 use mod_playerpuzzle\local\replay_credit;
+use mod_playerpuzzle\local\user_hero;
 use mod_playerpuzzle\local\user_stock;
 
 /**
@@ -96,7 +98,7 @@ class security {
         $playerpuzzle = $DB->get_record(
             'playerpuzzle',
             ['id' => $playerpuzzleid],
-            'basebosshp, basestudenthp, bossdamage, coingain, gamemode, maxlevels, bossavatar',
+            'id, basebosshp, basestudenthp, bossdamage, coingain, gamemode, maxlevels, bossavatar',
             MUST_EXIST
         );
         self::seed_replay_state($attempt, $playerpuzzle);
@@ -137,13 +139,50 @@ class security {
             (int) $attempt->currentlevel,
             (int) $attempt->currentphase
         );
-        $attempt->frozenplayerhp = combat::calculate_student_hp(
-            (int) $playerpuzzle->basestudenthp,
-            (int) $attempt->currentlevel,
-            (int) $attempt->currentphase
+        self::freeze_student_side($attempt, $playerpuzzle);
+    }
+
+    /**
+     * Freezes the student's side of the phase: the hero's HP, attack and armor, and the sprite it fights
+     * with, when the student has a hero in this Campaign, and otherwise the HP the instance scales to with
+     * no attack bonus and no armor. Only a real Campaign attempt has a hero to read; the sprite of a
+     * Single Match or Demo is a choice made when it starts, and left as it is.
+     *
+     * @param \stdClass $attempt Attempt object to populate (userid, campaign, currentlevel, currentphase).
+     * @param \stdClass $playerpuzzle The instance record (id, gamemode, maxlevels, basestudenthp).
+     * @return void
+     */
+    private static function freeze_student_side(\stdClass $attempt, \stdClass $playerpuzzle): void {
+        $hero = null;
+        if (
+            !empty($attempt->userid)
+            && empty($attempt->isdemo)
+            && ($playerpuzzle->gamemode ?? '') === constants::GAMEMODE_CAMPAIGN
+        ) {
+            $hero = user_hero::get((int) $playerpuzzle->id, (int) $attempt->userid, (int) ($attempt->campaign ?? 1));
+        }
+
+        if ($hero === null) {
+            $attempt->frozenplayerhp = combat::calculate_student_hp(
+                (int) $playerpuzzle->basestudenthp,
+                (int) $attempt->currentlevel,
+                (int) $attempt->currentphase
+            );
+            $attempt->frozenplayerattack = 1.0;
+            $attempt->frozenplayerarmor = 0.0;
+            return;
+        }
+
+        $side = heroes::attributes(
+            $hero->hero,
+            user_hero::buys($hero),
+            (int) $playerpuzzle->maxlevels,
+            (int) $playerpuzzle->basestudenthp
         );
-        $attempt->frozenplayerattack = 1.0;
-        $attempt->frozenplayerarmor = 0.0;
+        $attempt->frozenplayerhp = $side['hp'];
+        $attempt->frozenplayerattack = $side['attack'];
+        $attempt->frozenplayerarmor = $side['armor'];
+        $attempt->frozenhero = heroes::sprite($hero->hero, (int) $hero->stage);
     }
 
     /**
@@ -326,6 +365,7 @@ class security {
                 'frozenplayerhp' => (int) $attempt->frozenplayerhp,
                 'frozenplayerattack' => (float) $attempt->frozenplayerattack,
                 'frozenplayerarmor' => (float) $attempt->frozenplayerarmor,
+                'frozenhero' => (string) ($attempt->frozenhero ?? ''),
                 'isdemo' => (bool) $attempt->isdemo,
                 'isnew' => false,
             ];
@@ -366,7 +406,7 @@ class security {
             'playerpuzzle_attempts',
             ['token' => $token],
             'id, isdemo, rngseed, moveseq, frozenbasebosshp, frozenbossdamage, frozencoingain, frozenopponent, '
-                . 'frozenplayerhp, frozenplayerattack, frozenplayerarmor',
+                . 'frozenplayerhp, frozenplayerattack, frozenplayerarmor, frozenhero',
             MUST_EXIST
         );
 
@@ -389,6 +429,7 @@ class security {
             'frozenplayerhp' => (int) $newrow->frozenplayerhp,
             'frozenplayerattack' => (float) $newrow->frozenplayerattack,
             'frozenplayerarmor' => (float) $newrow->frozenplayerarmor,
+            'frozenhero' => (string) ($newrow->frozenhero ?? ''),
             'isdemo' => (bool) $newrow->isdemo,
             'isnew' => true,
         ];

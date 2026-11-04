@@ -126,7 +126,11 @@ class hero_page_service {
             'legend' => get_string('hero_title', 'mod_playerpuzzle'),
             'heroes' => $heroes,
             'submitlabel' => get_string($campaign ? 'hero_choose_button' : 'hero_play_button', 'mod_playerpuzzle'),
-            'backurl' => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
+            // The first Campaign has no Lobby to go back to: it sends the student straight here again until they
+            // have a hero. Every other way to this screen starts from the Lobby, where Back leads.
+            'backurl' => $campaign && $stage === game_page_service::HERO_FIRST
+                ? ''
+                : (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
             'backlabel' => get_string('hero_back', 'mod_playerpuzzle'),
         ];
     }

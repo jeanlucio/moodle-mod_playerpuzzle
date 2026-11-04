@@ -29,7 +29,7 @@
     * legend - The fieldset's legend
     * heroes - Each hero, with key, name, specialty, imageurl and checked
     * submitlabel - The button's text
-    * backurl - Where Back goes
+    * backurl - Where Back goes, empty when there is nowhere to go back to
     * backlabel - Back's text
 
     Example context (json):
@@ -81,7 +81,9 @@
         </fieldset>
         <div class="pp-hero-actions">
             <button type="submit" class="btn btn-primary">{{submitlabel}}</button>
+            {{#backurl}}
             <a class="btn btn-secondary" href="{{backurl}}">{{backlabel}}</a>
+            {{/backurl}}
         </div>
     </form>
 </div>

@@ -86,7 +86,7 @@ final class hero_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_the_campaign_screen(): void {
-        global $DB;
+        global $DB, $OUTPUT;
 
         [$cm, $instance] = $this->make(constants::GAMEMODE_CAMPAIGN);
         $userid = (int) $this->student->id;
@@ -106,6 +106,13 @@ final class hero_page_service_test extends \advanced_testcase {
         $this->assertSame(get_string('hero_choose_button', 'mod_playerpuzzle'), $data['submitlabel']);
         $this->assertSame('', $data['error']);
 
+        // The first Campaign sends the student here until they have a hero, so there is no Lobby to go back to.
+        $this->assertSame('', $data['backurl']);
+        $this->assertStringNotContainsString(
+            get_string('hero_back', 'mod_playerpuzzle'),
+            $OUTPUT->render_from_template('mod_playerpuzzle/hero_select', $data)
+        );
+
         // A Campaign that has ended: the next one empties the stock, and the screen says so.
         game_page_service::choose_campaign_hero($instance, $userid, 'magef');
         $DB->insert_record('playerpuzzle_attempts', (object) [
@@ -114,6 +121,7 @@ final class hero_page_service_test extends \advanced_testcase {
         ]);
         $new = hero_page_service::build_page_data($cm, $instance, $userid, hero_page_service::MODE_CAMPAIGN, [], '');
         $this->assertSame(get_string('hero_intro_newcampaign', 'mod_playerpuzzle'), $new['intro']);
+        $this->assertStringContainsString('/mod/playerpuzzle/view.php', $new['backurl'], 'a new Campaign starts at the Lobby');
     }
 
     /**
@@ -143,6 +151,7 @@ final class hero_page_service_test extends \advanced_testcase {
         $this->assertSame(['magem'], array_column(array_filter($match['heroes'], fn($h) => $h['checked']), 'key'));
         $this->assertSame(get_string('hero_intro_match', 'mod_playerpuzzle'), $match['intro']);
         $this->assertSame(get_string('hero_play_button', 'mod_playerpuzzle'), $match['submitlabel']);
+        $this->assertStringContainsString('/mod/playerpuzzle/view.php', $match['backurl']);
 
         $demo = hero_page_service::build_page_data($cm, $instance, $userid, hero_page_service::MODE_DEMO, [], '');
         $this->assertSame('1', array_column($demo['fields'], 'value', 'name')['isdemo']);

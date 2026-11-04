@@ -90,7 +90,7 @@ class combat_engine {
     public const ORB_MANA = 20;
 
     /** @var int The same, for an opponent with the manaboost power. */
-    public const BOOSTED_ORB_MANA = 30;
+    public const BOOSTED_ORB_MANA = 24;
 
     /** @var string Power: the Potions the opponent matches heal half as much again. */
     public const POWER_ROOTHEAL = 'rootheal';
@@ -134,7 +134,7 @@ class combat_engine {
         'ambush' => [3 => 1.5],
         'breath' => [3 => 1.5],
         'drain' => [3 => 1.5],
-        'loot' => [6 => 3],
+        'loot' => [6 => 1.25],
     ];
 
     /** @var string Power: every few of its turns, the opponent takes some of the student's coins. */

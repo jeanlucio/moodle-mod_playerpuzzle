@@ -111,7 +111,7 @@
 
         // How much mana each matched Orb gives, and for an opponent with the manaboost power.
         const ORB_MANA = 20;
-        const BOOSTED_ORB_MANA = 30;
+        const BOOSTED_ORB_MANA = 24;
 
         // The opponent's starting items: none on level 1, one more per level after it, one more
         // on Hard and one more for the final boss, none at all on Easy; Potions and Swords
@@ -142,7 +142,7 @@
             ambush: {'3': 1.5},
             breath: {'3': 1.5},
             drain: {'3': 1.5},
-            loot: {'6': 3},
+            loot: {'6': 1.25},
         };
 
         // Every how many of its turns an opponent with the loot power takes the student's coins, and

@@ -379,7 +379,7 @@ test('resolveMatchEffects: an opponent with fastgrimoire fills more of its poiso
 
 test('pieceGains: an opponent with manaboost gets more mana per Orb, the student the usual', () => {
     const config = Object.assign({}, CONFIG, {bossPowers: [combatRules.POWERS.MANABOOST]});
-    assert.equal(combatRules.pieceGains('boss', config).mana, 30);
+    assert.equal(combatRules.pieceGains('boss', config).mana, 24);
     assert.equal(combatRules.pieceGains('player', config).mana, 20);
     assert.equal(combatRules.pieceGains('boss', CONFIG).mana, 20);
 });

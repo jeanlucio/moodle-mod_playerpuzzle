@@ -446,8 +446,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const fillKit = text => text.replace('{$a->potions}', kit.potion).replace('{$a->swords}', kit.sword);
             const breathEvery = CombatRules.breathEvery(this.ruleConfig());
             const notices = this.bossPowers
-                .map(power => this.strings[`power_${power}`]?.replace('{$a}', breathEvery))
-                .filter(Boolean);
+                .map(power => this.strings[`power_${power}`])
+                .filter(Boolean)
+                .map(text => text.replace('{$a}', breathEvery));
             if (hasKit) {
                 notices.push(fillKit(this.strings.opponentkit));
             }

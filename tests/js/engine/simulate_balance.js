@@ -40,92 +40,25 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/* global __dirname, process */
+/* global process */
 
 'use strict';
 
-const childProcess = require('child_process');
-const path = require('path');
-const BoardRules = require('../../../amd/src/engine/board_rules.js');
-const Prng = require('../../../amd/src/engine/prng.js');
-const ReplayMirror = require('./replay_mirror.js');
-
-const PLUGIN_ROOT = path.join(__dirname, '..', '..', '..');
-
-// The multiple-choice rates in combat::BOSS_GUESS_PROBABILITIES.
-const OPPONENT_ACCURACY = {easy: 0.33, normal: 0.66, hard: 1.0};
-
-// The instance values the activity form defaults to.
-const INSTANCE = {basebosshp: 100, bossdamage: 10, basestudenthp: 100, coingain: 10};
-
-const NO_MODIFIERS = {hp: 1, attack: 1, armor: 0};
+const {OPPONENT_ACCURACY, NO_MODIFIERS, readOpponents, playMatch: playOne} = require('./sim_common.js');
 
 /**
- * Asks the server's own class for every opponent, in Campaign order with the final boss last, and
- * what each fights with.
+ * Plays one match at Level 1.
  *
- * @return {Array<{key: string, modifiers: object, powers: Array<string>}>}
- */
-function readOpponents() {
-    const script = `
-        require 'classes/local/engine/combat_engine.php';
-        require 'classes/local/opponents.php';
-        $class = 'mod_playerpuzzle\\\\local\\\\opponents';
-        $keys = array_merge($class::CAMPAIGN_ORDER, [$class::FINAL_BOSS]);
-        echo json_encode(array_map(fn($key) => [
-            'key' => $key,
-            'modifiers' => $class::modifiers($key),
-            'powers' => $class::powers($key),
-        ], $keys));`;
-    return JSON.parse(childProcess.execFileSync('php', ['-r', script], {cwd: PLUGIN_ROOT, encoding: 'utf8'}));
-}
-
-/**
- * Plays one match.
- *
- * @param {number} seed Board seed; the answers draw from a generator seeded from it too.
+ * @param {number} seed Board seed.
  * @param {number} phase Campaign phase (level 1).
  * @param {object} modifiers The opponent's {hp, attack, armor}.
  * @param {Array<string>} powers The opponent's powers.
  * @param {number} accuracy The student's share of right answers.
  * @param {string} difficulty 'easy', 'normal' or 'hard'.
- * @return {{finished: boolean, won: boolean, turns: number, hpLeft: number, coins: number}} hpLeft
- *  is the student's HP share at the start of their last turn, which is what they finish a won match
- *  with; coins is what the match nets them (their coins minus the opponent's, never below 0).
+ * @return {object} See sim_common.js::playMatch().
  */
 function playMatch(seed, phase, modifiers, powers, accuracy, difficulty) {
-    const answers = Prng.create((seed * 7919) + 13);
-    let lastState = null;
-    let turns = 0;
-    const policy = {
-        move(grid) {
-            turns++;
-            return BoardRules.findMove(grid, ReplayMirror.ROWS, ReplayMirror.COLS, 3)
-                || BoardRules.findMove(grid, ReplayMirror.ROWS, ReplayMirror.COLS, null);
-        },
-        consumable(turnCount, state) {
-            lastState = state;
-            return null;
-        },
-        question(side) {
-            const rate = side === 'player' ? accuracy : OPPONENT_ACCURACY[difficulty];
-            return {outcome: 'answered', correct: answers() < rate};
-        },
-    };
-    const attempt = {
-        frozenbasebosshp: INSTANCE.basebosshp, frozenbossdamage: INSTANCE.bossdamage,
-        frozencoingain: INSTANCE.coingain, currentlevel: 1, currentphase: phase,
-        difficulty, rngseed: seed, questionsTotal: 0,
-    };
-    const playerpuzzle = {basestudenthp: INSTANCE.basestudenthp, minquestions: 0};
-    const {result} = ReplayMirror.record({attempt, playerpuzzle, modifiers, powers, poolEmpty: false, policy});
-    if (!result) {
-        return {finished: false, won: false, turns, hpLeft: 0, coins: 0};
-    }
-    const {maxPlayerHp} = ReplayMirror.phaseSetup(attempt, playerpuzzle);
-    const won = result.bossdefeated;
-    const coins = Math.max(0, result.playergold - result.bossgold);
-    return {finished: true, won, turns, hpLeft: won ? lastState.currentPlayerHp / maxPlayerHp : 0, coins};
+    return playOne({seed, level: 1, phase, modifiers, powers, accuracy, difficulty});
 }
 
 /**

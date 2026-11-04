@@ -1,0 +1,231 @@
+// This file is part of Moodle - https://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+/**
+ * Plays whole Campaigns with a hero that grows only by what the student buys, so the shop's pace,
+ * price and effect can be tuned against numbers instead of guesses.
+ *
+ * A simulated student plays the way simulate_balance.js does (the first Sword match it finds, no
+ * consumable, a fixed share of right answers), phase after phase from Level 1, Phase 1 to the last,
+ * through the real rules. Winning a phase pays its net coins; losing one pays nothing and retries the
+ * same phase with the same hero. After every win the student spends all their coins, the hero's
+ * specialty first and then whichever attribute is furthest behind. Purchases are limited by the stage
+ * the hero is in, and the hero moves up a stage at 25%, 50% and 75% of the Campaign once the
+ * specialty is at the stage's cap.
+ *
+ * Usage: node tests/js/engine/simulate_heroes.js [--levels 1,3,10] [--runs 40] [--accuracy 0.75]
+ *   [--difficulty normal] [--hero hp|attack|armor] [--price 12] [--rate 0.4] [--bonus 2] [--hp 3]
+ *   [--atk 1.6] [--arm 0.3] [--hpbasis base|phase] [--tries 6] [--policy specialty|balanced]
+ *
+ * --policy is how the simulated student orders their buys: the specialty to its cap first, or
+ * whichever attribute is furthest behind.
+ *
+ * --rate is the buys per phase of the Campaign, per attribute (the whole Campaign allows
+ * rate x phases); --hp/--atk/--arm are what the hero's HP multiple, attack multiple and armor reach
+ * when every one of those buys is made; --bonus is the specialty's head start, in buys.
+ *
+ * @package    mod_playerpuzzle
+ * @copyright  2026 Jean Lúcio
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/* global process */
+
+'use strict';
+
+const {INSTANCE, readOpponents, playMatch} = require('./sim_common.js');
+
+const ARMOR_CAP = 0.6;
+const ATTRIBUTES = ['hp', 'armor', 'attack'];
+
+/**
+ * Reads --name value pairs.
+ *
+ * @param {Array<string>} argv Arguments after the script name.
+ * @return {object} Option values by name, as strings.
+ */
+function readOptions(argv) {
+    const options = {};
+    for (let i = 0; i < argv.length; i += 2) {
+        options[argv[i].replace(/^--/, '')] = argv[i + 1];
+    }
+    return options;
+}
+
+const raw = readOptions(process.argv.slice(2));
+const options = {
+    levels: (raw.levels || '1,3,10').split(',').map(Number),
+    runs: parseInt(raw.runs || '40', 10),
+    accuracy: parseFloat(raw.accuracy || '0.75'),
+    difficulty: raw.difficulty || 'normal',
+    heroes: (raw.hero || 'hp,attack,armor').split(','),
+    price: parseFloat(raw.price || '12'),
+    rate: parseFloat(raw.rate || '0.4'),
+    bonus: parseFloat(raw.bonus || '2'),
+    hp: parseFloat(raw.hp || '3'),
+    atk: parseFloat(raw.atk || '1.6'),
+    arm: parseFloat(raw.arm || '0.3'),
+    hpbasis: raw.hpbasis || 'base',
+    tries: parseInt(raw.tries || '6', 10),
+    policy: raw.policy || 'specialty',
+};
+
+const opponents = readOpponents();
+
+/**
+ * The hero for a Campaign of a given length: how many buys it allows and what each is worth.
+ *
+ * @param {number} levels The activity's level count.
+ * @param {string} specialty 'hp', 'attack' or 'armor'.
+ * @return {object} The hero's shape.
+ */
+function buildHero(levels, specialty) {
+    const phases = levels * 10;
+    const total = Math.max(1, Math.round(options.rate * phases));
+    return {
+        specialty, phases, total,
+        steps: {hp: (options.hp - 1) / total, attack: (options.atk - 1) / total, armor: options.arm / total},
+        buys: {hp: 0, attack: 0, armor: 0},
+        stage: 1,
+    };
+}
+
+/**
+ * The most buys of an attribute the hero's current stage allows.
+ *
+ * @param {object} hero The hero.
+ * @return {number} The cap.
+ */
+function stageCap(hero) {
+    return Math.round(hero.total * hero.stage / 4);
+}
+
+/**
+ * The hero's side of the next phase.
+ *
+ * @param {object} hero The hero.
+ * @param {number} level Level of the phase.
+ * @param {number} phase Phase within the level.
+ * @return {{hp: number, attack: number, armor: number}}
+ */
+function studentSide(hero, level, phase) {
+    const worth = attribute => hero.buys[attribute] + (hero.specialty === attribute ? options.bonus : 0);
+    const basis = options.hpbasis === 'phase' ? 1 + (0.3 * (level - 1)) + (0.05 * (phase - 1)) : 1;
+    return {
+        hp: Math.round(INSTANCE.basestudenthp * basis * (1 + (worth('hp') * hero.steps.hp))),
+        attack: 1 + (worth('attack') * hero.steps.attack),
+        armor: Math.min(ARMOR_CAP, worth('armor') * hero.steps.armor),
+    };
+}
+
+/**
+ * Spends every coin the hero can: the specialty first, then the attribute furthest behind its cap,
+ * moving up a stage whenever its conditions are met.
+ *
+ * @param {object} hero The hero.
+ * @param {number} coins Coins in hand.
+ * @param {number} completed Phases won so far.
+ * @return {number} Coins left.
+ */
+function shop(hero, coins, completed) {
+    let left = coins;
+    for (;;) {
+        if (hero.stage < 4 && completed >= Math.ceil(hero.phases * hero.stage / 4) && hero.buys[hero.specialty] >= stageCap(hero)) {
+            hero.stage++;
+            continue;
+        }
+        const cap = stageCap(hero);
+        const open = ATTRIBUTES.filter(attribute => hero.buys[attribute] < cap);
+        if (left < options.price || open.length === 0) {
+            return left;
+        }
+        // 'specialty' fills the specialty to the cap before anything else; 'balanced' always buys what
+        // is furthest behind, the specialty winning a tie.
+        const behind = open.sort((a, b) => (hero.buys[a] / cap) - (hero.buys[b] / cap)
+            || (a === hero.specialty ? -1 : 0) - (b === hero.specialty ? -1 : 0))[0];
+        const pick = options.policy === 'specialty' && open.includes(hero.specialty) ? hero.specialty : behind;
+        hero.buys[pick]++;
+        left -= options.price;
+    }
+}
+
+/**
+ * Plays one Campaign.
+ *
+ * @param {number} run Run number, which seeds every match.
+ * @param {number} levels The activity's level count.
+ * @param {string} specialty The hero's specialty.
+ * @return {object} How far it got and what it cost.
+ */
+function playCampaign(run, levels, specialty) {
+    const hero = buildHero(levels, specialty);
+    let coins = 0;
+    let triesTotal = 0;
+    const firstTry = [];
+    for (let k = 1; k <= hero.phases; k++) {
+        const level = Math.floor((k - 1) / 10) + 1;
+        const phase = ((k - 1) % 10) + 1;
+        const opponent = opponents[k === hero.phases ? opponents.length - 1 : phase - 1];
+        let won = null;
+        for (let attempt = 1; attempt <= options.tries && won === null; attempt++) {
+            triesTotal++;
+            const match = playMatch({
+                seed: (run * 100003) + (k * 131) + attempt, level, phase, accuracy: options.accuracy,
+                difficulty: options.difficulty, modifiers: opponent.modifiers, powers: opponent.powers,
+                opponent: opponent.key, student: studentSide(hero, level, phase),
+            });
+            if (attempt === 1) {
+                firstTry.push(match.finished && match.won ? 1 : 0);
+            }
+            if (match.finished && match.won) {
+                won = match;
+            }
+        }
+        if (won === null) {
+            return {completed: k - 1, stuck: k, triesTotal, firstTry, hero, coins};
+        }
+        coins = shop(hero, coins + won.coins, k);
+    }
+    return {completed: hero.phases, stuck: 0, triesTotal, firstTry, hero, coins};
+}
+
+const percent = value => `${Math.round(value * 100)}%`.padStart(4);
+
+process.stdout.write(`Student right ${percent(options.accuracy)}, ${options.difficulty}; price ${options.price}, `
+    + `${options.rate} buys/phase, bonus ${options.bonus} buys, final HP x${options.hp} (${options.hpbasis}), `
+    + `attack x${options.atk}, armor ${options.arm}, ${options.policy} buys; ${options.runs} Campaigns per cell.\n`);
+options.levels.forEach(levels => {
+    options.heroes.forEach(specialty => {
+        const runs = [];
+        for (let run = 1; run <= options.runs; run++) {
+            runs.push(playCampaign(run, levels, specialty));
+        }
+        const avg = pick => runs.reduce((sum, result) => sum + pick(result), 0) / runs.length;
+        const quarters = [0, 1, 2, 3].map(quarter => {
+            const cells = runs.flatMap(result => {
+                const from = Math.floor(result.firstTry.length * quarter / 4);
+                const to = Math.floor(result.firstTry.length * (quarter + 1) / 4);
+                return result.firstTry.slice(from, to);
+            });
+            return cells.length ? cells.reduce((sum, value) => sum + value, 0) / cells.length : 0;
+        });
+        const finished = runs.filter(result => result.stuck === 0).length / runs.length;
+        process.stdout.write(`${String(levels).padStart(2)} lv ${specialty.padEnd(6)} | finished ${percent(finished)} | `
+            + `tries/phase ${(avg(result => result.triesTotal / Math.max(1, result.firstTry.length))).toFixed(2)} | `
+            + `1st-try win by quarter ${quarters.map(percent).join(' ')} | stage ${avg(result => result.hero.stage).toFixed(1)} | `
+            + `buys hp/atk/arm ${avg(r => r.hero.buys.hp).toFixed(0)}/${avg(r => r.hero.buys.attack).toFixed(0)}/`
+            + `${avg(r => r.hero.buys.armor).toFixed(0)} of ${runs[0].hero.total} | coins left ${avg(r => r.coins).toFixed(0)}\n`);
+    });
+});

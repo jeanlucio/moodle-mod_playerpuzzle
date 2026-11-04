@@ -261,6 +261,7 @@ class lobby_page_service {
         }
         $data['shoptitle'] = get_string('lobby_shop_title', 'mod_playerpuzzle');
         $data['shopitems'] = $shopitems;
+        $data += opponent_card::for_player($instance, $userid);
 
         $blockinstanceid = hud_service::is_available_for_course($courseid)
             ? hud_service::get_block_instance_id($courseid)

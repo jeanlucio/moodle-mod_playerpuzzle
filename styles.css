@@ -944,3 +944,61 @@ body.path-mod-playerpuzzle .pp-hero-soldout {
 body.path-mod-playerpuzzle .pp-shop-error {
     margin-block-end: 0.5rem;
 }
+
+/**
+ * The opponent's card: folded in the shop, and in its own dialog during the fight.
+ */
+body.path-mod-playerpuzzle .pp-opponent-card {
+    margin-block: 0.75rem;
+    text-align: start;
+}
+
+body.path-mod-playerpuzzle .pp-opponent-card-summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+body.path-mod-playerpuzzle .pp-opponent-card-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-block: 0.5rem;
+    text-align: start;
+}
+
+body.path-mod-playerpuzzle .pp-opponent-card-image {
+    flex: none;
+}
+
+body.path-mod-playerpuzzle .pp-opponent-card-phase {
+    display: block;
+    font-size: 0.875rem;
+}
+
+body.path-mod-playerpuzzle .pp-opponent-card-traits {
+    margin: 0.25rem 0 0;
+    padding-inline-start: 1.1rem;
+    font-size: 0.9rem;
+}
+
+body.path-mod-playerpuzzle .pp-opponent-help {
+    max-width: 32rem;
+    max-height: calc(100% - 2rem);
+    overflow-y: auto;
+    width: calc(100% - 2rem);
+    padding: 1.5rem;
+    border: 2px solid var(--warning, #ffc107);
+    border-radius: 0.5rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+    background-color: var(--dark, #1a1a1a);
+    color: var(--white, #fff);
+}
+
+body.path-mod-playerpuzzle .pp-opponent-help::backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+body.path-mod-playerpuzzle .pp-opponent-help-title {
+    font-size: 1.25rem;
+    margin-block-end: 0.5rem;
+}

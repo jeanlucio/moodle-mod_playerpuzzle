@@ -39,6 +39,7 @@ define(
     const FA_VOLUME_XMARK = '\uf6a9';
     const FA_BELL = '\uf0f3';
     const FA_BELL_SLASH = '\uf1f6';
+    const FA_QUESTION = '\u003f';
 
     // The characters' idle breathing: how much taller they get at the top of a breath, and how
     // long half a breath lasts, in ms.
@@ -1201,6 +1202,34 @@ define(
         }
 
         /**
+         * Creates the opponent help button's icon: a Font Awesome question mark.
+         *
+         * @param {number} cx Center X.
+         * @param {number} cy Center Y.
+         * @param {number} r Badge radius — the icon's font size is scaled relative to it.
+         * @return {Phaser.GameObjects.Text} The icon text object.
+         */
+        createHelpIcon(cx, cy, r) {
+            return this.scene.add.text(cx, cy, FA_QUESTION, {
+                fontFamily: FA_FONT_FAMILY,
+                fontStyle: '900',
+                fontSize: `${Math.round(r * 1.15)}px`,
+                fill: '#e8dcc8'
+            }).setOrigin(0.5).setDepth(Depth.FRONT_IMAGES);
+        }
+
+        /**
+         * Opens the dialog that reads out what the opponent is and fights with. The page renders it with the
+         * game, and it is the same text the shop shows before the phase.
+         */
+        openOpponentHelp() {
+            const dialog = document.getElementById('playerpuzzle-opponent-help');
+            if (dialog && !dialog.open) {
+                dialog.showModal();
+            }
+        }
+
+        /**
          * Creates the Sound Effects button's icon as a Font Awesome bell, crossed out while the
          * effects are off — the shape, not only a dimmer icon, tells the state, like the Music
          * button's speaker beside it.
@@ -1236,6 +1265,16 @@ define(
             const xExpand = L.w - 30;
             const xEffects = xExpand - gap;
             const xMusic = xEffects - gap;
+            const xHelp = xMusic - gap;
+
+            const badgeHelp = this.createButtonBadge(xHelp, y, r);
+            this.createHelpIcon(xHelp, y, r);
+            badgeHelp.on('pointerup', () => {
+                this.guardAgainstDoubleTap('help', () => this.openOpponentHelp());
+            });
+            document.getElementById('pp-opponent-help-close')?.addEventListener('click', () => {
+                document.getElementById('playerpuzzle-opponent-help').close();
+            });
 
             const badgeMusic = this.createButtonBadge(xMusic, y, r);
             const iconMusic = this.createMusicIcon(xMusic, y, r, me.musicOn);

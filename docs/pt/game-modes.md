@@ -47,6 +47,11 @@ o visual do estudante, e a Partida Única abre a escolha com o último herói us
   níveis). Em 25%, 50% e 75% da Campanha o herói evolui de graça, assim que a especialidade dele está no
   teto do estágio, o que libera o teto do estágio seguinte.
 * **A loja:** o mesmo painel, com os consumíveis, no Lobby e na tela entre as fases.
+* **O cartão do oponente:** a loja abre com o cartão do próximo oponente: a imagem, o nome, onde ele é
+  enfrentado na Campanha e o que o diferencia (HP extra, golpes mais fortes, armadura, os poderes e, quando
+  a fase já existe, os itens que ele traz). O cartão do chefão final diz também que ele se adapta ao seu
+  herói. O estudante pode recolher o cartão. Durante a luta, o botão **?** no alto do palco abre o mesmo
+  cartão, para reler os poderes depois do primeiro encontro, quando o aviso do jogo já não aparece.
 
 ## Partida Única
 

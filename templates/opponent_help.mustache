@@ -1,0 +1,44 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_playerpuzzle/opponent_help
+
+    The opponent's card during the fight, as a native <dialog> opened from the stage's help button. It is moved
+    inside the game's container when the game boots, so it also shows in full screen.
+
+    Context variables required for this template:
+    * heading - The dialog's title
+    * closelabel - The close button's text
+    * name, spriteurl, phasetext, traits - See mod_playerpuzzle/opponent_card_body
+
+    Example context (json):
+    {
+        "heading": "Your opponent",
+        "closelabel": "Close",
+        "name": "Goblin",
+        "spriteurl": "/mod/playerpuzzle/pix/opponents/goblin.webp",
+        "phasetext": "Level 1, Phase 2",
+        "traits": [
+            {"text": "It hits 15% harder."}
+        ]
+    }
+}}
+<dialog id="playerpuzzle-opponent-help" class="pp-opponent-help" aria-labelledby="pp-opponent-help-title">
+    <h2 id="pp-opponent-help-title" class="pp-opponent-help-title">{{heading}}</h2>
+    {{> mod_playerpuzzle/opponent_card_body }}
+    <button type="button" class="btn btn-secondary" id="pp-opponent-help-close">{{closelabel}}</button>
+</dialog>

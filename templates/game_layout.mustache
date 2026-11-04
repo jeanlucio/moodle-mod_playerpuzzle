@@ -19,10 +19,23 @@
 
     The main layout for the game canvas and accessible question modal.
 
+    Context variables required for this template:
+    * loadingtext - The text shown while the game loads
+    * gameconfig - The game's config, as JSON
+    * opponenthelp - The opponent's card for the help dialog, with the variables of mod_playerpuzzle/opponent_help
+
     Example context (json):
     {
         "loadingtext": "Loading the game engine...",
-        "gameconfig": "{}"
+        "gameconfig": "{}",
+        "opponenthelp": {
+            "heading": "Your opponent",
+            "closelabel": "Close",
+            "name": "Goblin",
+            "spriteurl": "/mod/playerpuzzle/pix/opponents/goblin.webp",
+            "phasetext": "",
+            "traits": [{"text": "Nothing sets it apart."}]
+        }
     }
 }}
 
@@ -53,4 +66,7 @@
     </div>
 
     {{> mod_playerpuzzle/question_modal }}
+    {{#opponenthelp}}
+    {{> mod_playerpuzzle/opponent_help }}
+    {{/opponenthelp}}
 </div>

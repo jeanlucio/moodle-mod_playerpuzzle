@@ -26,6 +26,7 @@
     * coinvalue - The balance
     * shopitems - The consumables, each with type, label, ownedtext, price, buylabel and arialabel
     * hasupgrades - Whether the hero's upgrades are shown, with the variables of mod_playerpuzzle/shop_upgrades
+    * opponentcard - The opponent of the next phase, with the variables of mod_playerpuzzle/opponent_card
 
     Example context (json):
     {
@@ -56,6 +57,9 @@
             <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
         </span>
     </div>
+    {{#opponentcard}}
+    {{> mod_playerpuzzle/opponent_card }}
+    {{/opponentcard}}
     <div class="pp-lobby-shop" data-cmid="{{cmid}}">
         <ul class="pp-lobby-shop-list">
             {{#shopitems}}

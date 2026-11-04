@@ -119,6 +119,9 @@ $PAGE->requires->js_call_amd('mod_playerpuzzle/game_boot', 'init', []);
 $templatedata = [
     'loadingtext' => get_string('loadinggame', 'mod_playerpuzzle'),
     'gameconfig' => json_encode($jsconfig),
+    'opponenthelp' => [
+        'closelabel' => get_string('close', 'mod_playerpuzzle'),
+    ] + \mod_playerpuzzle\local\opponent_card::for_fight($jsconfig),
 ];
 
 echo $OUTPUT->header();

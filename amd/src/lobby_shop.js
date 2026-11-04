@@ -126,7 +126,12 @@ const buyUpgrade = async(cmid, button) => {
         const holder = document.createElement('template');
         holder.innerHTML = html;
         const fresh = holder.content.firstElementChild;
+        // The opponent's card stays folded if the student folded it, instead of opening again at every buy.
+        const folded = panel.querySelector('.pp-opponent-card')?.open === false;
         panel.replaceWith(fresh);
+        if (folded) {
+            fresh.querySelector('.pp-opponent-card').open = false;
+        }
 
         if (result.evolved) {
             const notice = fresh.querySelector('.pp-hero-evolved');

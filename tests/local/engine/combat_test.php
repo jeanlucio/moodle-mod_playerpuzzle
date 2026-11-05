@@ -90,6 +90,68 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
+     * Tests the factors that differ by side: the opponent's HP, and the unit of the student's own amounts, which
+     * Easy leaves alone (so halving the opponent's HP shortens the match) and Hard doubles with the opponent's.
+     *
+     * @return void
+     */
+    public function test_difficulty_factors_by_side(): void {
+        $this->assertSame([0.5, 1.0, 2.0, 1.0], [
+            combat::difficulty_hp_factor('easy'),
+            combat::difficulty_hp_factor('normal'),
+            combat::difficulty_hp_factor('hard'),
+            combat::difficulty_hp_factor('bogus'),
+        ]);
+        $this->assertSame([1.0, 1.0, 2.0, 1.0], [
+            combat::difficulty_player_factor('easy'),
+            combat::difficulty_player_factor('normal'),
+            combat::difficulty_player_factor('hard'),
+            combat::difficulty_player_factor('bogus'),
+        ]);
+    }
+
+    /**
+     * Tests that on Easy the opponent has half the HP and hits half as hard while the student's unit is the
+     * unscaled one, and that Normal and Hard keep one unit for both sides.
+     *
+     * @return void
+     */
+    public function test_the_student_unit_is_not_weakened_on_easy(): void {
+        $instance = (object) ['basebosshp' => 100, 'bossdamage' => 10];
+        $attempt = fn(string $difficulty): \stdClass => (object) [
+            'isdemo' => 0, 'difficulty' => $difficulty, 'currentlevel' => 1, 'currentphase' => 1,
+            'frozenbasebosshp' => 100, 'frozenbossdamage' => 10, 'frozenopponent' => '', 'frozenhero' => '',
+        ];
+
+        $easy = combat::phase_opponent($attempt('easy'), $instance);
+        $this->assertSame([50, 5, 10], [$easy['maxbosshp'], $easy['basedamage'], $easy['playerbasedamage']]);
+        $normal = combat::phase_opponent($attempt('normal'), $instance);
+        $this->assertSame([100, 10, 10], [$normal['maxbosshp'], $normal['basedamage'], $normal['playerbasedamage']]);
+        $hard = combat::phase_opponent($attempt('hard'), $instance);
+        $this->assertSame([200, 20, 20], [$hard['maxbosshp'], $hard['basedamage'], $hard['playerbasedamage']]);
+    }
+
+    /**
+     * Tests that the final boss has 15% more HP on Normal only, and that no other opponent does: a Normal
+     * phase against anything else keeps the HP the level and phase give.
+     *
+     * @return void
+     */
+    public function test_the_final_boss_has_more_hp_on_normal_only(): void {
+        $instance = (object) ['basebosshp' => 100, 'bossdamage' => 10];
+        $attempt = fn(string $difficulty, string $opponent): \stdClass => (object) [
+            'isdemo' => 0, 'difficulty' => $difficulty, 'currentlevel' => 1, 'currentphase' => 10,
+            'frozenbasebosshp' => 100, 'frozenbossdamage' => 10, 'frozenopponent' => $opponent, 'frozenhero' => '',
+        ];
+
+        // 100 * 1.9 for the tenth phase, then the final boss's 1.2 and, on Normal only, the 1.15.
+        $this->assertSame(262, combat::phase_opponent($attempt('normal', 'vampire'), $instance)['maxbosshp']);
+        $this->assertSame(114, combat::phase_opponent($attempt('easy', 'vampire'), $instance)['maxbosshp']);
+        $this->assertSame(456, combat::phase_opponent($attempt('hard', 'vampire'), $instance)['maxbosshp']);
+        $this->assertSame(190, combat::phase_opponent($attempt('normal', 'dragon'), $instance)['maxbosshp']);
+    }
+
+    /**
      * Tests apply_difficulty() scales an already level/phase-scaled value and rounds to
      * an integer, and that Normal is a no-op.
      *
@@ -179,7 +241,8 @@ final class combat_test extends \basic_testcase {
         ]), $instance);
         $this->assertSame(
             [
-                'maxbosshp' => 340, 'basedamage' => 34, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => ['ambush'],
+                'maxbosshp' => 340, 'basedamage' => 34, 'playerbasedamage' => 34, 'bossattack' => 1.15, 'bossarmor' => 0.0,
+                'bosspowers' => ['ambush'],
                 'bossbreathevery' => 0, 'bosskit' => ['potion' => 1, 'sword' => 1],
             ],
             $brute
@@ -188,7 +251,8 @@ final class combat_test extends \basic_testcase {
         $armored = combat::phase_opponent($this->make_attempt(['frozenopponent' => 'golem']), $instance);
         $this->assertSame(
             [
-                'maxbosshp' => 100, 'basedamage' => 10, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield'],
+                'maxbosshp' => 100, 'basedamage' => 10, 'playerbasedamage' => 10, 'bossattack' => 1.0, 'bossarmor' => 0.15,
+                'bosspowers' => ['iceshield'],
                 'bossbreathevery' => 0, 'bosskit' => ['potion' => 0, 'sword' => 0],
             ],
             $armored
@@ -224,7 +288,8 @@ final class combat_test extends \basic_testcase {
         ]), $instance);
         $this->assertSame(
             [
-                'maxbosshp' => 200, 'basedamage' => 20, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => [],
+                'maxbosshp' => 200, 'basedamage' => 20, 'playerbasedamage' => 20, 'bossattack' => 1.0, 'bossarmor' => 0.0,
+                'bosspowers' => [],
                 'bossbreathevery' => 0,
                 'bosskit' => ['potion' => 0, 'sword' => 0],
             ],
@@ -304,7 +369,8 @@ final class combat_test extends \basic_testcase {
         ]), $instance);
         $this->assertSame(
             [
-                'maxbosshp' => combat::DEMO_HP, 'basedamage' => 12, 'bossattack' => 1.0, 'bossarmor' => 0.0,
+                'maxbosshp' => combat::DEMO_HP, 'basedamage' => 12, 'playerbasedamage' => 12, 'bossattack' => 1.0,
+                'bossarmor' => 0.0,
                 'bosspowers' => [], 'bossbreathevery' => 0,
                 'bosskit' => ['potion' => 0, 'sword' => 0],
             ],

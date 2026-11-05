@@ -521,6 +521,7 @@ class game_page_service {
         $opponentside = combat::phase_opponent($attemptinfo, $instance);
         $bosshp = $opponentside['maxbosshp'];
         $bossdamage = $opponentside['basedamage'];
+        $playerdamage = $opponentside['playerbasedamage'];
         if ($isdemo) {
             $studenthp = combat::DEMO_HP;
             $student = ['attack' => 1.0, 'armor' => 0.0];
@@ -626,6 +627,8 @@ class game_page_service {
             'playerattack'         => $student['attack'],
             'playerarmor'          => $student['armor'],
             'bossdamage'           => $bossdamage,
+            // The unit the student's own hits, Potions and poison are counted in: the opponent's, except on Easy.
+            'playerdamage'         => $playerdamage,
             // The opponent profile's multiplier on the hits it lands and the share of each hit it
             // takes that its armor absorbs (1 and 0 without a profile). The client only uses them
             // to play the fight; the server replay reads its own from the frozen opponent.

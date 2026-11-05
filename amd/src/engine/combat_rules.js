@@ -383,6 +383,23 @@
         }
 
         /**
+         * The unit every amount of a side is counted in: its hits, the Potions it drinks and the poison it inflicts.
+         * Both sides use the phase's baseDamage, except when the config gives the student a unit of its own
+         * (playerBaseDamage), which is how the Easy difficulty weakens the opponent without weakening the student.
+         * Mirrors combat_engine::unit().
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {object} config The phase's rule config: baseDamage, and playerBaseDamage when the student's differs.
+         * @return {number}
+         */
+        function unit(side, config) {
+            if (side === 'player' && config.playerBaseDamage !== undefined) {
+                return config.playerBaseDamage;
+            }
+            return config.baseDamage;
+        }
+
+        /**
          * What each piece a side destroys gives that side: the HP a Potion heals, the multiplier
          * a Star adds, and how much of its meter a Shield, Grimoire or Orb fills. The opponent's
          * powers change some of them for the opponent only.
@@ -393,9 +410,10 @@
          */
         function pieceGains(side, config) {
             const boss = side === 'boss';
+            const sideUnit = unit(side, config);
             return {
-                // A quarter of baseDamage, or three eighths with rootheal.
-                heal: boss && hasPower(config, POWERS.ROOTHEAL) ? config.baseDamage * 3 / 8 : config.baseDamage / 4,
+                // A quarter of the side's unit, or three eighths with rootheal.
+                heal: boss && hasPower(config, POWERS.ROOTHEAL) ? sideUnit * 3 / 8 : sideUnit / 4,
                 multiplier: 0.1,
                 shield: 10,
                 poison: boss && hasPower(config, POWERS.FASTGRIMOIRE) ? FAST_GRIMOIRE_POISON : GRIMOIRE_POISON,
@@ -460,7 +478,7 @@
             // matching the original flat-per-piece baseline.
             for (const group of matchGroups) {
                 if (group.type === 3) {
-                    damageDealt += config.baseDamage * comboMultiplier(group.size);
+                    damageDealt += unit(side, config) * comboMultiplier(group.size);
                 }
             }
 
@@ -587,7 +605,7 @@
          */
         function opponentItemUse(state, config) {
             if (state.bossSwords > 0 && !state.playerShieldReady) {
-                const hit = hitAmount(config.baseDamage, 'boss', config);
+                const hit = hitAmount(unit('boss', config), 'boss', config);
                 if (hit >= state.currentPlayerHp || state.currentPlayerHp < state.maxPlayerHp * ITEM_SWORD_BELOW) {
                     return 'sword';
                 }
@@ -669,12 +687,16 @@
             const outcome = {hitBoss: null, hitPlayer: null, resetPlayerMultiplier: false, resetBossMultiplier: false};
             if (side === 'player') {
                 if (correct) {
-                    outcome.hitBoss = hitAmount(config.baseDamage * CRITICAL_MULTIPLIER * state.playerMultiplier, 'player', config);
+                    outcome.hitBoss = hitAmount(
+                        unit('player', config) * CRITICAL_MULTIPLIER * state.playerMultiplier,
+                        'player',
+                        config
+                    );
                 } else {
                     outcome.resetPlayerMultiplier = true;
                 }
             } else if (correct) {
-                outcome.hitPlayer = hitAmount(config.baseDamage * CRITICAL_MULTIPLIER * state.bossMultiplier, 'boss', config);
+                outcome.hitPlayer = hitAmount(unit('boss', config) * CRITICAL_MULTIPLIER * state.bossMultiplier, 'boss', config);
             } else {
                 outcome.resetBossMultiplier = true;
             }
@@ -711,7 +733,9 @@
             const next = Object.assign({}, state);
             const hpField = side === 'player' ? 'currentPlayerHp' : 'currentHp';
             const roundsField = side === 'player' ? 'playerPoisonRounds' : 'bossPoisonRounds';
-            const tick = resolvePoisonTick(next[hpField], next[roundsField], config.baseDamage);
+            // The poison that ticks on a side was inflicted by the other one, in the other's unit.
+            const tickUnit = unit(side === 'player' ? 'boss' : 'player', config);
+            const tick = resolvePoisonTick(next[hpField], next[roundsField], tickUnit);
             next[hpField] = tick.newHp;
             next[roundsField] = tick.newPoisonRounds;
             let shieldArmed = false;
@@ -726,7 +750,7 @@
             let breath = null;
             if (side === 'boss' && hasPower(config, POWERS.BREATH) && next.currentHp > 0
                     && next.bossTurnCount % breathEvery(config) === 0) {
-                const hit = hitAmount(config.baseDamage * BREATH_MULTIPLIER, 'boss', config);
+                const hit = hitAmount(unit('boss', config) * BREATH_MULTIPLIER, 'boss', config);
                 const applied = resolveDamage(next.currentPlayerHp, next.playerShieldReady, hit);
                 next.currentPlayerHp = applied.newHp;
                 if (applied.shieldConsumed) {
@@ -772,7 +796,7 @@
             if (!(coinMatch > 0)) {
                 return null;
             }
-            const hit = hitAmount(config.baseDamage * LOOT_HIT_MULTIPLIER * looted / coinMatch, 'boss', config);
+            const hit = hitAmount(unit('boss', config) * LOOT_HIT_MULTIPLIER * looted / coinMatch, 'boss', config);
             const applied = resolveDamage(next.currentPlayerHp, next.playerShieldReady, hit);
             next.currentPlayerHp = applied.newHp;
             if (applied.shieldConsumed) {
@@ -796,13 +820,13 @@
         function useOpponentItem(side, next, config) {
             const kind = side === 'boss' && next.currentHp > 0 ? opponentItemUse(next, config) : null;
             if (kind === 'potion') {
-                const amount = Math.min(next.maxBossHp - next.currentHp, config.baseDamage * ITEM_POTION_HEAL);
+                const amount = Math.min(next.maxBossHp - next.currentHp, unit('boss', config) * ITEM_POTION_HEAL);
                 next.bossPotions -= 1;
                 next.currentHp += amount;
                 return {kind, amount, appliedAmount: 0, shieldConsumed: false, drained: 0};
             }
             if (kind === 'sword') {
-                const amount = hitAmount(config.baseDamage, 'boss', config);
+                const amount = hitAmount(unit('boss', config), 'boss', config);
                 const applied = resolveDamage(next.currentPlayerHp, next.playerShieldReady, amount);
                 next.bossSwords -= 1;
                 next.currentPlayerHp = applied.newHp;
@@ -835,7 +859,7 @@
             let damageAmount = 0;
 
             if (type === 'potion') {
-                healAmount = config.baseDamage * 1.25;
+                healAmount = unit('player', config) * 1.25;
                 next.currentPlayerHp = Math.min(next.maxPlayerHp, next.currentPlayerHp + healAmount);
             } else if (type === 'shield') {
                 next.playerShieldMeter += 100;
@@ -844,7 +868,7 @@
                 next.playerPoisonMeter += 100;
                 resolvePoisonMeters(next, config);
             } else if (type === 'sword') {
-                damageAmount = hitAmount(config.baseDamage, 'player', config);
+                damageAmount = hitAmount(unit('player', config), 'player', config);
             }
 
             return {state: next, healAmount, damageAmount};
@@ -858,6 +882,7 @@
             ARMOR_CAP,
             POWERS,
             hasPower,
+            unit,
             breathEvery,
             initialState,
             comboMultiplier,

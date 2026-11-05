@@ -88,6 +88,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.strings = strings;
 
             this.baseDamage = parseInt(gameConfig.bossdamage) || 10;
+            // The unit of the student's own hits, Potions and poison: the opponent's, except on Easy.
+            this.playerDamage = parseInt(gameConfig.playerdamage) || this.baseDamage;
             // Deliberately never scaled by level/phase, unlike baseDamage — a teacher's
             // fixed-price consumable shop would otherwise get proportionally cheaper as a
             // campaign progresses.
@@ -408,13 +410,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         /**
          * The phase's rule config as the pure rules take it.
          *
-         * @returns {{baseDamage: number, coinGain: number, coinFactor: number, bossAttack: number, bossArmor: number,
-         *  playerAttack: number, playerArmor: number, bossPowers: Array<string>,
+         * @returns {{baseDamage: number, playerBaseDamage: number, coinGain: number, coinFactor: number,
+         *  bossAttack: number, bossArmor: number, playerAttack: number, playerArmor: number, bossPowers: Array<string>,
          *  bossKit: {potion: number, sword: number}, difficulty: string}}
          */
         ruleConfig() {
             return {
-                baseDamage: this.baseDamage, coinGain: this.coinGain, coinFactor: this.coinFactor,
+                baseDamage: this.baseDamage, playerBaseDamage: this.playerDamage,
+                coinGain: this.coinGain, coinFactor: this.coinFactor,
                 bossAttack: this.bossAttack, bossArmor: this.bossArmor, bossPowers: this.bossPowers,
                 // Every how many of its turns the opponent breathes, when it has a rhythm of its own (0: the default).
                 bossBreathEvery: parseInt(this.gameConfig.bossbreathevery, 10) || 0,
@@ -783,7 +786,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             if (start.poisonTicked) {
                 this.updateUI();
                 me.ui.poisonCharacter('boss');
-                me.ui.pushHistoryLog('boss', this.strings.historylogpoisontick.replace('{$a}', this.baseDamage));
+                me.ui.pushHistoryLog('boss', this.strings.historylogpoisontick.replace('{$a}', this.playerDamage));
                 if (this.checkGameOver()) {
                     return;
                 }

@@ -63,6 +63,12 @@ O estudante escolhe Fácil, Normal ou Difícil. A escolha muda a luta, nunca a n
 | Normal | ×1 | ×1 | 66% | 75% |
 | Difícil | ×2 | ×3 | 100% | 100% |
 
+O fator da primeira coluna é do oponente: no Fácil o HP e os golpes dele caem pela metade enquanto os golpes, as
+Poções e o veneno do próprio estudante mantêm o valor cheio, então uma partida fácil é mais curta, e não só mais
+segura. No Difícil tudo dobra para os dois lados, então a partida dura o mesmo que no Normal e o estudante tem
+metade do tempo para sobreviver. No Normal o chefão final também tem 15% a mais de HP, o que o põe um pouco
+acima do que um herói com todas as melhorias consegue alcançar.
+
 Na Campanha a escolha é feita a cada fase: no Lobby para a primeira, e na tela "Fase concluída"
 para a seguinte.
 

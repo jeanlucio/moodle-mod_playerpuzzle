@@ -397,6 +397,22 @@ class combat_engine {
     }
 
     /**
+     * The unit every amount of a side is counted in: its hits, the Potions it drinks and the poison it inflicts.
+     * Both sides use the phase's baseDamage, except when the config gives the student a unit of its own
+     * (playerBaseDamage), which is how the Easy difficulty weakens the opponent without weakening the student.
+     *
+     * @param string $side 'player' or 'boss'.
+     * @param array $config The phase's rule config: baseDamage, and playerBaseDamage when the student's differs.
+     * @return int|float
+     */
+    public static function unit(string $side, array $config): int|float {
+        if ($side === 'player' && isset($config['playerBaseDamage'])) {
+            return $config['playerBaseDamage'];
+        }
+        return $config['baseDamage'];
+    }
+
+    /**
      * What each piece a side destroys gives that side: the HP a Potion heals, the multiplier a
      * Star adds, and how much of its meter a Shield, Grimoire or Orb fills. The opponent's powers
      * change some of them for the opponent only.
@@ -407,12 +423,13 @@ class combat_engine {
      */
     public static function piece_gains(string $side, array $config): array {
         $boss = $side === 'boss';
+        $unit = self::unit($side, $config);
         return [
-            // A quarter of baseDamage, or three eighths with rootheal. Kept as a division, like
+            // A quarter of the side's unit, or three eighths with rootheal. Kept as a division, like
             // the JS twin, so an exact result stays an integer in PHP.
             'heal' => $boss && self::has_power($config, self::POWER_ROOTHEAL)
-                ? $config['baseDamage'] * 3 / 8
-                : $config['baseDamage'] / 4,
+                ? $unit * 3 / 8
+                : $unit / 4,
             'multiplier' => 0.1,
             'shield' => 10,
             'poison' => $boss && self::has_power($config, self::POWER_FASTGRIMOIRE)
@@ -478,7 +495,7 @@ class combat_engine {
         // multiplier directly: a 3-piece group always resolves to exactly baseDamage.
         foreach ($matchgroups as $group) {
             if ($group['type'] === 3) {
-                $damagedealt += $config['baseDamage'] * self::combo_multiplier($group['size']);
+                $damagedealt += self::unit($side, $config) * self::combo_multiplier($group['size']);
             }
         }
 
@@ -597,7 +614,7 @@ class combat_engine {
             return null;
         }
         $hit = self::hit_amount(
-            $config['baseDamage'] * self::LOOT_HIT_MULTIPLIER * $looted / $coinmatch,
+            self::unit('boss', $config) * self::LOOT_HIT_MULTIPLIER * $looted / $coinmatch,
             'boss',
             $config
         );
@@ -649,7 +666,7 @@ class combat_engine {
      */
     public static function opponent_item_use(array $state, array $config): ?string {
         if ($state['bossSwords'] > 0 && !$state['playerShieldReady']) {
-            $hit = self::hit_amount($config['baseDamage'], 'boss', $config);
+            $hit = self::hit_amount(self::unit('boss', $config), 'boss', $config);
             $low = $state['currentPlayerHp'] < $state['maxPlayerHp'] * self::ITEM_SWORD_BELOW;
             if ($hit >= $state['currentPlayerHp'] || $low) {
                 return 'sword';
@@ -673,13 +690,13 @@ class combat_engine {
     private static function use_opponent_item(string $side, array &$next, array $config): ?array {
         $kind = $side === 'boss' && $next['currentHp'] > 0 ? self::opponent_item_use($next, $config) : null;
         if ($kind === 'potion') {
-            $amount = (float) min($next['maxBossHp'] - $next['currentHp'], $config['baseDamage'] * self::ITEM_POTION_HEAL);
+            $amount = (float) min($next['maxBossHp'] - $next['currentHp'], self::unit('boss', $config) * self::ITEM_POTION_HEAL);
             $next['bossPotions'] -= 1;
             $next['currentHp'] += $amount;
             return ['kind' => $kind, 'amount' => $amount, 'appliedAmount' => 0.0, 'shieldConsumed' => false, 'drained' => 0.0];
         }
         if ($kind === 'sword') {
-            $amount = self::hit_amount($config['baseDamage'], 'boss', $config);
+            $amount = self::hit_amount(self::unit('boss', $config), 'boss', $config);
             $applied = self::resolve_damage($next['currentPlayerHp'], $next['playerShieldReady'], $amount);
             $next['bossSwords'] -= 1;
             $next['currentPlayerHp'] = $applied['newHp'];
@@ -771,7 +788,7 @@ class combat_engine {
         if ($side === 'player') {
             if ($correct) {
                 $outcome['hitBoss'] = self::hit_amount(
-                    $config['baseDamage'] * self::CRITICAL_MULTIPLIER * $state['playerMultiplier'],
+                    self::unit('player', $config) * self::CRITICAL_MULTIPLIER * $state['playerMultiplier'],
                     'player',
                     $config
                 );
@@ -780,7 +797,7 @@ class combat_engine {
             }
         } else if ($correct) {
             $outcome['hitPlayer'] = self::hit_amount(
-                $config['baseDamage'] * self::CRITICAL_MULTIPLIER * $state['bossMultiplier'],
+                self::unit('boss', $config) * self::CRITICAL_MULTIPLIER * $state['bossMultiplier'],
                 'boss',
                 $config
             );
@@ -817,7 +834,9 @@ class combat_engine {
         $next = $state;
         $hpfield = $side === 'player' ? 'currentPlayerHp' : 'currentHp';
         $roundsfield = $side === 'player' ? 'playerPoisonRounds' : 'bossPoisonRounds';
-        $tick = self::resolve_poison_tick($next[$hpfield], $next[$roundsfield], (float) $config['baseDamage']);
+        // The poison that ticks on a side was inflicted by the other one, in the other's unit.
+        $tickunit = self::unit($side === 'player' ? 'boss' : 'player', $config);
+        $tick = self::resolve_poison_tick($next[$hpfield], $next[$roundsfield], (float) $tickunit);
         $next[$hpfield] = $tick['newHp'];
         $next[$roundsfield] = $tick['newPoisonRounds'];
         $shieldarmed = false;
@@ -834,7 +853,7 @@ class combat_engine {
             $side === 'boss' && self::has_power($config, self::POWER_BREATH) && $next['currentHp'] > 0
             && $next['bossTurnCount'] % self::breath_every($config) === 0
         ) {
-            $hit = self::hit_amount($config['baseDamage'] * self::BREATH_MULTIPLIER, 'boss', $config);
+            $hit = self::hit_amount(self::unit('boss', $config) * self::BREATH_MULTIPLIER, 'boss', $config);
             $applied = self::resolve_damage($next['currentPlayerHp'], $next['playerShieldReady'], $hit);
             $next['currentPlayerHp'] = $applied['newHp'];
             if ($applied['shieldConsumed']) {
@@ -895,7 +914,7 @@ class combat_engine {
         $damageamount = 0;
 
         if ($type === 'potion') {
-            $healamount = $config['baseDamage'] * 1.25;
+            $healamount = self::unit('player', $config) * 1.25;
             $next['currentPlayerHp'] = min($next['maxPlayerHp'], $next['currentPlayerHp'] + $healamount);
         } else if ($type === 'shield') {
             $next['playerShieldMeter'] += 100;
@@ -904,7 +923,7 @@ class combat_engine {
             $next['playerPoisonMeter'] += 100;
             self::resolve_poison_meters($next, $config);
         } else if ($type === 'sword') {
-            $damageamount = self::hit_amount((float) $config['baseDamage'], 'player', $config);
+            $damageamount = self::hit_amount((float) self::unit('player', $config), 'player', $config);
         }
 
         return ['state' => $next, 'healAmount' => $healamount, 'damageAmount' => $damageamount];

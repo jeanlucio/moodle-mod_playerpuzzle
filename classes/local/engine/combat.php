@@ -48,12 +48,31 @@ class combat {
     private const PHASE_HP_FACTOR = 0.1;
 
     /**
-     * Boss HP and boss damage multiplier per student-chosen difficulty. Applied on top of
-     * the level/phase scaling, never to the student's own HP, and never to the grade
+     * Multiplier per student-chosen difficulty on the opponent's own amounts: its hits, its Potions and the poison it
+     * inflicts. Applied on top of the level/phase scaling, never to the student's own HP, and never to the grade
      * directly — a win on any difficulty still clears 100% of that difficulty's own boss HP,
      * so Easy is a safety net for weaker students rather than a grade penalty.
      */
     private const DIFFICULTY_BOSS_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 2.0];
+
+    /**
+     * Multiplier per difficulty on the opponent's max HP: Easy halves it and Hard doubles it, as on its hits.
+     */
+    private const DIFFICULTY_HP_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 2.0];
+
+    /**
+     * What a Normal final boss has on top of the HP the level, the phase and its own profile give: 15% more, so it
+     * stands a little above what a hero with every upgrade can reach, instead of a little below. Only the final
+     * boss, since the hero's ceiling only matters at the end, and only on Normal, as Hard is already far above
+     * it. Tuned with tests/js/engine/simulate_difficulty.js.
+     */
+    private const NORMAL_FINAL_BOSS_HP_FACTOR = 1.15;
+    /**
+     * Multiplier per difficulty on the unit the student's own amounts are counted in. Easy leaves it alone, so
+     * that halving the opponent's HP makes the match shorter instead of cancelling out against the student's
+     * hits; Hard doubles it along with the opponent's HP, as it always did.
+     */
+    private const DIFFICULTY_PLAYER_FACTORS = ['easy' => 1.0, 'normal' => 1.0, 'hard' => 2.0];
 
     /**
      * Coin reward multiplier per difficulty. Easy earns less, Hard earns more; applied
@@ -121,7 +140,8 @@ class combat {
      *  frozenbasebosshp, frozenbossdamage and frozenopponent are read, and frozenhero, which decides the second
      *  power the final boss fights with (see opponents::counter()).
      * @param \stdClass $instance The activity: basebosshp and bossdamage are read.
-     * @return array ['maxbosshp' => int, 'basedamage' => int, 'bossattack' => float, 'bossarmor' => float,
+     * @return array ['maxbosshp' => int, 'basedamage' => int (the opponent's unit), 'playerbasedamage' => int (the
+     *  student's unit), 'bossattack' => float, 'bossarmor' => float,
      *  'bosspowers' => string[], 'bossbreathevery' => int (0 for the default rhythm),
      *  'bosskit' => ['potion' => int, 'sword' => int]]
      */
@@ -133,6 +153,7 @@ class combat {
             return [
                 'maxbosshp' => self::DEMO_HP,
                 'basedamage' => self::calculate_boss_hp((int) $instance->bossdamage, $level, $phase),
+                'playerbasedamage' => self::calculate_boss_hp((int) $instance->bossdamage, $level, $phase),
                 'bossattack' => 1.0,
                 'bossarmor' => 0.0,
                 'bosspowers' => [],
@@ -146,13 +167,19 @@ class combat {
         $counter = opponents::counter((string) $attempt->frozenopponent, (string) ($attempt->frozenhero ?? ''));
         $basehp = (int) $attempt->frozenbasebosshp ?: (int) $instance->basebosshp;
         $basedamage = (int) $attempt->frozenbossdamage ?: (int) $instance->bossdamage;
-        $maxbosshp = self::apply_difficulty(self::calculate_boss_hp($basehp, $level, $phase), $difficulty);
+        $maxbosshp = (int) round(self::calculate_boss_hp($basehp, $level, $phase) * self::difficulty_hp_factor($difficulty));
+        $isfinalboss = (string) $attempt->frozenopponent === opponents::FINAL_BOSS;
+        $finalbossfactor = $isfinalboss && $difficulty === constants::DIFFICULTY_NORMAL
+            ? self::NORMAL_FINAL_BOSS_HP_FACTOR
+            : 1.0;
+        $unit = self::calculate_boss_hp($basedamage, $level, $phase);
 
         // Halves round up with floor(), never round(): the replay mirror in JavaScript must land
         // on the same whole number, and round() pre-rounds values like 227.49999999999997 up.
         return [
-            'maxbosshp' => (int) floor($maxbosshp * $modifiers['hp'] + 0.5),
-            'basedamage' => self::apply_difficulty(self::calculate_boss_hp($basedamage, $level, $phase), $difficulty),
+            'maxbosshp' => (int) floor($maxbosshp * $modifiers['hp'] * $finalbossfactor + 0.5),
+            'basedamage' => self::apply_difficulty($unit, $difficulty),
+            'playerbasedamage' => (int) round($unit * self::difficulty_player_factor($difficulty)),
             'bossattack' => $modifiers['attack'],
             'bossarmor' => $modifiers['armor'] + $counter['armor'],
             'bosspowers' => array_values(array_unique(
@@ -205,6 +232,26 @@ class combat {
      */
     public static function difficulty_boss_factor(string $difficulty): float {
         return self::DIFFICULTY_BOSS_FACTORS[$difficulty] ?? 1.0;
+    }
+
+    /**
+     * Returns the multiplier on the opponent's max HP for a difficulty. Unknown values fall back to 1.0 (Normal).
+     *
+     * @param string $difficulty One of the constants::DIFFICULTY_* values.
+     * @return float
+     */
+    public static function difficulty_hp_factor(string $difficulty): float {
+        return self::DIFFICULTY_HP_FACTORS[$difficulty] ?? 1.0;
+    }
+
+    /**
+     * Returns the multiplier on the student's own unit of damage for a difficulty. Unknown values fall back to 1.0.
+     *
+     * @param string $difficulty One of the constants::DIFFICULTY_* values.
+     * @return float
+     */
+    public static function difficulty_player_factor(string $difficulty): float {
+        return self::DIFFICULTY_PLAYER_FACTORS[$difficulty] ?? 1.0;
     }
 
     /**

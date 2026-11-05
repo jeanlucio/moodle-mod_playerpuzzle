@@ -62,6 +62,10 @@ function scaleBoss(base, level, phase) {
 }
 
 const DIFFICULTY_BOSS_FACTORS = {easy: 0.5, normal: 1.0, hard: 2.0};
+const DIFFICULTY_HP_FACTORS = {easy: 0.5, normal: 1.0, hard: 2.0};
+// What a Normal final boss has on top of its HP, see combat::NORMAL_FINAL_BOSS_HP_FACTOR.
+const NORMAL_FINAL_BOSS_HP_FACTOR = 1.15;
+const DIFFICULTY_PLAYER_FACTORS = {easy: 1.0, normal: 1.0, hard: 2.0};
 const DIFFICULTY_COIN_FACTORS = {easy: 0.5, normal: 1.0, hard: 3.0};
 
 /**
@@ -86,7 +90,13 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
     const level = attempt.currentlevel;
     const phase = attempt.currentphase;
     const bossFactor = DIFFICULTY_BOSS_FACTORS[attempt.difficulty] ?? 1.0;
-    const scaledBossHp = Math.round(scaleBoss(attempt.frozenbasebosshp, level, phase) * bossFactor);
+    const hpFactor = DIFFICULTY_HP_FACTORS[attempt.difficulty] ?? 1.0;
+    const playerFactor = DIFFICULTY_PLAYER_FACTORS[attempt.difficulty] ?? 1.0;
+    const unitBase = scaleBoss(attempt.frozenbossdamage, level, phase);
+    const finalBossFactor = attempt.difficulty === 'normal' && attempt.frozenopponent === 'vampire'
+        ? NORMAL_FINAL_BOSS_HP_FACTOR
+        : 1.0;
+    const scaledBossHp = Math.round(scaleBoss(attempt.frozenbasebosshp, level, phase) * hpFactor);
     // The student's side as the phase froze it (combat::phase_student()): an attempt without it falls
     // back to the instance's base HP, with no attack bonus and no armor.
     const frozenHp = attempt.frozenplayerhp || 0;
@@ -102,7 +112,8 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
     return {
         config: {
             ...playerSide,
-            baseDamage: Math.round(scaleBoss(attempt.frozenbossdamage, level, phase) * bossFactor),
+            baseDamage: Math.round(unitBase * bossFactor),
+            playerBaseDamage: Math.round(unitBase * playerFactor),
             coinGain: attempt.frozencoingain,
             coinFactor: DIFFICULTY_COIN_FACTORS[attempt.difficulty] ?? 1.0,
             bossAttack: modifiers.attack,
@@ -113,7 +124,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             bossKit: CombatRules.opponentKit(level, attempt.difficulty || 'normal', attempt.frozenopponent === 'vampire'),
             difficulty: attempt.difficulty || 'normal',
         },
-        maxBossHp: Math.floor((scaledBossHp * modifiers.hp) + 0.5),
+        maxBossHp: Math.floor((scaledBossHp * modifiers.hp * finalBossFactor) + 0.5),
         maxPlayerHp: frozenHp > 0 ? frozenHp : playerpuzzle.basestudenthp,
     };
 }

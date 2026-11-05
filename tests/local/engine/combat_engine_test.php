@@ -913,4 +913,56 @@ final class combat_engine_test extends \advanced_testcase {
         $this->assertSame(2.5, combat_engine::piece_gains('player', $config)['heal']);
         $this->assertSame(2.5, combat_engine::piece_gains('boss', self::CONFIG)['heal']);
     }
+
+    /**
+     * Tests that a config without a unit of its own for the student counts both sides in baseDamage, and that
+     * playerBaseDamage replaces it for the student only.
+     *
+     * @return void
+     */
+    public function test_unit_falls_back_to_the_base_damage(): void {
+        $this->assertSame(10, combat_engine::unit('player', self::CONFIG));
+        $this->assertSame(10, combat_engine::unit('boss', self::CONFIG));
+
+        $easy = array_merge(self::CONFIG, ['baseDamage' => 5, 'playerBaseDamage' => 10]);
+        $this->assertSame(10, combat_engine::unit('player', $easy));
+        $this->assertSame(5, combat_engine::unit('boss', $easy));
+    }
+
+    /**
+     * Tests that with a unit of its own for the student, everything the student does is counted in it and
+     * everything the opponent does in baseDamage: the Potion piece and the Potion bought, the Sword and the
+     * critical hit, and the poison each side inflicts on the other.
+     *
+     * @return void
+     */
+    public function test_each_side_is_counted_in_its_own_unit(): void {
+        $config = array_merge(self::CONFIG, ['baseDamage' => 4, 'playerBaseDamage' => 8]);
+
+        $this->assertSame(2, combat_engine::piece_gains('player', $config)['heal']);
+        $this->assertSame(1, combat_engine::piece_gains('boss', $config)['heal']);
+
+        $potion = combat_engine::resolve_consumable_effect('potion', $this->fresh_state(), $config);
+        $this->assertSame(10.0, (float) $potion['healAmount']);
+        $sword = combat_engine::resolve_consumable_effect('sword', $this->fresh_state(), $config);
+        $this->assertSame(8.0, (float) $sword['damageAmount']);
+
+        $group = [['type' => 3, 'size' => 3]];
+        $playerhit = combat_engine::resolve_match_effects('player', [3, 3, 3], $group, $this->fresh_state(), $config);
+        $this->assertSame(8.0, (float) $playerhit['damageDealt']);
+        $bosshit = combat_engine::resolve_match_effects('boss', [3, 3, 3], $group, $this->fresh_state(), $config);
+        $this->assertSame(4.0, (float) $bosshit['damageDealt']);
+
+        $poisoned = array_merge($this->fresh_state(), ['playerPoisonRounds' => 1, 'bossPoisonRounds' => 1]);
+        $this->assertSame(
+            96.0,
+            (float) combat_engine::start_turn('player', $poisoned, $config)['state']['currentPlayerHp'],
+            'the opponent poisons in its own unit'
+        );
+        $this->assertSame(
+            92.0,
+            (float) combat_engine::start_turn('boss', $poisoned, $config)['state']['currentHp'],
+            'the student poisons in its own unit'
+        );
+    }
 }

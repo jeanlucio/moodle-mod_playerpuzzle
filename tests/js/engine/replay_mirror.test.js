@@ -161,3 +161,27 @@ test('question outcomes come from the server on seed 56', () => {
 test('a failed boss validation is inconclusive on seed 22', () => {
     assert.equal(derive({rngseed: 22, frozenbasebosshp: 15}, {}, seed22Log('failed')), null);
 });
+
+test('the opponent of each difficulty has the HP and the unit the server gives it', () => {
+    const setup = (difficulty, opponent) => ReplayMirror.phaseSetup(
+        {
+            currentlevel: 1, currentphase: 10, difficulty, frozenbasebosshp: 100, frozenbossdamage: 10,
+            frozencoingain: 10, frozenopponent: opponent,
+        },
+        {basestudenthp: 100},
+        {hp: opponent === 'vampire' ? 1.2 : 1, attack: 1, armor: 0}
+    );
+
+    // Mirrors combat_test::test_the_final_boss_has_more_hp_on_normal_only().
+    assert.equal(setup('normal', 'vampire').maxBossHp, 262);
+    assert.equal(setup('easy', 'vampire').maxBossHp, 114);
+    assert.equal(setup('hard', 'vampire').maxBossHp, 456);
+    assert.equal(setup('normal', 'dragon').maxBossHp, 190);
+
+    // Mirrors combat_test::test_the_student_unit_is_not_weakened_on_easy(): Easy halves the opponent's unit only.
+    const easy = setup('easy', '').config;
+    assert.equal(easy.baseDamage, 10);
+    assert.equal(easy.playerBaseDamage, 19);
+    const hard = setup('hard', '').config;
+    assert.deepEqual([hard.baseDamage, hard.playerBaseDamage], [38, 38]);
+});

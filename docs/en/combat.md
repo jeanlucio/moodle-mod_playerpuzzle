@@ -62,6 +62,12 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 | Normal | ×1 | ×1 | 66% | 75% |
 | Hard | ×2 | ×3 | 100% | 100% |
 
+The factor in the first column is on the opponent: on Easy its HP and its hits are halved while the student's own
+hits, Potions and poison keep their full value, so an Easy match is shorter and not only safer. On Hard everything
+doubles for both sides, so the match lasts as long as a Normal one and the student has half the time to survive.
+On Normal the final boss also has 15% more HP, which puts it a little above what a hero with every upgrade can
+reach.
+
 In Campaign the choice is made for each phase: in the Lobby for the first one, and on the
 "Phase complete" screen for the next.
 

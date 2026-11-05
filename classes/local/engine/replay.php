@@ -178,6 +178,7 @@ class replay {
         $opponent = combat::phase_opponent($attempt, $playerpuzzle);
         $config = [
             'baseDamage' => $opponent['basedamage'],
+            'playerBaseDamage' => $opponent['playerbasedamage'],
             'coinGain' => (int) $attempt->frozencoingain,
             'coinFactor' => combat::difficulty_coin_factor($difficulty),
             'bossAttack' => $opponent['bossattack'],

@@ -1522,8 +1522,9 @@ final class game_page_service_test extends \advanced_testcase {
             'golem' => ['bosshp' => 200, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['iceshield']],
             'goblin' => ['bosshp' => 200, 'bossattack' => 1.15, 'bossarmor' => 0.0, 'bosspowers' => ['ambush']],
             'spider' => ['bosshp' => 230, 'bossattack' => 1.0, 'bossarmor' => 0.0, 'bosspowers' => ['fastgrimoire']],
-            // A Single Match with no hero chosen: the final boss fights it as the warrior, with armor.
-            'vampire' => ['bosshp' => 240, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['drain']],
+            // A Single Match with no hero chosen: the final boss fights it as the warrior, with armor. Its 20% more
+            // HP, and on Normal the 15% more of the final boss on top: 200 * 1.2 * 1.15.
+            'vampire' => ['bosshp' => 276, 'bossattack' => 1.0, 'bossarmor' => 0.15, 'bosspowers' => ['drain']],
         ];
         foreach ($expected as $opponent => $values) {
             [$cm, $instance] = $this->make_cm_and_instance([

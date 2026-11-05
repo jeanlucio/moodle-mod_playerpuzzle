@@ -161,10 +161,10 @@ define(
                 // the plugin is modeled after. Boss side is the same image flipped
                 // horizontally, so the carved border reads as a mirrored pair instead of two
                 // identical copies.
-                const panelH = L.h - L.panelY;
-                me.add.image(L.panelW / 2, L.panelY + (panelH / 2), 'panelstone')
+                const panelH = L.h - L.panelTop;
+                me.add.image(L.panelW / 2, L.panelTop + (panelH / 2), 'panelstone')
                     .setDisplaySize(L.panelW, panelH);
-                me.add.image(L.w - (L.panelW / 2), L.panelY + (panelH / 2), 'panelstone')
+                me.add.image(L.w - (L.panelW / 2), L.panelTop + (panelH / 2), 'panelstone')
                     .setDisplaySize(L.panelW, panelH)
                     .setFlipX(true);
 
@@ -775,7 +775,7 @@ define(
             // Sized to the scroll_banner.png source's own aspect ratio (~1.74:1) rather than
             // stretched to a specific width, so the parchment doesn't visibly distort. The gap
             // it leaves to its right is where the Coin/Star readouts now sit (see goldX/starX).
-            const scrollH = 52;
+            const scrollH = L.historyBannerH || 52;
             me.add.image(x, L.historyTitleY, 'scrollbanner')
                 .setOrigin(0, 0.5)
                 .setDisplaySize(scrollH * 1.738, scrollH);
@@ -789,7 +789,7 @@ define(
             }).setOrigin(0, 0.5);
 
             const lines = [];
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < (L.historyLines || 5); i++) {
                 lines.push(me.add.text(x, L.historyLineY + (i * L.historyLineHeight), '', {
                     fontSize: '13px',
                     fill: '#e9e6dd'

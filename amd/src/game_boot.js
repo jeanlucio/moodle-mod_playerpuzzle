@@ -115,7 +115,7 @@ define([
             const isDesk = window.innerWidth > window.innerHeight;
             this.load.image('stagebg', gameConfig.stagebgurl);
             if (isDesk) {
-                this.load.image('panelstone', `${M.cfg.wwwroot}/mod/playerpuzzle/pix/panel_stone.webp`);
+                this.load.image('panelstone', `${M.cfg.wwwroot}/mod/playerpuzzle/pix/panel_frame.webp`);
                 this.load.image('scrollbanner', `${M.cfg.wwwroot}/mod/playerpuzzle/pix/scroll_banner.webp`);
             }
 
@@ -195,6 +195,10 @@ define([
                 // past the grid's real bottom edge, so the gap that rise opens up before the
                 // true canvas bottom (720) stays covered.
                 panelY: 280, panelOverlap: 14, panelW: 420,
+                // The carved frame (pix/panel_frame.webp) starts higher than panelY: its crest rises into the
+                // stage band, just under the characters' feet (all the sprites stand at y 236), and the frame
+                // runs to the bottom of the canvas. Inside it the content has x 70-350 and y 332-646 to itself.
+                panelTop: 244,
                 // A different pair, boardOffX/Y, is fed only to board.js: it treats this pair
                 // as the center of the first cell (pieces are origin-centered images) rather
                 // than the grid's top-left corner — it's the grid's own corner (420, 280)
@@ -207,9 +211,10 @@ define([
                 // the panel's own width ((420 - hpBarW) / 2 = 60) — clears panel_stone.png's
                 // carved border on both sides (was 40/940, sitting under the border on one
                 // side and asymmetric within the panel on the other).
-                hpBarW: 300, hpBarH: 28, hpBarRadius: 14,
-                bossUiX: 920, bossHpY: 300, bossTxtY: 314,
-                playerUiX: 60, playerHpY: 300, playerTxtY: 314,
+                hpBarW: 270, hpBarH: 26, hpBarRadius: 13,
+                bossUiX: 935, bossHpY: 332, bossTxtY: 345,
+                playerUiX: 75, playerHpY: 332, playerTxtY: 345,
+                questionsCounterY: 362,
 
                 // Consumables row: the two purchasable consumables with no meter of their own
                 // (Potion, Sword). Shield and Quick Magic fill a ring instead, so their buy
@@ -218,34 +223,34 @@ define([
                 // (goldX/starX below), leaving this row to hold two items with room to breathe.
                 // Kept clear of panel_stone.png's carved border, which eats ~57px of panel
                 // width on each edge.
-                potionX: 130, potionY: 388, swordX: 290, swordY: 388,
+                potionX: 130, potionY: 412, swordX: 290, swordY: 412,
                 // Boss side is the player row translated by the panel offset (860) — Potion and
                 // Sword, plain icons with no buy badge (no boss shop), counting the opponent's
                 // starting items when it has any.
-                bossPotionX: 990, bossPotionY: 388, bossSwordX: 1150, bossSwordY: 388,
+                bossPotionX: 990, bossPotionY: 412, bossSwordX: 1150, bossSwordY: 412,
                 bossItemIconSize: 60, bossItemFontSize: 16,
 
                 // Coin/Star: passive quantity readouts, moved out of the action area to sit
                 // beside the history block instead, stacked vertically just right of the scroll
                 // banner — the space freed up when the Status badges moved to the HP bar's own
                 // corner. Smaller icon (indicatorIconSize) than the consumable row's.
-                goldX: 250, goldY: 543, starX: 250, starY: 574,
-                bossGoldX: 1110, bossGoldY: 543, bossStarX: 1110, bossStarY: 574,
+                goldX: 190, goldY: 538, starX: 285, starY: 538,
+                bossGoldX: 1050, bossGoldY: 538, bossStarX: 1145, bossStarY: 538,
                 indicatorIconSize: 26,
                 // Gap between ring centers tightened 120 -> 100 (was 90/210/330) — same border
                 // as the HP bar/resource row above, now clearing it on both sides instead of
                 // sitting almost flush against it.
-                bossRingY: 475, bossGrimoireX: 970, bossShieldRingX: 1070, bossOrbX: 1170,
-                playerRingY: 475, playerGrimoireX: 110, playerShieldRingX: 210, playerOrbX: 310,
+                bossRingY: 482, bossGrimoireX: 970, bossShieldRingX: 1070, bossOrbX: 1170,
+                playerRingY: 482, playerGrimoireX: 110, playerShieldRingX: 210, playerOrbX: 310,
 
                 ringRadius: 32, ringThickness: 7, ringIconSize: 40, resourceIconSize: 60,
 
-                // Action history: 5 lines per side, below the rings. Desktop-only, same as
+                // Action history: 4 lines per side, below the rings. Desktop-only, same as
                 // the player character and resource chips — no mobile equivalent yet. Title Y
                 // (and the line Y that follows it) both shifted down — at the old 500/520 the
                 // scroll banner behind the title (see ui.js createHistoryLog()) overlapped the
                 // bottom of the ring row above it.
-                historyTitleY: 548, historyLineY: 585, historyLineHeight: 24,
+                historyTitleY: 538, historyBannerH: 46, historyLines: 4, historyLineY: 565, historyLineHeight: 19,
 
                 // Compact circular icon buttons (Music/Sound Effects/Expand), right-aligned —
                 // replaces the old bracket-text "[ Word ]" buttons, which read as

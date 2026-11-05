@@ -124,6 +124,19 @@ final class attempt_consumables_test extends \advanced_testcase {
     }
 
     /**
+     * Tests the limit the shop shows for each type: the fixed number of uses, and null for the hint.
+     *
+     * @return void
+     */
+    public function test_phase_limit_is_the_fixed_limit_or_null(): void {
+        $this->assertSame(3, attempt_consumables::phase_limit('potion'));
+        $this->assertSame(3, attempt_consumables::phase_limit('sword'));
+        $this->assertSame(1, attempt_consumables::phase_limit('shield'));
+        $this->assertSame(1, attempt_consumables::phase_limit('magic'));
+        $this->assertNull(attempt_consumables::phase_limit('hint'));
+    }
+
+    /**
      * Tests that a type with no fixed limit (recharge-on-a-meter types have 1, no-meter
      * types have 3) reports the limit reached exactly at, never before, its own count.
      *

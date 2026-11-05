@@ -86,7 +86,7 @@ partida:
 | ⚔️ Espada | Um ataque extra de um dano base, sem encerrar o turno | 10 | 3 |
 | 💡 Dica | Mostra a dica da pergunta aberta, quando ela tem uma | 5 | sem limite fixo |
 
-Os preços e limites são fixos, iguais para todos. A primeira partida de um estudante normalmente
+Os preços e limites são fixos, iguais para todos, e a loja mostra o limite de cada item no próprio cartão. A primeira partida de um estudante normalmente
 começa com o loadout vazio: o PuzzleCoin se ganha vencendo, ou transferindo do PlayerHUD. As moedas
 são coletadas no tabuleiro com a peça Moeda — veja [Integração com o PlayerHUD](#playerhud) para
 como são compensadas com as do oponente e guardadas. O professor pode desligar as dicas em toda a

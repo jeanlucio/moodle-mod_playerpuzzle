@@ -24,7 +24,7 @@
     * cmid - The course module id
     * coinstext - The balance as read to a screen reader
     * coinvalue - The balance
-    * shopitems - The consumables, each with type, icon, label, ownedtext, price, buylabel and arialabel
+    * shopitems - The consumables, each with type, icon, label, ownedtext, limittext, price, buylabel and arialabel
     * hasupgrades - Whether the hero's upgrades are shown, with the variables of mod_playerpuzzle/shop_upgrades
     * opponentcard - The opponent of the next phase, with the variables of mod_playerpuzzle/opponent_card
     * phasenote - A note when a phase is under way, empty otherwise
@@ -40,6 +40,7 @@
                 "icon": "fa-flask",
                 "label": "Potion",
                 "ownedtext": "Owned: 0",
+                "limittext": "Up to 3 per phase",
                 "price": 8,
                 "buylabel": "Buy",
                 "arialabel": "Buy Potion for 8 coins"
@@ -75,6 +76,7 @@
                 <i class="fa {{icon}} pp-shop-tile-icon" aria-hidden="true"></i>
                 <span class="pp-lobby-shop-name">{{label}}</span>
                 <span class="pp-lobby-shop-owned" data-role="owned">{{ownedtext}}</span>
+                <span class="pp-lobby-shop-limit">{{limittext}}</span>
                 <button
                     type="button"
                     class="btn btn-sm btn-primary pp-lobby-buy"

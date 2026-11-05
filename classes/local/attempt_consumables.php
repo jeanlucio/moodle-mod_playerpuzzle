@@ -64,6 +64,16 @@ class attempt_consumables {
     }
 
     /**
+     * How many times a consumable type may be used in one phase or match, as shown to the student.
+     *
+     * @param string $type One of self::TYPES.
+     * @return int|null The limit, or null for a type with no fixed limit (the hint, bounded by the stock owned).
+     */
+    public static function phase_limit(string $type): ?int {
+        return self::PHASE_LIMITS[$type] ?? null;
+    }
+
+    /**
      * Returns how many times a consumable type has already been used this attempt.
      *
      * @param int $attemptid The attempt id.

@@ -1094,6 +1094,11 @@ body.path-mod-playerpuzzle .pp-shop-tiles .pp-lobby-shop-owned {
     font-size: 0.78rem;
 }
 
+body.path-mod-playerpuzzle .pp-shop-tiles .pp-lobby-shop-limit {
+    font-size: 0.72rem;
+    opacity: 0.8;
+}
+
 body.path-mod-playerpuzzle .pp-shop-tiles .pp-lobby-buy {
     width: 100%;
 }

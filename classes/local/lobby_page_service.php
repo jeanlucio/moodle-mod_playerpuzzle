@@ -257,12 +257,17 @@ class lobby_page_service {
             }
             $label = get_string(self::SHOP_TYPE_LABELS[$type], 'mod_playerpuzzle');
             $price = combat::consumable_price($type);
+            $limit = attempt_consumables::phase_limit($type);
+            $limitstring = $instance->gamemode === constants::GAMEMODE_SINGLE ? 'shop_limit_permatch' : 'shop_limit_perphase';
             $shopitems[] = [
                 'type'      => $type,
                 'icon'      => self::SHOP_TYPE_ICONS[$type],
                 'label'     => $label,
                 'quantity'  => $stock[$type],
                 'ownedtext' => get_string('lobby_stockowned', 'mod_playerpuzzle', $stock[$type]),
+                'limittext' => $limit === null
+                    ? get_string('shop_limit_none', 'mod_playerpuzzle')
+                    : get_string($limitstring, 'mod_playerpuzzle', $limit),
                 'price'     => $price,
                 'buylabel'  => get_string('lobby_buy', 'mod_playerpuzzle'),
                 'arialabel' => get_string('lobby_buy_arialabel', 'mod_playerpuzzle', (object) [

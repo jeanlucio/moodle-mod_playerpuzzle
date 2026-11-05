@@ -762,6 +762,37 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that each item of the shop says how many times it can be used: up to the fixed limit per phase in a
+     * Campaign and per match in a Single Match, and no fixed limit for the hint.
+     *
+     * @return void
+     */
+    public function test_the_shop_items_say_their_use_limit(): void {
+        $userid = (int) $this->student->id;
+        $modes = [
+            constants::GAMEMODE_CAMPAIGN => 'shop_limit_perphase',
+            constants::GAMEMODE_SINGLE => 'shop_limit_permatch',
+        ];
+        foreach ($modes as $mode => $key) {
+            [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => $mode, 'minquestions' => 0]);
+            $data = lobby_page_service::build_page_data(
+                $cm,
+                $this->course,
+                $instance,
+                $userid,
+                \context_module::instance($cm->id)
+            );
+            $limits = array_column($data['shopitems'], 'limittext', 'type');
+
+            $this->assertSame(get_string($key, 'mod_playerpuzzle', 3), $limits['potion']);
+            $this->assertSame(get_string($key, 'mod_playerpuzzle', 3), $limits['sword']);
+            $this->assertSame(get_string($key, 'mod_playerpuzzle', 1), $limits['shield']);
+            $this->assertSame(get_string($key, 'mod_playerpuzzle', 1), $limits['magic']);
+            $this->assertSame(get_string('shop_limit_none', 'mod_playerpuzzle'), $limits['hint']);
+        }
+    }
+
+    /**
      * Renders the Lobby template with page data.
      *
      * @param array $data lobby_page_service::build_page_data() result.

@@ -85,7 +85,7 @@ or match:
 | ⚔️ Sword | An extra attack of one base damage, without ending the turn | 10 | 3 |
 | 💡 Hint | Shows the hint of the open question, when it has one | 5 | no fixed limit |
 
-Prices and limits are fixed, the same for everyone. A student's first match normally starts with an
+Prices and limits are fixed, the same for everyone, and the shop shows each item's limit on its own card. A student's first match normally starts with an
 empty loadout: PuzzleCoin is earned by winning, or transferred in from PlayerHUD. Coins are collected on the board with the Coin
 piece — see [PlayerHUD Integration](#playerhud) for how they are netted against the opponent's and
 banked. A teacher can switch hints off for the whole activity.

@@ -12,3 +12,10 @@ Found a bug or have a question? Open an issue on the
 ## Maintainer
 
 Maintained by [Jean Lúcio](https://github.com/jeanlucio).
+
+## 🎨 Credits
+
+* **Images:** the heroes, opponents, stages and board pieces were generated with Google Gemini; the stone panel and the parchment banner were generated with ChatGPT. All were created for this plugin from original prompts.
+* **Sounds and music:** generated with AI tools.
+* **Activity icon:** the "joystick" icon of [Bootstrap Icons](https://icons.getbootstrap.com/) (MIT), see `pix/readme_moodle.txt`.
+* **Game engine:** [Phaser](https://phaser.io/) (MIT), see `thirdpartylibs.xml`.

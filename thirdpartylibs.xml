@@ -7,4 +7,11 @@
     <version>4.2.1</version>
     <licenseversion></licenseversion>
   </library>
+  <library>
+    <location>pix/icon.svg</location>
+    <name>Bootstrap Icons (joystick icon)</name>
+    <license>MIT</license>
+    <version></version>
+    <licenseversion></licenseversion>
+  </library>
 </libraries>

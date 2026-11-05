@@ -384,7 +384,7 @@ final class game_page_service_test extends \advanced_testcase {
 
         $context = \context_module::instance($cm->id);
         $legacy = game_page_service::build_game_config($cm, $campaign, $context, $userid, false);
-        $this->assertStringNotContainsString('pix/heroes', $legacy['playerurl']);
+        $this->assertStringContainsString('/mod/playerpuzzle/pix/heroes/warriorf1.webp', $legacy['playerurl']);
         $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $campaign->id]);
 
         $row = game_page_service::choose_campaign_hero($campaign, $userid, 'magef');

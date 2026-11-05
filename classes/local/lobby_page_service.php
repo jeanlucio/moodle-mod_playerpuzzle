@@ -52,7 +52,7 @@ class lobby_page_service {
         int $userid,
         context_module $context
     ): array {
-        global $DB, $OUTPUT;
+        global $DB;
         // Carried through to play.php's own game config purely as a CSS sizing hint for the
         // question modal's answer buttons (see game_page_service::build_game_config()) — it no
         // longer picks a different page layout or opens a new window.
@@ -75,12 +75,13 @@ class lobby_page_service {
             'playdemotext' => get_string('playdemo', 'mod_playerpuzzle'),
             'sesskey' => sesskey(),
             'readytext' => get_string('lobby_ready', 'mod_playerpuzzle'),
-            // The .png hero sprite is resolved through the theme like any other plugin pix;
-            // the .webp panel/banner are not, since theme_config::image_url() never resolves
-            // that extension (confirmed in its own source, see game_boot.js's loader for the
-            // in-game copy of these same assets), so those two are a direct URL to the
-            // plugin's own pix/ folder instead — the same technique game_boot.js already uses.
-            'heroimageurl' => $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false),
+            // The hero that stands in the Lobby until a Campaign gives the student its own: the last one they
+            // chose for a match, or the first of the catalog. The .webp images are linked directly, since
+            // theme_config::image_url() never resolves that extension (confirmed in its own source, see
+            // game_boot.js's loader for the in-game copy of these same assets).
+            'heroimageurl' => heroes::sprite_url(
+                heroes::sprite(last_hero::get($userid) ?: array_key_first(heroes::CATALOG), 1)
+            )->out(false),
             'panelstoneurl' => (new moodle_url('/mod/playerpuzzle/pix/panel_stone.webp'))->out(false),
             'scrollbannerurl' => (new moodle_url('/mod/playerpuzzle/pix/scroll_banner.webp'))->out(false),
             'shopmenulabel' => get_string('lobby_menu_shop', 'mod_playerpuzzle'),

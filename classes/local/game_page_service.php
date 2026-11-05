@@ -558,10 +558,10 @@ class game_page_service {
             ? $attemptinfo->frozenopponent
             : opponents::for_phase($instance, $attemptinfo->currentlevel, $attemptinfo->currentphase);
         $bossurl = opponents::sprite_url($opponent)->out(false);
-        // The hero the phase was started with; a row from before heroes existed keeps the old picture.
-        $playerurl = $attemptinfo->frozenhero !== ''
-            ? heroes::sprite_url($attemptinfo->frozenhero)->out(false)
-            : $OUTPUT->image_url('player', 'mod_playerpuzzle')->out(false);
+        // The hero the phase was started with; a row from before heroes existed gets the first hero of the catalog.
+        $playerurl = heroes::sprite_url(
+            $attemptinfo->frozenhero !== '' ? $attemptinfo->frozenhero : heroes::sprite(array_key_first(heroes::CATALOG), 1)
+        )->out(false);
 
         // A phase no move has been played in yet: just started, advanced to, or started again
         // (after a defeat, or on a newer engine). Its opponent's powers are listed in the

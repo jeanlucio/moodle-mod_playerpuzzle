@@ -83,6 +83,13 @@ This project is licensed under the **GNU General Public License v3 (GPLv3)**.
 
 **Copyright:** 2026 Jean Lúcio
 
+### 🎨 Credits
+
+* **Images:** the heroes, opponents, stages and board pieces were generated with Google Gemini; the stone panel and the parchment banner were generated with ChatGPT. All were created for this plugin from original prompts.
+* **Sounds and music:** generated with AI tools.
+* **Activity icon:** the "joystick" icon of [Bootstrap Icons](https://icons.getbootstrap.com/) (MIT), see `pix/readme_moodle.txt`.
+* **Game engine:** [Phaser](https://phaser.io/) (MIT), see `thirdpartylibs.xml`.
+
 ### 👤 Maintainer
 
 Maintained by [Jean Lúcio](https://github.com/jeanlucio).
@@ -159,6 +166,13 @@ Encontrou um bug ou tem alguma dúvida? Abra uma issue no
 Este projeto é licenciado sob a **GNU General Public License v3 (GPLv3)**.
 
 **Copyright:** 2026 Jean Lúcio
+
+### 🎨 Créditos
+
+* **Imagens:** os heróis, oponentes, cenários e peças do tabuleiro foram gerados com o Google Gemini; o painel de pedra e o pergaminho foram gerados com o ChatGPT. Todos foram criados para este plugin a partir de prompts originais.
+* **Sons e música:** gerados com ferramentas de IA.
+* **Ícone da atividade:** o ícone "joystick" do [Bootstrap Icons](https://icons.getbootstrap.com/) (MIT), veja `pix/readme_moodle.txt`.
+* **Motor do jogo:** [Phaser](https://phaser.io/) (MIT), veja `thirdpartylibs.xml`.
 
 ### 👤 Mantenedor
 

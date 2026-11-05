@@ -12,3 +12,10 @@ Encontrou um bug ou tem alguma dúvida? Abra uma issue no
 ## Mantenedor
 
 Mantido por [Jean Lúcio](https://github.com/jeanlucio).
+
+## 🎨 Créditos
+
+* **Imagens:** os heróis, oponentes, cenários e peças do tabuleiro foram gerados com o Google Gemini; o painel de pedra e o pergaminho foram gerados com o ChatGPT. Todos foram criados para este plugin a partir de prompts originais.
+* **Sons e música:** gerados com ferramentas de IA.
+* **Ícone da atividade:** o ícone "joystick" do [Bootstrap Icons](https://icons.getbootstrap.com/) (MIT), veja `pix/readme_moodle.txt`.
+* **Motor do jogo:** [Phaser](https://phaser.io/) (MIT), veja `thirdpartylibs.xml`.

@@ -139,7 +139,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertCount(5, $data['shopitems']);
         $this->assertFalse($data['hastransfer']);
         $this->assertSame(get_string('lobby_ready', 'mod_playerpuzzle'), $data['readytext']);
-        $this->assertStringContainsString('player', $data['heroimageurl']);
+        $this->assertStringContainsString('/mod/playerpuzzle/pix/heroes/warriorf1.webp', $data['heroimageurl']);
         $this->assertStringContainsString('panel_stone.webp', $data['panelstoneurl']);
         $this->assertStringContainsString('scroll_banner.webp', $data['scrollbannerurl']);
         $this->assertSame(get_string('lobby_menu_shop', 'mod_playerpuzzle'), $data['shopmenulabel']);
@@ -790,6 +790,25 @@ final class lobby_page_service_test extends \advanced_testcase {
             $this->assertSame(get_string($key, 'mod_playerpuzzle', 1), $limits['magic']);
             $this->assertSame(get_string('shop_limit_none', 'mod_playerpuzzle'), $limits['hint']);
         }
+    }
+
+    /**
+     * Tests that a Lobby with no Campaign hero shows the last hero the student chose for a match, and the first
+     * hero of the catalog when they have chosen none.
+     *
+     * @return void
+     */
+    public function test_the_lobby_stands_in_the_last_match_hero(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'minquestions' => 0]);
+        $userid = (int) $this->student->id;
+        $context = \context_module::instance($cm->id);
+
+        $none = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $this->assertStringContainsString('/pix/heroes/warriorf1.webp', $none['heroimageurl']);
+
+        last_hero::set($userid, 'magem');
+        $chosen = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $this->assertStringContainsString('/pix/heroes/magem1.webp', $chosen['heroimageurl']);
     }
 
     /**

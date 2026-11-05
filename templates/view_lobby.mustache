@@ -117,6 +117,7 @@
                 {{/isguest}}
 
                 {{^isguest}}
+                {{^campaignended}}
                 <div class="pp-lobby-stats">
                     <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -126,10 +127,12 @@
                         <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
                     </span>
                 </div>
+                {{/campaignended}}
                 {{/isguest}}
 
                 <div class="pp-lobby-menu">
                     {{^isguest}}
+                    {{^campaignended}}
                     <button
                         type="button"
                         class="pp-lobby-menu-btn"
@@ -141,6 +144,7 @@
                         <i class="fa fa-shopping-cart" aria-hidden="true"></i>
                         <span>{{shopmenulabel}}</span>
                     </button>
+                    {{/campaignended}}
                     {{/isguest}}
                     {{#showranking}}
                     <button
@@ -222,6 +226,7 @@
             </div>
 
             {{^isguest}}
+            {{^campaignended}}
             <section id="pp-lobby-shop" class="pp-lobby-view" aria-labelledby="pp-lobby-shop-title" hidden>
                 <h3 id="pp-lobby-shop-title" class="pp-lobby-view-title" tabindex="-1">{{shoptitle}}</h3>
                 {{> mod_playerpuzzle/shop_panel }}
@@ -253,6 +258,7 @@
 
                 <button type="button" class="pp-lobby-playdemo" data-action="close-panel">{{backlabel}}</button>
             </section>
+            {{/campaignended}}
             {{/isguest}}
 
             <section id="pp-lobby-settings" class="pp-lobby-view" aria-labelledby="pp-lobby-settings-title" hidden>

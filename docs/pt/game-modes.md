@@ -12,7 +12,8 @@ Campanha.
   acabam (fica com o progresso que alcançou). O estudante pode então começar outra Campanha no Nível
   1, Fase 1, até o **Número máximo de Campanhas** (de 1 a 10, ou ilimitado, o padrão). Uma Campanha
   nova começa com a PuzzleCoin e os consumíveis do estudante zerados, por isso o Lobby pede
-  confirmação antes.
+  confirmação antes. Depois que uma Campanha termina, o Lobby deixa de mostrar o saldo e a loja, e a escolha do
+  herói da próxima Campanha vem marcada com o herói da que acabou.
 * **Retomada:** fechar o navegador no meio da campanha e voltar retoma exatamente o nível e a fase
   em que o estudante estava. Depois de uma derrota, a próxima tentativa retoma nesse mesmo nível e
   fase, em vez de recomeçar do zero.

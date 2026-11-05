@@ -724,6 +724,44 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a Campaign that has ended hides the PuzzleCoin balance and the shop, whether or not the activity
+     * allows another Campaign, since starting the next one empties both; a Campaign under way keeps them.
+     *
+     * @return void
+     */
+    public function test_an_ended_campaign_hides_the_balance_and_the_shop(): void {
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_CAMPAIGN,
+            'minquestions' => 0,
+            'maxcampaigns' => 1,
+        ]);
+        $userid = (int) $this->student->id;
+        $context = \context_module::instance($cm->id);
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, $userid, 'magem');
+
+        $playing = $this->render_lobby(lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context));
+        $this->assertStringContainsString('data-role="coinvalue"', $playing);
+        $this->assertStringContainsString('id="pp-lobby-shop"', $playing);
+
+        $this->win_campaign($instance);
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $this->assertArrayHasKey('campaignlimittext', $data, 'the only Campaign allowed has ended');
+        $this->assertTrue($data['campaignended']);
+        $capped = $this->render_lobby($data);
+        $this->assertStringNotContainsString('data-role="coinvalue"', $capped);
+        $this->assertStringNotContainsString('id="pp-lobby-shop"', $capped);
+        $this->assertStringNotContainsString('data-panel="pp-lobby-shop"', $capped);
+
+        $instance->maxcampaigns = 0;
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $this->assertArrayHasKey('newcampaign', $data);
+        $this->assertTrue($data['campaignended']);
+        $open = $this->render_lobby($data);
+        $this->assertStringNotContainsString('data-role="coinvalue"', $open);
+        $this->assertStringNotContainsString('id="pp-lobby-shop"', $open);
+    }
+
+    /**
      * Renders the Lobby template with page data.
      *
      * @param array $data lobby_page_service::build_page_data() result.

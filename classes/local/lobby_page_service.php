@@ -351,7 +351,10 @@ class lobby_page_service {
         $unconfirmed = $start->startsnew && user_hero::get((int) $instance->id, $userid, $start->campaign) === null;
         if ($unconfirmed) {
             $ended = $start->campaign - 1;
+            // The balance and the shop stay out of sight: starting the next Campaign empties them, so there is
+            // nothing left to spend them on.
             $data = [
+                'campaignended' => true,
                 'progresstext' => get_string(
                     $start->ended === campaigns::ENDED_WON ? 'lobby_campaign_won' : 'lobby_campaign_outofattempts',
                     'mod_playerpuzzle',

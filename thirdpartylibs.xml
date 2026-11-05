@@ -14,4 +14,32 @@
     <version></version>
     <licenseversion></licenseversion>
   </library>
+  <library>
+    <location>pix/music.mp3</location>
+    <name>King's Feast (RandomMind)</name>
+    <license>CC0</license>
+    <version></version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>pix/swap.mp3</location>
+    <name>RPG sounds (Kenney)</name>
+    <license>CC0</license>
+    <version></version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>pix/match.mp3</location>
+    <name>Interface Sounds (Kenney)</name>
+    <license>CC0</license>
+    <version></version>
+    <licenseversion></licenseversion>
+  </library>
+  <library>
+    <location>pix/hit.mp3</location>
+    <name>RPG sounds (Kenney)</name>
+    <license>CC0</license>
+    <version></version>
+    <licenseversion></licenseversion>
+  </library>
 </libraries>

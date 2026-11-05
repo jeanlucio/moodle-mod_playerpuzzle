@@ -1,8 +1,28 @@
-Bootstrap Icons: the activity icon
-==================================
+Third-party assets in this folder
+=================================
 
-pix/icon.svg is the "joystick" icon of Bootstrap Icons, the one third-party asset in this folder (the other images
-and the sounds were generated with AI tools, see the Credits section of the README).
+pix/icon.svg is the "joystick" icon of Bootstrap Icons (MIT), and the sounds and the music are public domain
+(CC0), both described below. The images in the other subfolders were generated with AI tools, see the Credits
+section of the README.
+
+Sounds and music (CC0)
+----------------------
+
+All of them are released under Creative Commons Zero (https://creativecommons.org/publicdomain/zero/1.0/); credit
+is not required, it is given here as a courtesy. Converted to MP3 and level-adjusted; the hit is a mix of two
+files.
+
+pix/music.mp3   "King's Feast" (Loop_Kings_Feast.wav), RandomMind
+                https://opengameart.org/content/medieval-kings-feast
+pix/swap.mp3    "bookPlace1.ogg", RPG sounds, Kenney (https://kenney.nl)
+                https://opengameart.org/content/50-rpg-sound-effects
+pix/match.mp3   "confirmation_002.ogg", Interface Sounds, Kenney (https://kenney.nl)
+                https://opengameart.org/content/interface-sounds
+pix/hit.mp3     "chop.ogg" mixed with "metalClick.ogg", RPG sounds, Kenney (https://kenney.nl)
+                https://opengameart.org/content/50-rpg-sound-effects
+
+Bootstrap Icons: the activity icon
+----------------------------------
 
 Source:   https://icons.getbootstrap.com/icons/joystick/
           https://github.com/twbs/icons

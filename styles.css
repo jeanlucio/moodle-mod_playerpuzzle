@@ -214,7 +214,7 @@ body.path-mod-playerpuzzle .pp-question-modal-footer {
  * board, so the dialog's own ::backdrop stays transparent instead of double-dimming.
  */
 body.path-mod-playerpuzzle .pp-phase-modal {
-    max-width: 36rem;
+    max-width: 44rem;
     max-height: calc(100% - 2rem);
     overflow-y: auto;
     width: calc(100% - 2rem);

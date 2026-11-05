@@ -42,6 +42,18 @@ define(
     const FA_QUESTION = '\u003f';
     const FA_FLAG = '\uf024';
 
+    // The game's own palette for what the canvas draws, taken from the carved tablets and the round
+    // buttons: dark umber fills, a bronze rim, parchment text. Every text the canvas draws uses the
+    // system sans-serif (Phaser's default is the monospace Courier, which clashed with the Lobby), and the
+    // phase plaque uses a serif like the Lobby's banners.
+    const UI_FONT = '"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif';
+    const DISPLAY_FONT = 'Georgia, Cambria, "Times New Roman", serif';
+    const UMBER = 0x1c1712;
+    const BRONZE = 0x9c6b2e;
+    // HP fills: a moss green and a brick red dark enough for white text to read on them (5.2:1 and 7.5:1),
+    // instead of the pure web green and red.
+    const HP_FILL = {player: 0x3f7a2e, boss: 0x9b2d28};
+
     // The characters' idle breathing: how much taller they get at the top of a breath, and how
     // long half a breath lasts, in ms.
     const BREATH_SCALE = 1.02;
@@ -121,7 +133,18 @@ define(
             });
         }
 
+        /**
+         * Makes every text the scene adds from here on use the UI font unless it names its own (the icon
+         * glyphs name the Font Awesome one), instead of Phaser's default monospace.
+         */
+        useUiFont() {
+            const add = this.scene.add;
+            const addText = add.text.bind(add);
+            add.text = (x, y, text, style = {}) => addText(x, y, text, {fontFamily: UI_FONT, ...style});
+        }
+
         setupStaticUI() {
+            this.useUiFont();
             const me = this.scene;
             const L = this.L;
 
@@ -224,24 +247,32 @@ define(
                 this.setupHistoryButtonMobile();
             }
 
-            me.add.graphics().fillStyle(0x000000, 0.8)
+            me.add.graphics().fillStyle(UMBER, 0.95)
                 .fillRoundedRect(L.bossUiX, L.bossHpY, L.hpBarW, L.hpBarH, this.hpBarCorners())
+                .lineStyle(2, BRONZE, 1)
+                .strokeRoundedRect(L.bossUiX, L.bossHpY, L.hpBarW, L.hpBarH, this.hpBarCorners())
                 .setDepth(Depth.MIDDLE_SHAPES);
             this.bossHpBar = me.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
             this.bossHpText = me.add.text(L.bossUiX + (L.hpBarW / 2), L.bossTxtY, '', {
                 fontSize: '15px',
                 fill: '#ffffff',
-                fontStyle: 'bold'
+                fontStyle: 'bold',
+                stroke: '#120d09',
+                strokeThickness: 3
             }).setOrigin(0.5).setDepth(Depth.MIDDLE_IMAGES);
 
-            me.add.graphics().fillStyle(0x000000, 0.8)
+            me.add.graphics().fillStyle(UMBER, 0.95)
                 .fillRoundedRect(L.playerUiX, L.playerHpY, L.hpBarW, L.hpBarH, this.hpBarCorners())
+                .lineStyle(2, BRONZE, 1)
+                .strokeRoundedRect(L.playerUiX, L.playerHpY, L.hpBarW, L.hpBarH, this.hpBarCorners())
                 .setDepth(Depth.MIDDLE_SHAPES);
             this.playerHpBar = me.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
             this.playerHpText = me.add.text(L.playerUiX + (L.hpBarW / 2), L.playerTxtY, '', {
                 fontSize: '15px',
                 fill: '#ffffff',
-                fontStyle: 'bold'
+                fontStyle: 'bold',
+                stroke: '#120d09',
+                strokeThickness: 3
             }).setOrigin(0.5).setDepth(Depth.MIDDLE_IMAGES);
 
             // Status badges themselves are created lazily on the first updatePlayerBar()/
@@ -1044,7 +1075,7 @@ define(
             bar.fillStyle(color, 1);
             bar.fillRoundedRect(x + inset, y + inset, fillW, fillH, r);
 
-            bar.fillStyle(0xffffff, 0.22);
+            bar.fillStyle(0xffffff, 0.14);
             bar.fillRoundedRect(x + inset, y + inset, fillW, fillH * 0.4, {tl: r, tr: r, bl: 0, br: 0});
         }
 
@@ -1115,9 +1146,19 @@ define(
                 .replace('{$a->level}', this.gameConfig.currentlevel)
                 .replace('{$a->phase}', this.gameConfig.currentphase);
 
-            this.progressText = me.add.text(L.w / 2, y, text, {
-                fontSize: '16px', fill: '#ffffff', backgroundColor: '#333333', padding: {x: 8, y: 8}
-            }).setOrigin(0.5, 0).setDepth(Depth.FRONT_IMAGES);
+            // A dark plaque with the bronze rim of the round buttons beside it, and a parchment serif text.
+            this.progressText = me.add.text(L.w / 2, y + 16, text, {
+                fontFamily: DISPLAY_FONT, fontSize: '16px', fontStyle: 'bold', fill: '#f1e3c2'
+            }).setOrigin(0.5, 0.5).setDepth(Depth.FRONT_IMAGES);
+            const bounds = this.progressText.getBounds();
+            const padX = 16;
+            const padY = 7;
+            me.add.graphics()
+                .fillStyle(UMBER, 0.92)
+                .fillRoundedRect(bounds.x - padX, bounds.y - padY, bounds.width + (padX * 2), bounds.height + (padY * 2), 10)
+                .lineStyle(2, BRONZE, 1)
+                .strokeRoundedRect(bounds.x - padX, bounds.y - padY, bounds.width + (padX * 2), bounds.height + (padY * 2), 10)
+                .setDepth(Depth.FRONT_SHAPES);
         }
 
         /**
@@ -1370,7 +1411,7 @@ define(
         updateBossBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
-            this.drawHpFill(this.bossHpBar, L.bossUiX, L.bossHpY, pctHp, 0xdd0000);
+            this.drawHpFill(this.bossHpBar, L.bossUiX, L.bossHpY, pctHp, HP_FILL.boss);
             this.bossHpText.setText(`${this.strings.hpboss} ${Math.round(currentHp)} / ${maxHp}`);
 
             this.txtBossGold.setText(`${Math.round(gold)}`);
@@ -1396,7 +1437,7 @@ define(
         updatePlayerBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
-            this.drawHpFill(this.playerHpBar, L.playerUiX, L.playerHpY, pctHp, 0x00cc00);
+            this.drawHpFill(this.playerHpBar, L.playerUiX, L.playerHpY, pctHp, HP_FILL.player);
             this.playerHpText.setText(
                 `${this.strings.hpyou} ${Math.round(currentHp)} / ${maxHp}`
             );

@@ -34,21 +34,23 @@
     }
 }}
 <div id="playerpuzzle-gameover" class="d-flex flex-column justify-content-center align-items-center">
-    <h1 class="display-4 pp-bold {{colorclass}} mb-3">{{msg}}</h1>
-    <p class="lead text-white mb-4">
-        {{coinscollected}} <strong class="text-warning">{{playergold}}</strong><br>
-        {{maxmultiplier}} <strong class="text-info">x{{playermultiplier}}</strong>
-    </p>
-    <p id="pp-save-status" class="text-light small">{{savingprogress}}</p>
-    <div class="pp-gameover-buttons">
-        <button id="btn-pp-review" hidden class="btn btn-outline-light btn-lg shadow">
-            {{btnreview}}
-        </button>
-        <button id="btn-pp-restart" disabled class="btn btn-primary btn-lg shadow">
-            {{btnplayagain}}
-        </button>
-        <button id="btn-pp-exit" disabled class="btn btn-secondary btn-lg shadow">
-            {{btnexitgame}}
-        </button>
+    <div class="pp-gameover-card pp-themed d-flex flex-column justify-content-center align-items-center">
+        <h1 class="display-4 pp-bold {{colorclass}} mb-3">{{msg}}</h1>
+        <p class="lead mb-4">
+            {{coinscollected}} <strong class="pp-accent">{{playergold}}</strong><br>
+            {{maxmultiplier}} <strong class="pp-accent">x{{playermultiplier}}</strong>
+        </p>
+        <p id="pp-save-status" class="text-light small">{{savingprogress}}</p>
+        <div class="pp-gameover-buttons">
+            <button id="btn-pp-review" hidden class="btn btn-outline-light btn-lg shadow">
+                {{btnreview}}
+            </button>
+            <button id="btn-pp-restart" disabled class="btn btn-primary btn-lg shadow">
+                {{btnplayagain}}
+            </button>
+            <button id="btn-pp-exit" disabled class="btn btn-secondary btn-lg shadow">
+                {{btnexitgame}}
+            </button>
+        </div>
     </div>
 </div>

@@ -1635,7 +1635,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const displayGold = victory ? netGold : 0;
 
             const context = {
-                colorclass: victory ? 'text-success' : 'text-danger',
+                colorclass: victory ? 'pp-victory' : 'pp-defeat',
                 msg: victory ? strings.victory : strings.defeat,
                 coinscollected: strings.coinscollected,
                 playergold: displayGold,
@@ -1678,7 +1678,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 if (victory && res.outcome !== 'won') {
                     // Shown as a victory, counted as a defeat (the replay found one, or could
                     // not verify it with no restart left): say so instead of a plain save.
-                    $('#playerpuzzle-gameover h1').removeClass('text-success').addClass('text-danger')
+                    $('#playerpuzzle-gameover h1').removeClass('pp-victory').addClass('pp-defeat')
                         .text(strings.defeat);
                     $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
                         .text(res.message);
@@ -1759,7 +1759,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
         /**
          * Renders the post-game question review into a native dialog and opens it. The
-         * dialog's own "Close" button (method="dialog") and the Escape key dismiss it;
+         * dialog's own "Close" button and the Escape key dismiss it;
          * focus returns to the "Review questions" button afterwards.
          *
          * @param {Array<{questiontext: string, chosenanswer: string, correctanswer: string,
@@ -1797,6 +1797,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     trigger.focus();
                 }
             }, {once: true});
+            // A plain button closes it, instead of the form method="dialog" that some browsers do not support
+            // and answer by submitting the page.
+            document.getElementById('pp-debrief-close').addEventListener('click', () => dialogEl.close());
             dialogEl.showModal();
         }
     }

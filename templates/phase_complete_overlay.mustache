@@ -39,15 +39,15 @@
         ]
     }
 }}
-<dialog id="playerpuzzle-phasecomplete" class="pp-phase-modal">
+<dialog id="playerpuzzle-phasecomplete" class="pp-phase-modal pp-themed">
     <div id="pp-phase-main">
     <div class="d-flex flex-column justify-content-center align-items-center">
-        <h1 class="display-4 pp-bold text-warning mb-3">{{msg}}</h1>
-        <p class="lead text-white mb-4">
-            {{coinscollected}} <strong class="text-warning">{{playergold}}</strong>
+        <h1 class="display-4 pp-bold mb-3">{{msg}}</h1>
+        <p class="lead mb-4">
+            {{coinscollected}} <strong class="pp-accent">{{playergold}}</strong>
         </p>
         <div class="mb-3 text-center">
-            <label class="text-white d-block mb-1" for="pp-phase-difficulty">{{difficultylabel}}</label>
+            <label class="d-block mb-1" for="pp-phase-difficulty">{{difficultylabel}}</label>
             <select class="form-control d-inline-block w-auto" id="pp-phase-difficulty">
                 {{#difficultychoices}}
                 <option value="{{value}}" {{#checked}}selected{{/checked}}>{{label}}</option>

@@ -130,20 +130,10 @@ body.path-mod-playerpuzzle .pp-question-modal {
     max-width: 500px;
     width: calc(100% - 2rem);
     padding: 0;
-    border: 2px solid var(--primary, #0d6efd);
-    border-radius: 0.5rem;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-}
-
-body.path-mod-playerpuzzle .pp-question-modal::backdrop {
-    background-color: rgba(0, 0, 0, 0.6);
 }
 
 body.path-mod-playerpuzzle .pp-question-modal-header {
-    background-color: var(--primary, #0d6efd);
-    color: var(--white, #fff);
     padding: 1rem 1.25rem;
-    border-radius: 0.25rem 0.25rem 0 0;
 }
 
 body.path-mod-playerpuzzle .pp-question-modal-title {
@@ -155,9 +145,7 @@ body.path-mod-playerpuzzle .pp-question-modal-body {
 }
 
 body.path-mod-playerpuzzle .pp-question-modal-footer {
-    background-color: var(--light, #f8f9fa);
     padding: 0.75rem 1.25rem;
-    border-radius: 0 0 0.25rem 0.25rem;
 }
 
 /**
@@ -219,10 +207,6 @@ body.path-mod-playerpuzzle .pp-phase-modal {
     overflow-y: auto;
     width: calc(100% - 2rem);
     padding: 2rem 1.5rem;
-    border: 2px solid var(--warning, #ffc107);
-    border-radius: 0.5rem;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-    background-color: var(--dark, #1a1a1a);
     text-align: center;
 }
 
@@ -791,17 +775,10 @@ body.path-mod-playerpuzzle .pp-debrief {
     max-height: 80vh;
     overflow-y: auto;
     padding: 1.25rem;
-    border: 2px solid var(--primary, #0d6efd);
-    border-radius: 0.5rem;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-}
-
-body.path-mod-playerpuzzle .pp-debrief::backdrop {
-    background-color: rgba(0, 0, 0, 0.6);
 }
 
 body.path-mod-playerpuzzle .pp-debrief-question {
-    color: var(--gray-800, #343a40);
+    margin-block-end: 0.5rem;
 }
 
 /**
@@ -812,13 +789,6 @@ body.path-mod-playerpuzzle .pp-demo-walkthrough {
     max-width: 480px;
     width: calc(100% - 2rem);
     padding: 1.25rem;
-    border: 2px solid var(--primary, #0d6efd);
-    border-radius: 0.5rem;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-}
-
-body.path-mod-playerpuzzle .pp-demo-walkthrough::backdrop {
-    background-color: rgba(0, 0, 0, 0.6);
 }
 
 /**
@@ -1217,15 +1187,6 @@ body.path-mod-playerpuzzle .pp-opponent-help {
     overflow-y: auto;
     width: calc(100% - 2rem);
     padding: 1.5rem;
-    border: 2px solid var(--warning, #ffc107);
-    border-radius: 0.5rem;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-    background-color: var(--dark, #1a1a1a);
-    color: var(--white, #fff);
-}
-
-body.path-mod-playerpuzzle .pp-opponent-help::backdrop {
-    background-color: rgba(0, 0, 0, 0.6);
 }
 
 body.path-mod-playerpuzzle .pp-opponent-help-title {
@@ -1240,15 +1201,6 @@ body.path-mod-playerpuzzle .pp-giveup {
     max-width: 28rem;
     width: calc(100% - 2rem);
     padding: 1.5rem;
-    border: 2px solid var(--danger, #dc3545);
-    border-radius: 0.5rem;
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
-    background-color: var(--dark, #1a1a1a);
-    color: var(--white, #fff);
-}
-
-body.path-mod-playerpuzzle .pp-giveup::backdrop {
-    background-color: rgba(0, 0, 0, 0.6);
 }
 
 body.path-mod-playerpuzzle .pp-giveup-title {
@@ -1273,10 +1225,309 @@ body.path-mod-playerpuzzle .pp-opponent-stats {
 body.path-mod-playerpuzzle .pp-opponent-stats th,
 body.path-mod-playerpuzzle .pp-opponent-stats td {
     padding: 0.25rem 0.5rem;
-    border-block-end: 1px solid var(--gray-600, #6c757d);
+    border: 0;
+    border-block-end: 1px solid rgba(156, 107, 46, 0.6);
     text-align: end;
 }
 
 body.path-mod-playerpuzzle .pp-opponent-stats th[scope="row"] {
     text-align: start;
+}
+
+/**
+ * The look of every dialog and overlay the fight opens (question, phase complete, shop, game over, review,
+ * walkthrough, opponent card, give up): carved stone with a bronze rim, parchment text, a serif for the titles
+ * and gold and bronze buttons, the same language as the tablets, the round buttons and the Lobby banners. The
+ * colors are tokens on the body, so a dialog moved into the game's container or into the top layer inherits them.
+ */
+body.path-mod-playerpuzzle {
+    --pp-umber: #1c1712;
+    --pp-stone: #2b241e;
+    --pp-raised: #3a3027;
+    --pp-bronze: #9c6b2e;
+    --pp-gold: #e0a83e;
+    --pp-gold-hi: #f4cf7a;
+    --pp-parchment: #f1e3c2;
+    --pp-ink: #2a1c10;
+    --pp-dim: #b9a98c;
+    --pp-moss: #3f7a2e;
+    --pp-moss-hi: #86c46f;
+    --pp-brick: #9b2d28;
+    --pp-brick-hi: #e58a80;
+    --pp-display: Georgia, Cambria, "Times New Roman", serif;
+}
+
+body.path-mod-playerpuzzle .pp-themed {
+    background: radial-gradient(120% 90% at 50% 0%, var(--pp-raised), var(--pp-stone) 70%);
+    color: var(--pp-parchment);
+    border: 2px solid var(--pp-bronze);
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px var(--pp-umber), inset 0 0 0 3px var(--pp-umber), 0 1rem 3rem rgba(0, 0, 0, 0.6);
+}
+
+body.path-mod-playerpuzzle dialog.pp-themed::backdrop {
+    background-color: rgba(10, 7, 4, 0.7);
+}
+
+body.path-mod-playerpuzzle .pp-phase-modal.pp-themed::backdrop {
+    background-color: transparent;
+}
+
+body.path-mod-playerpuzzle .pp-themed h1,
+body.path-mod-playerpuzzle .pp-themed h2,
+body.path-mod-playerpuzzle .pp-themed h3,
+body.path-mod-playerpuzzle .pp-themed h4,
+body.path-mod-playerpuzzle .pp-themed h5 {
+    font-family: var(--pp-display);
+    color: var(--pp-gold-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .text-white,
+body.path-mod-playerpuzzle .pp-themed .text-light {
+    color: var(--pp-parchment);
+}
+
+body.path-mod-playerpuzzle .pp-themed .text-warning {
+    color: var(--pp-gold-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .text-info {
+    color: var(--pp-gold-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .text-success {
+    color: var(--pp-moss-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .text-danger {
+    color: var(--pp-brick-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .text-muted {
+    color: var(--pp-dim);
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn {
+    font-family: var(--pp-display);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border-width: 2px;
+    border-radius: 6px;
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn:focus-visible {
+    outline: 3px solid var(--pp-gold-hi);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn-primary {
+    background: linear-gradient(var(--pp-gold-hi), var(--pp-gold));
+    border-color: var(--pp-bronze);
+    color: var(--pp-ink);
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn-primary:hover:not(:disabled),
+body.path-mod-playerpuzzle .pp-themed .btn-primary:focus-visible {
+    background: linear-gradient(#fbe3a3, var(--pp-gold-hi));
+    border-color: var(--pp-bronze);
+    color: var(--pp-ink);
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn-primary:disabled {
+    opacity: 0.55;
+    color: var(--pp-ink);
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn-secondary,
+body.path-mod-playerpuzzle .pp-themed .btn-outline-secondary,
+body.path-mod-playerpuzzle .pp-themed .btn-outline-light,
+body.path-mod-playerpuzzle .pp-themed .btn-outline-info {
+    background: transparent;
+    border-color: var(--pp-bronze);
+    color: var(--pp-gold-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn-secondary:hover:not(:disabled),
+body.path-mod-playerpuzzle .pp-themed .btn-outline-secondary:hover:not(:disabled),
+body.path-mod-playerpuzzle .pp-themed .btn-outline-light:hover:not(:disabled),
+body.path-mod-playerpuzzle .pp-themed .btn-outline-info:hover:not(:disabled) {
+    background: rgba(224, 168, 62, 0.16);
+    border-color: var(--pp-gold);
+    color: var(--pp-gold-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn-secondary:disabled,
+body.path-mod-playerpuzzle .pp-themed .btn-outline-secondary:disabled {
+    opacity: 0.5;
+    color: var(--pp-gold-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn-danger {
+    background: var(--pp-brick);
+    border-color: var(--pp-umber);
+    color: var(--pp-parchment);
+}
+
+body.path-mod-playerpuzzle .pp-themed .btn-danger:hover:not(:disabled) {
+    background: #b43a33;
+    border-color: var(--pp-umber);
+    color: var(--pp-parchment);
+}
+
+body.path-mod-playerpuzzle .pp-themed select.form-control {
+    background-color: var(--pp-umber);
+    border: 2px solid var(--pp-bronze);
+    color: var(--pp-parchment);
+    font-family: var(--pp-display);
+    border-radius: 6px;
+}
+
+body.path-mod-playerpuzzle .pp-themed .border {
+    border-color: var(--pp-bronze);
+}
+
+/**
+ * The game over screen: the overlay dims the canvas and the result sits on a stone card.
+ */
+body.path-mod-playerpuzzle .pp-gameover-card {
+    padding: 1.5rem 2.5rem;
+    max-width: 90%;
+}
+
+body.path-mod-playerpuzzle .pp-themed .pp-victory {
+    color: var(--pp-gold-hi);
+    text-shadow: 0 0 18px rgba(224, 168, 62, 0.45);
+}
+
+body.path-mod-playerpuzzle .pp-themed .pp-defeat {
+    color: var(--pp-brick-hi);
+    text-shadow: 0 0 18px rgba(155, 45, 40, 0.55);
+}
+
+body.path-mod-playerpuzzle .pp-themed .pp-accent {
+    color: var(--pp-gold-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .pp-right {
+    color: var(--pp-moss-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .pp-wrong {
+    color: var(--pp-brick-hi);
+}
+
+body.path-mod-playerpuzzle .pp-themed .pp-debrief-item {
+    border: 1px solid var(--pp-bronze);
+    background: rgba(0, 0, 0, 0.22);
+}
+
+body.path-mod-playerpuzzle .pp-themed select.form-control:focus-visible {
+    outline: 3px solid var(--pp-gold-hi);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+/**
+ * The question: a parchment card (the teacher's text is dark on light and stays readable whatever it contains),
+ * under a stone header and over a stone footer. Right and wrong keep their meaning, in moss and brick.
+ */
+body.path-mod-playerpuzzle .pp-question-modal.pp-themed {
+    padding: 0;
+    overflow: hidden;
+    background: var(--pp-parchment);
+    color: var(--pp-ink);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .pp-question-modal-header,
+body.path-mod-playerpuzzle .pp-question-modal .pp-question-modal-footer {
+    background: radial-gradient(120% 90% at 50% 0%, var(--pp-raised), var(--pp-stone) 80%);
+    color: var(--pp-parchment);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .pp-question-modal-header {
+    border-block-end: 2px solid var(--pp-bronze);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .pp-question-modal-footer {
+    border-block-start: 2px solid var(--pp-bronze);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .pp-question-modal-title {
+    font-family: var(--pp-display);
+    color: var(--pp-gold-hi);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal #playerpuzzle-question-text {
+    font-family: var(--pp-display);
+    color: var(--pp-ink);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .btn-outline-primary {
+    background: rgba(255, 255, 255, 0.4);
+    border-color: var(--pp-bronze);
+    color: var(--pp-ink);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .btn-outline-primary:hover:not(:disabled) {
+    background: var(--pp-gold-hi);
+    border-color: var(--pp-bronze);
+    color: var(--pp-ink);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .btn-warning {
+    background: var(--pp-gold);
+    border-color: var(--pp-bronze);
+    color: var(--pp-ink);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .btn-success {
+    background: var(--pp-moss);
+    border-color: var(--pp-umber);
+    color: var(--pp-parchment);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .btn-danger {
+    background: var(--pp-brick);
+    border-color: var(--pp-umber);
+    color: var(--pp-parchment);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .btn-light,
+body.path-mod-playerpuzzle .pp-question-modal .btn-secondary:not(#playerpuzzle-btn-confirm):not(#playerpuzzle-btn-skip) {
+    background: rgba(0, 0, 0, 0.12);
+    border-color: var(--pp-bronze);
+    color: var(--pp-ink);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .alert {
+    border: 0;
+    border-inline-start: 4px solid var(--pp-bronze);
+    border-radius: 4px;
+    color: var(--pp-ink);
+    background: rgba(42, 28, 16, 0.08);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .alert-success {
+    border-inline-start-color: var(--pp-moss);
+    background: rgba(63, 122, 46, 0.18);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .alert-danger {
+    border-inline-start-color: var(--pp-brick);
+    background: rgba(155, 45, 40, 0.16);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .alert-warning {
+    border-inline-start-color: var(--pp-gold);
+    background: rgba(224, 168, 62, 0.22);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .alert-info {
+    border-inline-start-color: var(--pp-bronze);
+    background: rgba(156, 107, 46, 0.14);
+}
+
+body.path-mod-playerpuzzle .pp-question-modal .text-danger {
+    color: var(--pp-brick);
 }

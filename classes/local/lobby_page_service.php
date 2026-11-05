@@ -214,6 +214,17 @@ class lobby_page_service {
     ];
 
     /**
+     * The Font Awesome icon of each consumable type, on its tile in the shop.
+     */
+    private const SHOP_TYPE_ICONS = [
+        'potion' => 'fa-flask',
+        'shield' => 'fa-shield-halved',
+        'magic'  => 'fa-wand-magic-sparkles',
+        'sword'  => 'fa-khanda',
+        'hint'   => 'fa-lightbulb',
+    ];
+
+    /**
      * Builds the PuzzleCoin balance, the pre-match loadout shop, and (when a PlayerHUD coin
      * item is configured) the transfer widget that converts PlayerHUD coins into PuzzleCoin.
      *
@@ -248,6 +259,7 @@ class lobby_page_service {
             $price = combat::consumable_price($type);
             $shopitems[] = [
                 'type'      => $type,
+                'icon'      => self::SHOP_TYPE_ICONS[$type],
                 'label'     => $label,
                 'quantity'  => $stock[$type],
                 'ownedtext' => get_string('lobby_stockowned', 'mod_playerpuzzle', $stock[$type]),

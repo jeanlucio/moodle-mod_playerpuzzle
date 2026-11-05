@@ -95,40 +95,65 @@ final class hero_shop_test extends \advanced_testcase {
             get_string('shop_upgrade_effect_hp', 'mod_playerpuzzle', format_float(35.0, 1)),
             $rows['hp']['effecttext']
         );
+
+        $side = heroes::attributes('magef', ['hp' => 0, 'attack' => 1, 'armor' => 0], 1, (int) $this->instance->basestudenthp);
+        $this->assertSame((string) $side['hp'], $rows['hp']['valuetext']);
+        $this->assertSame('×' . format_float($side['attack'], 2), $rows['attack']['valuetext']);
+        $this->assertSame(format_float($side['armor'] * 100, 1) . '%', $rows['armor']['valuetext']);
+        $this->assertSame([['on' => false]], $rows['hp']['pips']);
+        $this->assertSame([['on' => true]], $rows['attack']['pips']);
+        $this->assertSame('fa-heart', $rows['hp']['icon']);
+        $this->assertSame(get_string('shop_upgrade_full', 'mod_playerpuzzle'), $rows['attack']['fulltext']);
+        $this->assertSame(
+            get_string('hero_specialty', 'mod_playerpuzzle', get_string('hero_attribute_hp', 'mod_playerpuzzle')),
+            $data['herocard']['specialtytext']
+        );
+        $this->assertSame([true, false, false, false], array_column($data['herocard']['stagepips'], 'on'));
     }
 
     /**
-     * Tests what the evolution hint says: when the milestone is still ahead, when it has passed and only the
-     * specialty is missing, and at the last stage.
+     * Tests the evolution trail: the two conditions with where each stands, the phase ahead, the next phase
+     * and the phase won, the specialty once it is full, and nothing left to ask for at the last stage.
      *
      * @return void
      */
-    public function test_the_evolution_hint(): void {
+    public function test_the_evolution_trail(): void {
         global $DB;
 
         $userid = (int) $this->student->id;
         $row = game_page_service::choose_campaign_hero($this->instance, $userid, 'magef');
-        $needs = (object) [
-            'phase' => 3,
-            'count' => 1,
-            'attribute' => get_string('hero_attribute_hp', 'mod_playerpuzzle'),
-        ];
+        $attribute = get_string('hero_attribute_hp', 'mod_playerpuzzle');
 
-        $ahead = hero_shop::context($this->instance, $userid)['evolvehint'];
-        $this->assertSame(get_string('shop_evolve_hint', 'mod_playerpuzzle', $needs), $ahead);
+        $trail = hero_shop::context($this->instance, $userid)['evolve'];
+        $this->assertSame(get_string('shop_evolve_title', 'mod_playerpuzzle', 2), $trail['title']);
+        $this->assertSame([false, false], array_column($trail['steps'], 'done'));
+        $this->assertSame(get_string('shop_evolve_step_specialty', 'mod_playerpuzzle', $attribute), $trail['steps'][0]['text']);
+        $this->assertSame(
+            get_string('shop_evolve_count', 'mod_playerpuzzle', (object) ['bought' => 0, 'cap' => 1]),
+            $trail['steps'][0]['note']
+        );
+        $this->assertSame(get_string('shop_evolve_step_phase', 'mod_playerpuzzle', 3), $trail['steps'][1]['text']);
+        $this->assertSame(get_string('shop_evolve_phase_left', 'mod_playerpuzzle', 3), $trail['steps'][1]['note']);
 
-        $DB->insert_record('playerpuzzle_attempts', (object) [
+        $attemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
             'playerpuzzleid' => $this->instance->id, 'userid' => $userid, 'token' => bin2hex(random_bytes(32)),
-            'status' => 'inprogress', 'currentphase' => 4, 'campaign' => 1, 'timecreated' => time(),
+            'status' => 'inprogress', 'currentphase' => 3, 'campaign' => 1, 'timecreated' => time(),
         ]);
-        $passed = hero_shop::context($this->instance, $userid)['evolvehint'];
-        $this->assertSame(get_string('shop_evolve_waiting', 'mod_playerpuzzle', $needs), $passed);
+        $this->assertSame(
+            get_string('shop_evolve_phase_next', 'mod_playerpuzzle'),
+            hero_shop::context($this->instance, $userid)['evolve']['steps'][1]['note']
+        );
+
+        $DB->set_field('playerpuzzle_attempts', 'currentphase', 4, ['id' => $attemptid]);
+        $DB->set_field('playerpuzzle_heroes', 'hpbuys', 1, ['id' => $row->id]);
+        $trail = hero_shop::context($this->instance, $userid)['evolve'];
+        $this->assertSame([true, true], array_column($trail['steps'], 'done'), 'only the evolution itself is missing');
+        $this->assertSame(get_string('shop_evolve_phase_done', 'mod_playerpuzzle'), $trail['steps'][1]['note']);
 
         $DB->set_field('playerpuzzle_heroes', 'stage', 4, ['id' => $row->id]);
-        $this->assertSame(
-            get_string('shop_evolve_max', 'mod_playerpuzzle'),
-            hero_shop::context($this->instance, $userid)['evolvehint']
-        );
+        $last = hero_shop::context($this->instance, $userid)['evolve'];
+        $this->assertSame(get_string('shop_evolve_max', 'mod_playerpuzzle'), $last['title']);
+        $this->assertSame([], $last['steps']);
     }
 
     /**
@@ -172,7 +197,7 @@ final class hero_shop_test extends \advanced_testcase {
 
         $html = $OUTPUT->render_from_template('mod_playerpuzzle/shop_panel', $data);
 
-        $this->assertSame(3, substr_count($html, 'class="btn btn-sm btn-outline-primary pp-hero-buy"'));
+        $this->assertSame(3, substr_count($html, 'class="btn btn-sm btn-primary pp-hero-buy"'));
         $this->assertSame(5, substr_count($html, 'pp-lobby-buy"'));
         $this->assertStringContainsString('data-cmid="7"', $html);
         $this->assertStringContainsString(get_string('shop_upgrades_title', 'mod_playerpuzzle'), $html);

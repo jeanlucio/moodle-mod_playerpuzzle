@@ -47,13 +47,14 @@ o visual do estudante, e a Partida Única abre a escolha com o último herói us
   atributo podem ser compradas, um quarto do total da Campanha por estágio (o total cresce com o número de
   níveis). Em 25%, 50% e 75% da Campanha o herói evolui de graça, assim que a especialidade dele está no
   teto do estágio, o que libera o teto do estágio seguinte.
-* **A loja:** o mesmo painel, com os consumíveis, no Lobby e na tela entre as fases.
-* **O cartão do oponente:** a loja abre com o cartão do próximo oponente: a imagem, o nome, onde ele é
-  enfrentado na Campanha e o que o diferencia (HP extra, golpes mais fortes, armadura, os poderes e, quando
-  a fase já existe, os itens que ele traz). O cartão do chefão final diz também que ele se adapta ao seu
-  herói. O estudante pode recolher o cartão. Durante a luta, o botão **?** no alto do palco abre o mesmo
-  cartão, com uma tabela que põe o seu herói e o oponente lado a lado (HP, ataque e armadura), para reler
-  os poderes depois do primeiro encontro, quando o aviso do jogo já não aparece.
+* **A loja:** o mesmo painel, no Lobby e na tela entre as fases. Uma linha recolhida nomeia o próximo
+  oponente (o **cartão do oponente**) e abre para mostrar a imagem e o que o diferencia: HP extra, golpes mais
+  fortes, armadura, os poderes, a resposta do chefão final ao herói e, quando a fase já existe, os itens que
+  ele traz. Abaixo vêm os atributos do herói, cada um com o valor, quantas melhorias já tem e o botão de
+  compra (o atributo no teto do estágio diz **Cheio**), uma lista curta do que a próxima evolução ainda
+  pede (a especialidade cheia e a fase do marco vencida) e os consumíveis. Durante a luta, o botão **?** no
+  alto do palco abre o mesmo cartão, com uma tabela que põe o seu herói e o oponente lado a lado (HP, ataque e
+  armadura), para reler os poderes depois do primeiro encontro, quando o aviso do jogo já não aparece.
 * **Desistir:** o botão de bandeira no alto do palco pede confirmação e então encerra a partida como
   derrota: uma tentativa é gasta e as moedas ganhas naquela fase se perdem. Na Demo, a partida só termina.
 

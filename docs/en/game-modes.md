@@ -47,13 +47,15 @@ Demo the hero is only how the student looks, and a Single Match opens the choice
   be bought, a quarter of the Campaign's total for each stage (the total grows with the number of
   levels). At 25%, 50% and 75% of the Campaign the hero evolves for free, as soon as its specialty is
   at the stage's cap, which opens the next stage's cap.
-* **The shop:** the same panel, with the consumables, in the Lobby and on the screen between phases.
-* **The opponent's card:** the shop opens with the card of the next opponent: its picture, its name, where
-  in the Campaign it is fought and what sets it apart (extra HP, harder hits, armor, its powers and, once
-  the phase exists, the items it brings). The final boss's card also says it adapts to your hero. The
-  student can fold the card away. During the fight, the **?** button at the top of the stage opens the same
-  card, with a table that puts your hero and the opponent side by side (HP, attack and armor), so the powers can
-  be read again after the first meeting, when the game's notice no longer shows.
+* **The shop:** the same panel, in the Lobby and on the screen between phases. A folded line names the next
+  opponent (the **opponent's card**) and opens to its picture and what sets it apart: extra HP, harder hits,
+  armor, its powers, the final boss's answer to the hero and, once the phase exists, the items it brings.
+  Below it come the hero's attributes, each with its value, how many upgrades it has and a buy button (an
+  attribute at the stage's cap says **Full**), a short list of what the next evolution still needs (the
+  specialty full and the milestone phase won), and the consumables. During the fight, the **?** button at
+  the top of the stage opens the same card, with a table that puts your hero and the opponent side by side
+  (HP, attack and armor), so the powers can be read again after the first meeting, when the game's notice no
+  longer shows.
 * **Giving up:** the flag button at the top of the stage asks for confirmation and then ends the match as a
   defeat: one attempt is spent and the coins earned in that phase are lost. A Demo just ends.
 

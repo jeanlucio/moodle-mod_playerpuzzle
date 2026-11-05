@@ -35,6 +35,13 @@ use stdClass;
  * it starts, and one that has not been played yet is frozen again.
  */
 class hero_shop {
+    /** @var array The Font Awesome icon beside each attribute's row. */
+    private const ICONS = [
+        heroes::HP => 'fa-heart',
+        heroes::ATTACK => 'fa-khanda',
+        heroes::ARMOR => 'fa-shield-halved',
+    ];
+
     /**
      * Buys one upgrade of an attribute for the student's Campaign hero, spending PuzzleCoin.
      *
@@ -130,7 +137,13 @@ class hero_shop {
             $label = get_string('hero_attribute_' . $attribute, 'mod_playerpuzzle');
             $rows[] = [
                 'attribute' => $attribute,
+                'icon' => self::ICONS[$attribute],
                 'label' => $label,
+                'valuetext' => self::value_text($attribute, $side),
+                'pips' => array_map(
+                    static fn(int $position): array => ['on' => $position < $buys[$attribute]],
+                    range(0, $cap - 1)
+                ),
                 'boughttext' => get_string('shop_upgrade_bought', 'mod_playerpuzzle', (object) [
                     'bought' => $buys[$attribute],
                     'cap' => $cap,
@@ -147,7 +160,7 @@ class hero_shop {
                     'price' => heroes::PRICE,
                 ]),
                 'soldout' => $buys[$attribute] >= $cap,
-                'soldouttext' => get_string('shop_upgrade_soldout', 'mod_playerpuzzle'),
+                'fulltext' => get_string('shop_upgrade_full', 'mod_playerpuzzle'),
             ];
         }
 
@@ -157,45 +170,94 @@ class hero_shop {
             'herocard' => [
                 'name' => get_string('hero_name_' . $hero->hero, 'mod_playerpuzzle'),
                 'spriteurl' => heroes::sprite_url(heroes::sprite($hero->hero, $stage))->out(false),
+                'specialtytext' => get_string(
+                    'hero_specialty',
+                    'mod_playerpuzzle',
+                    get_string('hero_attribute_' . heroes::specialty($hero->hero), 'mod_playerpuzzle')
+                ),
                 'stagetext' => get_string('shop_hero_stage', 'mod_playerpuzzle', (object) [
                     'stage' => $stage,
                     'total' => heroes::STAGES,
                 ]),
-                'currenttext' => get_string('shop_hero_current', 'mod_playerpuzzle', (object) [
-                    'hp' => $side['hp'],
-                    'attack' => format_float($side['attack'], 2),
-                    'armor' => format_float($side['armor'] * 100, 1),
-                ]),
+                'stagepips' => array_map(
+                    static fn(int $position): array => ['on' => $position <= $stage],
+                    range(1, heroes::STAGES)
+                ),
             ],
             'upgrades' => $rows,
-            'evolvehint' => self::evolve_hint($instance, $userid, $hero),
+            'evolve' => self::evolve_trail($instance, $userid, $hero),
             'phasenote' => self::phase_in_progress($instance, $userid) ? get_string('shop_phase_note', 'mod_playerpuzzle') : '',
         ];
     }
 
     /**
-     * What the hero's next evolution needs, in words.
+     * What the hero's next evolution needs, as the two conditions the rules ask for (see heroes::evolved_stage()):
+     * the specialty at the stage's cap, and the Campaign's phase of that stage's milestone won. At the last
+     * stage there is nothing left to ask for.
      *
      * @param stdClass $instance Activity instance (id, maxlevels).
      * @param int $userid User ID.
      * @param stdClass $hero The hero's row.
-     * @return string
+     * @return array ['title' => string, 'steps' => [['done' => bool, 'text' => string, 'note' => string]]]
      */
-    private static function evolve_hint(stdClass $instance, int $userid, stdClass $hero): string {
+    private static function evolve_trail(stdClass $instance, int $userid, stdClass $hero): array {
         $stage = (int) $hero->stage;
         if ($stage >= heroes::STAGES) {
-            return get_string('shop_evolve_max', 'mod_playerpuzzle');
+            return ['title' => get_string('shop_evolve_max', 'mod_playerpuzzle'), 'steps' => []];
         }
 
         $maxlevels = (int) $instance->maxlevels;
-        $needs = (object) [
-            'phase' => heroes::milestone($maxlevels, $stage),
-            'count' => heroes::stage_cap($maxlevels, $stage),
-            'attribute' => get_string('hero_attribute_' . heroes::specialty($hero->hero), 'mod_playerpuzzle'),
-        ];
-        $passed = campaigns::phases_won((int) $instance->id, $userid, (int) $hero->campaign) >= $needs->phase;
+        $cap = heroes::stage_cap($maxlevels, $stage);
+        $milestone = heroes::milestone($maxlevels, $stage);
+        $specialty = heroes::specialty($hero->hero);
+        $bought = user_hero::buys($hero)[$specialty];
+        $won = campaigns::phases_won((int) $instance->id, $userid, (int) $hero->campaign);
+        $remaining = $milestone - $won;
+        if ($remaining <= 0) {
+            $phasenote = get_string('shop_evolve_phase_done', 'mod_playerpuzzle');
+        } else if ($remaining === 1) {
+            $phasenote = get_string('shop_evolve_phase_next', 'mod_playerpuzzle');
+        } else {
+            $phasenote = get_string('shop_evolve_phase_left', 'mod_playerpuzzle', $remaining);
+        }
 
-        return get_string($passed ? 'shop_evolve_waiting' : 'shop_evolve_hint', 'mod_playerpuzzle', $needs);
+        return [
+            'title' => get_string('shop_evolve_title', 'mod_playerpuzzle', $stage + 1),
+            'steps' => [
+                [
+                    'done' => $bought >= $cap,
+                    'text' => get_string(
+                        'shop_evolve_step_specialty',
+                        'mod_playerpuzzle',
+                        get_string('hero_attribute_' . $specialty, 'mod_playerpuzzle')
+                    ),
+                    'note' => get_string('shop_evolve_count', 'mod_playerpuzzle', (object) [
+                        'bought' => min($bought, $cap),
+                        'cap' => $cap,
+                    ]),
+                ],
+                [
+                    'done' => $remaining <= 0,
+                    'text' => get_string('shop_evolve_step_phase', 'mod_playerpuzzle', $milestone),
+                    'note' => $phasenote,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * The attribute's current value as the hero fights with it, for the row of the shop.
+     *
+     * @param string $attribute One of heroes::ATTRIBUTES.
+     * @param array $side What heroes::attributes() returns: hp, attack and armor.
+     * @return string
+     */
+    private static function value_text(string $attribute, array $side): string {
+        return match ($attribute) {
+            heroes::HP => (string) $side['hp'],
+            heroes::ATTACK => '×' . format_float($side['attack'], 2),
+            default => format_float($side['armor'] * 100, 1) . '%',
+        };
     }
 
     /**

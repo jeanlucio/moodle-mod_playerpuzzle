@@ -18,15 +18,15 @@
     @template mod_playerpuzzle/shop_upgrades
 
     The hero and the upgrades that can be bought for it, in the shop of the Lobby and of the screen between
-    phases.
+    phases: one row for each attribute with its value, how many buys it has and the button, then what the next
+    evolution needs.
 
     Context variables required for this template:
     * upgradestitle - The section's heading
-    * herocard - The hero: name, spriteurl, stagetext and currenttext
-    * upgrades - One row for each attribute: attribute, label, boughttext, effecttext, price, buylabel,
-      arialabel, soldout and soldouttext
-    * evolvehint - What the next evolution needs
-    * phasenote - A note when a phase is under way, empty otherwise
+    * herocard - The hero: name, spriteurl, specialtytext, stagetext and stagepips (each with on)
+    * upgrades - One row for each attribute: attribute, icon, label, valuetext, pips (each with on), boughttext,
+      effecttext, price, buylabel, arialabel, soldout and fulltext
+    * evolve - What the next evolution needs: title and steps, each with done, text and note
 
     Example context (json):
     {
@@ -34,63 +34,93 @@
         "herocard": {
             "name": "Female mage",
             "spriteurl": "/mod/playerpuzzle/pix/heroes/magef1.webp",
+            "specialtytext": "Specialty: HP",
             "stagetext": "Stage 1 of 4",
-            "currenttext": "HP 107 · Attack ×1.00 · Armor 0%"
+            "stagepips": [{"on": true}, {"on": false}, {"on": false}, {"on": false}]
         },
         "upgrades": [
             {
                 "attribute": "hp",
+                "icon": "fa-heart",
                 "label": "HP",
+                "valuetext": "330",
+                "pips": [{"on": false}],
                 "boughttext": "0 of 1 bought",
                 "effecttext": "+35% of the base HP",
                 "price": 12,
                 "buylabel": "Buy",
                 "arialabel": "Buy a HP upgrade for 12 coins",
                 "soldout": false,
-                "soldouttext": "Evolve to buy more"
+                "fulltext": "Full"
             }
         ],
-        "evolvehint": "Evolves after phase 3 of the Campaign, once its specialty (HP) has 1 upgrades.",
-        "phasenote": ""
+        "evolve": {
+            "title": "To evolve to stage 2",
+            "steps": [
+                {"done": false, "text": "Specialty (HP) full", "note": "0 of 1"},
+                {"done": false, "text": "Win phase 3", "note": "3 phases to go"}
+            ]
+        }
     }
 }}
 <section class="pp-hero-shop" aria-labelledby="pp-hero-shop-title">
     <h4 id="pp-hero-shop-title" class="pp-lobby-shop-title">{{upgradestitle}}</h4>
     {{#herocard}}
     <div class="pp-hero-shop-card">
-        <img class="pp-hero-shop-image" src="{{spriteurl}}" alt="" width="72" height="72">
-        <div>
+        <img class="pp-hero-shop-image" src="{{spriteurl}}" alt="" width="56" height="56">
+        <div class="pp-hero-shop-info">
             <strong class="pp-hero-shop-name">{{name}}</strong>
-            <span class="pp-hero-shop-stage">{{stagetext}}</span>
-            <span class="pp-hero-shop-current">{{currenttext}}</span>
+            <span class="pp-hero-shop-specialty">{{specialtytext}}</span>
+        </div>
+        <div class="pp-hero-stage">
+            <span>{{stagetext}}</span>
+            <span class="pp-hero-stage-bar" aria-hidden="true">
+                {{#stagepips}}<i class="{{#on}}pp-on{{/on}}"></i>{{/stagepips}}
+            </span>
         </div>
     </div>
     {{/herocard}}
     <p class="pp-hero-evolved" role="status" hidden></p>
-    <ul class="pp-lobby-shop-list">
+    <ul class="pp-hero-stats">
         {{#upgrades}}
-        <li class="pp-lobby-shop-item pp-hero-upgrade" data-attribute="{{attribute}}">
-            <span class="pp-lobby-shop-name">{{label}}</span>
-            <span class="pp-lobby-shop-owned">{{boughttext}} · {{effecttext}}</span>
+        <li class="pp-hero-upgrade" data-attribute="{{attribute}}">
+            <span class="pp-hero-stat-name">
+                <strong><i class="fa {{icon}}" aria-hidden="true"></i>{{label}}</strong>
+                <small>{{effecttext}}</small>
+            </span>
+            <span class="pp-hero-stat-value">{{valuetext}}</span>
+            <span class="pp-hero-pips" role="img" aria-label="{{boughttext}}">
+                {{#pips}}<i class="{{#on}}pp-on{{/on}}"></i>{{/pips}}
+            </span>
             {{#soldout}}
-            <span class="pp-hero-soldout">{{soldouttext}}</span>
+            <span class="pp-hero-full"><i class="fa fa-lock" aria-hidden="true"></i>{{fulltext}}</span>
             {{/soldout}}
             {{^soldout}}
             <button
                 type="button"
-                class="btn btn-sm btn-outline-primary pp-hero-buy"
+                class="btn btn-sm btn-primary pp-hero-buy"
                 data-attribute="{{attribute}}"
                 aria-label="{{arialabel}}"
             >
-                {{buylabel}}
+                +
                 <span class="pp-lobby-shop-price" aria-hidden="true">🪙{{price}}</span>
             </button>
             {{/soldout}}
         </li>
         {{/upgrades}}
     </ul>
-    <p class="pp-lobby-note">{{evolvehint}}</p>
-    {{#phasenote}}
-    <p class="pp-lobby-note" role="status">{{phasenote}}</p>
-    {{/phasenote}}
+    {{#evolve}}
+    <div class="pp-evolve">
+        <strong class="pp-evolve-title">{{title}}</strong>
+        <ul class="pp-evolve-steps">
+            {{#steps}}
+            <li class="{{#done}}pp-done{{/done}}">
+                <span class="pp-evolve-mark" aria-hidden="true">{{#done}}<i class="fa fa-check"></i>{{/done}}</span>
+                <span>{{text}}</span>
+                <em>{{note}}</em>
+            </li>
+            {{/steps}}
+        </ul>
+    </div>
+    {{/evolve}}
 </section>

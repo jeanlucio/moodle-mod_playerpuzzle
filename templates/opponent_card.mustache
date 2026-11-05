@@ -17,8 +17,8 @@
 {{!
     @template mod_playerpuzzle/opponent_card
 
-    The card of the opponent of the next phase, in the shop of the Lobby and of the screen between phases. It
-    folds away, for the student who does not want to read it.
+    The card of the opponent of the next phase, in the shop of the Lobby and of the screen between phases: a line
+    with its picture and name that opens to what sets it apart.
 
     Context variables required for this template:
     * heading - The card's title
@@ -35,7 +35,17 @@
         ]
     }
 }}
-<details class="pp-opponent-card" open>
-    <summary class="pp-opponent-card-summary">{{heading}}: {{name}}</summary>
-    {{> mod_playerpuzzle/opponent_card_body }}
+<details class="pp-opponent-card">
+    <summary class="pp-opponent-card-summary">
+        <img class="pp-opponent-card-thumb" src="{{spriteurl}}" alt="" width="40" height="40">
+        <span class="pp-opponent-card-line">
+            <strong>{{heading}}: {{name}}</strong>
+            {{#phasetext}}<small>{{phasetext}}</small>{{/phasetext}}
+        </span>
+    </summary>
+    <ul class="pp-opponent-card-traits">
+        {{#traits}}
+        <li>{{text}}</li>
+        {{/traits}}
+    </ul>
 </details>

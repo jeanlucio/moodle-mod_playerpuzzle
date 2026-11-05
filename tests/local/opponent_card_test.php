@@ -311,7 +311,7 @@ final class opponent_card_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the shop carries the card of the next opponent, open and foldable.
+     * Tests that the shop carries the card of the next opponent, as a folded line.
      *
      * @return void
      */
@@ -328,7 +328,7 @@ final class opponent_card_test extends \advanced_testcase {
 
         $html = $OUTPUT->render_from_template('mod_playerpuzzle/shop_panel', $data);
 
-        $this->assertStringContainsString('<details class="pp-opponent-card" open>', $html);
+        $this->assertStringContainsString('<details class="pp-opponent-card">', $html);
         $this->assertStringContainsString(get_string('opponent_card_next', 'mod_playerpuzzle') . ': ', $html);
         $this->assertStringContainsString(get_string('bossavatar_slime', 'mod_playerpuzzle'), $html);
     }

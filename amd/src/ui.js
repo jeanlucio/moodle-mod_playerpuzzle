@@ -73,6 +73,18 @@ define(
     // How see-through a character looks while it is intangible.
     const TRANSLUCENT_ALPHA = 0.45;
 
+    // The numbers that rise off a character when its HP changes: the colour of a loss and of a gain, how
+    // far they rise and how long they last (ms). Above every persistent layer, as a transient overlay.
+    const FLOAT_LOSS = '#ff6b5c';
+    const FLOAT_GAIN = '#7be06f';
+    const FLOAT_RISE = 56;
+    const FLOAT_DURATION = 900;
+    const FLOAT_DEPTH = 8;
+
+    // The gold frame around the HP bar of the side whose turn it is, and how fast it pulses (ms).
+    const TURN_GOLD = 0xf2c14e;
+    const TURN_PULSE = 650;
+
     class UIHandler {
         constructor(scene, layout, gameConfig, strings) {
             this.scene = scene;
@@ -1408,9 +1420,93 @@ define(
             }])[0].fail(error => window.console.error(error));
         }
 
+        /**
+         * Lets a number rise off a character and fade, for a change in its HP: red for a loss, green
+         * for a gain. Only the look, nothing in the fight waits for it. Numbers that arrive together
+         * start at slightly different heights so they do not sit on top of each other.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {number} delta The HP change, negative for a loss.
+         */
+        floatNumber(side, delta) {
+            const me = this.scene;
+            const {sprite, homeX} = this.characters[side];
+            const size = Math.min(34, Math.max(22, Math.round(sprite.displayHeight * 0.16)));
+            const gain = delta > 0;
+            this.floatCount = ((this.floatCount || 0) + 1) % 3;
+            const stack = this.floatCount;
+            const startY = sprite.y - (sprite.displayHeight * 0.75) - (stack * size * 0.8);
+            const text = me.add.text(homeX, startY, `${gain ? '+' : '-'}${Math.abs(delta)}`, {
+                fontFamily: DISPLAY_FONT,
+                fontSize: `${size}px`,
+                fontStyle: 'bold',
+                fill: gain ? FLOAT_GAIN : FLOAT_LOSS,
+                stroke: '#120d09',
+                strokeThickness: 5,
+            }).setOrigin(0.5).setDepth(FLOAT_DEPTH);
+            me.tweens.add({
+                targets: text,
+                y: startY - FLOAT_RISE,
+                alpha: 0,
+                duration: FLOAT_DURATION,
+                ease: 'Cubic.easeOut',
+                onComplete: () => text.destroy(),
+            });
+        }
+
+        /**
+         * Floats the HP change of a side, if it changed since the last time the bar was drawn. The
+         * first drawing only remembers the value: a fight resumed from a checkpoint must not open
+         * with a number.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {number} currentHp The HP now.
+         */
+        trackHp(side, currentHp) {
+            this.shownHp = this.shownHp || {};
+            const now = Math.round(currentHp);
+            const before = this.shownHp[side];
+            this.shownHp[side] = now;
+            if (before !== undefined && before !== now) {
+                this.floatNumber(side, now - before);
+            }
+        }
+
+        /**
+         * Frames the HP bar of the side whose turn it is in pulsing gold. Does nothing when that
+         * side already wears it, so it can be called whenever the state is redrawn.
+         *
+         * @param {string} side 'player' or 'boss'.
+         */
+        showTurn(side) {
+            if (this.turnSide === side) {
+                return;
+            }
+            const me = this.scene;
+            const L = this.L;
+            this.turnSide = side;
+            if (!this.turnFrame) {
+                this.turnFrame = me.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
+                me.tweens.add({
+                    targets: this.turnFrame,
+                    alpha: 0.45,
+                    duration: TURN_PULSE,
+                    ease: 'Sine.easeInOut',
+                    yoyo: true,
+                    repeat: -1,
+                });
+            }
+            const x = side === 'player' ? L.playerUiX : L.bossUiX;
+            const y = side === 'player' ? L.playerHpY : L.bossHpY;
+            this.turnFrame.clear()
+                .lineStyle(3, TURN_GOLD, 1)
+                .strokeRoundedRect(x - 2, y - 2, L.hpBarW + 4, L.hpBarH + 4, this.hpBarCorners());
+        }
+
         updateBossBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
+            this.trackHp('boss', currentHp);
             this.drawHpFill(this.bossHpBar, L.bossUiX, L.bossHpY, pctHp, HP_FILL.boss);
             // The opponent's own name leads the bar; a long one (the final boss's) shrinks to fit the bar
             // instead of running past its rim.
@@ -1441,6 +1537,7 @@ define(
         updatePlayerBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
+            this.trackHp('player', currentHp);
             this.drawHpFill(this.playerHpBar, L.playerUiX, L.playerHpY, pctHp, HP_FILL.player);
             this.playerHpText.setText(
                 `${this.strings.hpyou} ${Math.round(currentHp)} / ${maxHp}`

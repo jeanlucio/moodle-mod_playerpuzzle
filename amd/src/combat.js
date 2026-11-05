@@ -644,6 +644,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 this.bossShieldMeter, this.bossShieldReady,
                 this.bossMana, this.bossGold, this.bossMultiplier
             );
+            this.scene.ui.showTurn(this.currentTurn);
             this.scene.ui.updateQuestionsCounter(this.questionsTotal, this.minQuestions);
             this.scene.ui.updateConsumableBadges();
             this.scene.ui.updateOpponentItems(this.bossPotions, this.bossSwords);
@@ -780,6 +781,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const me = this.scene;
             this.currentTurn = 'boss';
             me.input.enabled = false;
+            me.ui.showTurn('boss');
 
             const start = CombatRules.startTurn('boss', this.combatState(), this.ruleConfig());
             Object.assign(this, start.state);
@@ -900,6 +902,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         passTurnToPlayer() {
             const me = this.scene;
             this.currentTurn = 'player';
+            me.ui.showTurn('player');
 
             const start = CombatRules.startTurn('player', this.combatState(), this.ruleConfig());
             Object.assign(this, start.state);

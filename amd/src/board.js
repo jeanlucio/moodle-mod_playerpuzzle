@@ -33,6 +33,11 @@ define([
         'piece_shield', 'piece_potion', 'piece_coin'
     ];
 
+    // The board frame's bronze, the same tones as the panels' carved inlay and the HP bars' rim.
+    const BRONZE = 0x9c6b2e;
+    const BRONZE_LIGHT = 0xd9a653;
+    const BRONZE_SHADOW = 0x2a1b0c;
+
     class BoardHandler {
         constructor(scene, layout, strings) {
             this.scene = scene;
@@ -139,10 +144,26 @@ define([
             // as panel_stone.png instead of reading as a flat black cutout, while staying dark
             // enough for the piece icons' own colors to keep full contrast.
             graphics.fillStyle(0x2b1f16, 0.95).fillRect(rx, ry, gridWidth, gridHeight + overlap);
-            // Bronze/gold accent line, sampled directly from panel_stone.png's own inlay
-            // color — frames the board as a distinct object instead of blending into the
-            // panels, which share a similarly dark palette now.
-            graphics.lineStyle(2, 0x9c6b2e, 0.8).strokeRect(rx - 4, ry - 4, gridWidth + 8, gridHeight + 8);
+            // A bronze frame around the board, drawn over the panels' inner edge (the board's depth is above
+            // the panel art's) so it reads as a raised plate between them. It runs down to the canvas
+            // bottom with the fill above, and has no bottom bar. Each band lies between two distances
+            // from the grid's edge; the later bands sit on the earlier ones.
+            const band = (from, to, color) => {
+                const height = gridHeight + overlap + to;
+                graphics.fillStyle(color, 1);
+                graphics.fillRect(rx - to, ry - to, gridWidth + (2 * to), to - from);
+                graphics.fillRect(rx - to, ry - to, to - from, height);
+                graphics.fillRect(rx + gridWidth + from, ry - to, to - from, height);
+            };
+            band(0, 9, BRONZE_SHADOW);
+            band(1, 8, BRONZE);
+            band(1, 3, BRONZE_LIGHT);
+            band(7, 8, BRONZE_SHADOW);
+            [rx - 4, rx + gridWidth + 4].forEach(studX => {
+                graphics.fillStyle(BRONZE_SHADOW, 1).fillCircle(studX, ry - 4, 6);
+                graphics.fillStyle(BRONZE_LIGHT, 1).fillCircle(studX, ry - 4, 4);
+                graphics.fillStyle(BRONZE, 1).fillCircle(studX + 1, ry - 3, 2);
+            });
             graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, gridWidth, gridHeight);
             graphics.lineStyle(2, 0x333333, 0.4);
             graphics.beginPath();

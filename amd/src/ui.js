@@ -1412,7 +1412,11 @@ define(
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
             this.drawHpFill(this.bossHpBar, L.bossUiX, L.bossHpY, pctHp, HP_FILL.boss);
-            this.bossHpText.setText(`${this.strings.hpboss} ${Math.round(currentHp)} / ${maxHp}`);
+            // The opponent's own name leads the bar; a long one (the final boss's) shrinks to fit the bar
+            // instead of running past its rim.
+            const label = this.gameConfig.opponentname ? `${this.gameConfig.opponentname}:` : this.strings.hpboss;
+            this.bossHpText.setText(`${label} ${Math.round(currentHp)} / ${maxHp}`);
+            this.bossHpText.setScale(Math.min(1, (L.hpBarW - 16) / this.bossHpText.width));
 
             this.txtBossGold.setText(`${Math.round(gold)}`);
             this.txtBossStar.setText(`x${multiplier.toFixed(1)}`);

@@ -645,6 +645,8 @@ class game_page_service {
             // campaign progresses.
             'coingain'             => $coingain,
             'bossavatar'           => $opponent,
+            // The name the opponent's HP bar carries, in place of a generic "Opponent".
+            'opponentname'         => get_string('bossavatar_' . $opponent, 'mod_playerpuzzle'),
             'bossurl'              => $bossurl,
             'playerurl'            => $playerurl,
             'stagebgurl'           => $stagebgurl,

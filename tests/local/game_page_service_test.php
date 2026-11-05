@@ -803,6 +803,7 @@ final class game_page_service_test extends \advanced_testcase {
 
         $first = game_page_service::build_game_config($cm, $instance, $context, $studentid, false);
         $this->assertSame(10, $first['coingain']);
+        $this->assertSame(get_string('bossavatar_goblin', 'mod_playerpuzzle'), $first['opponentname']);
 
         // The teacher edits the activity while the student is in the middle of the phase.
         $DB->update_record('playerpuzzle', (object) [

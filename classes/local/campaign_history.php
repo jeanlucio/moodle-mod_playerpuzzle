@@ -94,7 +94,7 @@ final class campaign_history {
             'pointstext' => get_string('history_points', 'mod_playerpuzzle', format_float($points, 1, true, true)),
             'phasestext' => get_string('history_phases', 'mod_playerpuzzle', (object) [
                 'won' => campaigns::phases_won_of($attempts),
-                'total' => max(1, (int) $instance->maxlevels) * 10,
+                'total' => campaigns::total_phases($instance, $attempts),
             ]),
             'attemptstext' => $maxattempts > 0
                 ? get_string('history_attempts_of', 'mod_playerpuzzle', (object) [

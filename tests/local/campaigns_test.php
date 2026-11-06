@@ -81,6 +81,27 @@ final class campaigns_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that only a win on a level's last phase tells how many phases a Campaign had.
+     *
+     * @return void
+     */
+    public function test_completed_phases_come_from_a_win_on_a_levels_last_phase(): void {
+        $attempt = static fn(string $status, int $level, int $phase): \stdClass => (object) [
+            'status' => $status, 'currentlevel' => $level, 'currentphase' => $phase,
+        ];
+        $instance = (object) ['maxlevels' => 3];
+
+        $this->assertSame(10, campaigns::completed_phases([$attempt('won', 1, 10)]));
+        $this->assertSame(20, campaigns::completed_phases([$attempt('lost', 1, 4), $attempt('won', 2, 10)]));
+        $this->assertNull(campaigns::completed_phases([$attempt('won', 1, 1)]), 'a win before phases advanced');
+        $this->assertNull(campaigns::completed_phases([$attempt('lost', 1, 10)]));
+        $this->assertNull(campaigns::completed_phases([$attempt('inprogress', 2, 10)]));
+
+        $this->assertSame(10, campaigns::total_phases($instance, [$attempt('won', 1, 10)]));
+        $this->assertSame(30, campaigns::total_phases($instance, [$attempt('lost', 1, 4)]));
+    }
+
+    /**
      * Where the next attempt starts.
      *
      * @param int $maxattempts Attempts allowed in each Campaign.

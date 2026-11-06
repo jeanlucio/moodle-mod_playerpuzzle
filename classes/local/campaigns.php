@@ -40,6 +40,9 @@ class campaigns {
     /** @var string A Campaign that ended because it ran out of attempts. */
     public const ENDED_ATTEMPTS = 'attempts';
 
+    /** @var int Phases in a level. */
+    private const PHASES_PER_LEVEL = 10;
+
     /**
      * Where a brand new real attempt starts, from the student's most recently finished one: on the
      * phase that attempt lost, in the same Campaign, or at Level 1, Phase 1 of the next Campaign when
@@ -132,6 +135,39 @@ class campaigns {
         }
 
         return max(0, $won);
+    }
+
+    /**
+     * How many phases a Campaign had, when it is known: a Campaign is only won on the last phase of its last
+     * level, so a won attempt that ended on a level's last phase says where the Campaign ended, however many
+     * levels the activity has been given since. A teacher raising or lowering the level count would otherwise
+     * re-score every Campaign already completed. A win on any other phase is a record from before phases
+     * advanced, which says nothing about the total, and so is left out.
+     *
+     * @param stdClass[] $attempts The attempts of one Campaign (status, currentlevel, currentphase).
+     * @return int|null The phase count of a completed Campaign, or null when it cannot be told.
+     */
+    public static function completed_phases(array $attempts): ?int {
+        $total = null;
+        foreach ($attempts as $attempt) {
+            if ($attempt->status === 'won' && (int) $attempt->currentphase === self::PHASES_PER_LEVEL) {
+                $total = max((int) $total, (int) $attempt->currentlevel * self::PHASES_PER_LEVEL);
+            }
+        }
+
+        return $total;
+    }
+
+    /**
+     * The phases a Campaign is measured against: the ones it had when it was completed (see
+     * completed_phases()) or, for one still going or never completed, the activity's level count.
+     *
+     * @param stdClass $instance Activity instance (maxlevels).
+     * @param stdClass[] $attempts The attempts of one Campaign.
+     * @return int
+     */
+    public static function total_phases(stdClass $instance, array $attempts): int {
+        return self::completed_phases($attempts) ?? max(1, (int) $instance->maxlevels) * self::PHASES_PER_LEVEL;
     }
 
     /**

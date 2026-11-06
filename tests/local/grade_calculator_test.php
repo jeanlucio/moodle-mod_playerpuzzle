@@ -172,6 +172,26 @@ final class grade_calculator_test extends \basic_testcase {
     }
 
     /**
+     * Tests that a Campaign completed before the teacher added levels keeps its full score: it is measured against
+     * the phases it had, not the ones the activity has now. A win on any other phase is a record from before phases
+     * advanced and is still measured against the configured count.
+     *
+     * @return void
+     */
+    public function test_a_completed_campaign_keeps_its_score_when_the_level_count_changes(): void {
+        $instance = $this->make_instance(['maxlevels' => 2, 'grade' => 100]);
+
+        $completed = $this->make_attempt(['currentlevel' => 1, 'currentphase' => 10, 'status' => 'won']);
+        $this->assertEqualsWithDelta(100.0, grade_calculator::campaign_score($instance, [$completed], 100.0), 0.001);
+
+        $legacy = $this->make_attempt(['currentlevel' => 1, 'currentphase' => 1, 'status' => 'won']);
+        $this->assertEqualsWithDelta(5.0, grade_calculator::campaign_score($instance, [$legacy], 100.0), 0.001);
+
+        $unfinished = $this->make_attempt(['currentlevel' => 1, 'currentphase' => 10, 'status' => 'lost']);
+        $this->assertEqualsWithDelta(45.0, grade_calculator::campaign_score($instance, [$unfinished], 100.0), 0.001);
+    }
+
+    /**
      * Tests that a "Sem Nota" instance (grade = 0) still computes without error, at 0 —
      * grade is a multiplier here, never a divisor, so there is no divide-by-zero risk.
      *

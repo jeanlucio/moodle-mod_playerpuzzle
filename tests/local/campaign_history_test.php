@@ -171,6 +171,33 @@ final class campaign_history_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a Campaign completed when the activity had fewer levels still reads as complete, in its own phases
+     * and in points, while one lost on the same phase is measured against the levels the activity has now.
+     *
+     * @return void
+     */
+    public function test_a_campaign_completed_before_levels_were_added_stays_complete(): void {
+        // The activity has two levels now, but Campaign 1 was won on level 1's last phase.
+        $this->attempt('won', 1, 1, 10);
+        $this->attempt('lost', 2, 1, 10);
+
+        $rows = $this->rows();
+
+        $this->assertSame(
+            get_string('history_phases', 'mod_playerpuzzle', (object) ['won' => 10, 'total' => 10]),
+            $rows[1]['phasestext']
+        );
+        $this->assertSame(
+            get_string('history_points', 'mod_playerpuzzle', format_float(100, 1, true, true)),
+            $rows[1]['pointstext']
+        );
+        $this->assertSame(
+            get_string('history_phases', 'mod_playerpuzzle', (object) ['won' => 9, 'total' => 20]),
+            $rows[0]['phasestext']
+        );
+    }
+
+    /**
      * Tests the points: the ones the ranking counts for a Campaign, and a whole Campaign is worth a hundred.
      *
      * @return void

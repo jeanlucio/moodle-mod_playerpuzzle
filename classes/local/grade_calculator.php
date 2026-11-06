@@ -213,8 +213,9 @@ class grade_calculator {
     /**
      * One Campaign's score: the furthest phase it reached, across all of its attempts (a
      * "Tentar Novamente" after a loss opens a new attempt row rather than reusing the old
-     * one), against the total phases configured. Never a count of `status = 'won'` rows — a
-     * single continuous attempt can cover dozens of phases of progress at once.
+     * one), against the phases the Campaign had (campaigns::total_phases(): the ones it was completed with, so
+     * changing the activity's level count later leaves it alone, or else the configured ones). Never a count of
+     * `status = 'won'` rows — a single continuous attempt can cover dozens of phases of progress at once.
      *
      * Scaled against $base rather than always $instance->grade, so the ranking can reuse the
      * exact same formula against its own fixed base (see ranking_service::BASE_POINTS).
@@ -225,7 +226,7 @@ class grade_calculator {
      * @return float
      */
     public static function campaign_score(stdClass $instance, array $attempts, float $base): float {
-        $totalphases = max(1, (int) $instance->maxlevels) * 10;
+        $totalphases = campaigns::total_phases($instance, $attempts);
         $wonordinal = max(array_map([self::class, 'won_phase_ordinal'], $attempts));
         $progresspercent = min(100, ($wonordinal / $totalphases) * 100);
 

@@ -576,6 +576,14 @@ define(
          * @param {{potion: number, sword: number}} kit The items the phase started with.
          */
         createOpponentItems(kit) {
+            // An item the opponent does not bring is not shown at all, not even as an icon with no number: the panel
+            // draws the two icons for every opponent, so the ones with nothing to show are taken away here.
+            if (!kit.potion) {
+                this.bossPotionIcon?.setVisible(false);
+            }
+            if (!kit.sword) {
+                this.bossSwordIcon?.setVisible(false);
+            }
             if (!kit.potion && !kit.sword) {
                 return;
             }
@@ -589,10 +597,13 @@ define(
                     backgroundColor: '#1c1712', padding: {x: 3, y: 1},
                 }).setOrigin(0.5).setDepth(Depth.FRONT_IMAGES),
             });
-            this.opponentItems = {
-                potion: make(L.bossPotionX, L.bossPotionY, 'item5', this.bossPotionIcon),
-                sword: make(L.bossSwordX, L.bossSwordY, 'item3', this.bossSwordIcon),
-            };
+            this.opponentItems = {};
+            if (kit.potion) {
+                this.opponentItems.potion = make(L.bossPotionX, L.bossPotionY, 'item5', this.bossPotionIcon);
+            }
+            if (kit.sword) {
+                this.opponentItems.sword = make(L.bossSwordX, L.bossSwordY, 'item3', this.bossSwordIcon);
+            }
         }
 
         /**
@@ -606,6 +617,9 @@ define(
                 return;
             }
             [[this.opponentItems.potion, potions], [this.opponentItems.sword, swords]].forEach(([item, count]) => {
+                if (!item) {
+                    return;
+                }
                 item.label.setText(`×${count}`);
                 item.icon.setAlpha(count > 0 ? 1 : 0.35);
             });

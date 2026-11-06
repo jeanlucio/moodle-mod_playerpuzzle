@@ -221,7 +221,14 @@ class opponent_card {
 
         $kit = $side['bosskit'] ?? null;
         if ($kit !== null && ($kit['potion'] > 0 || $kit['sword'] > 0)) {
-            $traits[] = get_string('opponentkit', 'mod_playerpuzzle', (object) [
+            // Only the items it brings are named: "Sword ×0" would tell the student nothing.
+            $suffix = '';
+            if ($kit['potion'] <= 0) {
+                $suffix = '_sword';
+            } else if ($kit['sword'] <= 0) {
+                $suffix = '_potion';
+            }
+            $traits[] = get_string('opponentkit' . $suffix, 'mod_playerpuzzle', (object) [
                 'potions' => $kit['potion'],
                 'swords' => $kit['sword'],
             ]);

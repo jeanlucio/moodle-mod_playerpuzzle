@@ -447,13 +447,20 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const kit = this.ruleConfig().bossKit;
             const hasKit = kit.potion > 0 || kit.sword > 0;
             const fillKit = text => text.replace('{$a->potions}', kit.potion).replace('{$a->swords}', kit.sword);
+            // Only the items it brings are named: "Sword ×0" would tell the student nothing.
+            let kitSuffix = '';
+            if (kit.potion <= 0) {
+                kitSuffix = '_sword';
+            } else if (kit.sword <= 0) {
+                kitSuffix = '_potion';
+            }
             const breathEvery = CombatRules.breathEvery(this.ruleConfig());
             const notices = this.bossPowers
                 .map(power => this.strings[`power_${power}`])
                 .filter(Boolean)
                 .map(text => text.replace('{$a}', breathEvery));
             if (hasKit) {
-                notices.push(fillKit(this.strings.opponentkit));
+                notices.push(fillKit(this.strings[`opponentkit${kitSuffix}`]));
             }
             this.bossPowers.forEach(power => {
                 const line = this.strings[`historylogpower_${power}`];
@@ -462,7 +469,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 }
             });
             if (hasKit) {
-                this.scene.ui.pushHistoryLog('boss', fillKit(this.strings.historylogkit));
+                this.scene.ui.pushHistoryLog('boss', fillKit(this.strings[`historylogkit${kitSuffix}`]));
             }
             const notice = notices.join(' ');
             if (notice === '' || !this.gameConfig.powernotice) {

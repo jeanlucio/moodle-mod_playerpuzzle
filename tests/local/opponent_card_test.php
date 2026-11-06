@@ -153,6 +153,29 @@ final class opponent_card_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the card names only the items the opponent brings, never one with a count of zero.
+     *
+     * @return void
+     */
+    public function test_the_items_name_only_what_the_opponent_brings(): void {
+        $potion = get_string('opponentkit_potion', 'mod_playerpuzzle', (object) ['potions' => 1, 'swords' => 0]);
+        $sword = get_string('opponentkit_sword', 'mod_playerpuzzle', (object) ['potions' => 0, 'swords' => 2]);
+
+        $kitpotion = $this->side(['bosskit' => ['potion' => 1, 'sword' => 0]]);
+        $kitsword = $this->side(['bosskit' => ['potion' => 0, 'sword' => 2]]);
+        $onlypotion = opponent_card::build('golem', true, 1, 1, $kitpotion, false, 'now');
+        $onlysword = opponent_card::build('golem', true, 1, 1, $kitsword, false, 'now');
+
+        $this->assertContains($potion, $this->texts($onlypotion));
+        $this->assertContains($sword, $this->texts($onlysword));
+        foreach ([$onlypotion, $onlysword] as $card) {
+            foreach ($this->texts($card) as $text) {
+                $this->assertStringNotContainsString('×0', $text);
+            }
+        }
+    }
+
+    /**
      * Tests the card of a Campaign with no phase under way: the phase the next attempt starts on, with no
      * items since the difficulty is not chosen yet, and nothing for a Campaign whose hero is not chosen.
      *
@@ -188,9 +211,9 @@ final class opponent_card_test extends \advanced_testcase {
 
         $items = opponent_card::for_player($this->instance, $userid)['opponentcard'];
         $this->assertContains(
-            get_string('opponentkit', 'mod_playerpuzzle', (object) ['potions' => 1, 'swords' => 0]),
+            get_string('opponentkit_potion', 'mod_playerpuzzle', (object) ['potions' => 1, 'swords' => 0]),
             $this->texts($items),
-            'a Hard phase brings an item'
+            'a Hard phase brings an item, and names only that one'
         );
 
         $DB->update_record('playerpuzzle_attempts', (object) [

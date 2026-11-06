@@ -26,7 +26,7 @@ Feature: PlayerPuzzle pre-match loadout shop
       | playerpuzzle | user     | hero  |
       | Dungeon Quiz | student1 | magef |
 
-  Scenario: The Lobby shows the PuzzleCoin balance and the loadout shop
+  Scenario: The Lobby shows the PuzzleCoin balance and the shop
     Given the following "mod_playerpuzzle > user stocks" exist:
       | playerpuzzle | user     | consumabletype | quantity |
       | Dungeon Quiz | student1 | coin           | 20       |
@@ -34,7 +34,7 @@ Feature: PlayerPuzzle pre-match loadout shop
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
     Then I should see "20" in the "[data-role='coinvalue']" "css_element"
     And I click on "Shop" "button"
-    And I should see "Loadout Shop"
+    And I should see "Shop" in the "#pp-lobby-shop-title" "css_element"
     And I should see "Owned: 0" in the ".pp-lobby-shop-item[data-type='potion']" "css_element"
 
   Scenario: Buying a consumable debits PuzzleCoin and credits stock without reloading the page

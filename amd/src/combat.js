@@ -1610,6 +1610,22 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             }
         }
 
+        /**
+         * The heading of the end screen, in the words of what ended: in a Campaign a phase was lost (the Campaign
+         * goes on from it) or, on the last phase, the whole Campaign was won, to sit beside the "Phase complete" a
+         * mid-Campaign win shows; a Single Match and a Demo have only a victory and a defeat.
+         *
+         * @param {boolean} victory Whether the student won.
+         * @returns {string}
+         */
+        endTitle(victory) {
+            const campaign = this.gameConfig.gamemode === 'campaign' && !this.isdemo;
+            if (!campaign) {
+                return victory ? this.strings.victory : this.strings.defeat;
+            }
+            return victory ? this.strings.campaigncomplete : this.strings.phaselost;
+        }
+
         async showEndScreen(victory) {
             // The match can end by itself while a dialog is open or an opponent's move is still playing out.
             if (this.matchSaved) {
@@ -1640,7 +1656,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             const context = {
                 colorclass: victory ? 'pp-victory' : 'pp-defeat',
-                msg: victory ? strings.victory : strings.defeat,
+                msg: this.endTitle(victory),
                 coinscollected: strings.coinscollected,
                 playergold: displayGold,
                 maxmultiplier: strings.maxmultiplier,
@@ -1654,7 +1670,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const html = await Templates.render('mod_playerpuzzle/gameover_overlay', context);
             $('#playerpuzzle-canvas-container').append(html);
             Accessibility.announce(
-                `${victory ? strings.victory : strings.defeat} ${strings.coinscollected} ${displayGold}.`
+                `${this.endTitle(victory)} ${strings.coinscollected} ${displayGold}.`
             );
 
             Ajax.call([{
@@ -1683,7 +1699,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     // Shown as a victory, counted as a defeat (the replay found one, or could
                     // not verify it with no restart left): say so instead of a plain save.
                     $('#playerpuzzle-gameover h1').removeClass('pp-victory').addClass('pp-defeat')
-                        .text(strings.defeat);
+                        .text(this.endTitle(false));
                     $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
                         .text(res.message);
                     Accessibility.announce(res.message);

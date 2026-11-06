@@ -521,6 +521,8 @@ define([
                     'debriefsummary', 'debrieftitle', 'debriefwrongsr', 'debriefyouranswer',
                     'defeat',
                     'demostep_fullscreen_text', 'demostep_fullscreen_title',
+                    'demostep_giveup_text', 'demostep_giveup_title',
+                    'demostep_help_text', 'demostep_help_title',
                     'demostep_hp_text', 'demostep_hp_title',
                     'demostep_music_text', 'demostep_music_title',
                     'demostep_sfx_text', 'demostep_sfx_title',

@@ -99,6 +99,9 @@ define(
     const TURN_GOLD = 0xf2c14e;
     const TURN_PULSE = 650;
 
+    // The ring a Demo walkthrough step puts around what it explains: above the scene, below the overlays.
+    const DEMO_RING_DEPTH = 90;
+
     class UIHandler {
         constructor(scene, layout, gameConfig, strings) {
             this.scene = scene;
@@ -733,13 +736,20 @@ define(
          */
         async showDemoWalkthrough(onDismiss) {
             const strings = this.strings;
+            // Each step of a button shows the button's own icon and rings it on the stage; the HP step rings both bars.
+            // The buttons come in the order they sit on the stage, left to right.
             const steps = [
-                {index: 0, title: strings.demostep_welcome_title, text: strings.demostep_welcome_text},
-                {index: 1, title: strings.demostep_hp_title, text: strings.demostep_hp_text},
-                {index: 2, title: strings.demostep_music_title, text: strings.demostep_music_text},
-                {index: 3, title: strings.demostep_sfx_title, text: strings.demostep_sfx_text},
-                {index: 4, title: strings.demostep_fullscreen_title, text: strings.demostep_fullscreen_text},
-            ];
+                {title: strings.demostep_welcome_title, text: strings.demostep_welcome_text, icon: '', target: null},
+                {title: strings.demostep_hp_title, text: strings.demostep_hp_text, icon: '', target: 'hp'},
+                {title: strings.demostep_giveup_title, text: strings.demostep_giveup_text, icon: 'fa-flag', target: 'giveup'},
+                {title: strings.demostep_help_title, text: strings.demostep_help_text, icon: 'fa-question', target: 'help'},
+                {title: strings.demostep_music_title, text: strings.demostep_music_text, icon: 'fa-volume-up', target: 'music'},
+                {title: strings.demostep_sfx_title, text: strings.demostep_sfx_text, icon: 'fa-bell', target: 'effects'},
+                {
+                    title: strings.demostep_fullscreen_title, text: strings.demostep_fullscreen_text,
+                    icon: '', fullscreenicon: true, target: 'expand',
+                },
+            ].map((step, index) => ({...step, index}));
 
             const html = await Templates.render('mod_playerpuzzle/demo_walkthrough', {
                 title: strings.demowalkthrough_title,
@@ -770,6 +780,7 @@ define(
                 nextBtn.textContent = current === steps.length - 1
                     ? nextBtn.dataset.startlabel
                     : nextBtn.dataset.nextlabel;
+                this.highlightDemoTarget(steps[current].target);
             };
             renderStep();
 
@@ -782,10 +793,43 @@ define(
                 dialogEl.close();
             });
             dialogEl.addEventListener('close', () => {
+                this.highlightDemoTarget(null);
                 dialogEl.remove();
                 onDismiss();
             }, {once: true});
             dialogEl.showModal();
+        }
+
+        /**
+         * Rings what a Demo walkthrough step is about, on the stage, in pulsing gold: a top button, or both HP bars.
+         * Replaces the ring of the step before, and removes it for null.
+         *
+         * @param {string|null} target 'hp', a key of this.topButtons, or null for nothing.
+         */
+        highlightDemoTarget(target) {
+            const me = this.scene;
+            const L = this.L;
+            if (this.demoRing) {
+                this.demoRing.tween.stop();
+                this.demoRing.graphics.destroy();
+                this.demoRing = null;
+            }
+            if (!target) {
+                return;
+            }
+            const graphics = me.add.graphics().setDepth(DEMO_RING_DEPTH).lineStyle(4, TURN_GOLD, 1);
+            if (target === 'hp') {
+                [[L.playerUiX, L.playerHpY], [L.bossUiX, L.bossHpY]].forEach(([x, y]) => {
+                    graphics.strokeRoundedRect(x - 4, y - 4, L.hpBarW + 8, L.hpBarH + 8, this.hpBarCorners());
+                });
+            } else {
+                const {x, y, r} = this.topButtons[target];
+                graphics.strokeCircle(x, y, r + 6);
+            }
+            const tween = me.tweens.add({
+                targets: graphics, alpha: 0.35, duration: TURN_PULSE, ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
+            });
+            this.demoRing = {graphics, tween};
         }
 
         /**
@@ -1341,6 +1385,11 @@ define(
             const xMusic = xEffects - gap;
             const xHelp = xMusic - gap;
             const xGiveUp = xHelp - gap;
+            // Where each button sits, for the Demo walkthrough to point at.
+            this.topButtons = {
+                giveup: {x: xGiveUp, y, r}, help: {x: xHelp, y, r}, music: {x: xMusic, y, r},
+                effects: {x: xEffects, y, r}, expand: {x: xExpand, y, r},
+            };
 
             const badgeGiveUp = this.createButtonBadge(xGiveUp, y, r);
             this.createGlyphIcon(xGiveUp, y, r, FA_FLAG);

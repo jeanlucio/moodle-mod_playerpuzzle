@@ -35,7 +35,7 @@ When either side's Question Orb bar reaches 100%, the match pauses and opens the
 
 * **Correct answer** — a critical hit: triple base damage, multiplied by whatever Star bonus that
   side has stacked up.
-* **Wrong answer** — that side takes damage, and its Star multiplier resets to 1.
+* **Wrong answer** — no damage to either side, but that side's Star multiplier resets to 1.
 
 The opponent "answers" too when its own Mana Orb bar fills, but it never sees the right answer: the
 server decides whether the opponent guessed correctly, with a probability that depends on the

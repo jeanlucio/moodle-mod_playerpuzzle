@@ -35,7 +35,7 @@ abre o [modal de pergunta](#questions):
 
 * **Resposta correta** — um acerto crítico: dano base triplicado, multiplicado pelo bônus de
   Estrela que esse lado acumulou.
-* **Resposta errada** — esse lado sofre dano, e seu multiplicador de Estrela volta pra 1.
+* **Resposta errada** — ninguém sofre dano, mas o multiplicador de Estrela daquele lado volta pra 1.
 
 O oponente também "responde" quando a própria barra de Orbe de Mana enche, mas nunca vê a resposta
 certa: é o servidor que decide se o oponente acertou, com uma probabilidade que depende da

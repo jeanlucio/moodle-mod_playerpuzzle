@@ -123,6 +123,10 @@ class hero_page_service {
                 array_keys($fields),
                 array_values($fields)
             ),
+            // The Lobby's own art, so the choice looks like part of the same game.
+            'frameurl' => (new moodle_url('/mod/playerpuzzle/pix/lobby_frame.webp'))->out(false),
+            'textureurl' => (new moodle_url('/mod/playerpuzzle/pix/lobby_texture.webp'))->out(false),
+            'scrollbannerurl' => (new moodle_url('/mod/playerpuzzle/pix/scroll_banner.webp'))->out(false),
             'title' => get_string('hero_title', 'mod_playerpuzzle'),
             'intro' => get_string($intro, 'mod_playerpuzzle'),
             'error' => $error === '' ? '' : get_string($error, 'mod_playerpuzzle'),

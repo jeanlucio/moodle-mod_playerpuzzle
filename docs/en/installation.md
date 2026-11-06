@@ -11,5 +11,5 @@
 5. Optional: install **[block_playerhud](https://github.com/jeanlucio/moodle-block_playerhud)**
    if you want the optional coin/upgrade economy — see [PlayerHUD Integration](#playerhud).
 6. Add a PlayerPuzzle activity to any course, pick a **Game Mode** and (optionally) which
-   PlayerHUD items to use. Then open **Manage questions** to import a Question Bank category, add
+   PlayerHUD items to use. Then open **Manage questions** (in the activity's navigation bar, under **More** when it does not fit) to import a Question Bank category, add
    questions by hand or generate them with AI.

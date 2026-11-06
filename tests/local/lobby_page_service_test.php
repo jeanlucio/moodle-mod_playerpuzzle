@@ -140,7 +140,8 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertFalse($data['hastransfer']);
         $this->assertSame(get_string('lobby_ready', 'mod_playerpuzzle'), $data['readytext']);
         $this->assertStringContainsString('/mod/playerpuzzle/pix/heroes/warriorf1.webp', $data['heroimageurl']);
-        $this->assertStringContainsString('panel_stone.webp', $data['panelstoneurl']);
+        $this->assertStringContainsString('lobby_frame.webp', $data['frameurl']);
+        $this->assertStringContainsString('lobby_texture.webp', $data['textureurl']);
         $this->assertStringContainsString('scroll_banner.webp', $data['scrollbannerurl']);
         $this->assertSame(get_string('lobby_menu_shop', 'mod_playerpuzzle'), $data['shopmenulabel']);
         $this->assertSame(get_string('lobby_menu_settings', 'mod_playerpuzzle'), $data['settingsmenulabel']);

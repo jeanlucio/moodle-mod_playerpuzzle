@@ -82,7 +82,8 @@ class lobby_page_service {
             'heroimageurl' => heroes::sprite_url(
                 heroes::sprite(last_hero::get($userid) ?: array_key_first(heroes::CATALOG), 1)
             )->out(false),
-            'panelstoneurl' => (new moodle_url('/mod/playerpuzzle/pix/panel_stone.webp'))->out(false),
+            'frameurl' => (new moodle_url('/mod/playerpuzzle/pix/lobby_frame.webp'))->out(false),
+            'textureurl' => (new moodle_url('/mod/playerpuzzle/pix/lobby_texture.webp'))->out(false),
             'scrollbannerurl' => (new moodle_url('/mod/playerpuzzle/pix/scroll_banner.webp'))->out(false),
             'shopmenulabel' => get_string('lobby_menu_shop', 'mod_playerpuzzle'),
             'settingsmenulabel' => get_string('lobby_menu_settings', 'mod_playerpuzzle'),

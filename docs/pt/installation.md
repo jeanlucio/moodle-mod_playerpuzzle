@@ -12,5 +12,5 @@
    **[block_playerhud](https://github.com/jeanlucio/moodle-block_playerhud)** se quiser a
    economia opcional de moedas/upgrades — veja [Integração com o PlayerHUD](#playerhud).
 6. Adicione uma atividade PlayerPuzzle a qualquer curso, escolha um **Modo de Jogo** e
-   (opcionalmente) quais itens do PlayerHUD usar. Depois abra **Gerenciar questões** para importar
+   (opcionalmente) quais itens do PlayerHUD usar. Depois abra **Gerenciar questões** (na barra de navegação da atividade, em **Mais** quando não couber) para importar
    uma categoria do Banco de Questões, cadastrar questões à mão ou gerá-las com IA.

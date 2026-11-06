@@ -23,6 +23,9 @@
     * formurl - Where the form posts to
     * sesskey - The session key
     * fields - Hidden fields to send on, each with name and value
+    * frameurl - The Lobby's carved frame
+    * textureurl - The stone behind it
+    * scrollbannerurl - The scroll the heading sits on
     * title - The heading
     * intro - What the choice means
     * error - A message above the heroes, empty when there is none
@@ -37,6 +40,9 @@
         "formurl": "/mod/playerpuzzle/hero.php?id=1",
         "sesskey": "abc123example",
         "fields": [{"name": "mode", "value": "campaign"}],
+        "frameurl": "/mod/playerpuzzle/pix/lobby_frame.webp",
+        "textureurl": "/mod/playerpuzzle/pix/lobby_texture.webp",
+        "scrollbannerurl": "/mod/playerpuzzle/pix/scroll_banner.webp",
         "title": "Choose your hero",
         "intro": "Your hero stays with you for the whole Campaign.",
         "error": "",
@@ -55,8 +61,13 @@
         "backlabel": "Back to the Lobby"
     }
 }}
-<div class="pp-hero-page">
-    <h2 class="pp-hero-title">{{title}}</h2>
+<div
+    class="pp-lobby pp-hero-page"
+    style="--pp-frame: url('{{frameurl}}'); --pp-texture: url('{{textureurl}}'); --pp-ribbon: url('{{scrollbannerurl}}');"
+>
+    <div class="pp-lobby-ribbon">
+        <h2 class="pp-lobby-ribbon-title">{{title}}</h2>
+    </div>
     <p class="pp-hero-intro">{{intro}}</p>
     {{#error}}
     <div class="alert alert-danger" role="alert">{{error}}</div>
@@ -80,9 +91,9 @@
             {{/heroes}}
         </fieldset>
         <div class="pp-hero-actions">
-            <button type="submit" class="btn btn-primary">{{submitlabel}}</button>
+            <button type="submit" class="pp-lobby-play">{{submitlabel}}</button>
             {{#backurl}}
-            <a class="btn btn-secondary" href="{{backurl}}">{{backlabel}}</a>
+            <a class="pp-lobby-menu-btn pp-lobby-back" href="{{backurl}}">{{backlabel}}</a>
             {{/backurl}}
         </div>
     </form>

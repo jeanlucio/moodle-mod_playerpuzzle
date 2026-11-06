@@ -106,6 +106,11 @@ final class hero_page_service_test extends \advanced_testcase {
         $this->assertSame(get_string('hero_choose_button', 'mod_playerpuzzle'), $data['submitlabel']);
         $this->assertSame('', $data['error']);
 
+        // The screen wears the Lobby's own art.
+        $this->assertStringContainsString('/pix/lobby_frame.webp', $data['frameurl']);
+        $this->assertStringContainsString('/pix/lobby_texture.webp', $data['textureurl']);
+        $this->assertStringContainsString('/pix/scroll_banner.webp', $data['scrollbannerurl']);
+
         // The first Campaign sends the student here until they have a hero, so there is no Lobby to go back to.
         $this->assertSame('', $data['backurl']);
         $this->assertStringNotContainsString(

@@ -26,7 +26,8 @@
         "sesskey": "abc123example",
         "readytext": "Ready for adventure?",
         "heroimageurl": "https://example.com/moodle/theme/image.php/boost/mod_playerpuzzle/1/player",
-        "panelstoneurl": "https://example.com/moodle/mod/playerpuzzle/pix/panel_stone.webp",
+        "frameurl": "https://example.com/moodle/mod/playerpuzzle/pix/lobby_frame.webp",
+        "textureurl": "https://example.com/moodle/mod/playerpuzzle/pix/lobby_texture.webp",
         "scrollbannerurl": "https://example.com/moodle/mod/playerpuzzle/pix/scroll_banner.webp",
         "cmid": 1,
         "coinvalue": 42,
@@ -86,7 +87,10 @@
         "rankingoutsider": null
     }
 }}
-<div class="pp-lobby" style="border-image-source: url('{{panelstoneurl}}');">
+<div
+    class="pp-lobby"
+    style="--pp-frame: url('{{frameurl}}'); --pp-texture: url('{{textureurl}}'); --pp-ribbon: url('{{scrollbannerurl}}');"
+>
     <span class="pp-lobby-ember" aria-hidden="true"></span>
     <span class="pp-lobby-ember" aria-hidden="true"></span>
     <span class="pp-lobby-ember" aria-hidden="true"></span>
@@ -101,24 +105,28 @@
 
         <div class="pp-lobby-panel">
             <div id="pp-lobby-main" class="pp-lobby-view">
-                <div class="pp-lobby-ribbon" style="background-image: url('{{scrollbannerurl}}');">
+                <div class="pp-lobby-ribbon">
                     <h2 class="pp-lobby-ribbon-title">
                         {{#progresstext}}{{progresstext}}{{/progresstext}}
                         {{^progresstext}}{{readytext}}{{/progresstext}}
                     </h2>
                 </div>
 
-                {{#campaignnametext}}
-                <p class="pp-lobby-note">{{campaignnametext}}</p>
-                {{/campaignnametext}}
-
-                {{#isguest}}
-                <p class="pp-lobby-note">{{guestdemoonlytext}}</p>
-                {{/isguest}}
-
-                {{^isguest}}
-                {{^campaignended}}
-                <div class="pp-lobby-stats">
+                <div class="pp-lobby-status">
+                    {{#campaignnametext}}
+                    <span class="pp-lobby-chip">
+                        <i class="fa fa-flag" aria-hidden="true"></i>
+                        <span>{{campaignnametext}}</span>
+                    </span>
+                    {{/campaignnametext}}
+                    {{#difficultyselectedtext}}
+                    <span class="pp-lobby-chip">
+                        <i class="fa fa-bolt" aria-hidden="true"></i>
+                        <span id="pp-lobby-difficulty-readout">{{difficultyselectedtext}}</span>
+                    </span>
+                    {{/difficultyselectedtext}}
+                    {{^isguest}}
+                    {{^campaignended}}
                     <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
@@ -126,9 +134,56 @@
                         </svg>
                         <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
                     </span>
+                    {{/campaignended}}
+                    {{/isguest}}
                 </div>
-                {{/campaignended}}
+
+                {{#isguest}}
+                <p class="pp-lobby-note">{{guestdemoonlytext}}</p>
                 {{/isguest}}
+                {{#difficultycurrent}}
+                <p class="pp-lobby-note">{{difficultycurrent}}</p>
+                {{/difficultycurrent}}
+
+                {{#noquestions}}
+                <p class="pp-lobby-note" role="status">
+                    {{noquestionstext}}
+                    {{#canmanagequestions}}
+                    <a href="{{managequestionsurl}}" class="pp-lobby-managelink">{{managequestionslabel}}</a>
+                    {{/canmanagequestions}}
+                </p>
+                {{/noquestions}}
+                {{^noquestions}}
+                {{^isguest}}
+                {{#newcampaigntext}}
+                <p class="pp-lobby-note" role="status">{{newcampaigntext}}</p>
+                {{/newcampaigntext}}
+                {{#campaignlimittext}}
+                <p class="pp-lobby-note" role="status">{{campaignlimittext}}</p>
+                {{/campaignlimittext}}
+                {{^campaignlimittext}}
+                <form
+                    method="post"
+                    action="{{#playviahero}}{{herourl}}{{/playviahero}}{{^playviahero}}{{playurl}}{{/playviahero}}"
+                    id="pp-lobby-playform"
+                    {{#newcampaign}}data-confirm="{{newcampaignconfirmtext}}"{{/newcampaign}}
+                >
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    {{#playmode}}
+                    <input type="hidden" name="mode" value="{{playmode}}">
+                    {{/playmode}}
+                    {{#newcampaign}}
+                    <input type="hidden" name="confirmnewcampaign" value="1">
+                    {{/newcampaign}}
+                    <button type="submit" class="pp-lobby-play">{{playtext}}</button>
+                </form>
+                {{/campaignlimittext}}
+                {{/isguest}}
+                {{/noquestions}}
+
+                {{#minquestionstext}}
+                <p class="pp-lobby-hint">{{minquestionstext}}</p>
+                {{/minquestionstext}}
 
                 <div class="pp-lobby-menu">
                     {{^isguest}}
@@ -159,6 +214,16 @@
                         <span>{{rankingbuttontext}}</span>
                     </button>
                     {{/showranking}}
+                    {{^noquestions}}
+                    <form method="post" action="{{demourl}}" class="pp-lobby-menu-form">
+                        <input type="hidden" name="sesskey" value="{{sesskey}}">
+                        <input type="hidden" name="mode" value="demo">
+                        <button type="submit" class="pp-lobby-menu-btn">
+                            <i class="fa fa-graduation-cap" aria-hidden="true"></i>
+                            <span>{{playdemotext}}</span>
+                        </button>
+                    </form>
+                    {{/noquestions}}
                     <button
                         type="button"
                         class="pp-lobby-menu-btn"
@@ -171,58 +236,6 @@
                         <span>{{settingsmenulabel}}</span>
                     </button>
                 </div>
-
-                {{#difficultyselectedtext}}
-                <p class="pp-lobby-note" id="pp-lobby-difficulty-readout">{{difficultyselectedtext}}</p>
-                {{/difficultyselectedtext}}
-                {{#difficultycurrent}}
-                <p class="pp-lobby-note">{{difficultycurrent}}</p>
-                {{/difficultycurrent}}
-
-                {{#noquestions}}
-                <p class="pp-lobby-note" role="status">{{noquestionstext}}</p>
-                {{/noquestions}}
-                {{^noquestions}}
-                {{^isguest}}
-                {{#newcampaigntext}}
-                <p class="pp-lobby-note" role="status">{{newcampaigntext}}</p>
-                {{/newcampaigntext}}
-                {{#campaignlimittext}}
-                <p class="pp-lobby-note" role="status">{{campaignlimittext}}</p>
-                {{/campaignlimittext}}
-                {{^campaignlimittext}}
-                <form
-                    method="post"
-                    action="{{#playviahero}}{{herourl}}{{/playviahero}}{{^playviahero}}{{playurl}}{{/playviahero}}"
-                    id="pp-lobby-playform"
-                    {{#newcampaign}}data-confirm="{{newcampaignconfirmtext}}"{{/newcampaign}}
-                >
-                    <input type="hidden" name="sesskey" value="{{sesskey}}">
-                    {{#playmode}}
-                    <input type="hidden" name="mode" value="{{playmode}}">
-                    {{/playmode}}
-                    {{#newcampaign}}
-                    <input type="hidden" name="confirmnewcampaign" value="1">
-                    {{/newcampaign}}
-                    <button type="submit" class="pp-lobby-play">{{playtext}}</button>
-                </form>
-                {{/campaignlimittext}}
-                {{/isguest}}
-
-                <form method="post" action="{{demourl}}">
-                    <input type="hidden" name="sesskey" value="{{sesskey}}">
-                    <input type="hidden" name="mode" value="demo">
-                    <button type="submit" class="pp-lobby-playdemo">{{playdemotext}}</button>
-                </form>
-                {{/noquestions}}
-
-                {{#minquestionstext}}
-                <p class="pp-lobby-note">{{minquestionstext}}</p>
-                {{/minquestionstext}}
-
-                {{#canmanagequestions}}
-                <a href="{{managequestionsurl}}" class="pp-lobby-managelink">{{managequestionslabel}}</a>
-                {{/canmanagequestions}}
             </div>
 
             {{^isguest}}
@@ -250,13 +263,13 @@
                         step="1"
                         value="1"
                     >
-                    <button type="button" class="btn btn-sm btn-outline-secondary pp-lobby-transfer-btn">
+                    <button type="button" class="pp-lobby-menu-btn pp-lobby-transfer-btn">
                         {{transferbuttonlabel}}
                     </button>
                 </div>
                 {{/hastransfer}}
 
-                <button type="button" class="pp-lobby-playdemo" data-action="close-panel">{{backlabel}}</button>
+                <button type="button" class="pp-lobby-menu-btn pp-lobby-back" data-action="close-panel">{{backlabel}}</button>
             </section>
             {{/campaignended}}
             {{/isguest}}
@@ -318,7 +331,7 @@
                     <label class="form-check-label" for="pp-lobby-sfx">{{sfxlabel}}</label>
                 </div>
 
-                <button type="button" class="pp-lobby-playdemo" data-action="close-panel">{{backlabel}}</button>
+                <button type="button" class="pp-lobby-menu-btn pp-lobby-back" data-action="close-panel">{{backlabel}}</button>
             </section>
 
             {{#showranking}}
@@ -358,7 +371,7 @@
                     </tbody>
                 </table>
                 {{/rankingisempty}}
-                <button type="button" class="pp-lobby-playdemo" data-action="close-panel">{{backlabel}}</button>
+                <button type="button" class="pp-lobby-menu-btn pp-lobby-back" data-action="close-panel">{{backlabel}}</button>
             </section>
             {{/showranking}}
         </div>

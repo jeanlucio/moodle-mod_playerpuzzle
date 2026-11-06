@@ -78,7 +78,9 @@ define(
     const FLOAT_LOSS = '#ff6b5c';
     const FLOAT_GAIN = '#7be06f';
     const FLOAT_RISE = 56;
-    const FLOAT_DURATION = 900;
+    const FLOAT_DURATION = 1500;
+    // The share of that time a number stays fully opaque before it fades out in a straight line.
+    const FLOAT_HOLD = 0.6;
     const FLOAT_DEPTH = 8;
 
     // The gold frame around the HP bar of the side whose turn it is, and how fast it pulses (ms).
@@ -1444,12 +1446,20 @@ define(
                 stroke: '#120d09',
                 strokeThickness: 5,
             }).setOrigin(0.5).setDepth(FLOAT_DEPTH);
+            // Rising and fading are separate tweens: one easing on both would spend most of the fade in the
+            // first moments and leave the number barely visible for half its time.
             me.tweens.add({
                 targets: text,
                 y: startY - FLOAT_RISE,
-                alpha: 0,
                 duration: FLOAT_DURATION,
                 ease: 'Cubic.easeOut',
+            });
+            me.tweens.add({
+                targets: text,
+                alpha: 0,
+                delay: FLOAT_DURATION * FLOAT_HOLD,
+                duration: FLOAT_DURATION * (1 - FLOAT_HOLD),
+                ease: 'Linear',
                 onComplete: () => text.destroy(),
             });
         }

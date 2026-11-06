@@ -82,6 +82,7 @@ function readOpponents() {
  * @param {number} params.accuracy The student's share of right answers.
  * @param {string} params.difficulty 'easy', 'normal' or 'hard'.
  * @param {string} [params.opponent] The opponent's key (only the final boss's matters).
+ * @param {number} [params.minquestions] The activity's minimum of answered questions, 0 (none) when absent.
  * @param {number} [params.maxlevels] The Campaign's level count, which the Normal opponent's growing attack is counted
  *  over; 1 when absent.
  * @param {number} [params.breathEvery] Every how many of its turns the opponent lands its breath, if not 10.
@@ -91,16 +92,19 @@ function readOpponents() {
  *  consumables already used this phase and the phase's rule config; returns the consumable to use, or null.
  * @param {{hp: number, attack: number, armor: number}} [params.student] The student's side as a phase
  *  freezes it; absent, the instance's own scaling with no attack or armor.
- * @return {{finished: boolean, won: boolean, turns: number, hpLeft: number, coins: number}} hpLeft
+ * @return {{finished: boolean, won: boolean, turns: number, hpLeft: number, coins: number, asked: number}} asked is how
+ *  many questions the student answered; hpLeft
  *  is the student's HP share at the start of their last turn, which is what they finish a won match
  *  with; coins is what the match nets them (their coins minus the opponent's, never below 0).
  */
 function playMatch({
-    seed, level, phase, modifiers, powers, accuracy, difficulty, opponent, student, breathEvery, careful, consume, maxlevels,
+    seed, level, phase, modifiers, powers, accuracy, difficulty, opponent, student, breathEvery, careful, consume,
+    maxlevels, minquestions,
 }) {
     const answers = Prng.create((seed * 7919) + 13);
     let lastState = null;
     let turns = 0;
+    let asked = 0;
     let rules = null;
     const policy = {
         move(grid) {
@@ -126,6 +130,9 @@ function playMatch({
             return consume ? consume(state, loggedUses, rules) : null;
         },
         question(side) {
+            if (side === 'player') {
+                asked++;
+            }
             const rate = side === 'player' ? accuracy : OPPONENT_ACCURACY[difficulty];
             return {outcome: 'answered', correct: answers() < rate};
         },
@@ -143,16 +150,16 @@ function playMatch({
         attempt.frozenplayerattack = student.attack;
         attempt.frozenplayerarmor = student.armor;
     }
-    const playerpuzzle = {basestudenthp: INSTANCE.basestudenthp, minquestions: 0, maxlevels: maxlevels || 1};
+    const playerpuzzle = {basestudenthp: INSTANCE.basestudenthp, minquestions: minquestions || 0, maxlevels: maxlevels || 1};
     rules = ReplayMirror.phaseSetup(attempt, playerpuzzle, modifiers, powers, breathEvery).config;
     const {result} = ReplayMirror.record({attempt, playerpuzzle, modifiers, powers, breathEvery, poolEmpty: false, policy});
     if (!result) {
-        return {finished: false, won: false, turns, hpLeft: 0, coins: 0};
+        return {finished: false, won: false, turns, hpLeft: 0, coins: 0, asked};
     }
     const {maxPlayerHp} = ReplayMirror.phaseSetup(attempt, playerpuzzle);
     const won = result.bossdefeated;
     const coins = Math.max(0, result.playergold - result.bossgold);
-    return {finished: true, won, turns, hpLeft: won ? lastState.currentPlayerHp / maxPlayerHp : 0, coins};
+    return {finished: true, won, turns, hpLeft: won ? lastState.currentPlayerHp / maxPlayerHp : 0, coins, asked};
 }
 
 /**

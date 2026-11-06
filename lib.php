@@ -249,7 +249,7 @@ function playerpuzzle_update_grades(stdClass $playerpuzzle, int $userid = 0): vo
     // contribute to a real grade — see security.php/game_page_service.php's own isdemo
     // exclusions for the same rule applied elsewhere.
     $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.campaign, a.status,
-                   a.questions_correct, a.questions_total, a.timefinished, a.timephasewon
+                   a.questions_correct, a.questions_total, a.timefinished, a.timephasewon, a.frozenmaxlevels
               FROM {playerpuzzle_attempts} a
              WHERE a.playerpuzzleid = :instanceid AND a.isdemo = 0";
     $params = ['instanceid' => $playerpuzzle->id];

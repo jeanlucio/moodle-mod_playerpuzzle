@@ -112,7 +112,7 @@ class ranking_service {
             $params,
             'id ASC',
             'id, userid, currentlevel, currentphase, campaign, status, questions_correct, questions_total, '
-                . 'timecreated, timefinished'
+                . 'frozenmaxlevels, timecreated, timefinished'
         );
 
         $byuser = [];

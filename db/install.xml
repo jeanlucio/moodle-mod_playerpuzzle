@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20261103" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20261106" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -78,6 +78,7 @@
         <FIELD NAME="frozenplayerattack" TYPE="number" LENGTH="6" NOTNULL="true" DEFAULT="1.000" SEQUENCE="false" DECIMALS="3" COMMENT="Student attack multiplier snapshotted at the start of this phase, same reasoning as frozenplayerhp"/>
         <FIELD NAME="frozenplayerarmor" TYPE="number" LENGTH="6" NOTNULL="true" DEFAULT="0.000" SEQUENCE="false" DECIMALS="3" COMMENT="Share of each hit the student's armor absorbs, snapshotted at the start of this phase, same reasoning as frozenplayerhp"/>
         <FIELD NAME="frozenhero" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Sprite of the hero the student fights this phase with (hero key and stage, e.g. archerf2), fixed when the phase starts; empty before heroes existed"/>
+        <FIELD NAME="frozenmaxlevels" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Instance maxlevels snapshotted at the start of this phase: the last attempt of a Campaign says how many phases the Campaign had, so a later teacher edit of the level count never re-scores a Campaign already played; 0 when unknown (an attempt from before it was recorded)"/>
         <FIELD NAME="questionresults" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of this phase's question outcomes as decided server-side by validate_answer ({side, correct, counted}), in order; the replay takes outcomes from here, never from the client's own event log. Reset alongside rngseed"/>
         <FIELD NAME="phaserestarts" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="How many times the current phase was restarted because its claimed victory could not be verified; capped, reset when the attempt advances to a new phase"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" DECIMALS="5" SEQUENCE="false" COMMENT="Final calculated grade"/>

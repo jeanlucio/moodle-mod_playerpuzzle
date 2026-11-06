@@ -126,7 +126,8 @@ class security {
      *  its currentlevel/currentphase must already name the phase about to start.
      * @param \stdClass $playerpuzzle The instance record — basebosshp/bossdamage/coingain
      *  are read from it and frozen for this phase, so a later teacher edit mid-match cannot
-     *  desync a replay of an already-played phase; gamemode/maxlevels/bossavatar decide the
+     *  desync a replay of an already-played phase; maxlevels is frozen too, so the last attempt of a
+     *  Campaign says how many phases it had (campaigns::total_phases()); gamemode/maxlevels/bossavatar decide the
      *  phase's opponent, and basestudenthp the student's HP, frozen for the same reason.
      * @return void
      */
@@ -139,6 +140,7 @@ class security {
         $attempt->frozenbasebosshp = (int) $playerpuzzle->basebosshp;
         $attempt->frozenbossdamage = (int) $playerpuzzle->bossdamage;
         $attempt->frozencoingain = (int) $playerpuzzle->coingain;
+        $attempt->frozenmaxlevels = max(1, (int) $playerpuzzle->maxlevels);
         $attempt->frozenopponent = opponents::for_phase(
             $playerpuzzle,
             (int) $attempt->currentlevel,

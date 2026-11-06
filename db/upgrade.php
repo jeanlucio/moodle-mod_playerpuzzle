@@ -858,5 +858,27 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110304, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026110602) {
+        // The level count each attempt's phase started with, so changing it later never re-scores a Campaign.
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('frozenmaxlevels', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'frozenhero');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // A Campaign is only won on the last phase of its last level, so an attempt won on a level's last phase
+        // says how many levels the Campaign had. Any other attempt stays at 0 (unknown), and is measured against
+        // the activity's current level count, as before. One statement for every row: the value is a column of
+        // the same row, which set_field_select() cannot express.
+        $DB->execute(
+            "UPDATE {playerpuzzle_attempts}
+                SET frozenmaxlevels = currentlevel
+              WHERE status = :won AND currentphase = :lastphase AND isdemo = 0 AND frozenmaxlevels = 0",
+            ['won' => 'won', 'lastphase' => 10]
+        );
+
+        upgrade_mod_savepoint(true, 2026110602, 'playerpuzzle');
+    }
+
     return true;
 }

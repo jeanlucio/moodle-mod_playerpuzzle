@@ -102,6 +102,30 @@ final class campaigns_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a Campaign is measured against the level count its last attempt started with, so changing the
+     * activity's level count afterwards leaves a Campaign that ended without a win as it was.
+     *
+     * @return void
+     */
+    public function test_total_phases_follow_the_level_count_the_last_attempt_started_with(): void {
+        $attempt = static fn(string $status, int $frozen): \stdClass => (object) [
+            'status' => $status, 'currentlevel' => 1, 'currentphase' => 8, 'frozenmaxlevels' => $frozen,
+        ];
+        $now = (object) ['maxlevels' => 3];
+
+        // Lost twice while the activity had one level, and the teacher raised it afterwards.
+        $this->assertSame(10, campaigns::total_phases($now, [$attempt('lost', 1), $attempt('lost', 1)]));
+        // The Campaign went on after the teacher raised it: its last attempt started with two levels.
+        $this->assertSame(20, campaigns::total_phases($now, [$attempt('lost', 1), $attempt('inprogress', 2)]));
+        // Attempts from before the level count was recorded are measured against the activity's own.
+        $this->assertSame(30, campaigns::total_phases($now, [$attempt('lost', 0)]));
+        // A recorded level count wins over what a won attempt would suggest.
+        $this->assertSame(10, campaigns::total_phases($now, [$attempt('lost', 1), (object) [
+            'status' => 'won', 'currentlevel' => 1, 'currentphase' => 10, 'frozenmaxlevels' => 1,
+        ]]));
+    }
+
+    /**
      * Where the next attempt starts.
      *
      * @param int $maxattempts Attempts allowed in each Campaign.

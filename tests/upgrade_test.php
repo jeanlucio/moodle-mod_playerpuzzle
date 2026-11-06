@@ -87,4 +87,50 @@ final class upgrade_test extends \advanced_testcase {
             array_map('intval', $DB->get_records_menu('playerpuzzle_attempts', null, 'id', 'id, campaign'))
         );
     }
+
+    /**
+     * Tests that the upgrade records the level count of a Campaign already won (it ended on a level's last phase,
+     * so it says how many levels it had) and leaves every other attempt unknown, to be measured against the
+     * activity's current level count as before.
+     *
+     * @return void
+     */
+    public function test_upgrade_records_the_levels_of_campaigns_already_won(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $instance = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')
+            ->create_instance(['course' => $course->id, 'maxlevels' => 3]);
+        $user = $this->getDataGenerator()->create_user();
+
+        $insert = function (string $status, int $level, int $phase, int $isdemo = 0) use ($DB, $instance, $user): int {
+            return $DB->insert_record('playerpuzzle_attempts', (object) [
+                'playerpuzzleid' => $instance->id,
+                'userid' => $user->id,
+                'token' => bin2hex(random_bytes(32)),
+                'status' => $status,
+                'currentlevel' => $level,
+                'currentphase' => $phase,
+                'isdemo' => $isdemo,
+                'frozenmaxlevels' => 0,
+                'timecreated' => 1000,
+            ]);
+        };
+        $expected = [
+            $insert('won', 2, 10) => 2,
+            $insert('won', 1, 1) => 0,
+            $insert('lost', 1, 10) => 0,
+            $insert('inprogress', 1, 7) => 0,
+            $insert('won', 1, 10, 1) => 0,
+        ];
+
+        set_config('version', 2026110601, 'mod_playerpuzzle');
+        xmldb_playerpuzzle_upgrade(2026110601);
+
+        $this->assertSame(
+            $expected,
+            array_map('intval', $DB->get_records_menu('playerpuzzle_attempts', null, 'id', 'id, frozenmaxlevels'))
+        );
+    }
 }

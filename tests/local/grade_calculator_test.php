@@ -192,6 +192,19 @@ final class grade_calculator_test extends \basic_testcase {
     }
 
     /**
+     * Tests that a Campaign lost while the activity had one level keeps the score it earned then, after the teacher
+     * raises the level count: eight phases of the ten it had, not eight of twenty.
+     *
+     * @return void
+     */
+    public function test_a_lost_campaign_keeps_its_score_when_levels_are_added(): void {
+        $instance = $this->make_instance(['maxlevels' => 2, 'grade' => 100]);
+        $lost = $this->make_attempt(['currentlevel' => 1, 'currentphase' => 9, 'status' => 'lost', 'frozenmaxlevels' => 1]);
+
+        $this->assertEqualsWithDelta(80.0, grade_calculator::campaign_score($instance, [$lost], 100.0), 0.001);
+    }
+
+    /**
      * Tests that a "Sem Nota" instance (grade = 0) still computes without error, at 0 —
      * grade is a multiplier here, never a divisor, so there is no divide-by-zero risk.
      *

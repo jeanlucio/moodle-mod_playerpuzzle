@@ -55,8 +55,8 @@ final class campaign_history {
             'playerpuzzle_attempts',
             ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'isdemo' => 0],
             'id ASC',
-            'id, campaign, status, currentlevel, currentphase, questions_correct, questions_total, timecreated, '
-                . 'timefinished'
+            'id, campaign, status, currentlevel, currentphase, frozenmaxlevels, questions_correct, questions_total, '
+                . 'timecreated, timefinished'
         );
         $heroes = user_hero::for_student((int) $instance->id, $userid);
 

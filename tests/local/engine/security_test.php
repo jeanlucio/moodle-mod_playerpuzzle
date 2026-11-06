@@ -99,6 +99,7 @@ final class security_test extends \advanced_testcase {
             'basebosshp'  => 321,
             'bossdamage'  => 12,
             'coingain'    => 34,
+            'maxlevels'   => 3,
         ]);
 
         $token = security::generate_attempt_token((int) $instance->id, 2);
@@ -112,6 +113,8 @@ final class security_test extends \advanced_testcase {
         $this->assertSame(321, (int) $attempt->frozenbasebosshp);
         $this->assertSame(12, (int) $attempt->frozenbossdamage);
         $this->assertSame(34, (int) $attempt->frozencoingain);
+        // The Campaign's length, which a later edit of the level count must not change for a Campaign played.
+        $this->assertSame(3, (int) $attempt->frozenmaxlevels);
     }
 
     /**

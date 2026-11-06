@@ -75,7 +75,7 @@ class provider implements
      * this attempt), always 0 outside of a live in-progress fight and carrying no narrative
      * value to a personal-data export — the same category as isdemo, not personal data
      * about the user. rngseed/moveseq/engineversion/frozenbasebosshp/frozenbossdamage/
-     * frozencoingain/frozenopponent/frozenplayerhp/frozenplayerattack/frozenplayerarmor/frozenhero are
+     * frozencoingain/frozenmaxlevels/frozenopponent/frozenplayerhp/frozenplayerattack/frozenplayerarmor/frozenhero are
      * anti-cheat replay plumbing (a PRNG seed, a sequence counter, the plugin version and
      * instance config frozen at the start of the phase, the opponent that config gave the
      * phase, and the student's own max HP, attack and armor for it) — technical

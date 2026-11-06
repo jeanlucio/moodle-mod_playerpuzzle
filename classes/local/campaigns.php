@@ -159,14 +159,23 @@ class campaigns {
     }
 
     /**
-     * The phases a Campaign is measured against: the ones it had when it was completed (see
-     * completed_phases()) or, for one still going or never completed, the activity's level count.
+     * The phases a Campaign is measured against, so that changing the activity's level count never re-scores a
+     * Campaign already played: the level count its last attempt started a phase with (frozenmaxlevels), or, for
+     * attempts from before that was recorded, what completed_phases() can tell, or else the activity's level count.
      *
      * @param stdClass $instance Activity instance (maxlevels).
-     * @param stdClass[] $attempts The attempts of one Campaign.
+     * @param stdClass[] $attempts The attempts of one Campaign, oldest first (frozenmaxlevels when read).
      * @return int
      */
     public static function total_phases(stdClass $instance, array $attempts): int {
+        $levels = 0;
+        foreach ($attempts as $attempt) {
+            $levels = (int) ($attempt->frozenmaxlevels ?? 0) ?: $levels;
+        }
+        if ($levels > 0) {
+            return $levels * self::PHASES_PER_LEVEL;
+        }
+
         return self::completed_phases($attempts) ?? max(1, (int) $instance->maxlevels) * self::PHASES_PER_LEVEL;
     }
 

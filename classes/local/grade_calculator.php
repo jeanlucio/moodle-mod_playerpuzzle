@@ -213,8 +213,8 @@ class grade_calculator {
     /**
      * One Campaign's score: the furthest phase it reached, across all of its attempts (a
      * "Tentar Novamente" after a loss opens a new attempt row rather than reusing the old
-     * one), against the phases the Campaign had (campaigns::total_phases(): the ones it was completed with, so
-     * changing the activity's level count later leaves it alone, or else the configured ones). Never a count of
+     * one), against the phases the Campaign had (campaigns::total_phases(): the level count its last attempt started
+     * with, so changing the activity's level count later leaves a Campaign already played alone). Never a count of
      * `status = 'won'` rows — a single continuous attempt can cover dozens of phases of progress at once.
      *
      * Scaled against $base rather than always $instance->grade, so the ranking can reuse the

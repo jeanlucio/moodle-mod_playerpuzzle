@@ -518,6 +518,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     me.sfxHit.play();
                 }
                 me.board.grid[piece.row][piece.col] = null;
+                me.ui.burstSparks(piece.x, piece.y, piece.type, piece.displayWidth);
                 me.tweens.add({
                     targets: piece, scaleX: 0, scaleY: 0, duration: 200,
                     onComplete: (tween, targets) => {

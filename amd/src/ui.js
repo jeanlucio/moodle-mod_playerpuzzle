@@ -83,6 +83,18 @@ define(
     const FLOAT_HOLD = 0.6;
     const FLOAT_DEPTH = 8;
 
+    // The pale trail an HP bar keeps behind a loss before it catches up: the wait and the catch-up, in ms.
+    const HP_TRAIL = 0xe9d9a6;
+    const TRAIL_DELAY = 450;
+    const TRAIL_DURATION = 450;
+
+    // The sparks a destroyed piece throws, by piece type (star, grimoire, orb, coin, shield, potion, sword): how
+    // many, how long they last (ms) and their depth, between the persistent layers and the floating numbers.
+    const SPARK_COLORS = [0xf2c14e, 0xb35fe0, 0x4aa3ff, 0xffd54a, 0xa9bccf, 0xe05252, 0xe3eaf2];
+    const SPARK_COUNT = 6;
+    const SPARK_DURATION = 450;
+    const SPARK_DEPTH = 7;
+
     // The gold frame around the HP bar of the side whose turn it is, and how fast it pulses (ms).
     const TURN_GOLD = 0xf2c14e;
     const TURN_PULSE = 650;
@@ -266,6 +278,9 @@ define(
                 .lineStyle(2, BRONZE, 1)
                 .strokeRoundedRect(L.bossUiX, L.bossHpY, L.hpBarW, L.hpBarH, this.hpBarCorners())
                 .setDepth(Depth.MIDDLE_SHAPES);
+            // Each bar's trail is drawn under its fill, so it only shows where the fill has already shrunk.
+            this.hpGhost = {boss: me.add.graphics().setDepth(Depth.MIDDLE_SHAPES)};
+            this.hpTrail = {};
             this.bossHpBar = me.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
             this.bossHpText = me.add.text(L.bossUiX + (L.hpBarW / 2), L.bossTxtY, '', {
                 fontSize: '15px',
@@ -280,6 +295,7 @@ define(
                 .lineStyle(2, BRONZE, 1)
                 .strokeRoundedRect(L.playerUiX, L.playerHpY, L.hpBarW, L.hpBarH, this.hpBarCorners())
                 .setDepth(Depth.MIDDLE_SHAPES);
+            this.hpGhost.player = me.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
             this.playerHpBar = me.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
             this.playerHpText = me.add.text(L.playerUiX + (L.hpBarW / 2), L.playerTxtY, '', {
                 fontSize: '15px',
@@ -1423,6 +1439,72 @@ define(
         }
 
         /**
+         * Keeps a pale trail behind an HP bar that has just lost HP: it stays where the bar was for a moment
+         * and then shrinks to meet it, so the size of the loss reads at a glance. A gain, or the first drawing,
+         * leaves no trail. Only the look; the bar itself is drawn by drawHpFill() as always.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {number} pct The fill the bar now shows, 0-1.
+         * @param {number} x Backdrop left edge X.
+         * @param {number} y Backdrop top edge Y.
+         */
+        trailHp(side, pct, x, y) {
+            const ghost = this.hpGhost[side];
+            const state = this.hpTrail[side] || (this.hpTrail[side] = {pct, tween: null});
+            if (state.tween) {
+                state.tween.stop();
+                state.tween = null;
+            }
+            if (pct >= state.pct) {
+                state.pct = pct;
+                ghost.clear();
+                return;
+            }
+            this.drawHpFill(ghost, x, y, state.pct, HP_TRAIL);
+            state.tween = this.scene.tweens.add({
+                targets: state,
+                pct,
+                delay: TRAIL_DELAY,
+                duration: TRAIL_DURATION,
+                ease: 'Quad.easeIn',
+                onUpdate: () => this.drawHpFill(ghost, x, y, state.pct, HP_TRAIL),
+                onComplete: () => {
+                    state.tween = null;
+                    ghost.clear();
+                },
+            });
+        }
+
+        /**
+         * Throws a few sparks off a piece that is being destroyed, in the colour of its type. Only the
+         * look: they live under half a second and nothing waits for them.
+         *
+         * @param {number} x Where the piece was.
+         * @param {number} y Where the piece was.
+         * @param {number} type The piece's type, 0-6.
+         * @param {number} size The piece's size on screen, which the sparks scale with.
+         */
+        burstSparks(x, y, type, size) {
+            const me = this.scene;
+            const color = SPARK_COLORS[type] ?? 0xffffff;
+            for (let i = 0; i < SPARK_COUNT; i++) {
+                const angle = ((i + Math.random()) / SPARK_COUNT) * 2 * Math.PI;
+                const distance = size * (0.5 + (Math.random() * 0.5));
+                const spark = me.add.circle(x, y, Math.max(3, size * 0.1), color).setDepth(SPARK_DEPTH);
+                me.tweens.add({
+                    targets: spark,
+                    x: x + (Math.cos(angle) * distance),
+                    y: y + (Math.sin(angle) * distance),
+                    alpha: 0,
+                    scale: 0.4,
+                    duration: SPARK_DURATION,
+                    ease: 'Quad.easeOut',
+                    onComplete: () => spark.destroy(),
+                });
+            }
+        }
+
+        /**
          * Lets a number rise off a character and fade, for a change in its HP: red for a loss, green
          * for a gain. Only the look, nothing in the fight waits for it. Numbers that arrive together
          * start at slightly different heights so they do not sit on top of each other.
@@ -1517,6 +1599,7 @@ define(
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
             this.trackHp('boss', currentHp);
+            this.trailHp('boss', pctHp, L.bossUiX, L.bossHpY);
             this.drawHpFill(this.bossHpBar, L.bossUiX, L.bossHpY, pctHp, HP_FILL.boss);
             // The opponent's own name leads the bar; a long one (the final boss's) shrinks to fit the bar
             // instead of running past its rim.
@@ -1548,6 +1631,7 @@ define(
             const L = this.L;
             const pctHp = Math.max(0, currentHp / maxHp);
             this.trackHp('player', currentHp);
+            this.trailHp('player', pctHp, L.playerUiX, L.playerHpY);
             this.drawHpFill(this.playerHpBar, L.playerUiX, L.playerHpY, pctHp, HP_FILL.player);
             this.playerHpText.setText(
                 `${this.strings.hpyou} ${Math.round(currentHp)} / ${maxHp}`

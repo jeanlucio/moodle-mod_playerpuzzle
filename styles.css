@@ -237,13 +237,15 @@ body.path-mod-playerpuzzle .pp-lobby {
     border-image-width: 49px 65px 58px;
     border-image-outset: 0 21px;
     border-image-repeat: round;
-    /* The stone texture fills the padding box. Under it, a plain dark panel reaches two pixels beneath the frame's
-       inner edge (the border widths less 2px, each side), so a rounding gap between the frame and the texture, on a
-       screen with a fractional scale, shows dark and not the page behind. The frame's own corners stay clear. */
+    /* The stone texture fills the padding box. Under it, a plain dark panel, measured from the border box (hence the
+       second origin), reaches a few pixels beneath the frame's inner edge, so a gap of one device pixel between the
+       frame and the texture, on a screen with a fractional scale, shows dark and not the page behind. The frame's
+       corners and outer edge stay clear. */
     background-image: var(--pp-texture), linear-gradient(var(--pp-umber-deep, #2b1f16), var(--pp-umber-deep, #2b1f16));
     background-position: center, 42px 47px;
-    background-size: cover, calc(100% - 84px) calc(100% - 103px);
+    background-size: cover, calc(100% - 84px) calc(100% - 99px);
     background-repeat: no-repeat;
+    background-origin: padding-box, border-box;
     background-clip: padding-box, border-box;
     padding: 0.75rem 0.5rem 1rem;
     filter: drop-shadow(0 1.2rem 1.5rem rgba(0, 0, 0, 0.45));
@@ -256,7 +258,7 @@ body.path-mod-playerpuzzle .pp-lobby {
         border-image-width: 31px 41px 37px;
         border-image-outset: 0 13px;
         background-position: center, 26px 29px;
-        background-size: cover, calc(100% - 52px) calc(100% - 64px);
+        background-size: cover, calc(100% - 52px) calc(100% - 60px);
         width: calc(100% - 2rem);
         margin-block: 2rem;
         padding-inline: 0;

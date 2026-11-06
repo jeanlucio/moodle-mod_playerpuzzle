@@ -226,24 +226,30 @@ body.path-mod-playerpuzzle .pp-phase-modal::backdrop {
  */
 body.path-mod-playerpuzzle .pp-lobby {
     position: relative;
+    width: calc(100% - 3rem);
     max-width: 760px;
     margin-inline: auto;
     margin-block: 3rem;
     border-style: solid;
-    border-width: 49px 65px 63px;
+    border-width: 49px 44px 58px;
     border-image-source: var(--pp-frame);
-    border-image-slice: 130 170 165 170;
+    border-image-slice: 130 170 153 170;
+    border-image-width: 49px 65px 58px;
+    border-image-outset: 0 21px;
     border-image-repeat: round;
     background: #2b1f16 var(--pp-texture) center / cover;
     background-clip: padding-box;
     padding: 0.75rem 0.5rem 1rem;
-    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.5);
+    filter: drop-shadow(0 1.2rem 1.5rem rgba(0, 0, 0, 0.45));
     color: #f1e6c8;
 }
 
 @media (max-width: 640px) {
     body.path-mod-playerpuzzle .pp-lobby {
-        border-width: 31px 41px 40px;
+        border-width: 31px 28px 37px;
+        border-image-width: 31px 41px 37px;
+        border-image-outset: 0 13px;
+        width: calc(100% - 2rem);
         margin-block: 2rem;
         padding-inline: 0;
     }
@@ -1209,8 +1215,8 @@ body.path-mod-playerpuzzle .pp-shop-tiles .pp-lobby-shop-limit {
 
 body.path-mod-playerpuzzle .pp-shop-tiles .pp-lobby-buy {
     width: 100%;
-    padding: 0.25rem 0.3rem;
-    font-size: 0.8rem;
+    padding: 0.25rem 0.15rem;
+    font-size: 0.75rem;
 }
 
 body.path-mod-playerpuzzle .pp-shop-tile-icon {

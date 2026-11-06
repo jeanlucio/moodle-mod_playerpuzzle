@@ -80,7 +80,7 @@ final class heroes {
     public const ATTACK_FINAL = 1.9;
 
     /** @var float What the armor reaches when every buy is made. */
-    public const ARMOR_FINAL = 0.25;
+    public const ARMOR_FINAL = 0.55;
 
     /** @var float The most of a hit any armor can absorb, as in the combat rules. */
     public const ARMOR_CAP = 0.6;

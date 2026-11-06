@@ -41,7 +41,7 @@ const {INSTANCE, readOpponents, fightWith, playMatch} = require('./sim_common.js
 const HP_FINAL_BASE = 2.4;
 const HP_FINAL_PER_LEVEL = 0.62;
 const ATTACK_FINAL = 1.9;
-const ARMOR_FINAL = 0.25;
+const ARMOR_FINAL = 0.55;
 const DIFFICULTIES = ['easy', 'normal', 'hard'];
 
 /**

@@ -113,7 +113,7 @@ final class heroes_test extends \basic_testcase {
         $this->assertEqualsWithDelta((3.64 - 1) / 12, heroes::step(heroes::HP, 3), 1e-9);
         $this->assertEqualsWithDelta((7.98 - 1) / 40, heroes::step(heroes::HP, 10), 1e-9);
         $this->assertEqualsWithDelta(0.9 / 40, heroes::step(heroes::ATTACK, 10), 1e-9);
-        $this->assertEqualsWithDelta(0.25 / 4, heroes::step(heroes::ARMOR, 1), 1e-9);
+        $this->assertEqualsWithDelta(0.55 / 4, heroes::step(heroes::ARMOR, 1), 1e-9);
     }
 
     /**
@@ -127,10 +127,10 @@ final class heroes_test extends \basic_testcase {
         $mage = heroes::attributes('magef', [], 10, 100);
         $archer = heroes::attributes('archerm', [], 10, 100);
 
-        // Attack range 0.9, HP range 6.98 (x100 base), armor range 0.25: a twentieth of each.
+        // Attack range 0.9, HP range 6.98 (x100 base), armor range 0.55: a twentieth of each.
         $this->assertSame(['hp' => 100, 'attack' => 1.045, 'armor' => 0.0], $warrior);
         $this->assertSame(['hp' => 135, 'attack' => 1.0, 'armor' => 0.0], $mage);
-        $this->assertSame(['hp' => 100, 'attack' => 1.0, 'armor' => 0.013], $archer);
+        $this->assertSame(['hp' => 100, 'attack' => 1.0, 'armor' => 0.028], $archer);
     }
 
     /**
@@ -145,7 +145,7 @@ final class heroes_test extends \basic_testcase {
 
         // Four buys of each reach the final values; the specialist's head start (a twentieth of the four buys
         // of HP, so 0.2 of a buy) goes beyond it: 100 x (1 + 4.2 x 0.35).
-        $this->assertSame(['hp' => 247, 'attack' => 1.9, 'armor' => 0.25], $side);
+        $this->assertSame(['hp' => 247, 'attack' => 1.9, 'armor' => 0.55], $side);
         $this->assertEqualsWithDelta(1.945, heroes::attributes('warriorm', $full, 1, 100)['attack'], 1e-9);
         $this->assertLessThanOrEqual(
             heroes::ARMOR_CAP,

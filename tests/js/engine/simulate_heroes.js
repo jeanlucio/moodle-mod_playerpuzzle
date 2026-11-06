@@ -29,7 +29,7 @@
  *
  * Usage: node tests/js/engine/simulate_heroes.js [--levels 1,3,10] [--runs 40] [--accuracy 0.75]
  *   [--difficulty normal] [--hero hp|attack|armor] [--price 12] [--rate 0.4] [--bhp 0.05] [--hp 2.4]
- *   [--atk 1.9] [--arm 0.25] [--hpbasis base|phase] [--tries 30] [--policy balanced|specialty]
+ *   [--atk 1.9] [--arm 0.55] [--hpbasis base|phase] [--tries 30] [--policy balanced|specialty]
  *   [--student careful|naive] [--cons 0.3] [--byphase 1]
  *
  * With --power, no Campaign is played: for each level count it finds the HP and attack that win as
@@ -90,7 +90,7 @@ const options = {
     bonus: {hp: parseFloat(raw.bhp || '0.05'), attack: parseFloat(raw.batk || '0.05'), armor: parseFloat(raw.barm || '0.05')},
     hp: raw.hp === undefined ? null : parseFloat(raw.hp),
     atk: parseFloat(raw.atk || '1.9'),
-    arm: parseFloat(raw.arm || '0.25'),
+    arm: parseFloat(raw.arm || '0.55'),
     hpbasis: raw.hpbasis || 'base',
     tries: parseInt(raw.tries || '30', 10),
     policy: raw.policy || 'balanced',

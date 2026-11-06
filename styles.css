@@ -788,6 +788,96 @@ body.path-mod-playerpuzzle .pp-lobby-ranking-empty {
 }
 
 /**
+ * The Campaign history panel: one row for each Campaign, the latest first.
+ */
+body.path-mod-playerpuzzle .pp-history-list {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0 0 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+body.path-mod-playerpuzzle .pp-history-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.85rem;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(205, 179, 122, 0.3);
+    border-radius: 0.75rem;
+}
+
+body.path-mod-playerpuzzle .pp-history-item.pp-history-current {
+    border-color: #ffd873;
+    box-shadow: 0 0 0 1px #ffd873;
+}
+
+body.path-mod-playerpuzzle .pp-history-hero {
+    width: 3.5rem;
+    height: 3.5rem;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+}
+
+body.path-mod-playerpuzzle .pp-history-body p,
+body.path-mod-playerpuzzle .pp-history-points {
+    margin: 0;
+}
+
+body.path-mod-playerpuzzle .pp-history-name strong {
+    color: #ffd873;
+    font-size: 1.05rem;
+}
+
+body.path-mod-playerpuzzle .pp-history-status {
+    display: inline-block;
+    margin-inline-start: 0.4rem;
+    padding: 0.05rem 0.55rem;
+    border: 1px solid rgba(205, 179, 122, 0.5);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #f3e6c4;
+}
+
+body.path-mod-playerpuzzle .pp-history-won .pp-history-status {
+    background: #e0a83e;
+    border-color: #8a611c;
+    color: #2a1c10;
+}
+
+body.path-mod-playerpuzzle .pp-history-meta {
+    font-size: 0.85rem;
+    color: #f1e6c8;
+}
+
+body.path-mod-playerpuzzle .pp-history-date {
+    font-size: 0.78rem;
+    color: #cdb37a;
+}
+
+body.path-mod-playerpuzzle .pp-history-points {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #ffd873;
+    text-align: end;
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    body.path-mod-playerpuzzle .pp-history-item {
+        grid-template-columns: auto 1fr;
+    }
+
+    body.path-mod-playerpuzzle .pp-history-points {
+        grid-column: 2;
+        text-align: start;
+    }
+}
+
+/**
  * The teacher's "Manage questions" link, which only the notice about a bank with no questions carries.
  */
 body.path-mod-playerpuzzle .pp-lobby-managelink {

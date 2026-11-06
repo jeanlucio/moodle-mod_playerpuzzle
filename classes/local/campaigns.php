@@ -110,12 +110,21 @@ class campaigns {
     public static function phases_won(int $playerpuzzleid, int $userid, int $campaign): int {
         global $DB;
 
-        $attempts = $DB->get_records(
+        return self::phases_won_of($DB->get_records(
             'playerpuzzle_attempts',
             ['playerpuzzleid' => $playerpuzzleid, 'userid' => $userid, 'campaign' => $campaign, 'isdemo' => 0],
             '',
             'id, status, currentlevel, currentphase'
-        );
+        ));
+    }
+
+    /**
+     * How many phases the given attempts of one Campaign have won, for a caller that already has them.
+     *
+     * @param stdClass[] $attempts The attempts of one Campaign (status, currentlevel, currentphase).
+     * @return int Phases won, 0 or more.
+     */
+    public static function phases_won_of(array $attempts): int {
         $won = 0;
         foreach ($attempts as $attempt) {
             $ordinal = (((int) $attempt->currentlevel - 1) * 10) + (int) $attempt->currentphase;

@@ -126,6 +126,14 @@ class lobby_page_service {
         }
         $data += self::build_shop_context((int) $course->id, $instance, $userid);
         $data += hero_shop::context($instance, $userid);
+        // A visitor has no Campaigns, and a Single Match has none to list.
+        if (!is_guest($context, $userid) && $instance->gamemode === constants::GAMEMODE_CAMPAIGN) {
+            $data += campaign_history::context($instance, $userid);
+            $data['canviewhistory'] = true;
+            $data['historytitle'] = get_string('history_title', 'mod_playerpuzzle');
+            $data['historyempty'] = get_string('history_empty', 'mod_playerpuzzle');
+            $data['historyopenlabel'] = get_string('history_open', 'mod_playerpuzzle');
+        }
         // Merged rather than added: a Campaign that has ended renames the Play button.
         $data = array_merge($data, self::build_progress_context($instance, $attempt, $userid));
         // Merged too: the student's hero replaces the default picture.

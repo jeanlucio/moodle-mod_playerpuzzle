@@ -68,6 +68,26 @@
         "musiclabel": "Music",
         "sfxenabled": true,
         "sfxlabel": "Sound effects",
+        "canviewhistory": true,
+        "historytitle": "Campaign history",
+        "historyempty": "Your Campaigns will appear here once you start one.",
+        "historyopenlabel": "See your Campaign history",
+        "historyhasrows": true,
+        "historyrows": [
+            {
+                "title": "Campaign 2",
+                "statustext": "In progress",
+                "statusclass": "pp-history-current",
+                "pointstext": "30,0 points",
+                "phasestext": "3 of 10 phases",
+                "attemptstext": "1 of 5 attempts",
+                "datestext": "05/11/26",
+                "herohas": true,
+                "heroname": "Female mage",
+                "heroimageurl": "https://example.com/moodle/mod/playerpuzzle/pix/heroes/magef1.webp",
+                "herostagetext": "Stage 1 of 4"
+            }
+        ],
         "showranking": true,
         "rankingbuttontext": "Ranking",
         "rankingtitle": "Class ranking",
@@ -113,10 +133,46 @@
 
                 <div class="pp-lobby-status">
                     {{#campaignnametext}}
+                    {{#canviewhistory}}
+                    <button
+                        type="button"
+                        class="pp-lobby-chip pp-lobby-chip-button"
+                        data-action="open-panel"
+                        data-panel="pp-lobby-history"
+                        aria-controls="pp-lobby-history"
+                        aria-expanded="false"
+                        title="{{historyopenlabel}}"
+                    >
+                        <i class="fa fa-flag" aria-hidden="true"></i>
+                        <span>{{campaignnametext}}</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </button>
+                    {{/canviewhistory}}
+                    {{^canviewhistory}}
                     <span class="pp-lobby-chip">
                         <i class="fa fa-flag" aria-hidden="true"></i>
                         <span>{{campaignnametext}}</span>
                     </span>
+                    {{/canviewhistory}}
+                    {{/campaignnametext}}
+                    {{^campaignnametext}}
+                    {{#canviewhistory}}
+                    {{#historyhasrows}}
+                    <button
+                        type="button"
+                        class="pp-lobby-chip pp-lobby-chip-button"
+                        data-action="open-panel"
+                        data-panel="pp-lobby-history"
+                        aria-controls="pp-lobby-history"
+                        aria-expanded="false"
+                        title="{{historyopenlabel}}"
+                    >
+                        <i class="fa fa-flag" aria-hidden="true"></i>
+                        <span>{{historytitle}}</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </button>
+                    {{/historyhasrows}}
+                    {{/canviewhistory}}
                     {{/campaignnametext}}
                     {{#difficultychoicesjson}}
                     <button
@@ -328,6 +384,39 @@
 
                 <button type="button" class="pp-lobby-menu-btn pp-lobby-back" data-action="close-panel">{{backlabel}}</button>
             </section>
+
+            {{#canviewhistory}}
+            <section id="pp-lobby-history" class="pp-lobby-view" aria-labelledby="pp-lobby-history-title" data-wide="true" hidden>
+                <h3 id="pp-lobby-history-title" class="pp-lobby-view-title" tabindex="-1">{{historytitle}}</h3>
+                {{^historyhasrows}}
+                <p class="pp-lobby-note">{{historyempty}}</p>
+                {{/historyhasrows}}
+                {{#historyhasrows}}
+                <ol class="pp-history-list">
+                    {{#historyrows}}
+                    <li class="pp-history-item {{statusclass}}">
+                        {{#herohas}}
+                        <img class="pp-history-hero" src="{{heroimageurl}}" alt="" width="64" height="64">
+                        {{/herohas}}
+                        <div class="pp-history-body">
+                            <p class="pp-history-name">
+                                <strong>{{title}}</strong>
+                                <span class="pp-history-status">{{statustext}}</span>
+                            </p>
+                            {{#herohas}}
+                            <p class="pp-history-meta">{{heroname}} · {{herostagetext}}</p>
+                            {{/herohas}}
+                            <p class="pp-history-meta">{{phasestext}} · {{attemptstext}}</p>
+                            <p class="pp-history-date">{{datestext}}</p>
+                        </div>
+                        <p class="pp-history-points">{{pointstext}}</p>
+                    </li>
+                    {{/historyrows}}
+                </ol>
+                {{/historyhasrows}}
+                <button type="button" class="pp-lobby-menu-btn pp-lobby-back" data-action="close-panel">{{backlabel}}</button>
+            </section>
+            {{/canviewhistory}}
 
             {{#showranking}}
             <section id="pp-lobby-ranking" class="pp-lobby-view" aria-labelledby="pp-lobby-ranking-title" hidden>

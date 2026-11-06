@@ -998,6 +998,111 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a Campaign student opens the history from the Campaign chip, and that the panel lists the Campaigns.
+     *
+     * @return void
+     */
+    public function test_the_campaign_chip_opens_the_history_panel(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        $context = \context_module::instance($cm->id);
+        \mod_playerpuzzle\local\engine\security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal');
+
+        $html = $this->render_lobby(lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            $context
+        ));
+
+        // The first Campaign has no name, so the button that opens the history carries the history's own.
+        $this->assertMatchesRegularExpression(
+            '/<button[^>]*data-panel="pp-lobby-history"[^>]*>\s*<i class="fa fa-flag"[^>]*><\/i>\s*'
+                . '<span>' . preg_quote(get_string('history_title', 'mod_playerpuzzle'), '/') . '<\/span>/s',
+            $html
+        );
+        $this->assertStringContainsString('id="pp-lobby-history"', $html);
+        $this->assertStringContainsString('class="pp-history-item pp-history-current"', $html);
+
+        // From the second Campaign on, the button is the Campaign's name.
+        $this->finish_campaign_one_and_start_two($instance);
+        $html = $this->render_lobby(lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            $context
+        ));
+        $this->assertMatchesRegularExpression(
+            '/<button[^>]*data-panel="pp-lobby-history"[^>]*>\s*<i class="fa fa-flag"[^>]*><\/i>\s*'
+                . '<span>' . preg_quote(get_string('lobby_campaignname', 'mod_playerpuzzle', 2), '/') . '<\/span>/s',
+            $html
+        );
+    }
+
+    /**
+     * Ends the student's first Campaign with a win and puts an attempt of the second under way.
+     *
+     * @param \stdClass $instance Activity instance.
+     * @return void
+     */
+    private function finish_campaign_one_and_start_two(\stdClass $instance): void {
+        global $DB;
+
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'status',
+            'won',
+            ['playerpuzzleid' => $instance->id, 'userid' => $this->student->id]
+        );
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'currentlevel',
+            (int) $instance->maxlevels,
+            ['playerpuzzleid' => $instance->id, 'userid' => $this->student->id]
+        );
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'currentphase',
+            10,
+            ['playerpuzzleid' => $instance->id, 'userid' => $this->student->id]
+        );
+        $attempt = $DB->get_record('playerpuzzle_attempts', ['playerpuzzleid' => $instance->id, 'userid' => $this->student->id]);
+        unset($attempt->id);
+        $attempt->token = bin2hex(random_bytes(32));
+        $attempt->status = 'inprogress';
+        $attempt->campaign = 2;
+        $attempt->currentlevel = 1;
+        $attempt->currentphase = 3;
+        $DB->insert_record('playerpuzzle_attempts', $attempt);
+    }
+
+    /**
+     * Tests that a Single Match and a visitor get no history: there is no Campaign to list.
+     *
+     * @return void
+     */
+    public function test_a_single_match_and_a_visitor_have_no_history(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'minquestions' => 0]);
+        $context = \context_module::instance($cm->id);
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id, $context);
+        $this->assertArrayNotHasKey('canviewhistory', $data);
+        $this->assertStringNotContainsString('pp-lobby-history', $this->render_lobby($data));
+
+        [$campaigncm, $campaign] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        $guest = guest_user();
+        $data = lobby_page_service::build_page_data(
+            $campaigncm,
+            $this->course,
+            $campaign,
+            (int) $guest->id,
+            \context_module::instance($campaigncm->id)
+        );
+        $this->assertArrayNotHasKey('canviewhistory', $data);
+    }
+
+    /**
      * Tests that with an attempt in progress the difficulty shows as a locked label, not a button.
      *
      * @return void

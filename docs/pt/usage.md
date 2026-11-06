@@ -22,7 +22,8 @@
 1. Abra a atividade para chegar ao **Lobby**: seu progresso (Campanha), a dificuldade e o aviso de
    mínimo de questões. A dificuldade é um botão: aperte para passar por Fácil, Normal e Difícil (uma
    linha embaixo diz o que cada uma muda). Com uma fase em andamento, ela fica travada até a próxima
-   tela de fase concluída.
+   tela de fase concluída. Numa Campanha, o botão da Campanha abre seu **Histórico de Campanhas**:
+   uma linha para cada Campanha, com o herói, as fases vencidas, as tentativas usadas e os pontos.
 2. Use **Jogar Demo** para uma luta de prática guiada que nunca conta para nada.
 3. Abra a **Loja**, que mostra seu saldo de PuzzleCoin, para comprar consumíveis antes da partida e —
    quando o professor ligou o PlayerHUD — para transferir moedas para cá. **Configurações** guarda música, efeitos

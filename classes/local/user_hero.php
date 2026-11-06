@@ -52,6 +52,29 @@ class user_hero {
     }
 
     /**
+     * The heroes of every Campaign a student has played on an activity, in one query.
+     *
+     * @param int $playerpuzzleid Activity instance ID.
+     * @param int $userid User ID.
+     * @return stdClass[] The rows (hero, stage, ...) keyed by Campaign number.
+     */
+    public static function for_student(int $playerpuzzleid, int $userid): array {
+        global $DB;
+
+        $rows = $DB->get_records(
+            'playerpuzzle_heroes',
+            ['playerpuzzleid' => $playerpuzzleid, 'userid' => $userid],
+            'campaign ASC'
+        );
+        $bycampaign = [];
+        foreach ($rows as $row) {
+            $bycampaign[(int) $row->campaign] = $row;
+        }
+
+        return $bycampaign;
+    }
+
+    /**
      * The hero of the student's most recent Campaign that has one, for showing and pre-selecting it when the
      * next Campaign is still to be started.
      *

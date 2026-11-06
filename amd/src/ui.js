@@ -1445,7 +1445,7 @@ define(
                     const vol = me.sfxOn ? 1 : 0;
                     me.sfxSwap.setVolume(0.6 * vol);
                     me.sfxMatch.setVolume(0.5 * vol);
-                    me.sfxHit.setVolume(0.8 * vol);
+                    me.sfxHit.setVolume(0.65 * vol);
                     this.saveSoundPreference('sfx', me.sfxOn);
                 });
             });

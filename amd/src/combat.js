@@ -526,10 +526,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             });
             Object.assign(this, result.state);
 
+            // One hit sound for the whole match: played once for each piece, the copies stack in phase, add up to
+            // several times the file's own peak, and distort.
+            if (this.currentTurn === 'player' && destroyedPieces.length > 0) {
+                me.sfxHit.play();
+            }
             for (const piece of destroyedPieces) {
-                if (this.currentTurn === 'player') {
-                    me.sfxHit.play();
-                }
                 me.board.grid[piece.row][piece.col] = null;
                 me.ui.burstSparks(piece.x, piece.y, piece.type, piece.displayWidth);
                 me.tweens.add({

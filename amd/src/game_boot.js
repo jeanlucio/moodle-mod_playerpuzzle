@@ -356,7 +356,7 @@ define([
             const sfxVolume = this.sfxOn ? 1 : 0;
             this.sfxSwap = this.sound.add('sfx_swap', {volume: 0.6 * sfxVolume});
             this.sfxMatch = this.sound.add('sfx_match', {volume: 0.5 * sfxVolume});
-            this.sfxHit = this.sound.add('sfx_hit', {volume: 0.8 * sfxVolume});
+            this.sfxHit = this.sound.add('sfx_hit', {volume: 0.65 * sfxVolume});
             this.bgMusic = null;
 
             const me = this;

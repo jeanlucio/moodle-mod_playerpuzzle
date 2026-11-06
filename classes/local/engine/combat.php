@@ -67,6 +67,18 @@ class combat {
      * it. Tuned with tests/js/engine/simulate_difficulty.js.
      */
     private const NORMAL_FINAL_BOSS_HP_FACTOR = 1.15;
+
+    /**
+     * How much harder, at the Campaign's last phase, a Normal opponent hits than at its first: the extra grows
+     * in a straight line over the Campaign's phases. The hero grows in three ways (HP, attack, armor) and the
+     * opponent only in HP, so without this the Normal went from about 55% of phases won at the first try to
+     * about 90% by the end. Normal only: Hard is already far above the hero, and Easy is meant to stay easy.
+     * Tuned with tests/js/engine/simulate_heroes.js.
+     */
+    private const NORMAL_ATTACK_GROWTH = 0.6;
+
+    /** @var int Phases in a level, which the Campaign's progress is counted in. */
+    private const PHASES_PER_LEVEL = 10;
     /**
      * Multiplier per difficulty on the unit the student's own amounts are counted in. Easy leaves it alone, so
      * that halving the opponent's HP makes the match shorter instead of cancelling out against the student's
@@ -139,7 +151,7 @@ class combat {
      * @param \stdClass $attempt The attempt: isdemo, difficulty, currentlevel, currentphase,
      *  frozenbasebosshp, frozenbossdamage and frozenopponent are read, and frozenhero, which decides the second
      *  power the final boss fights with (see opponents::counter()).
-     * @param \stdClass $instance The activity: basebosshp and bossdamage are read.
+     * @param \stdClass $instance The activity: basebosshp and bossdamage are read, and maxlevels (1 when absent).
      * @return array ['maxbosshp' => int, 'basedamage' => int (the opponent's unit), 'playerbasedamage' => int (the
      *  student's unit), 'bossattack' => float, 'bossarmor' => float,
      *  'bosspowers' => string[], 'bossbreathevery' => int (0 for the default rhythm),
@@ -180,7 +192,13 @@ class combat {
             'maxbosshp' => (int) floor($maxbosshp * $modifiers['hp'] * $finalbossfactor + 0.5),
             'basedamage' => self::apply_difficulty($unit, $difficulty),
             'playerbasedamage' => (int) round($unit * self::difficulty_player_factor($difficulty)),
-            'bossattack' => $modifiers['attack'],
+            'bossattack' => self::scale_attack(
+                (float) $modifiers['attack'],
+                $difficulty,
+                $level,
+                $phase,
+                (int) ($instance->maxlevels ?? 1)
+            ),
             'bossarmor' => $modifiers['armor'] + $counter['armor'],
             'bosspowers' => array_values(array_unique(
                 array_merge(opponents::powers((string) $attempt->frozenopponent), $counter['powers'])
@@ -192,6 +210,29 @@ class combat {
                 (string) $attempt->frozenopponent === opponents::FINAL_BOSS
             ),
         ];
+    }
+
+    /**
+     * The multiplier on the opponent's hits once the Campaign's progress is counted in: a Normal opponent hits
+     * up to NORMAL_ATTACK_GROWTH harder the further into the Campaign the phase is, from nothing at the first
+     * phase to the full extra at the last. Rounded to three decimals with floor(), like the other values the
+     * replay mirror in JavaScript must land on exactly.
+     *
+     * @param float $attack The opponent's own multiplier, from its profile.
+     * @param string $difficulty The phase's difficulty.
+     * @param int $level The phase's level.
+     * @param int $phase The phase within the level.
+     * @param int $maxlevels The Campaign's level count.
+     * @return float
+     */
+    public static function scale_attack(float $attack, string $difficulty, int $level, int $phase, int $maxlevels): float {
+        if ($difficulty !== constants::DIFFICULTY_NORMAL) {
+            return $attack;
+        }
+        $last = max(1, $maxlevels) * self::PHASES_PER_LEVEL - 1;
+        $progress = min(1.0, max(0.0, (($level - 1) * self::PHASES_PER_LEVEL + $phase - 1) / $last));
+
+        return floor($attack * (1 + self::NORMAL_ATTACK_GROWTH * $progress) * 1000 + 0.5) / 1000;
     }
 
     /**

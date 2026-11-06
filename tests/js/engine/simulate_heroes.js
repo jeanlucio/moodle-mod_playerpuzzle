@@ -271,7 +271,7 @@ function playCampaign(run, levels, specialty) {
                 seed: (run * 100003) + (k * 131) + attempt, level, phase, accuracy: options.accuracy,
                 difficulty: options.difficulty, modifiers: fight.modifiers, powers: fight.powers,
                 breathEvery: fight.breathEvery, opponent: opponent.key, student: studentSide(hero, level, phase),
-                careful: options.student === 'careful', consume,
+                careful: options.student === 'careful', consume, maxlevels: levels,
             });
             if (attempt === 1) {
                 firstTry.push(match.finished && match.won ? 1 : 0);
@@ -315,7 +315,7 @@ function lateWinRate(levels, side, samples) {
             const match = playMatch({
                 seed: (seed * 7001) + k, level, phase, accuracy: options.accuracy, difficulty: options.difficulty,
                 modifiers: fight.modifiers, powers: fight.powers, breathEvery: fight.breathEvery, opponent: opponent.key,
-                student: side,
+                student: side, maxlevels: levels,
             });
             played++;
             wins += match.finished && match.won ? 1 : 0;

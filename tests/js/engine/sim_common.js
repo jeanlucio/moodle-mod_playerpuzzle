@@ -82,6 +82,8 @@ function readOpponents() {
  * @param {number} params.accuracy The student's share of right answers.
  * @param {string} params.difficulty 'easy', 'normal' or 'hard'.
  * @param {string} [params.opponent] The opponent's key (only the final boss's matters).
+ * @param {number} [params.maxlevels] The Campaign's level count, which the Normal opponent's growing attack is counted
+ *  over; 1 when absent.
  * @param {number} [params.breathEvery] Every how many of its turns the opponent lands its breath, if not 10.
  * @param {boolean} [params.careful] Whether the student picks their moves the way the Normal opponent does, by
  *  the value of what each match gives, instead of playing the first Sword match.
@@ -94,7 +96,7 @@ function readOpponents() {
  *  with; coins is what the match nets them (their coins minus the opponent's, never below 0).
  */
 function playMatch({
-    seed, level, phase, modifiers, powers, accuracy, difficulty, opponent, student, breathEvery, careful, consume,
+    seed, level, phase, modifiers, powers, accuracy, difficulty, opponent, student, breathEvery, careful, consume, maxlevels,
 }) {
     const answers = Prng.create((seed * 7919) + 13);
     let lastState = null;
@@ -141,7 +143,7 @@ function playMatch({
         attempt.frozenplayerattack = student.attack;
         attempt.frozenplayerarmor = student.armor;
     }
-    const playerpuzzle = {basestudenthp: INSTANCE.basestudenthp, minquestions: 0};
+    const playerpuzzle = {basestudenthp: INSTANCE.basestudenthp, minquestions: 0, maxlevels: maxlevels || 1};
     rules = ReplayMirror.phaseSetup(attempt, playerpuzzle, modifiers, powers, breathEvery).config;
     const {result} = ReplayMirror.record({attempt, playerpuzzle, modifiers, powers, breathEvery, poolEmpty: false, policy});
     if (!result) {

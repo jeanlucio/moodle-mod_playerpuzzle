@@ -116,9 +116,9 @@ const REPLAY_CASES = [
     {name: 'hard', seed: 103, boss: 120, damage: 8, coin: 5, student: 300, difficulty: 'hard',
         typeOffset: 2, playerAnswers: ['right', 'right', 'wrong'], bossAnswers: ['right']},
     {name: 'level 2 phase 5', seed: 104, boss: 150, damage: 10, coin: 10, student: 200, level: 2, phase: 5,
-        typeOffset: 3, playerAnswers: ['wrong', 'right'], bossAnswers: ['wrong', 'right']},
+        maxlevels: 3, typeOffset: 3, playerAnswers: ['wrong', 'right'], bossAnswers: ['wrong', 'right']},
     {name: 'level 3 phase 10', seed: 105, boss: 100, damage: 9, coin: 15, student: 180, level: 3, phase: 10,
-        typeOffset: 4, playerAnswers: ['right'], bossAnswers: ['right', 'wrong', 'wrong']},
+        maxlevels: 3, typeOffset: 4, playerAnswers: ['right'], bossAnswers: ['right', 'wrong', 'wrong']},
     {name: 'revive with minquestions', seed: 106, boss: 80, damage: 15, coin: 10, student: 400, minquestions: 4,
         typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['wrong']},
     {name: 'every consumable', seed: 107, boss: 260, damage: 11, coin: 10, student: 220,
@@ -142,6 +142,9 @@ const REPLAY_CASES = [
         level: 4, phase: 3, typeOffset: 5, playerAnswers: ['right'], bossAnswers: ['right', 'wrong']},
     {name: 'brute opponent', opponent: 'goblin', seed: 115, boss: 200, damage: 12, coin: 10, student: 220,
         typeOffset: 2, playerAnswers: ['right', 'wrong'], bossAnswers: ['right', 'wrong']},
+    {name: 'brute opponent, growing attack late in a Campaign', opponent: 'goblin', seed: 190, boss: 150, damage: 10,
+        coin: 10, student: 260, level: 2, phase: 7, maxlevels: 3, typeOffset: 1, playerAnswers: ['right', 'wrong'],
+        bossAnswers: ['right', 'wrong']},
     {name: 'armored opponent, Sword consumables', opponent: 'golem', seed: 116, boss: 180, damage: 11, coin: 10,
         student: 240, typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['right', 'wrong'],
         consumables: {'1': 'sword', '3': 'sword', '5': 'shield'}},
@@ -603,7 +606,9 @@ function buildReplayVectors() {
             attempt.frozenplayerattack = spec.frozenStudent.attack;
             attempt.frozenplayerarmor = spec.frozenStudent.armor;
         }
-        const playerpuzzle = {minquestions: spec.minquestions || 0, basestudenthp: spec.student};
+        const playerpuzzle = {
+            minquestions: spec.minquestions || 0, basestudenthp: spec.student, maxlevels: spec.maxlevels || 1,
+        };
 
         const fights = spec.opponent ? withCounter(modifiers, powers, counter) : {};
         const recorded = ReplayMirror.record({

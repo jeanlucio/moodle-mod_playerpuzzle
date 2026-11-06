@@ -110,7 +110,7 @@ for (const levels of levelList) {
                             seed, level: final ? levels : 1, phase, accuracy, difficulty, careful: true,
                             opponent: final ? opponent.key : undefined,
                             modifiers: fight.modifiers, powers: fight.powers, breathEvery: fight.breathEvery,
-                            student: studentSide(hero, levels),
+                            student: studentSide(hero, levels), maxlevels: levels,
                         });
                         if (result.won) {
                             wins++;

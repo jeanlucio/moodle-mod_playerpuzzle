@@ -260,6 +260,41 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
+     * Tests that a Normal opponent hits harder the further into the Campaign the phase is, from nothing at the
+     * first phase to 60% more at the last, and that the other difficulties are left alone. The same cases are
+     * pinned in replay_mirror.test.js against the JavaScript mirror.
+     *
+     * @return void
+     */
+    public function test_scale_attack_grows_over_the_campaign_on_normal_only(): void {
+        $this->assertSame(1.0, combat::scale_attack(1.0, 'normal', 1, 1, 1));
+        $this->assertSame(1.267, combat::scale_attack(1.0, 'normal', 1, 5, 1));
+        $this->assertSame(1.6, combat::scale_attack(1.0, 'normal', 1, 10, 1));
+        $this->assertSame(1.483, combat::scale_attack(1.15, 'normal', 2, 5, 3));
+        $this->assertSame(1.6, combat::scale_attack(1.0, 'normal', 10, 10, 10));
+        // A Campaign of no levels counts as one, and the progress never passes the end.
+        $this->assertSame(1.0, combat::scale_attack(1.0, 'normal', 1, 1, 0));
+        $this->assertSame(1.6, combat::scale_attack(1.0, 'normal', 3, 10, 1));
+        $this->assertSame(1.15, combat::scale_attack(1.15, 'hard', 1, 10, 1));
+        $this->assertSame(1.0, combat::scale_attack(1.0, 'easy', 1, 10, 1));
+    }
+
+    /**
+     * Tests that phase_opponent() applies the growing attack from the instance's level count, and not in a Demo.
+     *
+     * @return void
+     */
+    public function test_phase_opponent_applies_the_growing_attack(): void {
+        $instance = (object) ['basebosshp' => 100, 'bossdamage' => 10, 'maxlevels' => 1];
+
+        $last = combat::phase_opponent($this->make_attempt(['currentphase' => 10, 'frozenopponent' => 'slime']), $instance);
+        $this->assertSame(1.6, $last['bossattack']);
+
+        $demo = combat::phase_opponent($this->make_attempt(['currentphase' => 10, 'isdemo' => 1]), $instance);
+        $this->assertSame(1.0, $demo['bossattack']);
+    }
+
+    /**
      * Tests that a tough opponent's extra HP is applied last, rounding halves up.
      *
      * @return void

@@ -2,7 +2,7 @@
     {
         "name": "normal, plain",
         "attempt": {"rngseed":101,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":2,"frozenbasebosshp":200,"frozenbossdamage":10,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":200},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":200,"maxlevels":1},
         "events": [
             {"type":"move","r1":3,"c1":4,"r2":4,"c2":4},
             {"type":"move","r1":0,"c1":3,"r2":0,"c2":4},
@@ -56,7 +56,7 @@
     {
         "name": "easy",
         "attempt": {"rngseed":102,"currentlevel":1,"currentphase":1,"difficulty":"easy","questionsTotal":3,"frozenbasebosshp":240,"frozenbossdamage":12,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":150},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":150,"maxlevels":1},
         "events": [
             {"type":"move","r1":6,"c1":3,"r2":6,"c2":4},
             {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
@@ -98,7 +98,7 @@
     {
         "name": "hard",
         "attempt": {"rngseed":103,"currentlevel":1,"currentphase":1,"difficulty":"hard","questionsTotal":4,"frozenbasebosshp":120,"frozenbossdamage":8,"frozencoingain":5},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":300},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":300,"maxlevels":1},
         "events": [
             {"type":"move","r1":0,"c1":6,"r2":1,"c2":6},
             {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
@@ -153,7 +153,7 @@
     {
         "name": "level 2 phase 5",
         "attempt": {"rngseed":104,"currentlevel":2,"currentphase":5,"difficulty":"normal","questionsTotal":2,"frozenbasebosshp":150,"frozenbossdamage":10,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":200},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":200,"maxlevels":3},
         "events": [
             {"type":"move","r1":5,"c1":5,"r2":5,"c2":6},
             {"type":"move","r1":0,"c1":2,"r2":1,"c2":2},
@@ -195,7 +195,7 @@
     {
         "name": "level 3 phase 10",
         "attempt": {"rngseed":105,"currentlevel":3,"currentphase":10,"difficulty":"normal","questionsTotal":1,"frozenbasebosshp":100,"frozenbossdamage":9,"frozencoingain":15},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":180},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":180,"maxlevels":3},
         "events": [
             {"type":"move","r1":4,"c1":0,"r2":4,"c2":1},
             {"type":"move","r1":2,"c1":0,"r2":2,"c2":1},
@@ -220,7 +220,7 @@
     {
         "name": "revive with minquestions",
         "attempt": {"rngseed":106,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":7,"frozenbasebosshp":80,"frozenbossdamage":15,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":4,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":4,"basestudenthp":400,"maxlevels":1},
         "events": [
             {"type":"move","r1":6,"c1":1,"r2":7,"c2":1},
             {"type":"move","r1":3,"c1":2,"r2":3,"c2":3},
@@ -292,7 +292,7 @@
     {
         "name": "every consumable",
         "attempt": {"rngseed":107,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":3,"frozenbasebosshp":260,"frozenbossdamage":11,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":220},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":220,"maxlevels":1},
         "events": [
             {"type":"consumable","kind":"magic"},
             {"type":"move","r1":6,"c1":4,"r2":7,"c2":4},
@@ -371,7 +371,7 @@
     {
         "name": "skipped and failed answers",
         "attempt": {"rngseed":108,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":2,"frozenbasebosshp":220,"frozenbossdamage":10,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":250},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":250,"maxlevels":1},
         "events": [
             {"type":"move","r1":0,"c1":1,"r2":1,"c2":1},
             {"type":"move","r1":1,"c1":3,"r2":2,"c2":3},
@@ -454,7 +454,7 @@
     {
         "name": "unavailable questions",
         "attempt": {"rngseed":109,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":0,"frozenbasebosshp":180,"frozenbossdamage":10,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":250},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":250,"maxlevels":1},
         "events": [
             {"type":"move","r1":0,"c1":7,"r2":1,"c2":7},
             {"type":"move","r1":0,"c1":6,"r2":1,"c2":6},
@@ -586,7 +586,7 @@
     {
         "name": "a lost match",
         "attempt": {"rngseed":110,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":0,"frozenbasebosshp":2000,"frozenbossdamage":25,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":120},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":120,"maxlevels":1},
         "events": [
             {"type":"move","r1":0,"c1":4,"r2":0,"c2":5},
             {"type":"move","r1":6,"c1":4,"r2":6,"c2":5},
@@ -613,7 +613,7 @@
     {
         "name": "coin focus",
         "attempt": {"rngseed":111,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":9,"frozenbasebosshp":300,"frozenbossdamage":10,"frozencoingain":20},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":300},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":300,"maxlevels":1},
         "events": [
             {"type":"move","r1":6,"c1":3,"r2":7,"c2":3},
             {"type":"move","r1":1,"c1":0,"r2":2,"c2":0},
@@ -707,7 +707,7 @@
     {
         "name": "odd base damage",
         "attempt": {"rngseed":112,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":3,"frozenbasebosshp":175,"frozenbossdamage":13,"frozencoingain":7},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":210},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":210,"maxlevels":1},
         "events": [
             {"type":"move","r1":7,"c1":4,"r2":7,"c2":5},
             {"type":"move","r1":6,"c1":6,"r2":6,"c2":7},
@@ -740,7 +740,7 @@
     {
         "name": "hard, minquestions, consumables",
         "attempt": {"rngseed":113,"currentlevel":1,"currentphase":1,"difficulty":"hard","questionsTotal":5,"frozenbasebosshp":90,"frozenbossdamage":7,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":3,"basestudenthp":350},
+        "playerpuzzle": {"minquestions":3,"basestudenthp":350,"maxlevels":1},
         "events": [
             {"type":"move","r1":0,"c1":5,"r2":1,"c2":5},
             {"type":"question","side":"boss","outcome":"answered"},
@@ -808,7 +808,7 @@
     {
         "name": "easy, level 4",
         "attempt": {"rngseed":114,"currentlevel":4,"currentphase":3,"difficulty":"easy","questionsTotal":2,"frozenbasebosshp":140,"frozenbossdamage":10,"frozencoingain":10},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":160},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":160,"maxlevels":1},
         "events": [
             {"type":"move","r1":0,"c1":2,"r2":1,"c2":2},
             {"type":"move","r1":3,"c1":4,"r2":4,"c2":4},
@@ -846,7 +846,7 @@
     {
         "name": "brute opponent",
         "attempt": {"rngseed":115,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":5,"frozenbasebosshp":200,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"goblin"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":220},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":220,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
             "ambush"
@@ -901,9 +901,35 @@
         "expected": {"damage":87,"playergold":50,"bossgold":60,"bossdefeated":false}
     },
     {
+        "name": "brute opponent, growing attack late in a Campaign",
+        "attempt": {"rngseed":190,"currentlevel":2,"currentphase":7,"difficulty":"normal","questionsTotal":0,"frozenbasebosshp":150,"frozenbossdamage":10,"frozencoingain":10,"frozenopponent":"goblin"},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":260,"maxlevels":3},
+        "modifiers": {"hp":1,"attack":1.15,"armor":0},
+        "powers": [
+            "ambush"
+        ],
+        "counter": {"armor":0,"powers":[],"breathevery":0},
+        "events": [
+            {"type":"move","r1":4,"c1":7,"r2":5,"c2":7},
+            {"type":"move","r1":2,"c1":4,"r2":2,"c2":5},
+            {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
+            {"type":"move","r1":1,"c1":6,"r2":2,"c2":6},
+            {"type":"question","side":"boss","outcome":"answered"},
+            {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
+            {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
+            {"type":"move","r1":2,"c1":1,"r2":3,"c2":1},
+            {"type":"move","r1":2,"c1":5,"r2":3,"c2":5}
+        ],
+        "outcomes": [
+            {"side":"boss","correct":true,"counted":false}
+        ],
+        "serveruses": {},
+        "expected": {"damage":21,"playergold":30,"bossgold":0,"bossdefeated":false}
+    },
+    {
         "name": "armored opponent, Sword consumables",
         "attempt": {"rngseed":116,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":2,"frozenbasebosshp":180,"frozenbossdamage":11,"frozencoingain":10,"frozenopponent":"golem"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":240},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":240,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1,"armor":0.15},
         "powers": [
             "iceshield"
@@ -976,7 +1002,7 @@
     {
         "name": "regenerating opponent",
         "attempt": {"rngseed":117,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":7,"frozenbasebosshp":175,"frozenbossdamage":10,"frozencoingain":10,"frozenopponent":"slime"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":230},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":230,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1,"armor":0},
         "powers": [
             "regen"
@@ -1063,7 +1089,7 @@
     {
         "name": "armored opponent, hard, level 2",
         "attempt": {"rngseed":118,"currentlevel":2,"currentphase":5,"difficulty":"hard","questionsTotal":1,"frozenbasebosshp":110,"frozenbossdamage":9,"frozencoingain":10,"frozenopponent":"plant"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":320},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":320,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1,"armor":0.15},
         "powers": [
             "rootheal"
@@ -1102,7 +1128,7 @@
     {
         "name": "brute opponent, minquestions",
         "attempt": {"rngseed":119,"currentlevel":1,"currentphase":10,"difficulty":"normal","questionsTotal":1,"frozenbasebosshp":90,"frozenbossdamage":13,"frozencoingain":10,"frozenopponent":"dragon"},
-        "playerpuzzle": {"minquestions":4,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":4,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
             "breath"
@@ -1120,35 +1146,19 @@
             {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
             {"type":"move","r1":3,"c1":2,"r2":3,"c2":3},
             {"type":"question","side":"player","outcome":"answered"},
-            {"type":"move","r1":0,"c1":1,"r2":1,"c2":1},
-            {"type":"move","r1":0,"c1":2,"r2":1,"c2":2},
-            {"type":"move","r1":0,"c1":6,"r2":0,"c2":7},
-            {"type":"move","r1":1,"c1":6,"r2":1,"c2":7},
-            {"type":"move","r1":2,"c1":0,"r2":2,"c2":1},
-            {"type":"move","r1":1,"c1":0,"r2":1,"c2":1},
-            {"type":"question","side":"boss","outcome":"answered"},
-            {"type":"move","r1":2,"c1":7,"r2":3,"c2":7},
-            {"type":"question","side":"player","outcome":"skipped"},
-            {"type":"move","r1":3,"c1":4,"r2":4,"c2":4},
-            {"type":"move","r1":0,"c1":5,"r2":1,"c2":5},
-            {"type":"move","r1":0,"c1":0,"r2":1,"c2":0},
-            {"type":"move","r1":0,"c1":3,"r2":0,"c2":4},
-            {"type":"move","r1":3,"c1":4,"r2":3,"c2":5},
-            {"type":"question","side":"boss","outcome":"answered"}
+            {"type":"move","r1":0,"c1":1,"r2":1,"c2":1}
         ],
         "outcomes": [
             {"side":"boss","correct":true,"counted":false},
-            {"side":"player","correct":true,"counted":true},
-            {"side":"boss","correct":false,"counted":false},
-            {"side":"boss","correct":true,"counted":false}
+            {"side":"player","correct":true,"counted":true}
         ],
         "serveruses": {},
-        "expected": {"damage":0,"playergold":50,"bossgold":45,"bossdefeated":false}
+        "expected": {"damage":0,"playergold":20,"bossgold":0,"bossdefeated":false}
     },
     {
         "name": "shield armed from the start, a lost match",
         "attempt": {"rngseed":121,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":0,"frozenbasebosshp":2000,"frozenbossdamage":20,"frozencoingain":10,"frozenopponent":"golem"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":150},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":150,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1,"armor":0.15},
         "powers": [
             "iceshield"
@@ -1181,7 +1191,7 @@
     {
         "name": "longer poison, a lost match",
         "attempt": {"rngseed":122,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":9,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"mummy"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
             "longpoison"
@@ -1328,7 +1338,7 @@
     {
         "name": "fast Grimoire, a lost match",
         "attempt": {"rngseed":123,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":10,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"spider"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1.15,"attack":1,"armor":0},
         "powers": [
             "fastgrimoire"
@@ -1483,7 +1493,7 @@
     {
         "name": "more mana, a lost match",
         "attempt": {"rngseed":124,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":6,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"wolf"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
             "manaboost"
@@ -1581,7 +1591,7 @@
     {
         "name": "Potions heal half as much again, a lost match",
         "attempt": {"rngseed":125,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":12,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"plant"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1,"armor":0.15},
         "powers": [
             "rootheal"
@@ -1753,7 +1763,7 @@
     {
         "name": "regeneration, a lost match",
         "attempt": {"rngseed":126,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":12,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"slime"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1,"armor":0},
         "powers": [
             "regen"
@@ -1949,7 +1959,7 @@
     {
         "name": "ambush, a lost match",
         "attempt": {"rngseed":128,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":16,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"goblin"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
             "ambush"
@@ -2194,7 +2204,7 @@
     {
         "name": "intangible, a lost match",
         "attempt": {"rngseed":129,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":14,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"ghost"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1,"armor":0},
         "powers": [
             "intangible"
@@ -2391,7 +2401,7 @@
     {
         "name": "breath, a lost match",
         "attempt": {"rngseed":130,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":8,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"dragon"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
             "breath"
@@ -2537,7 +2547,7 @@
     {
         "name": "loot, a lost match",
         "attempt": {"rngseed":131,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":4,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"pirate"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
             "loot"
@@ -2630,7 +2640,7 @@
     {
         "name": "drain, a lost match",
         "attempt": {"rngseed":127,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":8,"frozenbasebosshp":3000,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"vampire"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":400},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":400,"maxlevels":1},
         "modifiers": {"hp":1.2,"attack":1,"armor":0},
         "powers": [
             "drain"
@@ -2745,7 +2755,7 @@
     {
         "name": "final boss, drain and extra HP",
         "attempt": {"rngseed":120,"currentlevel":3,"currentphase":10,"difficulty":"normal","questionsTotal":1,"frozenbasebosshp":100,"frozenbossdamage":9,"frozencoingain":15,"frozenopponent":"vampire"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":180},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":180,"maxlevels":1},
         "modifiers": {"hp":1.2,"attack":1,"armor":0},
         "powers": [
             "drain"
@@ -2758,20 +2768,18 @@
             {"type":"move","r1":3,"c1":4,"r2":3,"c2":5},
             {"type":"move","r1":1,"c1":5,"r2":2,"c2":5},
             {"type":"question","side":"player","outcome":"answered"},
-            {"type":"move","r1":4,"c1":6,"r2":4,"c2":7},
-            {"type":"question","side":"boss","outcome":"answered"}
+            {"type":"move","r1":4,"c1":6,"r2":4,"c2":7}
         ],
         "outcomes": [
-            {"side":"player","correct":true,"counted":true},
-            {"side":"boss","correct":true,"counted":false}
+            {"side":"player","correct":true,"counted":true}
         ],
         "serveruses": {},
-        "expected": {"damage":50,"playergold":15,"bossgold":15,"bossdefeated":false}
+        "expected": {"damage":83,"playergold":15,"bossgold":0,"bossdefeated":false}
     },
     {
         "name": "final boss against a warrior: armor",
         "attempt": {"rngseed":143,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":7,"frozenbasebosshp":400,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"vampire","frozenhero":"warriorf4"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":300},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":300,"maxlevels":1},
         "modifiers": {"hp":1.2,"attack":1,"armor":0},
         "powers": [
             "drain"
@@ -2859,7 +2867,7 @@
     {
         "name": "final boss against an archer: fast Grimoire",
         "attempt": {"rngseed":144,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":5,"frozenbasebosshp":400,"frozenbossdamage":12,"frozencoingain":10,"frozenopponent":"vampire","frozenhero":"archerm3"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":300},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":300,"maxlevels":1},
         "modifiers": {"hp":1.2,"attack":1,"armor":0},
         "powers": [
             "drain"
@@ -2939,7 +2947,7 @@
     {
         "name": "final boss against a mage: breath",
         "attempt": {"rngseed":145,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":3,"frozenbasebosshp":2500,"frozenbossdamage":14,"frozencoingain":10,"frozenopponent":"vampire","frozenhero":"magem2"},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":300},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":300,"maxlevels":1},
         "modifiers": {"hp":1.2,"attack":1,"armor":0},
         "powers": [
             "drain"
@@ -2991,7 +2999,7 @@
     {
         "name": "frozen student side: more HP and attack",
         "attempt": {"rngseed":140,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":4,"frozenbasebosshp":300,"frozenbossdamage":12,"frozencoingain":10,"frozenplayerhp":260,"frozenplayerattack":1.3,"frozenplayerarmor":0},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":40},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":40,"maxlevels":1},
         "events": [
             {"type":"move","r1":0,"c1":3,"r2":1,"c2":3},
             {"type":"move","r1":0,"c1":4,"r2":1,"c2":4},
@@ -3065,7 +3073,7 @@
     {
         "name": "frozen student side: armor against a goblin",
         "attempt": {"rngseed":141,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":2,"frozenbasebosshp":250,"frozenbossdamage":14,"frozencoingain":10,"frozenopponent":"goblin","frozenplayerhp":180,"frozenplayerattack":1,"frozenplayerarmor":0.3},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":40},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":40,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
             "ambush"
@@ -3110,7 +3118,7 @@
     {
         "name": "frozen student side: attack and armor, a lost match",
         "attempt": {"rngseed":142,"currentlevel":1,"currentphase":1,"difficulty":"normal","questionsTotal":1,"frozenbasebosshp":3000,"frozenbossdamage":14,"frozencoingain":10,"frozenopponent":"dragon","frozenplayerhp":120,"frozenplayerattack":1.15,"frozenplayerarmor":0.15},
-        "playerpuzzle": {"minquestions":0,"basestudenthp":500},
+        "playerpuzzle": {"minquestions":0,"basestudenthp":500,"maxlevels":1},
         "modifiers": {"hp":1,"attack":1.15,"armor":0},
         "powers": [
             "breath"

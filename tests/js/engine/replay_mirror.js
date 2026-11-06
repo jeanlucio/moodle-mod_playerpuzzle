@@ -66,7 +66,30 @@ const DIFFICULTY_HP_FACTORS = {easy: 0.5, normal: 1.0, hard: 2.0};
 // What a Normal final boss has on top of its HP, see combat::NORMAL_FINAL_BOSS_HP_FACTOR.
 const NORMAL_FINAL_BOSS_HP_FACTOR = 1.15;
 const DIFFICULTY_PLAYER_FACTORS = {easy: 1.0, normal: 1.0, hard: 2.0};
+// How much harder a Normal opponent hits at the Campaign's last phase, see combat::NORMAL_ATTACK_GROWTH.
+const NORMAL_ATTACK_GROWTH = 0.6;
+const PHASES_PER_LEVEL = 10;
 const DIFFICULTY_COIN_FACTORS = {easy: 0.5, normal: 1.0, hard: 3.0};
+
+/**
+ * Mirrors combat::scale_attack(): a Normal opponent hits up to NORMAL_ATTACK_GROWTH harder the further into the
+ * Campaign the phase is. Rounded to three decimals the way the PHP does it.
+ *
+ * @param {number} attack The opponent's own multiplier, from its profile.
+ * @param {string} difficulty The phase's difficulty.
+ * @param {number} level The phase's level.
+ * @param {number} phase The phase within the level.
+ * @param {number} maxLevels The Campaign's level count.
+ * @return {number}
+ */
+function scaleAttack(attack, difficulty, level, phase, maxLevels) {
+    if (difficulty !== 'normal') {
+        return attack;
+    }
+    const last = (Math.max(1, maxLevels) * PHASES_PER_LEVEL) - 1;
+    const progress = Math.min(1, Math.max(0, (((level - 1) * PHASES_PER_LEVEL) + phase - 1) / last));
+    return Math.floor((attack * (1 + (NORMAL_ATTACK_GROWTH * progress)) * 1000) + 0.5) / 1000;
+}
 
 /**
  * The modifiers of an opponent with no profile: nothing changes.
@@ -116,7 +139,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             playerBaseDamage: Math.round(unitBase * playerFactor),
             coinGain: attempt.frozencoingain,
             coinFactor: DIFFICULTY_COIN_FACTORS[attempt.difficulty] ?? 1.0,
-            bossAttack: modifiers.attack,
+            bossAttack: scaleAttack(modifiers.attack, attempt.difficulty, level, phase, playerpuzzle.maxlevels ?? 1),
             bossArmor: modifiers.armor,
             bossPowers: powers,
             ...(breathEvery ? {bossBreathEvery: breathEvery} : {}),
@@ -459,4 +482,4 @@ function record(params) {
     return runPhase(Object.assign({events: [], outcomes: [], serverUses: {}}, params));
 }
 
-module.exports = {ROWS, COLS, phaseSetup, derive, record};
+module.exports = {ROWS, COLS, phaseSetup, scaleAttack, derive, record};

@@ -423,17 +423,15 @@ class lobby_page_service {
     }
 
     /**
-     * Builds the difficulty picker context. With an attempt in progress, resuming keeps that
+     * Builds the difficulty button's context. With an attempt in progress, resuming keeps that
      * attempt's current-phase difficulty (the next choice happens on the phase-complete
-     * screen, not here), so only a read-only line is shown. With no attempt in progress, the
-     * picker is offered inside the Play form, Normal pre-selected.
+     * screen, not here), so the button is locked and says so. With no attempt in progress, it steps
+     * through the difficulties and its value goes with the Play form, Normal first.
      *
      * @param stdClass|null $attempt The most recent in-progress attempt, or null.
      * @return array
      */
     private static function build_difficulty_context(?stdClass $attempt): array {
-        global $OUTPUT;
-
         $options = playerpuzzle_get_difficulty_options();
 
         if ($attempt !== null) {
@@ -441,6 +439,8 @@ class lobby_page_service {
                 ? $attempt->difficulty
                 : constants::DIFFICULTY_NORMAL;
             return [
+                // The same button as the open choice, only locked, so the row looks alike either way.
+                'difficultylockedtext' => get_string('lobby_difficulty_selected', 'mod_playerpuzzle', $options[$current]),
                 'difficultycurrent' => get_string(
                     'lobby_difficulty_current',
                     'mod_playerpuzzle',
@@ -449,27 +449,28 @@ class lobby_page_service {
             ];
         }
 
+        // What lobby_settings.js steps through when the button is pressed: each difficulty with the text the
+        // button then shows and the line of what it changes, so no request is needed to change it.
         $choices = [];
         foreach ($options as $value => $label) {
             $choices[] = [
-                'value'   => $value,
-                'label'   => $label,
-                'checked' => $value === constants::DIFFICULTY_NORMAL,
+                'value' => $value,
+                'text' => get_string('lobby_difficulty_selected', 'mod_playerpuzzle', $label),
+                'description' => get_string('lobby_difficulty_desc_' . $value, 'mod_playerpuzzle'),
             ];
         }
+        $selected = $options[constants::DIFFICULTY_NORMAL];
+        $normal = array_values(array_filter($choices, static fn(array $c): bool => $c['value'] === constants::DIFFICULTY_NORMAL));
 
         return [
-            'difficultylabel'    => get_string('lobby_difficulty', 'mod_playerpuzzle'),
-            'difficultyhelpicon' => $OUTPUT->help_icon('lobby_difficulty', 'mod_playerpuzzle'),
-            'difficultychoices'  => $choices,
-            // A compact always-visible readout on the main screen, since the picker itself
-            // moves into the Settings panel — kept in sync with the radios by lobby_settings.js
-            // as the student changes their choice, without an extra request.
-            'difficultyselectedtext' => get_string(
-                'lobby_difficulty_selected',
-                'mod_playerpuzzle',
-                $options[constants::DIFFICULTY_NORMAL]
-            ),
+            'difficultylabel' => get_string('lobby_difficulty', 'mod_playerpuzzle'),
+            'difficultyhelp' => get_string('lobby_difficulty_help', 'mod_playerpuzzle'),
+            'difficultyvalue' => constants::DIFFICULTY_NORMAL,
+            'difficultychoicesjson' => json_encode($choices, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
+            // What the button and the line under it say before the first press; lobby_settings.js keeps them in
+            // step with the choice from then on.
+            'difficultyselectedtext' => get_string('lobby_difficulty_selected', 'mod_playerpuzzle', $selected),
+            'difficultydescription' => $normal[0]['description'],
         ];
     }
 

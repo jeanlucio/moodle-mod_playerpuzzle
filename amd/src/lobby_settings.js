@@ -23,7 +23,6 @@
  */
 
 import Ajax from 'core/ajax';
-import {get_string as getString} from 'core/str';
 
 /** @type {Object<string, string>} Checkbox element id to sound_preferences channel. */
 const CHANNELS_BY_ID = {
@@ -50,28 +49,32 @@ const saveSoundPreference = (cmid, type, enabled) => {
 };
 
 /**
- * Updates the main view's compact difficulty readout to match the radio the student just
- * picked, so the choice stays visible without reopening the Settings panel.
+ * Steps the difficulty button to the next difficulty: the hidden field that goes with the Play form, the text on
+ * the button and the line under it that says what the difficulty changes. Every text came with the page, so
+ * nothing is requested.
  *
- * @param {HTMLInputElement} radio The radio just selected.
- * @return {Promise<void>}
+ * @param {HTMLElement} button The difficulty button, whose data-choices lists the difficulties as JSON.
  */
-const updateDifficultyReadout = async(radio) => {
+const cycleDifficulty = (button) => {
+    const input = document.getElementById('pp-lobby-difficulty-value');
     const readout = document.getElementById('pp-lobby-difficulty-readout');
-    if (!readout) {
+    const description = document.getElementById('pp-lobby-difficulty-description');
+    if (!input || !readout) {
         return;
     }
-    const option = radio.closest('.pp-lobby-difficulty-option');
-    const label = option ? option.querySelector('label') : null;
-    if (!label) {
-        return;
+    const choices = JSON.parse(button.dataset.choices);
+    const index = choices.findIndex((choice) => choice.value === input.value);
+    const next = choices[(index + 1) % choices.length];
+    input.value = next.value;
+    readout.textContent = next.text;
+    if (description) {
+        description.textContent = next.description;
     }
-    readout.textContent = await getString('lobby_difficulty_selected', 'mod_playerpuzzle', label.textContent);
 };
 
 /**
- * Wires the narration/Music/Sound Effects checkboxes and the difficulty picker in the
- * Settings panel.
+ * Wires the narration/Music/Sound Effects checkboxes in the Settings panel and the difficulty button on the
+ * main view.
  *
  * @param {number} cmid Course module id.
  */
@@ -80,11 +83,13 @@ export const init = (cmid) => {
         const channel = CHANNELS_BY_ID[event.target.id];
         if (channel) {
             saveSoundPreference(cmid, channel, event.target.checked);
-            return;
         }
+    });
 
-        if (event.target.name === 'difficulty') {
-            updateDifficultyReadout(event.target);
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-action="cycle-difficulty"]');
+        if (button) {
+            cycleDifficulty(button);
         }
     });
 };

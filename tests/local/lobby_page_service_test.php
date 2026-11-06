@@ -447,7 +447,7 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $this->assertArrayNotHasKey('progresstext', $data);
         $this->assertArrayNotHasKey('difficultycurrent', $data);
-        $this->assertArrayHasKey('difficultychoices', $data);
+        $this->assertArrayHasKey('difficultychoicesjson', $data);
     }
 
     /**
@@ -904,8 +904,8 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the difficulty picker is offered (three choices, Normal pre-selected)
-     * when no attempt is in progress.
+     * Tests that the difficulty button is offered (three difficulties, Normal first) when no
+     * attempt is in progress.
      *
      * @return void
      */
@@ -921,33 +921,33 @@ final class lobby_page_service_test extends \advanced_testcase {
         );
 
         $this->assertArrayNotHasKey('difficultycurrent', $data);
-        $this->assertCount(3, $data['difficultychoices']);
+        $this->assertArrayNotHasKey('difficultylockedtext', $data);
 
-        $checked = array_values(array_filter($data['difficultychoices'], fn($c) => $c['checked']));
-        $this->assertCount(1, $checked);
-        $this->assertSame(constants::DIFFICULTY_NORMAL, $checked[0]['value']);
+        // What the button steps through: each difficulty with the text the button then shows and what it changes.
+        $choices = json_decode($data['difficultychoicesjson'], true);
+        $this->assertSame(['easy', 'normal', 'hard'], array_column($choices, 'value'));
+        foreach ($choices as $choice) {
+            $label = get_string('difficulty_' . $choice['value'], 'mod_playerpuzzle');
+            $this->assertSame(get_string('lobby_difficulty_selected', 'mod_playerpuzzle', $label), $choice['text']);
+            $this->assertSame(
+                get_string('lobby_difficulty_desc_' . $choice['value'], 'mod_playerpuzzle'),
+                $choice['description']
+            );
+        }
 
-        // The help text is a standard Moodle help icon (rendered HTML), not a permanently
-        // visible paragraph — regression check for the icon actually being wired up, and
-        // that its popover carries the real help string, not an empty/missing one. The
-        // "popover" marker (not a "help-icon" CSS class, absent from this component's markup
-        // on Moodle 4.5/5.0) is the part of core/help_icon's output stable across every
-        // Moodle version this plugin supports.
-        $this->assertStringContainsString('popover', $data['difficultyhelpicon']);
-        $this->assertStringContainsString(
-            s(get_string('lobby_difficulty_help', 'mod_playerpuzzle')),
-            $data['difficultyhelpicon']
-        );
+        // It starts on Normal, which is also the value that goes with the Play form.
+        $this->assertSame(constants::DIFFICULTY_NORMAL, $data['difficultyvalue']);
+        $this->assertSame(get_string('lobby_difficulty_desc_normal', 'mod_playerpuzzle'), $data['difficultydescription']);
+        $this->assertSame(get_string('lobby_difficulty_help', 'mod_playerpuzzle'), $data['difficultyhelp']);
     }
 
     /**
-     * Tests that, alongside the picker (now in the Settings panel), the main view still gets
-     * a compact readout of the pre-selected difficulty — Normal, until the student changes it
-     * client-side.
+     * Tests that the button's first text is the pre-selected difficulty — Normal, until the
+     * student steps it client-side.
      *
      * @return void
      */
-    public function test_build_page_data_offers_difficulty_readout_alongside_the_picker(): void {
+    public function test_build_page_data_offers_difficulty_readout_on_the_button(): void {
         [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
         $data = lobby_page_service::build_page_data(
@@ -964,6 +964,62 @@ final class lobby_page_service_test extends \advanced_testcase {
             get_string('difficulty_normal', 'mod_playerpuzzle')
         );
         $this->assertSame($expected, $data['difficultyselectedtext']);
+    }
+
+    /**
+     * Tests the Lobby's markup for the difficulty and the balance: the difficulty is a button that steps through
+     * them with its value in a hidden field of the Play form, not radios, and the balance sits inside the Shop
+     * button instead of a chip of its own.
+     *
+     * @return void
+     */
+    public function test_the_lobby_renders_the_difficulty_button_and_the_balance_in_the_shop_button(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+
+        $html = $this->render_lobby(lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        ));
+
+        $this->assertStringContainsString('data-action="cycle-difficulty"', $html);
+        $this->assertMatchesRegularExpression(
+            '/<input[^>]*type="hidden"[^>]*name="difficulty"[^>]*form="pp-lobby-playform"[^>]*value="normal"/s',
+            $html
+        );
+        $this->assertStringNotContainsString('type="radio"', $html);
+
+        // The balance is a child of the button that opens the Shop, in the main view.
+        $shopbutton = substr($html, strpos($html, 'data-panel="pp-lobby-shop"'));
+        $shopbutton = substr($shopbutton, 0, strpos($shopbutton, '</button>'));
+        $this->assertStringContainsString('data-role="coinvalue"', $shopbutton);
+    }
+
+    /**
+     * Tests that with an attempt in progress the difficulty shows as a locked label, not a button.
+     *
+     * @return void
+     */
+    public function test_the_lobby_locks_the_difficulty_while_an_attempt_is_in_progress(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        \mod_playerpuzzle\local\engine\security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard');
+
+        $html = $this->render_lobby(lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        ));
+
+        $this->assertStringNotContainsString('data-action="cycle-difficulty"', $html);
+        $this->assertStringContainsString('fa-lock', $html);
+        $this->assertStringContainsString(
+            s(get_string('lobby_difficulty_selected', 'mod_playerpuzzle', get_string('difficulty_hard', 'mod_playerpuzzle'))),
+            $html
+        );
     }
 
     /**
@@ -990,7 +1046,7 @@ final class lobby_page_service_test extends \advanced_testcase {
             \context_module::instance($cm->id)
         );
 
-        $this->assertArrayNotHasKey('difficultychoices', $data);
+        $this->assertArrayNotHasKey('difficultychoicesjson', $data);
         $this->assertArrayNotHasKey('difficultyselectedtext', $data);
         $expected = get_string(
             'lobby_difficulty_current',
@@ -998,6 +1054,11 @@ final class lobby_page_service_test extends \advanced_testcase {
             get_string('difficulty_hard', 'mod_playerpuzzle')
         );
         $this->assertSame($expected, $data['difficultycurrent']);
+        // The button is there but locked, and says the same.
+        $this->assertSame(
+            get_string('lobby_difficulty_selected', 'mod_playerpuzzle', get_string('difficulty_hard', 'mod_playerpuzzle')),
+            $data['difficultylockedtext']
+        );
     }
 
     /**

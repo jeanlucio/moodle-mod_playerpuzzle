@@ -19,11 +19,13 @@
 
 ## For Students
 
-1. Open the activity to reach the **Lobby**: your progress (Campaign), the difficulty, the
-   minimum-questions notice and your PuzzleCoin balance.
+1. Open the activity to reach the **Lobby**: your progress (Campaign), the difficulty and the
+   minimum-questions notice. The difficulty is a button: press it to step through Easy, Normal and
+   Hard (a line under it says what each changes). Once a phase is under way it is locked until the
+   next phase-complete screen.
 2. Use **Play Demo** for a guided practice fight that never counts for anything.
-3. Open the **Shop** to buy consumables with PuzzleCoin before the match, and — when the teacher
-   connected PlayerHUD — to transfer coins in. **Settings** holds music, sound effects and spoken
+3. Open the **Shop**, which shows your PuzzleCoin balance, to buy consumables before the match, and —
+   when the teacher connected PlayerHUD — to transfer coins in. **Settings** holds music, sound effects and spoken
    narration, and **Ranking** shows the class standings.
 4. Select **Play Game** to start (or resume) a match.
 5. Match pieces to attack the opponent, fill the Mana Orb bar to trigger a

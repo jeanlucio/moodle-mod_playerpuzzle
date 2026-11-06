@@ -46,12 +46,12 @@
         "progresstext": "Current progress: Level 2, Phase 5",
         "minquestionstext": "This match requires answering at least 3 question(s).",
         "difficultylabel": "Choose your difficulty",
-        "difficultyhelpicon": "<a class=\"btn btn-link p-0\" role=\"button\"><i class=\"icon fa fa-question-circle\"></i></a>",
-        "difficultychoices": [
-            {"value": "easy", "label": "Easy", "checked": false},
-            {"value": "normal", "label": "Normal", "checked": true},
-            {"value": "hard", "label": "Hard", "checked": false}
-        ],
+        "difficultyhelp": "Easy halves the opponent's HP and damage and the coins you earn; Hard doubles the opponent and triples the coins.",
+        "difficultyvalue": "normal",
+        "difficultychoicesjson": "[{\"value\":\"easy\",\"text\":\"Difficulty: Easy\",\"description\":\"Halved.\"}]",
+        "difficultyselectedtext": "Difficulty: Normal",
+        "difficultydescription": "The standard fight.",
+        "difficultylockedtext": "",
         "difficultycurrent": "",
         "speechenabled": false,
         "speechlabel": "Speak game announcements aloud",
@@ -68,7 +68,6 @@
         "musiclabel": "Music",
         "sfxenabled": true,
         "sfxlabel": "Sound effects",
-        "difficultyselectedtext": "Difficulty: Normal",
         "showranking": true,
         "rankingbuttontext": "Ranking",
         "rankingtitle": "Class ranking",
@@ -104,7 +103,7 @@
         </div>
 
         <div class="pp-lobby-panel">
-            <div id="pp-lobby-main" class="pp-lobby-view">
+            <div id="pp-lobby-main" class="pp-lobby-view pp-lobby-main">
                 <div class="pp-lobby-ribbon">
                     <h2 class="pp-lobby-ribbon-title">
                         {{#progresstext}}{{progresstext}}{{/progresstext}}
@@ -119,24 +118,37 @@
                         <span>{{campaignnametext}}</span>
                     </span>
                     {{/campaignnametext}}
-                    {{#difficultyselectedtext}}
-                    <span class="pp-lobby-chip">
+                    {{#difficultychoicesjson}}
+                    <button
+                        type="button"
+                        class="pp-lobby-chip pp-lobby-chip-button"
+                        data-action="cycle-difficulty"
+                        data-choices="{{difficultychoicesjson}}"
+                        title="{{difficultylabel}}"
+                        aria-describedby="pp-lobby-difficulty-description"
+                    >
                         <i class="fa fa-bolt" aria-hidden="true"></i>
                         <span id="pp-lobby-difficulty-readout">{{difficultyselectedtext}}</span>
+                        <i class="fa fa-angle-right" aria-hidden="true"></i>
+                    </button>
+                    <input
+                        type="hidden"
+                        name="difficulty"
+                        form="pp-lobby-playform"
+                        id="pp-lobby-difficulty-value"
+                        value="{{difficultyvalue}}"
+                    >
+                    {{/difficultychoicesjson}}
+                    {{#difficultylockedtext}}
+                    <span class="pp-lobby-chip">
+                        <i class="fa fa-lock" aria-hidden="true"></i>
+                        <span>{{difficultylockedtext}}</span>
                     </span>
-                    {{/difficultyselectedtext}}
-                    {{^isguest}}
-                    {{^campaignended}}
-                    <span class="pp-lobby-chip" data-role="coinchip" aria-label="{{coinstext}}">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
-                            <circle cx="12" cy="12" r="5.4" fill="none" stroke="#8a611c" stroke-width="1.2"/>
-                        </svg>
-                        <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
-                    </span>
-                    {{/campaignended}}
-                    {{/isguest}}
+                    {{/difficultylockedtext}}
                 </div>
+                {{#difficultydescription}}
+                <p class="pp-lobby-desc" id="pp-lobby-difficulty-description" aria-live="polite">{{difficultydescription}}</p>
+                {{/difficultydescription}}
 
                 {{#isguest}}
                 <p class="pp-lobby-note">{{guestdemoonlytext}}</p>
@@ -198,6 +210,13 @@
                     >
                         <i class="fa fa-shopping-cart" aria-hidden="true"></i>
                         <span>{{shopmenulabel}}</span>
+                        <span class="pp-lobby-coins" data-role="coinchip" aria-label="{{coinstext}}">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9" fill="#e0a83e" stroke="#8a611c" stroke-width="1.5"/>
+                                <circle cx="12" cy="12" r="5.4" fill="none" stroke="#8a611c" stroke-width="1.2"/>
+                            </svg>
+                            <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
+                        </span>
                     </button>
                     {{/campaignended}}
                     {{/isguest}}
@@ -276,30 +295,6 @@
 
             <section id="pp-lobby-settings" class="pp-lobby-view" aria-labelledby="pp-lobby-settings-title" hidden>
                 <h3 id="pp-lobby-settings-title" class="pp-lobby-view-title" tabindex="-1">{{settingsmenulabel}}</h3>
-
-                {{#difficultylabel}}
-                <fieldset class="pp-lobby-difficulty">
-                    <legend class="pp-lobby-difficulty-legend">
-                        <span>{{difficultylabel}}</span>
-                        {{{difficultyhelpicon}}}
-                    </legend>
-                    <div class="pp-lobby-difficulty-options">
-                        {{#difficultychoices}}
-                        <span class="pp-lobby-difficulty-option">
-                            <input
-                                type="radio"
-                                name="difficulty"
-                                form="pp-lobby-playform"
-                                id="pp-difficulty-{{value}}"
-                                value="{{value}}"
-                                {{#checked}}checked{{/checked}}
-                            >
-                            <label for="pp-difficulty-{{value}}">{{label}}</label>
-                        </span>
-                        {{/difficultychoices}}
-                    </div>
-                </fieldset>
-                {{/difficultylabel}}
 
                 <div class="form-check pp-lobby-toggle">
                     <input

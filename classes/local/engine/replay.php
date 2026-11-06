@@ -216,6 +216,7 @@ class replay {
             'outcomes' => $outcomes,
             'outcomeindex' => 0,
             'questionstotal' => max(0, (int) $attempt->questions_total - $countedinphase),
+            'minquestions' => (int) $playerpuzzle->minquestions,
             'playerpuzzleid' => (int) ($playerpuzzle->id ?? 0),
             'poolempty' => null,
             'serveruses' => attempt_consumables::get_uses_by_type((int) $attempt->id),
@@ -249,7 +250,7 @@ class replay {
 
                     if ($state['currentHp'] <= 0) {
                         if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
-                            $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
+                            $state['currentHp'] = (float) combat_engine::revive_hp();
                         } else {
                             return $finish('player', true);
                         }
@@ -267,7 +268,7 @@ class replay {
                     }
                     if ($snapshotmode && $state['currentHp'] <= 0) {
                         if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
-                            $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
+                            $state['currentHp'] = (float) combat_engine::revive_hp();
                         } else {
                             return $finish('player', true);
                         }
@@ -291,7 +292,7 @@ class replay {
 
                 if ($state['currentHp'] <= 0) {
                     if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
-                        $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
+                        $state['currentHp'] = (float) combat_engine::revive_hp();
                     } else {
                         return $finish('player', true);
                     }
@@ -305,7 +306,7 @@ class replay {
                 $state = $start['state'];
                 if ($start['poisonTicked'] && $state['currentHp'] <= 0) {
                     if (combat_engine::needs_revive($minquestions, $sim['questionstotal'])) {
-                        $state['currentHp'] = (float) combat_engine::revive_hp($maxbosshp);
+                        $state['currentHp'] = (float) combat_engine::revive_hp();
                     } else {
                         return $finish('player', true);
                     }
@@ -404,6 +405,8 @@ class replay {
                 $matchgroups
             );
 
+            // The opponent standing on its last HP waiting for the missing questions: the Orb asks them at once.
+            $config['orbFull'] = combat_engine::boss_resists($state, $sim['minquestions'], $sim['questionstotal']);
             $result = combat_engine::resolve_match_effects($turn, $destroyedtypes, $sizedgroups, $state, $config);
             $state = $result['state'];
 

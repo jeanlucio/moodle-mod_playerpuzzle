@@ -324,13 +324,29 @@ class combat_engine {
     }
 
     /**
-     * The HP the boss comes back at when revived: 50% of this match's own max HP.
+     * The HP the boss is left standing at when it would fall before the minimum of questions is answered: 1. It
+     * does not come back with part of its life: the student only has to answer what is missing (see
+     * boss_resists()), so a strong hit costs nothing and a minimum of any size is only about the questions.
      *
-     * @param int $maxbosshp This match's max boss HP.
      * @return int
      */
-    public static function revive_hp(int $maxbosshp): int {
-        return (int) ceil($maxbosshp * 0.5);
+    public static function revive_hp(): int {
+        return 1;
+    }
+
+    /**
+     * Whether the boss is standing on its last HP waiting for the student to answer the questions still missing:
+     * the minimum is not met and the boss has been brought down to that last HP. While it holds, the student's
+     * Orb pieces fill the whole mana bar (resolve_match_effects()'s 'orbFull' config key), so one Orb combo asks
+     * the next question instead of five.
+     *
+     * @param array $state Combat state (currentHp).
+     * @param int $minquestions The instance's configured minimum, 0 = no minimum.
+     * @param int $questionstotal Questions answered so far this attempt.
+     * @return bool
+     */
+    public static function boss_resists(array $state, int $minquestions, int $questionstotal): bool {
+        return self::needs_revive($minquestions, $questionstotal) && $state['currentHp'] <= self::revive_hp();
     }
 
     /**
@@ -448,7 +464,8 @@ class combat_engine {
      *  3=Sword, 4=Shield, 5=Potion, 6=Coin).
      * @param array $matchgroups Match groups this turn, each ['type' => int, 'size' => int].
      * @param array $state Current combat state — copied, never mutated.
-     * @param array $config Keys baseDamage/coinGain/coinFactor.
+     * @param array $config Keys baseDamage/coinGain/coinFactor and, optionally, orbFull: true when the student's
+     *  Orb pieces fill the whole mana bar (see boss_resists()).
      * @return array ['state', 'damageDealt', 'coinsGained', 'healGained', 'multiplierGained',
      *  'shieldGained', 'poisonGained', 'manaGained', 'questionTriggered', 'triggeredBy']
      */
@@ -486,8 +503,9 @@ class combat_engine {
                 $next[$side . 'PoisonMeter'] += $gains['poison'];
                 $poisongained += $gains['poison'];
             } else if ($type === 2) {
-                $next[$side . 'Mana'] += $gains['mana'];
-                $managained += $gains['mana'];
+                $mana = $side === 'player' && !empty($config['orbFull']) ? 100 : $gains['mana'];
+                $next[$side . 'Mana'] += $mana;
+                $managained += $mana;
             }
         }
 

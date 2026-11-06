@@ -509,7 +509,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 destroyedTypes: destroyedPieces.map(piece => piece.type),
                 matchGroups: matchGroups.map(group => ({type: group.type, size: group.pieces.length})),
                 state: this.combatState(),
-                config: this.ruleConfig(),
+                // The opponent standing on its last HP waiting for the missing questions: the Orb asks them at once.
+                config: {
+                    ...this.ruleConfig(),
+                    orbFull: CombatRules.bossResists(this.combatState(), this.minQuestions, this.questionsTotal),
+                },
             });
             Object.assign(this, result.state);
 
@@ -959,7 +963,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * match, since questionsTotal keeps advancing with every answer regardless.
          */
         reviveBoss() {
-            this.currentHp = CombatRules.reviveHp(this.maxBossHp);
+            this.currentHp = CombatRules.reviveHp();
             this.updateUI();
             const fill = text => text
                 .replace('{$a->done}', this.questionsTotal)

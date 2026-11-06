@@ -45,13 +45,14 @@ dificuldade (veja abaixo).
 conteúdo: combinar peças bem enche a barra e acumula o multiplicador, mas o retorno de verdade
 só vem se o estudante também responder certo.
 
-## Mínimo de Questões e a Revivência do Oponente
+## Mínimo de Questões e o Oponente que Resiste
 
 O professor pode exigir um número mínimo de perguntas respondidas por partida (3 por padrão). O
 Lobby avisa o estudante antes de a partida começar, e um contador mostra o progresso durante ela.
-Se o oponente fosse cair antes de esse número ser atingido, ele volta com metade do HP — quantas
-vezes for preciso —, então uma partida nunca pode ser vencida sem o estudante realmente encarar as
-perguntas.
+Se o oponente fosse cair antes de esse número ser atingido, ele fica com 1 HP em vez de morrer, e cada
+peça de Orbe que o estudante combina enche a barra de mana inteira, então um único combo de Orbe já faz
+a próxima pergunta. Cumprido o mínimo, o próximo golpe o derrota. Um golpe forte não custa nada, e uma
+partida nunca pode ser vencida sem o estudante realmente encarar as perguntas.
 
 ## Dificuldade
 

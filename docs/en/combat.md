@@ -45,12 +45,14 @@ This is the moment the plugin ties Match-3 skill to actual content knowledge: ma
 well fills the bar and builds up the multiplier, but the real payoff only lands if the student
 also answers correctly.
 
-## Minimum Questions and the Opponent's Revival
+## Minimum Questions and the Opponent Holding On
 
 The teacher can require a minimum number of answered questions per match (3 by default). The
 Lobby tells the student before the match starts, and a counter shows the progress during it. If
-the opponent would fall before that number is reached, it comes back with half its HP — as many times
-as needed — so a match can never be won without actually engaging with the questions.
+the opponent would fall before that number is reached, it stays on its last 1 HP instead of dying, and
+every Orb piece the student matches fills the whole mana bar, so a single Orb combo asks the next
+question. Once the minimum is met, the next hit defeats it. A strong hit therefore costs nothing, and a
+match can never be won without actually engaging with the questions.
 
 ## Difficulty
 

@@ -15,8 +15,8 @@
   [Modos de Jogo](#game-modes).
 * **Três dificuldades,** escolhidas pelo estudante, que nunca mudam a nota: Fácil, Normal e Difícil
   escalam o oponente, a recompensa em moedas e a frequência com que o oponente acerta a pergunta.
-* **Mínimo de questões por partida:** o oponente revive com metade do HP se cair antes de o estudante
-  ter respondido o número exigido de perguntas.
+* **Mínimo de questões por partida:** o oponente fica com 1 HP se cair antes de o estudante
+  ter respondido o número exigido de perguntas, e cada combo de Orbe faz a próxima.
 * **Retome de onde parou:** o tabuleiro e a luta são salvos durante o jogo, então fechar a aba ou
   recarregar a página retoma a luta de onde estava.
 * **Partida Demo:** uma luta de prática guiada, sempre disponível no Lobby, que nunca conta para

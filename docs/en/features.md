@@ -14,8 +14,8 @@
   [Game Modes](#game-modes).
 * **Three difficulties,** chosen by the student, that never change the grade: Easy, Normal and
   Hard scale the opponent, the coin reward and how often the opponent answers correctly.
-* **Minimum questions per match:** the opponent revives at half HP if it falls before the student has
-  answered the required number of questions.
+* **Minimum questions per match:** the opponent stays on its last HP if it falls before the student has
+  answered the required number of questions, and each Orb combo then asks the next one.
 * **Resume anywhere:** the board and the fight are saved while playing, so closing the tab or
   reloading picks the fight up where it was.
 * **Demo match:** a guided practice fight, always available from the Lobby, that never counts for

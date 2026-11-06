@@ -133,13 +133,43 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that revive_hp is half of max, rounded up.
+     * Tests that the boss is left on its last HP, whatever its max.
      *
      * @return void
      */
-    public function test_revive_hp_is_half_of_max_rounded_up(): void {
-        $this->assertSame(501, combat_engine::revive_hp(1001));
-        $this->assertSame(500, combat_engine::revive_hp(1000));
+    public function test_revive_hp_is_the_last_hp(): void {
+        $this->assertSame(1, combat_engine::revive_hp());
+    }
+
+    /**
+     * Tests that the boss resists only on its last HP with the minimum still unmet.
+     *
+     * @return void
+     */
+    public function test_boss_resists_only_on_the_last_hp_with_the_minimum_unmet(): void {
+        $last = array_merge($this->fresh_state(), ['currentHp' => 1.0]);
+        $this->assertTrue(combat_engine::boss_resists($last, 5, 3));
+        $this->assertFalse(combat_engine::boss_resists($last, 5, 5), 'the minimum is met');
+        $this->assertFalse(combat_engine::boss_resists($last, 0, 0), 'no minimum configured');
+        $this->assertFalse(combat_engine::boss_resists($this->fresh_state(), 5, 3), 'not on its last HP');
+    }
+
+    /**
+     * Tests that orbFull fills the whole mana bar for the student's Orb, and never for the opponent's.
+     *
+     * @return void
+     */
+    public function test_orb_full_fills_only_the_students_mana_bar(): void {
+        $config = array_merge(self::CONFIG, ['orbFull' => true]);
+
+        $player = combat_engine::resolve_match_effects('player', [2], [], $this->fresh_state(), $config);
+        $this->assertTrue($player['questionTriggered']);
+        $this->assertSame('player', $player['triggeredBy']);
+        $this->assertSame(100, $player['manaGained']);
+
+        $boss = combat_engine::resolve_match_effects('boss', [2], [], $this->fresh_state(), $config);
+        $this->assertFalse($boss['questionTriggered']);
+        $this->assertSame(20, $boss['state']['bossMana']);
     }
 
     /**

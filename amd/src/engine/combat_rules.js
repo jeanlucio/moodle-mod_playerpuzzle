@@ -310,13 +310,29 @@
         }
 
         /**
-         * The HP the boss comes back at when revived: 50% of this match's own max HP.
+         * The HP the boss is left standing at when it would fall before the minimum of questions is answered: 1.
+         * It does not come back with part of its life: the student only has to answer what is missing (see
+         * bossResists()), so a strong hit costs nothing and a minimum of any size is only about the questions.
          *
-         * @param {number} maxBossHp This match's max boss HP.
          * @return {number}
          */
-        function reviveHp(maxBossHp) {
-            return Math.ceil(maxBossHp * 0.5);
+        function reviveHp() {
+            return 1;
+        }
+
+        /**
+         * Whether the boss is standing on its last HP waiting for the student to answer the questions still
+         * missing: the minimum is not met and the boss has been brought down to that last HP. While it holds, the
+         * student's Orb pieces fill the whole mana bar (see resolveMatchEffects()'s config.orbFull), so one Orb
+         * combo asks the next question instead of five.
+         *
+         * @param {object} state Combat state (currentHp).
+         * @param {number} minQuestions The instance's configured minimum, 0 = no minimum.
+         * @param {number} questionsTotal Questions answered so far this attempt.
+         * @return {boolean}
+         */
+        function bossResists(state, minQuestions, questionsTotal) {
+            return needsRevive(minQuestions, questionsTotal) && state.currentHp <= reviveHp();
         }
 
         /**
@@ -436,7 +452,8 @@
          *  turn — only type and size (piece count) matter here, never piece identity.
          * @param {object} params.state Current combat state (HP/meters/mana/gold/
          *  multipliers for both sides) — copied, never mutated.
-         * @param {object} params.config {baseDamage, coinGain, coinFactor, bossPowers}.
+         * @param {object} params.config {baseDamage, coinGain, coinFactor, bossPowers} and, optionally, orbFull: true
+         *  when the student's Orb pieces fill the whole mana bar (see bossResists()).
          * @return {object} {state, damageDealt, coinsGained, healGained, multiplierGained,
          *  shieldGained, poisonGained, manaGained, questionTriggered, triggeredBy}.
          */
@@ -468,8 +485,9 @@
                     next[`${side}PoisonMeter`] += gains.poison;
                     poisonGained += gains.poison;
                 } else if (type === 2) {
-                    next[`${side}Mana`] += gains.mana;
-                    manaGained += gains.mana;
+                    const mana = side === 'player' && config.orbFull ? 100 : gains.mana;
+                    next[`${side}Mana`] += mana;
+                    manaGained += mana;
                 }
             }
 
@@ -891,6 +909,7 @@
             resolveShieldMeters,
             phaseLimit,
             needsRevive,
+            bossResists,
             reviveHp,
             hasNextPhase,
             resolveDamage,

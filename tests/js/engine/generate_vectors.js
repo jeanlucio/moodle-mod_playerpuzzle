@@ -355,6 +355,27 @@ function recordCall(fn, args) {
 }
 
 /**
+ * Adds the cases for the opponent holding on at its last HP while questions are missing: when it applies, and the
+ * student's Orb filling the whole mana bar then.
+ *
+ * @param {Array} cases The combat cases, added to in place.
+ */
+function addOrbFullCases(cases) {
+    [[{currentHp: 1}, 5, 3], [{currentHp: 1}, 5, 5], [{currentHp: 1}, 0, 0], [{currentHp: 40}, 5, 3], [{currentHp: 0}, 3, 1]]
+        .forEach(([state, min, total]) => cases.push(recordCall('bossResists', [state, min, total])));
+    const orbRand = randomSource(20261112);
+    for (let i = 0; i < 20; i++) {
+        cases.push(recordCall('resolveMatchEffects', [{
+            currentTurn: orbRand.pick(['player', 'boss']),
+            destroyedTypes: [2, orbRand.int(0, 6), orbRand.int(0, 6)],
+            matchGroups: [],
+            state: randomState(orbRand),
+            config: {baseDamage: orbRand.int(1, 60), coinGain: 10, coinFactor: 1, orbFull: true},
+        }]));
+    }
+}
+
+/**
  * Calls every pure combat rule over fixed edge cases and seeded random arguments.
  *
  * @return {Array} The combat vectors, in fixture shape.
@@ -368,7 +389,7 @@ function buildCombatVectors() {
     }
     ['shield', 'magic', 'potion', 'sword'].forEach(type => cases.push(recordCall('phaseLimit', [type])));
     [[0, 0], [3, 2], [3, 3], [5, 9]].forEach(args => cases.push(recordCall('needsRevive', args)));
-    [1, 15, 99, 1000, 2501].forEach(max => cases.push(recordCall('reviveHp', [max])));
+    cases.push(recordCall('reviveHp', []));
     [
         {gamemode: 'single', currentphase: 3, currentlevel: 1, maxlevels: 1},
         {gamemode: 'campaign', currentphase: 9, currentlevel: 1, maxlevels: 1},
@@ -560,6 +581,8 @@ function buildCombatVectors() {
         ]));
         cases.push(recordCall('startTurn', ['boss', state, config]));
     }
+
+    addOrbFullCases(cases);
 
     const lootRand = randomSource(20261108);
     for (let i = 0; i < 30; i++) {

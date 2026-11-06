@@ -297,8 +297,9 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, breathEvery, events
             });
             const sizedGroups = matchGroups.map(group => ({type: group.type, size: group.cells.length}));
 
+            const orbFull = CombatRules.bossResists(state, minQuestions, sim.questionsTotal);
             const result = CombatRules.resolveMatchEffects({
-                currentTurn: turn, destroyedTypes, matchGroups: sizedGroups, state, config,
+                currentTurn: turn, destroyedTypes, matchGroups: sizedGroups, state, config: {...config, orbFull},
             });
             state = result.state;
 
@@ -348,7 +349,7 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, breathEvery, events
             return false;
         }
         if (CombatRules.needsRevive(minQuestions, sim.questionsTotal)) {
-            state.currentHp = CombatRules.reviveHp(maxBossHp);
+            state.currentHp = CombatRules.reviveHp();
             return false;
         }
         return true;

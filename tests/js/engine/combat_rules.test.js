@@ -91,9 +91,35 @@ test('needsRevive is true only when a minimum is configured and not yet met', ()
     assert.equal(combatRules.needsRevive(0, 0), false, 'no minimum configured never revives');
 });
 
-test('reviveHp is half of max, rounded up', () => {
-    assert.equal(combatRules.reviveHp(1001), 501);
-    assert.equal(combatRules.reviveHp(1000), 500);
+test('reviveHp leaves the boss on its last HP, whatever its max', () => {
+    assert.equal(combatRules.reviveHp(), 1);
+});
+
+test('bossResists holds only on the last HP with the minimum still unmet', () => {
+    const last = Object.assign(freshState(), {currentHp: 1});
+    assert.equal(combatRules.bossResists(last, 5, 3), true);
+    assert.equal(combatRules.bossResists(last, 5, 5), false, 'the minimum is met');
+    assert.equal(combatRules.bossResists(last, 0, 0), false, 'no minimum configured');
+    assert.equal(combatRules.bossResists(freshState(), 5, 3), false, 'the boss is not on its last HP');
+});
+
+test('resolveMatchEffects: with orbFull one student Orb fills the whole mana bar and asks a question', () => {
+    const result = combatRules.resolveMatchEffects({
+        currentTurn: 'player', destroyedTypes: [2], matchGroups: [],
+        state: freshState(), config: Object.assign({orbFull: true}, CONFIG),
+    });
+    assert.equal(result.questionTriggered, true);
+    assert.equal(result.triggeredBy, 'player');
+    assert.equal(result.manaGained, 100);
+});
+
+test('resolveMatchEffects: orbFull never fills the opponent\'s Orb', () => {
+    const result = combatRules.resolveMatchEffects({
+        currentTurn: 'boss', destroyedTypes: [2], matchGroups: [],
+        state: freshState(), config: Object.assign({orbFull: true}, CONFIG),
+    });
+    assert.equal(result.questionTriggered, false);
+    assert.equal(result.state.bossMana, 20);
 });
 
 test('hasNextPhase is false outside campaign mode regardless of level/phase', () => {

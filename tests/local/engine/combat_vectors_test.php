@@ -96,7 +96,9 @@ final class combat_vectors_test extends \advanced_testcase {
             case 'needsRevive':
                 return combat_engine::needs_revive($args[0], $args[1]);
             case 'reviveHp':
-                return combat_engine::revive_hp($args[0]);
+                return combat_engine::revive_hp();
+            case 'bossResists':
+                return combat_engine::boss_resists($args[0], $args[1], $args[2]);
             case 'hasNextPhase':
                 return combat_engine::has_next_phase($args[0]);
             case 'resolveDamage':

@@ -364,6 +364,15 @@ body.path-mod-playerpuzzle .pp-lobby-panel {
     gap: 1.15rem;
 }
 
+/* A panel that needs the room (the Shop) sends the hero away and takes the whole width. */
+body.path-mod-playerpuzzle .pp-lobby-wide .pp-lobby-rig {
+    grid-template-columns: 1fr;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-wide .pp-lobby-hero {
+    display: none;
+}
+
 @media (max-width: 640px) {
     body.path-mod-playerpuzzle .pp-lobby-rig {
         grid-template-columns: 1fr;
@@ -1183,16 +1192,17 @@ body.path-mod-playerpuzzle .pp-shop-note i {
 
 body.path-mod-playerpuzzle .pp-shop-tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
-    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+    gap: 0.4rem;
 }
 
 body.path-mod-playerpuzzle .pp-shop-tiles .pp-lobby-shop-item {
     min-width: 0;
     display: grid;
     justify-items: center;
+    align-content: space-between;
     gap: 0.25rem;
-    padding: 0.6rem 0.4rem;
+    padding: 0.6rem 0.2rem;
     text-align: center;
     background: rgba(0, 0, 0, 0.32);
     border-radius: 8px;
@@ -1215,8 +1225,8 @@ body.path-mod-playerpuzzle .pp-shop-tiles .pp-lobby-shop-limit {
 
 body.path-mod-playerpuzzle .pp-shop-tiles .pp-lobby-buy {
     width: 100%;
-    padding: 0.25rem 0.15rem;
-    font-size: 0.75rem;
+    padding: 0.25rem 0.1rem;
+    font-size: 0.7rem;
 }
 
 body.path-mod-playerpuzzle .pp-shop-tile-icon {

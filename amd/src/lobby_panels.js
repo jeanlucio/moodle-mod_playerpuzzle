@@ -27,6 +27,7 @@
  * Wires every "open panel" button (data-action="open-panel", data-panel="<id>") and every
  * "close panel" button (data-action="close-panel", inside the panel itself) in the Lobby.
  * Each panel's content is already rendered with the page, so switching needs no request.
+ * A panel marked data-wide="true" (the Shop) takes the hero's column too, while it is open.
  * Focus follows the switch — onto the panel's own heading when it opens, and back onto the
  * button that opened it when it closes — so a keyboard or screen-reader user lands where
  * the content changed instead of on a now-hidden element.
@@ -37,6 +38,7 @@ export const init = () => {
         return;
     }
 
+    const lobby = main.closest('.pp-lobby');
     let opener = null;
 
     document.addEventListener('click', (event) => {
@@ -49,6 +51,7 @@ export const init = () => {
             opener = openButton;
             main.hidden = true;
             panel.hidden = false;
+            lobby.classList.toggle('pp-lobby-wide', panel.dataset.wide === 'true');
             openButton.setAttribute('aria-expanded', 'true');
             const heading = panel.querySelector('[tabindex="-1"]');
             if (heading) {
@@ -64,6 +67,7 @@ export const init = () => {
                 panel.hidden = true;
             }
             main.hidden = false;
+            lobby.classList.remove('pp-lobby-wide');
             if (opener) {
                 opener.setAttribute('aria-expanded', 'false');
                 opener.focus();

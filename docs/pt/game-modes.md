@@ -31,7 +31,7 @@ Campanha.
   HP do oponente daquela fase, rotaciona o token, e o estudante segue para a próxima. A mesma
   requisição não pode ser reproduzida para pular várias fases a partir de uma vitória.
 * **Dificuldade por fase:** o estudante escolhe a dificuldade no Lobby para a primeira fase e de
-  novo, a cada tela "Fase concluída", para a seguinte.
+  novo, a cada tela "Fase vencida", para a seguinte.
 * **O Normal cresce com a Campanha:** no Normal, os oponentes batem mais forte quanto mais adiante na
   Campanha está a fase, da força de sempre na primeira fase até 60% a mais na última, para a Campanha
   acompanhar um herói que continua crescendo. O Fácil e o Difícil não mudam.

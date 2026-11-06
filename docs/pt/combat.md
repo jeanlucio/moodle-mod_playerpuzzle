@@ -69,7 +69,7 @@ segura. No Difícil tudo dobra para os dois lados, então a partida dura o mesmo
 metade do tempo para sobreviver. No Normal o chefão final também tem 15% a mais de HP, o que o põe um pouco
 acima do que um herói com todas as melhorias consegue alcançar.
 
-Na Campanha a escolha é feita a cada fase: no Lobby para a primeira, e na tela "Fase concluída"
+Na Campanha a escolha é feita a cada fase: no Lobby para a primeira, e na tela "Fase vencida"
 para a seguinte.
 
 ## A Loja de Loadout e os Consumíveis

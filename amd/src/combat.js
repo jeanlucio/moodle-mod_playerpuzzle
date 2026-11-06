@@ -953,15 +953,20 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Brings the boss back at 50% of this match's own max HP and announces it, leaving
-         * combat running exactly as if the boss had never reached 0 — may fire more than once
-         * per match, since questionsTotal keeps advancing with every answer regardless.
+         * Brings the boss back at 50% of this match's own max HP and says why: a line in the opponent's history and
+         * a balloon on the stage (which is also read out), both with how many of the required questions have been
+         * answered. Leaves combat running exactly as if the boss had never reached 0 — may fire more than once per
+         * match, since questionsTotal keeps advancing with every answer regardless.
          */
         reviveBoss() {
             this.currentHp = CombatRules.reviveHp(this.maxBossHp);
             this.updateUI();
-            this.scene.ui.pushHistoryLog('boss', this.strings.historylogrevive);
-            Accessibility.announce(this.strings.bossrevived);
+            const fill = text => text
+                .replace('{$a->done}', this.questionsTotal)
+                .replace('{$a->min}', this.minQuestions)
+                .replace('{$a->left}', Math.max(1, this.minQuestions - this.questionsTotal));
+            this.scene.ui.pushHistoryLog('boss', fill(this.strings.historylogrevive));
+            this.scene.ui.showTutorialBalloon(fill(this.strings.bossrevived));
         }
 
         /**

@@ -69,7 +69,7 @@ On Normal the final boss also has 15% more HP, which puts it a little above what
 reach.
 
 In Campaign the choice is made for each phase: in the Lobby for the first one, and on the
-"Phase complete" screen for the next.
+"Phase won" screen for the next.
 
 ## The Loadout Shop and Consumables
 

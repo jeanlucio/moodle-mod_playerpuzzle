@@ -41,6 +41,9 @@ use mod_playerpuzzle\local\user_stock;
  * @covers \mod_playerpuzzle\external\advance_phase
  */
 final class advance_phase_test extends \advanced_testcase {
+    /** @var array The opening question of a phase with no question to draw: the student moves first. */
+    private const OPENING = ['type' => 'question', 'side' => 'player', 'outcome' => 'unavailable'];
+
     /** @var \stdClass Course used by every test. */
     private \stdClass $course;
 
@@ -153,10 +156,11 @@ final class advance_phase_test extends \advanced_testcase {
     private function make_verified_phase(string $token, int $seed = 2, array $moves = [[3, 1, 3, 2]]): void {
         global $DB;
 
-        $events = array_map(
+        // The phase opens with the question that decides who moves first; with none to draw, the student does.
+        $events = array_merge([self::OPENING], array_map(
             static fn(array $m): array => ['type' => 'move', 'r1' => $m[0], 'c1' => $m[1], 'r2' => $m[2], 'c2' => $m[3]],
             $moves
-        );
+        ));
         $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token], MUST_EXIST);
         $DB->update_record('playerpuzzle_attempts', (object) [
             'id' => $attemptid,
@@ -1005,7 +1009,7 @@ final class advance_phase_test extends \advanced_testcase {
         $DB->set_field(
             'playerpuzzle_attempts',
             'movelog',
-            move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
             ['token' => $token]
         );
 

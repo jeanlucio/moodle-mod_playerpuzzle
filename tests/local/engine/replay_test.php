@@ -40,6 +40,9 @@ use mod_playerpuzzle\local\question_results;
  * @covers \mod_playerpuzzle\local\question_results
  */
 final class replay_test extends \advanced_testcase {
+    /** @var array The opening question of a phase with no question to draw: the student moves first. */
+    private const OPENING = ['type' => 'question', 'side' => 'player', 'outcome' => 'unavailable'];
+
     #[\Override]
     protected function setUp(): void {
         parent::setUp();
@@ -123,7 +126,7 @@ final class replay_test extends \advanced_testcase {
      */
     public function test_derive_returns_null_when_first_event_is_not_a_move(): void {
         $attempt = $this->make_attempt([
-            'movelog' => move_log::encode([['type' => 'question', 'side' => 'player', 'outcome' => 'answered']]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'question', 'side' => 'player', 'outcome' => 'answered']]),
         ]);
         $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle()));
     }
@@ -141,7 +144,7 @@ final class replay_test extends \advanced_testcase {
     public function test_derive_resolves_a_real_single_move_win(): void {
         $attempt = $this->make_attempt([
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
             'frozenbasebosshp' => 10,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
@@ -181,7 +184,7 @@ final class replay_test extends \advanced_testcase {
         $attempt = $this->make_attempt([
             'id' => 97,
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'consumable', 'kind' => 'sword']]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'consumable', 'kind' => 'sword']]),
             'frozenbasebosshp' => 10,
         ]);
         $this->record_server_uses(97, ['sword' => 1]);
@@ -203,7 +206,7 @@ final class replay_test extends \advanced_testcase {
         $attempt = $this->make_attempt([
             'id' => 99,
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
             'frozenbasebosshp' => 10,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
@@ -223,7 +226,7 @@ final class replay_test extends \advanced_testcase {
         $attempt = $this->make_attempt([
             'id' => 96,
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'consumable', 'kind' => 'sword']]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'consumable', 'kind' => 'sword']]),
             'frozenbasebosshp' => 10,
         ]);
 
@@ -241,7 +244,7 @@ final class replay_test extends \advanced_testcase {
     public function test_derive_rounds_match_damage_like_the_client(): void {
         $attempt = $this->make_attempt([
             'rngseed' => 4,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 3, 'c2' => 5]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 3, 'c2' => 5]]),
             'frozenbasebosshp' => 17,
             'frozenbossdamage' => 11,
         ]);
@@ -260,7 +263,7 @@ final class replay_test extends \advanced_testcase {
     public function test_derive_resolves_a_real_defeat(): void {
         $attempt = $this->make_attempt([
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 1, 'c2' => 4]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 1, 'c2' => 4]]),
         ]);
 
         $result = replay::derive($attempt, $this->make_playerpuzzle(['basestudenthp' => 1]));
@@ -280,7 +283,7 @@ final class replay_test extends \advanced_testcase {
         $attempt = $this->make_attempt([
             'id' => 98,
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
             'frozenbasebosshp' => 10,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
@@ -307,7 +310,7 @@ final class replay_test extends \advanced_testcase {
     public function test_derive_returns_null_when_a_question_event_is_missing(): void {
         $attempt = $this->make_attempt([
             'rngseed' => 56,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]),
             'frozenbasebosshp' => 100000,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
@@ -328,6 +331,7 @@ final class replay_test extends \advanced_testcase {
         $attempt = $this->make_attempt([
             'rngseed' => 22,
             'movelog' => move_log::encode([
+                self::OPENING,
                 ['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 2, 'c2' => 6],
                 ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 1, 'c2' => 3],
                 ['type' => 'question', 'side' => 'boss', 'outcome' => 'answered'],
@@ -357,7 +361,7 @@ final class replay_test extends \advanced_testcase {
         // match every recorded move must have produced on the live board.
         $attempt = $this->make_attempt([
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 0]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 0]]),
         ]);
 
         $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle()));
@@ -377,6 +381,7 @@ final class replay_test extends \advanced_testcase {
         $attempt = $this->make_attempt([
             'rngseed' => 2,
             'movelog' => move_log::encode([
+                self::OPENING,
                 ['type' => 'move', 'r1' => 0, 'c1' => 2, 'r2' => 0, 'c2' => 3],
                 ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 2, 'c2' => 2],
             ]),
@@ -396,7 +401,7 @@ final class replay_test extends \advanced_testcase {
     public function test_derive_returns_null_when_a_recorded_swap_is_between_distant_cells(): void {
         $attempt = $this->make_attempt([
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 3, 'c2' => 1]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 0, 'c1' => 3, 'r2' => 3, 'c2' => 1]]),
             'frozenbasebosshp' => 10,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
@@ -437,6 +442,7 @@ final class replay_test extends \advanced_testcase {
         $attempt = $this->make_attempt([
             'rngseed' => 22,
             'movelog' => move_log::encode([
+                self::OPENING,
                 ['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 2, 'c2' => 6],
                 ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 1, 'c2' => 3],
                 ['type' => 'question', 'side' => 'boss', 'outcome' => 'answered'],
@@ -474,6 +480,7 @@ final class replay_test extends \advanced_testcase {
         return $this->make_attempt([
             'rngseed' => 56,
             'movelog' => move_log::encode([
+                self::OPENING,
                 ['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7],
                 ['type' => 'question', 'side' => 'player', 'outcome' => $outcome],
             ]),
@@ -563,6 +570,7 @@ final class replay_test extends \advanced_testcase {
         $boss = $this->make_attempt([
             'rngseed' => 22,
             'movelog' => move_log::encode([
+                self::OPENING,
                 ['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 2, 'c2' => 6],
                 ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 1, 'c2' => 3],
                 ['type' => 'question', 'side' => 'boss', 'outcome' => 'failed'],
@@ -616,7 +624,7 @@ final class replay_test extends \advanced_testcase {
      */
     public function test_snapshot_reports_an_outcome_the_log_does_not_account_for(): void {
         $pp = $this->make_playerpuzzle(['basestudenthp' => 100]);
-        $movelog = move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]);
+        $movelog = move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]);
 
         $clean = replay::snapshot($this->make_attempt([
             'rngseed' => 56,
@@ -649,10 +657,96 @@ final class replay_test extends \advanced_testcase {
         $fresh = board_engine::generate_grid(8, 8, null, $rng);
         $this->assertSame(array_merge(...$fresh), $snap['grid']);
         $this->assertSame($rng(), prng::create($snap['rngstate'])());
+        // The phase waits on its opening question, asked before anyone has a turn.
         $this->assertSame('player', $snap['turn']);
-        $this->assertNull($snap['pendingquestion']);
+        $this->assertSame(replay::OPENING, $snap['pendingquestion']);
         $this->assertFalse($snap['terminal']);
         $this->assertSame(0, $snap['eventcount']);
+    }
+
+    /**
+     * Tests the opening question every real phase starts with: it decides who moves first, changes nothing else, and
+     * its outcome comes from the server. On this seed the opponent's first move beats a student with 1 HP, so a
+     * phase that ends with the opening as its only event is one in which the opponent moved first.
+     *
+     * @return void
+     */
+    public function test_the_opening_question_decides_who_moves_first(): void {
+        $weak = $this->make_playerpuzzle(['basestudenthp' => 1]);
+        $lost = ['damage' => 0, 'playergold' => 0, 'bossgold' => 15, 'bossdefeated' => false];
+
+        foreach (['skipped', 'failed'] as $outcome) {
+            $attempt = $this->make_attempt([
+                'rngseed' => 2,
+                'movelog' => move_log::encode([['type' => 'question', 'side' => 'player', 'outcome' => $outcome]]),
+            ]);
+            $this->assertSame($lost, replay::derive($attempt, $weak), $outcome);
+        }
+
+        $missed = $this->make_attempt([
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'question', 'side' => 'player', 'outcome' => 'answered']]),
+            'questionresults' => question_results::append(null, 'player', false, true),
+            'questions_total' => 1,
+        ]);
+        $this->assertSame($lost, replay::derive($missed, $weak));
+
+        // Answered right, the student moves first, and a log with no move in it is not a finished phase.
+        $right = $this->make_attempt([
+            'rngseed' => 2,
+            'movelog' => move_log::encode([['type' => 'question', 'side' => 'player', 'outcome' => 'answered']]),
+            'questionresults' => question_results::append(null, 'player', true, true),
+            'questions_total' => 1,
+        ]);
+        $this->assertNull(replay::derive($right, $weak));
+    }
+
+    /**
+     * Tests that a real phase with no opening question on record, or one the log gets wrong, is never verified.
+     *
+     * @return void
+     */
+    public function test_a_phase_without_a_valid_opening_is_not_verified(): void {
+        $move = ['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2];
+        $pp = $this->make_playerpuzzle();
+
+        $missing = $this->make_attempt(['rngseed' => 2, 'frozenbasebosshp' => 10, 'movelog' => move_log::encode([$move])]);
+        $this->assertNull(replay::derive($missing, $pp), 'no opening on record');
+
+        $boss = $this->make_attempt([
+            'rngseed' => 2,
+            'frozenbasebosshp' => 10,
+            'movelog' => move_log::encode([['type' => 'question', 'side' => 'boss', 'outcome' => 'unavailable'], $move]),
+        ]);
+        $this->assertNull(replay::derive($boss, $pp), 'the opening is the student\'s own question');
+
+        $unproved = $this->make_attempt([
+            'rngseed' => 2,
+            'frozenbasebosshp' => 10,
+            'movelog' => move_log::encode([['type' => 'question', 'side' => 'player', 'outcome' => 'answered'], $move]),
+        ]);
+        $this->assertNull(replay::derive($unproved, $pp), 'an answered opening needs the server\'s outcome');
+    }
+
+    /**
+     * Tests that a snapshot of a phase whose opening the server already judged but the log never recorded takes
+     * its outcome, as it does for any other question, and goes on from who moves first.
+     *
+     * @return void
+     */
+    public function test_snapshot_takes_the_judged_opening_that_was_never_logged(): void {
+        $attempt = $this->make_attempt([
+            'rngseed' => 2,
+            'questionresults' => question_results::append(null, 'player', true, true),
+            'questions_total' => 1,
+        ]);
+
+        $snap = replay::snapshot($attempt, $this->make_playerpuzzle());
+
+        $this->assertNull($snap['pendingquestion']);
+        $this->assertSame([['type' => 'question', 'side' => 'player', 'outcome' => 'answered']], $snap['appendedevents']);
+        $this->assertSame(1, $snap['eventcount']);
+        $this->assertSame('player', $snap['turn']);
     }
 
     /**
@@ -663,7 +757,7 @@ final class replay_test extends \advanced_testcase {
      * @return void
      */
     public function test_snapshot_resumes_after_the_boss_turn_or_reports_the_end(): void {
-        $move = move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]);
+        $move = move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]);
         $pp = $this->make_playerpuzzle(['basestudenthp' => 100]);
 
         $ongoing = replay::snapshot($this->make_attempt(['rngseed' => 2, 'movelog' => $move]), $pp);
@@ -687,7 +781,7 @@ final class replay_test extends \advanced_testcase {
     public function test_snapshot_stops_at_an_open_question_unless_the_server_judged_it(): void {
         $pp = $this->make_playerpuzzle(['basestudenthp' => 100]);
 
-        $movelog = move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]);
+        $movelog = move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]);
         $open = replay::snapshot($this->make_attempt([
             'rngseed' => 56,
             'movelog' => $movelog,
@@ -706,7 +800,7 @@ final class replay_test extends \advanced_testcase {
         $this->assertSame([], $open['appendedevents']);
         $this->assertNull($judged['pendingquestion']);
         $this->assertSame([['type' => 'question', 'side' => 'player', 'outcome' => 'answered']], $judged['appendedevents']);
-        $this->assertSame(2, $judged['eventcount']);
+        $this->assertSame(3, $judged['eventcount']);
     }
 
     /**
@@ -720,7 +814,9 @@ final class replay_test extends \advanced_testcase {
         $this->record_server_uses(95, ['sword' => 1]);
 
         $snap = replay::snapshot(
-            $this->make_attempt(['id' => 95, 'rngseed' => 2, 'frozenbasebosshp' => 10]),
+            $this->make_attempt([
+                'id' => 95, 'rngseed' => 2, 'frozenbasebosshp' => 10, 'movelog' => move_log::encode([self::OPENING]),
+            ]),
             $this->make_playerpuzzle()
         );
 

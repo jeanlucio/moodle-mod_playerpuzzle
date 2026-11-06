@@ -30,6 +30,7 @@ use core_external\external_api;
 use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\move_log;
+use mod_playerpuzzle\local\question_results;
 use mod_playerpuzzle\local\questions_repository;
 
 /**
@@ -40,6 +41,9 @@ use mod_playerpuzzle\local\questions_repository;
 final class draw_question_test extends \advanced_testcase {
     /** @var array The first event of a seed-56 phase: a match that opens the player's question. */
     private const DUE_MOVE = ['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7];
+
+    /** @var array The opening question of a phase, already answered right: the student moves first. */
+    private const OPENING = ['type' => 'question', 'side' => 'player', 'outcome' => 'answered'];
 
     /** @var \stdClass Course used by every test. */
     private \stdClass $course;
@@ -105,6 +109,9 @@ final class draw_question_test extends \advanced_testcase {
      * Creates an attempt whose replayed log opens a player question: with this seed, swapping
      * the cells below is a match that fills the player's mana meter (see DUE_MOVE).
      *
+     * The phase has already had its opening question, answered right (which the replay requires before
+     * anything else): the event is stored, its outcome recorded and counted, so the log continues at event 1.
+     *
      * @param int $playerpuzzleid The instance id.
      * @param bool $isdemo Whether the attempt is a Demo.
      * @return string The attempt token.
@@ -113,8 +120,16 @@ final class draw_question_test extends \advanced_testcase {
         global $DB;
 
         $token = security::generate_attempt_token($playerpuzzleid, (int) $this->student->id, 'normal', 1, 1, $isdemo);
-        $DB->set_field('playerpuzzle_attempts', 'rngseed', 56, ['token' => $token]);
-        $DB->set_field('playerpuzzle_attempts', 'frozenbasebosshp', 100000, ['token' => $token]);
+        $DB->update_record('playerpuzzle_attempts', (object) [
+            'id' => (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token], MUST_EXIST),
+            'rngseed' => 56,
+            'frozenbasebosshp' => 100000,
+            'movelog' => move_log::encode([self::OPENING]),
+            'moveseq' => 1,
+            'questionresults' => question_results::append(null, 'player', true, true),
+            'questions_total' => 1,
+            'questions_correct' => 1,
+        ]);
 
         return $token;
     }
@@ -156,6 +171,7 @@ final class draw_question_test extends \advanced_testcase {
         $result = $this->call_draw_question([
             'cmid' => $instance->cmid,
             'token' => $token,
+            'eventoffset' => 1,
             'movelog' => [self::DUE_MOVE],
         ]);
 
@@ -185,6 +201,7 @@ final class draw_question_test extends \advanced_testcase {
         $result = $this->call_draw_question([
             'cmid' => $instance->cmid,
             'token' => $token,
+            'eventoffset' => 1,
             'movelog' => [self::DUE_MOVE],
         ]);
 
@@ -237,6 +254,7 @@ final class draw_question_test extends \advanced_testcase {
         $drawn = $this->call_draw_question([
             'cmid' => $instance->cmid,
             'token' => $token,
+            'eventoffset' => 1,
             'movelog' => [self::DUE_MOVE],
         ]);
         $this->assertTrue($drawn['data']['available']);
@@ -244,7 +262,7 @@ final class draw_question_test extends \advanced_testcase {
         $answered = $this->call_validate_answer((int) $instance->cmid, $token, $answerid, 'player');
         $this->assertTrue($answered['data']['correct']);
 
-        $again = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 1]);
+        $again = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 2]);
 
         $this->assertFalse($again['error']);
         $this->assertFalse($again['data']['available']);
@@ -276,9 +294,10 @@ final class draw_question_test extends \advanced_testcase {
             $this->call_validate_answer((int) $instance->cmid, $token, 0, 'player');
         }
 
+        // Only the opening question, answered before the loop, is counted.
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
-        $this->assertSame(0, (int) $attempt->questions_total);
-        $this->assertSame(0, (int) $attempt->questions_correct);
+        $this->assertSame(1, (int) $attempt->questions_total);
+        $this->assertSame(1, (int) $attempt->questions_correct);
     }
 
     /**
@@ -297,14 +316,17 @@ final class draw_question_test extends \advanced_testcase {
         $this->setUser($this->student);
         $token = $this->make_attempt_token((int) $instance->id);
 
-        $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token, 'movelog' => [self::DUE_MOVE]]);
+        $this->call_draw_question([
+            'cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 1, 'movelog' => [self::DUE_MOVE],
+        ]);
         $this->call_validate_answer((int) $instance->cmid, $token, 0, 'boss');
-        $second = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 1]);
+        $second = $this->call_draw_question(['cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 2]);
 
         $this->assertFalse($second['data']['available']);
         $this->assertSame(
-            0,
-            (int) $DB->get_field('playerpuzzle_attempts', 'questions_total', ['token' => $token])
+            1,
+            (int) $DB->get_field('playerpuzzle_attempts', 'questions_total', ['token' => $token]),
+            'only the opening question counts'
         );
     }
 
@@ -345,6 +367,7 @@ final class draw_question_test extends \advanced_testcase {
         $result = $this->call_draw_question([
             'cmid' => $instance->cmid,
             'token' => $token,
+            'eventoffset' => 1,
             'movelog' => [self::DUE_MOVE],
         ]);
 
@@ -462,7 +485,7 @@ final class draw_question_test extends \advanced_testcase {
         ]);
 
         $before = $this->call_draw_question([
-            'cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 0, 'movelog' => [self::DUE_MOVE],
+            'cmid' => $instance->cmid, 'token' => $token, 'eventoffset' => 1, 'movelog' => [self::DUE_MOVE],
         ]);
         $this->assertFalse($before['error']);
         $this->assertFalse($before['data']['available'], 'the old phase cannot be replayed, so no question is due');
@@ -483,8 +506,15 @@ final class draw_question_test extends \advanced_testcase {
         // The same opening match on the restarted phase now opens a question that is drawn.
         $DB->set_field('playerpuzzle_attempts', 'rngseed', 56, ['id' => $attemptid]);
         $DB->set_field('playerpuzzle_attempts', 'frozenbasebosshp', 100000, ['id' => $attemptid]);
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'questionresults',
+            question_results::append(null, 'player', true, true),
+            ['id' => $attemptid]
+        );
         $after = $this->call_draw_question([
-            'cmid' => $instance->cmid, 'token' => $resumed->token, 'eventoffset' => 0, 'movelog' => [self::DUE_MOVE],
+            'cmid' => $instance->cmid, 'token' => $resumed->token, 'eventoffset' => 0,
+            'movelog' => [self::OPENING, self::DUE_MOVE],
         ]);
         $this->assertFalse($after['error']);
         $this->assertTrue($after['data']['available']);

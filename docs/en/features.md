@@ -14,6 +14,8 @@
   [Game Modes](#game-modes).
 * **Three difficulties,** chosen by the student, that never change the grade: Easy, Normal and
   Hard scale the opponent, the coin reward and how often the opponent answers correctly.
+* **Opening question:** every phase starts with a question that decides who moves first; right answer,
+  the student, otherwise the opponent. It counts as an answered question.
 * **Minimum questions per match:** the opponent stays on its last HP if it falls before the student has
   answered the required number of questions, and each Orb combo then asks the next one.
 * **Resume anywhere:** the board and the fight are saved while playing, so closing the tab or

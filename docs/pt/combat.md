@@ -5,6 +5,12 @@ adaptando a um layout paisagem em telas mais largas.
 
 ## Estrutura de Turnos
 
+**Quem começa.** Toda fase abre com uma **pergunta inicial**, na mesma janela de um Desafio de Pergunta.
+Acertou, você joga primeiro; errou, pulou ou a validação falhou, quem joga primeiro é o oponente. Ela não
+muda mais nada na luta (sem dano, sem perder o multiplicador de Estrela), e uma resposta conta para o mínimo
+de perguntas como qualquer outra. A Demonstração não tem pergunta inicial, e uma atividade sem nenhuma
+pergunta no banco começa direto com o turno do estudante.
+
 1. O estudante faz uma jogada no tabuleiro.
 2. Combos e cascatas mantêm o turno do estudante rolando.
 3. Quando o tabuleiro estabiliza, é o **Turno do Oponente**: uma IA simples varre o tabuleiro e

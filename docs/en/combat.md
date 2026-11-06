@@ -5,6 +5,12 @@ landscape layout on wider screens.
 
 ## Turn Structure
 
+**Who moves first.** Every phase opens with an **opening question**, in the same window as a Question
+Challenge. Answer it right and you move first; miss it, skip it, or let it fail and the opponent does.
+It changes nothing else in the fight (no damage, no Star multiplier lost), and an answer counts towards the
+minimum of questions like any other. A Demo has no opening question, and an activity with no question in its
+bank starts straight away with the student's turn.
+
 1. The student makes a move on the board.
 2. Combos and cascades keep the student's turn going.
 3. Once the board settles, it becomes the **Opponent's turn**: a simple AI scans the board and

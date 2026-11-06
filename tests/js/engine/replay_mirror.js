@@ -281,6 +281,44 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, breathEvery, events
         return false;
     };
 
+    // Every real phase opens with a question that decides who moves first (replay.php::consume_opening()): the
+    // student when it is answered right or none could be drawn, the opponent when it is answered wrong, failed or
+    // skipped. It changes nothing in the fight; an answer counts towards the minimum like any other.
+    const consumeOpening = () => {
+        if (recording && sim.eventIndex === sim.events.length) {
+            const choice = policy.question('player', sim.questionCount.player++, state);
+            sim.events.push({type: 'question', side: 'player', outcome: choice.outcome});
+            if (choice.outcome === 'answered') {
+                sim.outcomes.push({side: 'player', correct: choice.correct, counted: true});
+            }
+        }
+        const event = sim.events[sim.eventIndex];
+        if (!event || event.type !== 'question' || event.side !== 'player') {
+            return null;
+        }
+        sim.eventIndex++;
+
+        switch (event.outcome) {
+            case 'answered': {
+                const outcome = sim.outcomes[sim.outcomeIndex];
+                if (!outcome || outcome.side !== 'player') {
+                    return null;
+                }
+                sim.outcomeIndex++;
+                if (outcome.counted) {
+                    sim.questionsTotal++;
+                }
+                return outcome.correct ? 'player' : 'boss';
+            }
+            case 'skipped':
+            case 'failed':
+                return 'boss';
+            case 'unavailable':
+                return poolEmpty ? 'player' : null;
+        }
+        return null;
+    };
+
     const resolveCascade = turn => {
         for (let round = 0; round < MAX_CASCADE_ROUNDS; round++) {
             const toDestroy = [];
@@ -452,8 +490,21 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, breathEvery, events
         return undefined;
     };
 
-    // The player always moves first, so their turns are the even ones.
-    for (let turnCount = 0; turnCount < MAX_TURNS; turnCount++) {
+    const first = consumeOpening();
+    if (first === null) {
+        return done(null);
+    }
+    if (first === 'boss') {
+        // The opponent's turn begins the way it does after a move of the student's, before it moves.
+        const start = CombatRules.startTurn('boss', state, config);
+        state = start.state;
+        if (state.currentPlayerHp <= 0) {
+            return finish();
+        }
+    }
+
+    // The student's turns are the even ones when they move first, the odd ones when the opponent does.
+    for (let turnCount = first === 'player' ? 0 : 1; turnCount < MAX_TURNS; turnCount++) {
         const outcome = turnCount % 2 === 0 ? playerTurn(turnCount) : bossTurn();
         if (outcome !== undefined) {
             return outcome;

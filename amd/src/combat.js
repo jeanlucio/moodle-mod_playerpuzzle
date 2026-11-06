@@ -170,6 +170,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             } else {
                 this.hydrateFromCheckpoint(gameConfig.combatstate);
             }
+            this.markOpeningQuestion(!!gameConfig.openingquestion);
 
             // Seeded PRNG driving board generation/gravity/shuffle (board.js reads this via
             // this.rng, replacing what used to be plain Math.random calls) — deterministic
@@ -222,7 +223,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          *  validation call never came back).
          */
         recordQuestionEvent(side, outcome) {
-            this.pendingMoveLog.push({type: 'question', side, outcome});
+            // The opening question is the student's own, whatever it decides.
+            this.pendingMoveLog.push({type: 'question', side: side === 'opening' ? 'player' : side, outcome});
         }
 
         /**
@@ -1290,6 +1292,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const ctx = this;
             me.input.enabled = false;
 
+            // The opening question is answered like the student's own, but changes nothing in the fight: it only
+            // decides who moves first.
+            const opening = trigger === 'opening';
+            const ofPlayer = trigger === 'player' || opening;
+            let openingFirst = 'player';
+
             if (trigger === 'player') {
                 Accessibility.announce(this.strings.manafull);
             }
@@ -1338,9 +1346,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         // Question stays the questionerror/no-options fallback above.
                     }
 
-                    let questionText = trigger === 'boss'
-                        ? `<strong class="text-danger pp-bold">${ctx.strings.bosstrigger}</strong><br><br>${question.text}`
-                        : question.text;
+                    if (ctx.beginWithoutOpeningQuestion(opening, question.options || [])) {
+                        return;
+                    }
+
+                    let questionText = ctx.questionWithHeading(trigger, question.text);
 
                     // Demo match: shown once per session, only for the player's
                     // own question challenge — the boss's is auto-resolved with no player
@@ -1368,6 +1378,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                             previouslyFocused.focus();
                         }
                         me.scene.resume();
+                        if (opening) {
+                            // Nothing was matched: no cells to refill, the fight begins.
+                            me.time.delayedCall(250, ctx.startFight, [openingFirst], ctx);
+                            return;
+                        }
                         me.time.delayedCall(250, me.board.applyGravity, [], me.board);
                     };
 
@@ -1376,9 +1391,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                             ? 'btn btn-outline-primary w-100 pp-answer-btn'
                             : 'btn btn-outline-primary btn-lg mb-3 w-100';
 
-                        if (trigger === 'player') {
+                        if (ofPlayer) {
                             $('#playerpuzzle-btn-skip').show().on('click', () => {
                                 ctx.recordQuestionEvent('player', 'skipped');
+                                openingFirst = 'boss';
                                 closeModal();
                             });
                             $('#playerpuzzle-btn-confirm').text(ctx.strings.btnattack)
@@ -1426,6 +1442,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 $('#playerpuzzle-btn-confirm').prop('disabled', true);
 
                                 const applyResult = (isCorrect, correctanswerid) => {
+                                    if (opening) {
+                                        openingFirst = isCorrect ? 'player' : 'boss';
+                                        ctx.showOpeningResult(isCorrect, correctanswerid, answersContainer);
+                                        $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
+                                            .prop('disabled', false).off('click').on('click', closeModal);
+                                        return;
+                                    }
                                     const outcome = CombatRules.questionOutcome(
                                         'player', isCorrect, ctx.combatState(), ctx.ruleConfig()
                                     );
@@ -1601,9 +1624,111 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     dialogEl.showModal();
                 } else {
                     me.scene.resume();
-                    me.time.delayedCall(250, me.board.applyGravity, [], me.board);
+                    if (opening) {
+                        ctx.startFight('player');
+                    } else {
+                        me.time.delayedCall(250, me.board.applyGravity, [], me.board);
+                    }
                 }
             }, 250);
+        }
+
+        /**
+         * A real phase opens with a question that decides who moves first, before any move (see
+         * openQuestionModal()): one still waiting for it, new or rebuilt, resumes there.
+         *
+         * @param {boolean} waiting Whether the phase is waiting for its opening question.
+         */
+        markOpeningQuestion(waiting) {
+            if (waiting) {
+                this.pendingQuestion = 'opening';
+            }
+        }
+
+        /**
+         * The text of a question with the heading its trigger calls for: the opponent's question announces itself
+         * and the opening one says what it decides.
+         *
+         * @param {string} trigger 'player', 'boss' or 'opening'.
+         * @param {string} text The question's text.
+         * @returns {string}
+         */
+        questionWithHeading(trigger, text) {
+            if (trigger === 'boss') {
+                return `<strong class="text-danger pp-bold">${this.strings.bosstrigger}</strong><br><br>${text}`;
+            }
+            if (trigger === 'opening') {
+                return `<strong class="pp-bold">${this.strings.openingtrigger}</strong><br><br>${text}`;
+            }
+            return text;
+        }
+
+        /**
+         * With no question to ask, the opening has nothing to show a student: the fight just begins, on their turn,
+         * and the log says why.
+         *
+         * @param {boolean} opening Whether this is the opening question.
+         * @param {Array} options The question's answers, none when nothing could be drawn.
+         * @returns {boolean} Whether the fight began without a window.
+         */
+        beginWithoutOpeningQuestion(opening, options) {
+            if (!opening || options.length > 0) {
+                return false;
+            }
+            this.recordQuestionEvent('player', 'unavailable');
+            this.scene.scene.resume();
+            this.startFight('player');
+            return true;
+        }
+
+        /**
+         * Shows how the opening question went: whether the student answered right, with the right answer marked
+         * when not, and who therefore moves first. It changes nothing in the fight.
+         *
+         * @param {boolean} correct Whether the answer was right.
+         * @param {number|null} correctanswerid The right answer's id, when the answer was wrong.
+         * @param {jQuery} answersContainer The question's answers.
+         */
+        showOpeningResult(correct, correctanswerid, answersContainer) {
+            const strings = this.strings;
+            if (correct) {
+                answersContainer.find('.btn-warning').removeClass('btn-warning').addClass('btn-success text-white');
+            } else {
+                answersContainer.find('.btn-warning').removeClass('btn-warning').addClass('btn-danger text-white');
+                if (correctanswerid) {
+                    answersContainer.find(`[data-answerid="${correctanswerid}"]`)
+                        .removeClass('btn-outline-primary').addClass('btn-success text-white');
+                }
+            }
+            const message = correct ? strings.openingright : strings.openingwrong;
+            answersContainer.append(
+                `<div class="alert alert-${correct ? 'success' : 'warning'} mt-2 mb-0"><strong>${message}</strong></div>`
+            );
+            this.scene.ui.pushHistoryLog('player', correct ? strings.historylogopening_player : strings.historylogopening_boss);
+            Accessibility.announce(message);
+        }
+
+        /**
+         * Begins the fight once the opening question is closed: the student's turn, or the opponent's when the
+         * student missed or skipped it. The opponent's powers are explained now, as they were at the start of a
+         * phase before there was a question.
+         *
+         * @param {string} first 'player' or 'boss': who moves first.
+         */
+        startFight(first) {
+            const me = this.scene;
+            this.pendingQuestion = null;
+            const notice = this.openingPowerNotice();
+            if (first === 'player') {
+                me.input.enabled = true;
+                me.board.resetHint();
+                me.board.announceTurnStart(notice);
+                return;
+            }
+            if (notice) {
+                Accessibility.announce(notice);
+            }
+            this.passTurnToBoss();
         }
 
         /**

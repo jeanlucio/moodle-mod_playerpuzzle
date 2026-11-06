@@ -62,6 +62,9 @@ class replay {
      */
     private const MAX_TURNS = 500;
 
+    /** @var string What a snapshot reports as the pending question while the opening question is still open. */
+    public const OPENING = 'opening';
+
     /** @var int Board dimension (8x8, board.js). */
     private const ROWS = 8;
 
@@ -233,7 +236,21 @@ class replay {
             return self::describe($grid, $state, $sim, $turn, $terminal, ($seed + $draws->count * 0x6D2B79F5) & 0xFFFFFFFF);
         };
         $minquestions = (int) $playerpuzzle->minquestions;
-        $turn = 'player';
+
+        // Every real phase opens with a question that decides who moves first: the student when it is answered
+        // right (or no question could be drawn), the opponent when it is answered wrong, failed or skipped.
+        $turn = self::consume_opening($sim);
+        if ($turn === null) {
+            return $sim['stop'] !== null ? $finish('player', false) : null;
+        }
+        if ($turn === 'boss') {
+            // The opponent's turn begins the way it does after a move of the student's, before it moves.
+            $start = combat_engine::start_turn('boss', $state, $config);
+            $state = $start['state'];
+            if ($state['currentPlayerHp'] <= 0) {
+                return $finish('boss', true);
+            }
+        }
 
         for ($turncount = 0; $turncount < self::MAX_TURNS; $turncount++) {
             if ($turn === 'player') {
@@ -445,6 +462,62 @@ class replay {
     }
 
     /**
+     * Consumes the opening question every real phase starts with, which decides who moves first. It is the first
+     * event of the phase and has no effect on the fight: no damage, no multiplier lost. A question answered counts
+     * towards the minimum like any other, and what it was answered is taken from the server's own outcome, never
+     * from the client.
+     *
+     * @param array $sim The simulation context (mutated in place).
+     * @return string|null Who moves first, 'player' or 'boss', or null when the log does not reconcile or, in
+     *  snapshot mode, the question is still open (then $sim['stop'] is set).
+     */
+    private static function consume_opening(array &$sim): ?string {
+        $event = $sim['events'][$sim['eventindex']] ?? null;
+        if ($event === null) {
+            if (!$sim['snapshotmode']) {
+                return null;
+            }
+            // Answered before a reload but never logged: the server already judged it. Otherwise this is where the
+            // student resumes, the question open.
+            $next = $sim['outcomes'][$sim['outcomeindex']] ?? null;
+            if (($next['side'] ?? null) !== 'player') {
+                $sim['stop'] = self::OPENING;
+                return null;
+            }
+            $event = ['type' => 'question', 'side' => 'player', 'outcome' => 'answered'];
+            $sim['events'][] = $event;
+            $sim['appended'][] = $event;
+        }
+        if (($event['type'] ?? null) !== 'question' || ($event['side'] ?? null) !== 'player') {
+            return null;
+        }
+        $sim['eventindex']++;
+
+        switch ($event['outcome'] ?? null) {
+            case 'answered':
+                $outcome = $sim['outcomes'][$sim['outcomeindex']] ?? null;
+                if ($outcome === null || ($outcome['side'] ?? null) !== 'player') {
+                    return null;
+                }
+                $sim['outcomeindex']++;
+                if (!empty($outcome['counted'])) {
+                    $sim['questionstotal']++;
+                }
+                return !empty($outcome['correct']) ? 'player' : 'boss';
+
+            case 'skipped':
+            case 'failed':
+                return 'boss';
+
+            case 'unavailable':
+                // Only honest when there was truly nothing to draw.
+                return self::question_pool_is_empty($sim) ? 'player' : null;
+        }
+
+        return null;
+    }
+
+    /**
      * Consumes the question the simulation just triggered for $side: the next logged event
      * must be that side's question marker, and how it ended decides what (if anything) is
      * applied. An 'answered' question takes its right/wrong outcome from the server's own
@@ -567,7 +640,8 @@ class replay {
         return [
             'grid' => $flat,
             'rngstate' => $rngstate,
-            'turn' => $sim['stop'] ?? $turn,
+            // The opening question is asked before anyone has a turn: the student's board is waiting for it.
+            'turn' => $sim['stop'] === self::OPENING ? 'player' : ($sim['stop'] ?? $turn),
             'pendingquestion' => $sim['stop'],
             'terminal' => $terminal,
             'state' => $state,

@@ -567,9 +567,17 @@ class game_page_service {
         // (after a defeat, or on a newer engine). Its opponent's powers are listed in the
         // opponent's history, and explained in a balloon only the first time the student meets
         // that opponent, in any activity. A Demo never counts as meeting it.
+        // The opening question, which decides who moves first, is asked before any move: a phase waiting on it
+        // is still a fresh one.
+        $opening = $snapshot !== null && $snapshot['pendingquestion'] === replay::OPENING;
         $freshphase = $snapshot !== null
-            ? $snapshot['eventcount'] === 0 && $snapshot['pendingquestion'] === null && !$snapshot['terminal']
+            ? $snapshot['eventcount'] === 0
+                && ($snapshot['pendingquestion'] === null || $opening)
+                && !$snapshot['terminal']
             : empty($attemptinfo->combatstate);
+        // A real phase opens with that question: one just created, or one rebuilt that is still waiting on it. A
+        // Demo has none, and a phase whose log could not be rebuilt cannot be told to ask it again.
+        $openingquestion = !$isdemo && ($snapshot === null ? $attemptinfo->isnew : $opening);
         $powernotice = $freshphase && !$isdemo && seen_opponents::first_meeting($opponent, $userid);
         $stagebgurl = opponents::stage_url($opponent)->out(false);
 
@@ -610,6 +618,7 @@ class game_page_service {
             // replay consistently).
             'combatstate'          => $snapshot === null ? $attemptinfo->combatstate : null,
             'freshphase'           => $freshphase,
+            'openingquestion'      => $openingquestion,
             'powernotice'          => $powernotice,
             'consumableuses'       => $consumableuses,
             'consumablestock'      => $consumablestock,

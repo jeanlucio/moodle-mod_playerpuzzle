@@ -37,6 +37,9 @@ use mod_playerpuzzle\local\move_log;
  * @covers \mod_playerpuzzle\external\save_progress
  */
 final class game_completed_test extends \advanced_testcase {
+    /** @var array The opening question of a phase with no question to draw: the student moves first. */
+    private const OPENING = ['type' => 'question', 'side' => 'player', 'outcome' => 'unavailable'];
+
     /** @var \stdClass Course used by every test. */
     private \stdClass $course;
 
@@ -88,7 +91,7 @@ final class game_completed_test extends \advanced_testcase {
         $DB->update_record('playerpuzzle_attempts', (object) [
             'id' => (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]),
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
             'moveseq' => 1,
             'frozenbasebosshp' => 6,
             'frozenbossdamage' => 10,

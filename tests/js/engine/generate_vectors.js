@@ -111,6 +111,10 @@ function makePolicy(variant) {
 const REPLAY_CASES = [
     {name: 'normal, plain', seed: 101, boss: 200, damage: 10, coin: 10, student: 200,
         typeOffset: 0, playerAnswers: ['right', 'wrong'], bossAnswers: ['right', 'wrong']},
+    {name: 'opening missed, the opponent moves first', seed: 191, boss: 150, damage: 10, coin: 10, student: 240,
+        typeOffset: 2, playerAnswers: ['wrong', 'right', 'wrong'], bossAnswers: ['right', 'wrong']},
+    {name: 'opening skipped, the opponent moves first', seed: 192, boss: 150, damage: 10, coin: 10, student: 240,
+        typeOffset: 4, playerAnswers: ['skipped', 'right'], bossAnswers: ['wrong']},
     {name: 'easy', seed: 102, boss: 240, damage: 12, coin: 10, student: 150, difficulty: 'easy',
         typeOffset: 1, playerAnswers: ['right'], bossAnswers: ['wrong']},
     {name: 'hard', seed: 103, boss: 120, damage: 8, coin: 5, student: 300, difficulty: 'hard',

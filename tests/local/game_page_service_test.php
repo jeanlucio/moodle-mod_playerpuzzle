@@ -25,6 +25,8 @@
 
 namespace mod_playerpuzzle\local;
 
+use mod_playerpuzzle\local\engine\replay;
+
 /**
  * Tests for game_page_service.
  *
@@ -32,6 +34,9 @@ namespace mod_playerpuzzle\local;
  * @covers \mod_playerpuzzle\local\question_results
  */
 final class game_page_service_test extends \advanced_testcase {
+    /** @var array The opening question of a phase with no question to draw: the student moves first. */
+    private const OPENING = ['type' => 'question', 'side' => 'player', 'outcome' => 'unavailable'];
+
     /** @var \stdClass Course used by every test. */
     private \stdClass $course;
 
@@ -1090,6 +1095,47 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the page tells a phase that has not had its opening question yet to ask it, new or reloaded, and
+     * not one that is under way or a Demo.
+     *
+     * @return void
+     */
+    public function test_build_game_config_asks_the_opening_question_only_before_the_first_move(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'bossavatar' => 'goblin']);
+        $context = \context_module::instance($cm->id);
+        $userid = (int) $this->student->id;
+
+        $demo = game_page_service::build_game_config($cm, $instance, $context, $userid, false, 'normal', true);
+        $this->assertFalse($demo['openingquestion'], 'a Demo has no opening question');
+        $DB->delete_records('playerpuzzle_attempts', ['playerpuzzleid' => $instance->id, 'userid' => $userid]);
+
+        $new = game_page_service::build_game_config($cm, $instance, $context, $userid, false);
+        $this->assertTrue($new['openingquestion'], 'a phase just created');
+        $this->assertTrue($new['freshphase']);
+
+        $reloaded = game_page_service::build_game_config($cm, $instance, $context, $userid, false);
+        $this->assertNotNull($reloaded['snapshot']);
+        $this->assertSame(replay::OPENING, $reloaded['snapshot']['pendingquestion']);
+        $this->assertTrue($reloaded['openingquestion'], 'reloaded while it is still open');
+        $this->assertTrue($reloaded['freshphase'], 'a phase waiting on its opening is still a fresh one');
+
+        $DB->update_record('playerpuzzle_attempts', (object) [
+            'id' => (int) $DB->get_field(
+                'playerpuzzle_attempts',
+                'id',
+                ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'isdemo' => 0],
+                MUST_EXIST
+            ),
+            'movelog' => move_log::encode([self::OPENING]),
+            'moveseq' => 1,
+        ]);
+        $answered = game_page_service::build_game_config($cm, $instance, $context, $userid, false);
+        $this->assertFalse($answered['openingquestion'], 'asked already');
+    }
+
+    /**
      * Tests that the balloon explaining an opponent's powers is offered only the first time the
      * student meets that opponent, in any activity, while the phase still counts as fresh until a
      * move is played in it.
@@ -1140,8 +1186,8 @@ final class game_page_service_test extends \advanced_testcase {
         $DB->update_record('playerpuzzle_attempts', (object) [
             'id' => (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]),
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 1, 'c2' => 4]]),
-            'moveseq' => 1,
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 1, 'c2' => 4]]),
+            'moveseq' => 2,
             'frozenbasebosshp' => 100000,
         ]);
 
@@ -1173,8 +1219,8 @@ final class game_page_service_test extends \advanced_testcase {
         $DB->update_record('playerpuzzle_attempts', (object) [
             'id' => $attemptid,
             'rngseed' => 56,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]),
-            'moveseq' => 1,
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 0, 'c1' => 7, 'r2' => 1, 'c2' => 7]]),
+            'moveseq' => 2,
             'questionresults' => question_results::append(null, 'player', true, true),
             'questions_total' => 1,
             'frozenbasebosshp' => 100000,
@@ -1183,12 +1229,12 @@ final class game_page_service_test extends \advanced_testcase {
         $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
 
         $this->assertNull($config['snapshot']['pendingquestion']);
-        $this->assertSame(2, $config['moveseq']);
+        $this->assertSame(3, $config['moveseq']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
-        $this->assertSame(2, (int) $attempt->moveseq);
+        $this->assertSame(3, (int) $attempt->moveseq);
         $this->assertSame(
             ['type' => 'question', 'side' => 'player', 'outcome' => 'answered'],
-            move_log::decode($attempt->movelog)[1]
+            move_log::decode($attempt->movelog)[2]
         );
     }
 

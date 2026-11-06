@@ -39,6 +39,9 @@ use mod_playerpuzzle\event\replay_inconclusive;
  * @covers \mod_playerpuzzle\event\replay_inconclusive
  */
 final class replay_credit_test extends \advanced_testcase {
+    /** @var array The opening question of a phase with no question to draw: the student moves first. */
+    private const OPENING = ['type' => 'question', 'side' => 'player', 'outcome' => 'unavailable'];
+
     /** @var \stdClass Course used by every test. */
     private \stdClass $course;
 
@@ -100,7 +103,7 @@ final class replay_credit_test extends \advanced_testcase {
             'isdemo' => 0,
             'engineversion' => (int) get_config('mod_playerpuzzle', 'version'),
             'rngseed' => 2,
-            'movelog' => move_log::encode([['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
+            'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
             'questionresults' => null,
             'phaserestarts' => 0,
             'currentlevel' => 1,
@@ -250,7 +253,7 @@ final class replay_credit_test extends \advanced_testcase {
         [$instance, $context] = $this->make_instance_and_context(['minquestions' => 0, 'basestudenthp' => 1]);
         $attempt = $this->make_conclusive_attempt();
         $attempt->frozenbasebosshp = 1000;
-        $attempt->movelog = move_log::encode([['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 1, 'c2' => 4]]);
+        $attempt->movelog = move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 1, 'c2' => 4]]);
 
         $verdict = replay_credit::verdict($attempt, $instance, $context, true, 1000, 0, 0);
 

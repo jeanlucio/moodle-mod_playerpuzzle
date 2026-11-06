@@ -15,6 +15,8 @@
   [Modos de Jogo](#game-modes).
 * **Três dificuldades,** escolhidas pelo estudante, que nunca mudam a nota: Fácil, Normal e Difícil
   escalam o oponente, a recompensa em moedas e a frequência com que o oponente acerta a pergunta.
+* **Pergunta inicial:** toda fase começa com uma pergunta que decide quem joga primeiro; acertou, o
+  estudante, senão o oponente. Ela conta como uma pergunta respondida.
 * **Mínimo de questões por partida:** o oponente fica com 1 HP se cair antes de o estudante
   ter respondido o número exigido de perguntas, e cada combo de Orbe faz a próxima.
 * **Retome de onde parou:** o tabuleiro e a luta são salvos durante o jogo, então fechar a aba ou

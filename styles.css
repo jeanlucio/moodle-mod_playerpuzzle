@@ -239,7 +239,7 @@ body.path-mod-playerpuzzle .pp-lobby {
     border-image-repeat: round;
     padding: 0.75rem 0.5rem 1rem;
     filter: drop-shadow(0 1.2rem 1.5rem rgba(0, 0, 0, 0.45));
-    color: #f1e6c8;
+    color: var(--pp-cream-soft, #f1e6c8);
 }
 
 /**
@@ -280,7 +280,7 @@ body.path-mod-playerpuzzle .pp-lobby-ember {
     width: 4px;
     height: 4px;
     border-radius: 50%;
-    background: #ffd873;
+    background: var(--pp-gold-bright, #ffd873);
     box-shadow: 0 0 6px 2px rgba(255, 216, 115, 0.6);
     opacity: 0;
     animation: pp-lobby-rise 9s linear infinite;
@@ -443,7 +443,7 @@ body.path-mod-playerpuzzle .pp-lobby-ribbon-title {
     font-size: 1.05rem;
     line-height: 1.3;
     letter-spacing: 0.02em;
-    color: #2a1c10;
+    color: var(--pp-ink, #2a1c10);
 }
 
 /**
@@ -470,7 +470,7 @@ body.path-mod-playerpuzzle .pp-lobby-chip {
 }
 
 body.path-mod-playerpuzzle .pp-lobby-chip i {
-    color: #cdb37a;
+    color: var(--pp-tan, #cdb37a);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-chip svg {
@@ -482,19 +482,19 @@ body.path-mod-playerpuzzle .pp-lobby-chip svg {
 
 /* The difficulty chip that changes the difficulty when pressed. */
 body.path-mod-playerpuzzle .pp-lobby-chip-button {
-    color: #f3e6c4;
-    border-color: #cdb37a;
+    color: var(--pp-cream, #f3e6c4);
+    border-color: var(--pp-tan, #cdb37a);
     cursor: pointer;
     transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
 body.path-mod-playerpuzzle .pp-lobby-chip-button:hover {
     background: rgba(0, 0, 0, 0.48);
-    border-color: #e0a83e;
+    border-color: var(--pp-gold, #e0a83e);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-chip-button:focus-visible {
-    outline: 3px solid #ffd873;
+    outline: 3px solid var(--pp-gold-bright, #ffd873);
     outline-offset: 2px;
 }
 
@@ -506,7 +506,7 @@ body.path-mod-playerpuzzle .pp-lobby-coins {
     margin-inline-start: 0.2rem;
     padding-inline-start: 0.6rem;
     border-inline-start: 1px solid rgba(205, 179, 122, 0.4);
-    color: #ffd873;
+    color: var(--pp-gold-bright, #ffd873);
     font-variant-numeric: tabular-nums;
 }
 
@@ -547,7 +547,7 @@ body.path-mod-playerpuzzle .pp-lobby-menu-btn {
     border: 1px solid rgba(205, 179, 122, 0.4);
     border-radius: 999px;
     padding: 0.55rem 0.9rem;
-    color: #f3e6c4;
+    color: var(--pp-cream, #f3e6c4);
     font-weight: 700;
     font-size: 0.9rem;
     text-decoration: none;
@@ -557,18 +557,18 @@ body.path-mod-playerpuzzle .pp-lobby-menu-btn {
 
 body.path-mod-playerpuzzle .pp-lobby-menu-btn:hover {
     background: rgba(0, 0, 0, 0.48);
-    border-color: #e0a83e;
-    color: #fff3d0;
+    border-color: var(--pp-gold, #e0a83e);
+    color: var(--pp-cream-bright, #fff3d0);
     text-decoration: none;
 }
 
 body.path-mod-playerpuzzle .pp-lobby-menu-btn:focus-visible {
-    outline: 3px solid #ffd873;
+    outline: 3px solid var(--pp-gold-bright, #ffd873);
     outline-offset: 2px;
 }
 
 body.path-mod-playerpuzzle .pp-lobby-menu-btn i {
-    color: #cdb37a;
+    color: var(--pp-tan, #cdb37a);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-back {
@@ -604,14 +604,14 @@ body.path-mod-playerpuzzle .pp-lobby-desc {
     margin: -0.6rem 0 0;
     font-size: 0.82rem;
     text-align: center;
-    color: #cfc6b0;
+    color: var(--pp-stone-text, #cfc6b0);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-hint {
     margin: -0.6rem 0 0;
     font-size: 0.82rem;
     text-align: center;
-    color: #cfc6b0;
+    color: var(--pp-stone-text, #cfc6b0);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-shop {
@@ -628,7 +628,7 @@ body.path-mod-playerpuzzle .pp-lobby-shop-title {
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: #cdb37a;
+    color: var(--pp-tan, #cdb37a);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-shop-list {
@@ -681,7 +681,7 @@ body.path-mod-playerpuzzle .pp-lobby-transfer-title {
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: #cdb37a;
+    color: var(--pp-tan, #cdb37a);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-transfer-label {
@@ -695,14 +695,14 @@ body.path-mod-playerpuzzle .pp-lobby-transfer-input {
     border-radius: 4px;
     border: 1px solid rgba(205, 179, 122, 0.4);
     background: rgba(255, 255, 255, 0.9);
-    color: #2a1c10;
+    color: var(--pp-ink, #2a1c10);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-note {
     font-size: 0.9rem;
     line-height: 1.5;
     background: rgba(0, 0, 0, 0.28);
-    border-inline-start: 3px solid #5a7a52;
+    border-inline-start: 3px solid var(--pp-moss-dim, #5a7a52);
     border-radius: 4px;
     padding: 0.5rem 0.75rem;
     text-align: start;
@@ -714,9 +714,15 @@ body.path-mod-playerpuzzle .pp-lobby-play {
     width: 100%;
     font-weight: 800;
     font-size: 1.15rem;
-    color: #3a2504;
-    background: linear-gradient(180deg, #ffd873 0%, #e0a83e 55%, #b9822a 100%);
-    border: 1px solid #8a611c;
+    color: var(--pp-ink-gold, #3a2504);
+    background:
+        linear-gradient(
+            180deg,
+            var(--pp-gold-bright, #ffd873) 0%,
+            var(--pp-gold, #e0a83e) 55%,
+            var(--pp-gold-deep, #b9822a) 100%
+        );
+    border: 1px solid var(--pp-bronze-deep, #8a611c);
     border-radius: 0.85rem;
     padding: 0.85rem 1.25rem;
     cursor: pointer;
@@ -732,7 +738,7 @@ body.path-mod-playerpuzzle .pp-lobby-play:hover {
 }
 
 body.path-mod-playerpuzzle .pp-lobby-play:focus-visible {
-    outline: 3px solid #ffd873;
+    outline: 3px solid var(--pp-gold-bright, #ffd873);
     outline-offset: 3px;
 }
 
@@ -740,7 +746,7 @@ body.path-mod-playerpuzzle .pp-lobby-play:focus-visible {
  * Shop/Settings/Ranking panels, each shown in place of the Lobby's main panel.
  */
 body.path-mod-playerpuzzle .pp-lobby-view-title {
-    color: #ffd873;
+    color: var(--pp-gold-bright, #ffd873);
     font-weight: 800;
     font-size: 1.25rem;
     margin-bottom: 0.5rem;
@@ -748,12 +754,12 @@ body.path-mod-playerpuzzle .pp-lobby-view-title {
 
 body.path-mod-playerpuzzle .pp-lobby-toggle {
     margin-bottom: 0.5rem;
-    color: #f3e6c4;
+    color: var(--pp-cream, #f3e6c4);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-toggle .form-check-input:checked {
-    background-color: #e0a83e;
-    border-color: #8a611c;
+    background-color: var(--pp-gold, #e0a83e);
+    border-color: var(--pp-bronze-deep, #8a611c);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-transfer .pp-lobby-transfer-btn {
@@ -765,7 +771,7 @@ body.path-mod-playerpuzzle .pp-lobby-ranking-table {
     width: 100%;
     margin: 0.75rem 0 1rem;
     border-collapse: collapse;
-    color: #f3e6c4;
+    color: var(--pp-cream, #f3e6c4);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-ranking-table th,
@@ -777,13 +783,13 @@ body.path-mod-playerpuzzle .pp-lobby-ranking-table td {
 }
 
 body.path-mod-playerpuzzle .pp-lobby-ranking-table th {
-    color: #cdb37a;
+    color: var(--pp-tan, #cdb37a);
     font-size: 0.85rem;
     text-transform: uppercase;
 }
 
 body.path-mod-playerpuzzle .pp-lobby-ranking-me td {
-    color: #ffd873;
+    color: var(--pp-gold-bright, #ffd873);
     font-weight: 700;
 }
 
@@ -797,7 +803,7 @@ body.path-mod-playerpuzzle .pp-lobby-ranking-youtag {
 }
 
 body.path-mod-playerpuzzle .pp-lobby-ranking-empty {
-    color: #f3e6c4;
+    color: var(--pp-cream, #f3e6c4);
     margin: 1rem 0;
 }
 
@@ -824,8 +830,8 @@ body.path-mod-playerpuzzle .pp-history-item {
 }
 
 body.path-mod-playerpuzzle .pp-history-item.pp-history-current {
-    border-color: #ffd873;
-    box-shadow: 0 0 0 1px #ffd873;
+    border-color: var(--pp-gold-bright, #ffd873);
+    box-shadow: 0 0 0 1px var(--pp-gold-bright, #ffd873);
 }
 
 body.path-mod-playerpuzzle .pp-history-hero {
@@ -841,7 +847,7 @@ body.path-mod-playerpuzzle .pp-history-points {
 }
 
 body.path-mod-playerpuzzle .pp-history-name strong {
-    color: #ffd873;
+    color: var(--pp-gold-bright, #ffd873);
     font-size: 1.05rem;
 }
 
@@ -853,29 +859,29 @@ body.path-mod-playerpuzzle .pp-history-status {
     border-radius: 999px;
     font-size: 0.75rem;
     font-weight: 700;
-    color: #f3e6c4;
+    color: var(--pp-cream, #f3e6c4);
 }
 
 body.path-mod-playerpuzzle .pp-history-won .pp-history-status {
-    background: #e0a83e;
-    border-color: #8a611c;
-    color: #2a1c10;
+    background: var(--pp-gold, #e0a83e);
+    border-color: var(--pp-bronze-deep, #8a611c);
+    color: var(--pp-ink, #2a1c10);
 }
 
 body.path-mod-playerpuzzle .pp-history-meta {
     font-size: 0.85rem;
-    color: #f1e6c8;
+    color: var(--pp-cream-soft, #f1e6c8);
 }
 
 body.path-mod-playerpuzzle .pp-history-date {
     font-size: 0.78rem;
-    color: #cdb37a;
+    color: var(--pp-tan, #cdb37a);
 }
 
 body.path-mod-playerpuzzle .pp-history-points {
     font-size: 1.05rem;
     font-weight: 800;
-    color: #ffd873;
+    color: var(--pp-gold-bright, #ffd873);
     text-align: end;
     white-space: nowrap;
 }
@@ -895,13 +901,13 @@ body.path-mod-playerpuzzle .pp-history-points {
  * The teacher's "Manage questions" link, which only the notice about a bank with no questions carries.
  */
 body.path-mod-playerpuzzle .pp-lobby-managelink {
-    color: #ffd873;
+    color: var(--pp-gold-bright, #ffd873);
     text-decoration: underline;
 }
 
 body.path-mod-playerpuzzle .pp-lobby-managelink:hover,
 body.path-mod-playerpuzzle .pp-lobby-managelink:focus-visible {
-    color: #fff3d0;
+    color: var(--pp-cream-bright, #fff3d0);
 }
 
 /**
@@ -985,7 +991,7 @@ body.path-mod-playerpuzzle .badge.pp-status-disabled {
 body.path-mod-playerpuzzle .pp-hero-intro {
     margin: 0 0 1rem;
     text-align: center;
-    color: #f1e6c8;
+    color: var(--pp-cream-soft, #f1e6c8);
 }
 
 body.path-mod-playerpuzzle .pp-hero-choices {
@@ -1029,7 +1035,7 @@ body.path-mod-playerpuzzle .pp-hero-label {
     padding: 0.75rem 0.5rem;
     text-align: center;
     cursor: pointer;
-    color: #f3e6c4;
+    color: var(--pp-cream, #f3e6c4);
     border: 1px solid rgba(205, 179, 122, 0.4);
     border-radius: 0.75rem;
     background: rgba(0, 0, 0, 0.3);
@@ -1038,13 +1044,13 @@ body.path-mod-playerpuzzle .pp-hero-label {
 
 body.path-mod-playerpuzzle .pp-hero-label:hover {
     transform: translateY(-2px);
-    border-color: #e0a83e;
+    border-color: var(--pp-gold, #e0a83e);
 }
 
 body.path-mod-playerpuzzle .pp-hero-radio:checked + .pp-hero-label {
-    border-color: #ffd873;
+    border-color: var(--pp-gold-bright, #ffd873);
     background: rgba(224, 168, 62, 0.16);
-    box-shadow: 0 0 0 2px #ffd873, 0 6px 14px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 0 2px var(--pp-gold-bright, #ffd873), 0 6px 14px rgba(0, 0, 0, 0.4);
 }
 
 body.path-mod-playerpuzzle .pp-hero-radio:checked + .pp-hero-label::after {
@@ -1055,8 +1061,8 @@ body.path-mod-playerpuzzle .pp-hero-radio:checked + .pp-hero-label::after {
     width: 1.4rem;
     height: 1.4rem;
     border-radius: 50%;
-    background: #e0a83e;
-    color: #2a1c10;
+    background: var(--pp-gold, #e0a83e);
+    color: var(--pp-ink, #2a1c10);
     font-size: 0.9rem;
     font-weight: 800;
     line-height: 1.4rem;
@@ -1064,7 +1070,7 @@ body.path-mod-playerpuzzle .pp-hero-radio:checked + .pp-hero-label::after {
 }
 
 body.path-mod-playerpuzzle .pp-hero-radio:focus-visible + .pp-hero-label {
-    outline: 3px solid #ffd873;
+    outline: 3px solid var(--pp-gold-bright, #ffd873);
     outline-offset: 2px;
 }
 
@@ -1076,12 +1082,12 @@ body.path-mod-playerpuzzle .pp-hero-image {
 
 body.path-mod-playerpuzzle .pp-hero-name {
     font-weight: 700;
-    color: #ffd873;
+    color: var(--pp-gold-bright, #ffd873);
 }
 
 body.path-mod-playerpuzzle .pp-hero-specialty {
     font-size: 0.8rem;
-    color: #cdb37a;
+    color: var(--pp-tan, #cdb37a);
 }
 
 body.path-mod-playerpuzzle .pp-hero-actions {
@@ -1153,8 +1159,8 @@ body.path-mod-playerpuzzle .pp-hero-stage-bar i {
 
 body.path-mod-playerpuzzle .pp-hero-stage-bar i.pp-on,
 body.path-mod-playerpuzzle .pp-hero-pips i.pp-on {
-    background: #e0a83e;
-    border-color: #e0a83e;
+    background: var(--pp-gold, #e0a83e);
+    border-color: var(--pp-gold, #e0a83e);
 }
 
 body.path-mod-playerpuzzle .pp-hero-evolved {
@@ -1186,7 +1192,7 @@ body.path-mod-playerpuzzle .pp-hero-stat-name {
 
 body.path-mod-playerpuzzle .pp-hero-stat-name strong i {
     margin-inline-end: 0.4rem;
-    color: #cdb37a;
+    color: var(--pp-tan, #cdb37a);
 }
 
 body.path-mod-playerpuzzle .pp-hero-stat-name small {
@@ -1211,7 +1217,7 @@ body.path-mod-playerpuzzle .pp-hero-pips i {
     width: 0.55rem;
     height: 0.55rem;
     border-radius: 50%;
-    border: 1.5px solid #e0a83e;
+    border: 1.5px solid var(--pp-gold, #e0a83e);
 }
 
 body.path-mod-playerpuzzle .pp-hero-full {
@@ -1228,20 +1234,26 @@ body.path-mod-playerpuzzle .pp-hero-buy,
 body.path-mod-playerpuzzle .pp-lobby-buy {
     white-space: nowrap;
     font-weight: 700;
-    color: #3a2504;
-    background: linear-gradient(180deg, #ffd873 0%, #e0a83e 60%, #b9822a 100%);
-    border: 1px solid #8a611c;
+    color: var(--pp-ink-gold, #3a2504);
+    background:
+        linear-gradient(
+            180deg,
+            var(--pp-gold-bright, #ffd873) 0%,
+            var(--pp-gold, #e0a83e) 60%,
+            var(--pp-gold-deep, #b9822a) 100%
+        );
+    border: 1px solid var(--pp-bronze-deep, #8a611c);
 }
 
 body.path-mod-playerpuzzle .pp-hero-buy:hover,
 body.path-mod-playerpuzzle .pp-lobby-buy:hover {
-    color: #3a2504;
+    color: var(--pp-ink-gold, #3a2504);
     filter: brightness(1.08);
 }
 
 body.path-mod-playerpuzzle .pp-hero-buy:focus-visible,
 body.path-mod-playerpuzzle .pp-lobby-buy:focus-visible {
-    outline: 3px solid #ffd873;
+    outline: 3px solid var(--pp-gold-bright, #ffd873);
     outline-offset: 2px;
 }
 
@@ -1295,9 +1307,9 @@ body.path-mod-playerpuzzle .pp-evolve-mark {
 }
 
 body.path-mod-playerpuzzle .pp-evolve-steps li.pp-done .pp-evolve-mark {
-    background: #86c46f;
-    border-color: #86c46f;
-    color: #10200b;
+    background: var(--pp-moss-hi, #86c46f);
+    border-color: var(--pp-moss-hi, #86c46f);
+    color: var(--pp-moss-ink, #10200b);
 }
 
 body.path-mod-playerpuzzle .pp-shop-note {
@@ -1309,13 +1321,13 @@ body.path-mod-playerpuzzle .pp-shop-note {
     font-size: 0.85rem;
     text-align: start;
     background: rgba(0, 0, 0, 0.32);
-    border-inline-start: 3px solid #7fb2e0;
+    border-inline-start: 3px solid var(--pp-sky, #7fb2e0);
     border-radius: 4px;
 }
 
 body.path-mod-playerpuzzle .pp-shop-note i {
     margin-block-start: 0.2rem;
-    color: #7fb2e0;
+    color: var(--pp-sky, #7fb2e0);
 }
 
 body.path-mod-playerpuzzle .pp-shop-tiles {
@@ -1359,7 +1371,7 @@ body.path-mod-playerpuzzle .pp-shop-tiles .pp-lobby-buy {
 
 body.path-mod-playerpuzzle .pp-shop-tile-icon {
     font-size: 1.4rem;
-    color: #cdb37a;
+    color: var(--pp-tan, #cdb37a);
 }
 
 body.path-mod-playerpuzzle .pp-lobby-shop {
@@ -1513,6 +1525,23 @@ body.path-mod-playerpuzzle {
     --pp-moss-hi: #86c46f;
     --pp-brick: #9b2d28;
     --pp-brick-hi: #e58a80;
+    --pp-brick-bright: #b43a33;
+    --pp-bronze-deep: #8a611c;
+    --pp-cream: #f3e6c4;
+    --pp-cream-bright: #fff3d0;
+    --pp-cream-soft: #f1e6c8;
+    --pp-gold-bright: #ffd873;
+    --pp-gold-deep: #b9822a;
+    --pp-gold-pale: #fbe3a3;
+    --pp-icon-ink: #e8dcc8;
+    --pp-ink-gold: #3a2504;
+    --pp-moss-dim: #5a7a52;
+    --pp-moss-ink: #10200b;
+    --pp-sky: #7fb2e0;
+    --pp-stone-text: #cfc6b0;
+    --pp-tan: #cdb37a;
+    --pp-umber-deep: #2b1f16;
+    --pp-umber-frame: #352a1e;
     --pp-display: Georgia, Cambria, "Times New Roman", serif;
 }
 
@@ -1588,7 +1617,7 @@ body.path-mod-playerpuzzle .pp-themed .btn-primary {
 
 body.path-mod-playerpuzzle .pp-themed .btn-primary:hover:not(:disabled),
 body.path-mod-playerpuzzle .pp-themed .btn-primary:focus-visible {
-    background: linear-gradient(#fbe3a3, var(--pp-gold-hi));
+    background: linear-gradient(var(--pp-gold-pale, #fbe3a3), var(--pp-gold-hi));
     border-color: var(--pp-bronze);
     color: var(--pp-ink);
 }
@@ -1629,7 +1658,7 @@ body.path-mod-playerpuzzle .pp-themed .btn-danger {
 }
 
 body.path-mod-playerpuzzle .pp-themed .btn-danger:hover:not(:disabled) {
-    background: #b43a33;
+    background: var(--pp-brick-bright, #b43a33);
     border-color: var(--pp-umber);
     color: var(--pp-parchment);
 }

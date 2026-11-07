@@ -41,7 +41,7 @@ class campaigns {
     public const ENDED_ATTEMPTS = 'attempts';
 
     /** @var int Phases in a level. */
-    private const PHASES_PER_LEVEL = 10;
+    public const PHASES_PER_LEVEL = 10;
 
     /**
      * Where a brand new real attempt starts, from the student's most recently finished one: on the

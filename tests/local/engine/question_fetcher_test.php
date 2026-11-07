@@ -121,6 +121,89 @@ final class question_fetcher_test extends \advanced_testcase {
     }
 
     /**
+     * Creates one approved question meant for a phase of a level.
+     *
+     * @param int $playerpuzzleid The instance id.
+     * @param int $phase Phase of a level, 0 for any phase.
+     * @param bool $approved Whether the question is approved.
+     * @return int The new question id.
+     */
+    private function make_phase_question(int $playerpuzzleid, int $phase, bool $approved = true): int {
+        return questions_repository::add_question(
+            $playerpuzzleid,
+            'truefalse',
+            "Question for phase $phase?",
+            '',
+            [['text' => 'True', 'iscorrect' => true], ['text' => 'False', 'iscorrect' => false]],
+            2,
+            'manual',
+            $approved,
+            FORMAT_PLAIN,
+            null,
+            $phase
+        );
+    }
+
+    /**
+     * Tests that a phase is drawn from the questions meant for it and those meant for any phase, never
+     * from one meant for another phase.
+     *
+     * @return void
+     */
+    public function test_draw_for_a_phase_uses_its_questions_and_the_any_phase_ones(): void {
+        $first = $this->make_phase_question(7, 1);
+        $any = $this->make_phase_question(7, 0);
+        $this->make_phase_question(7, 5);
+
+        $drawn = [];
+        for ($i = 0; $i < 40; $i++) {
+            $drawn[question_fetcher::draw_random_question_id(7, 1)] = true;
+        }
+
+        $this->assertEqualsCanonicalizing([$first, $any], array_keys($drawn));
+    }
+
+    /**
+     * Tests that a phase nobody prepared a question for still gets one, drawn from every approved question.
+     *
+     * @return void
+     */
+    public function test_draw_for_a_phase_without_questions_falls_back_to_every_approved_one(): void {
+        $other = $this->make_phase_question(7, 5);
+        $this->make_phase_question(7, 6, false);
+
+        $this->assertSame($other, question_fetcher::draw_random_question_id(7, 1));
+    }
+
+    /**
+     * Tests that an unapproved question meant for the phase is never drawn, even when it is the only one.
+     *
+     * @return void
+     */
+    public function test_draw_for_a_phase_never_offers_an_unapproved_question(): void {
+        $this->make_phase_question(7, 1, false);
+
+        $this->assertNull(question_fetcher::draw_random_question_id(7, 1));
+    }
+
+    /**
+     * Tests that a draw with no phase (a Single Match, a Demo) ignores the phases altogether.
+     *
+     * @return void
+     */
+    public function test_draw_without_a_phase_uses_every_approved_question(): void {
+        $first = $this->make_phase_question(7, 1);
+        $fifth = $this->make_phase_question(7, 5);
+
+        $drawn = [];
+        for ($i = 0; $i < 40; $i++) {
+            $drawn[question_fetcher::draw_random_question_id(7)] = true;
+        }
+
+        $this->assertEqualsCanonicalizing([$first, $fifth], array_keys($drawn));
+    }
+
+    /**
      * Tests that get_single_question() never carries iscorrect or any other correctness
      * signal alongside an option — the Blind JSON contract: the correct answer must never
      * reach the client before the server validates it.

@@ -1131,4 +1131,44 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertCount(1, $copies);
         $this->assertSame($entryid, (int) $copies[0]->sourceid);
     }
+
+    /**
+     * Tests that duplicating an activity keeps the phase each bank question is meant for.
+     *
+     * @return void
+     */
+    public function test_duplicate_activity_keeps_the_phase_of_each_question(): void {
+        global $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $answers = [['text' => 'Paris', 'iscorrect' => true], ['text' => 'Lyon', 'iscorrect' => false]];
+        questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Phased?',
+            '',
+            $answers,
+            2,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            7
+        );
+        questions_repository::add_question((int) $instance->id, 'multichoice', 'Unphased?', '', $answers, 2);
+
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id, $course->id, false, MUST_EXIST);
+        $newcm = $this->duplicate_cm($course, $cm);
+
+        $phases = [];
+        foreach (questions_repository::get_questions_for_instance((int) $newcm->instance) as $question) {
+            $phases[$question->questiontext] = (int) $question->phase;
+        }
+        ksort($phases);
+        $this->assertSame(['Phased?' => 7, 'Unphased?' => 0], $phases);
+    }
 }

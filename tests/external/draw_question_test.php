@@ -350,6 +350,33 @@ final class draw_question_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a Campaign phase is drawn from the questions meant for it, never from one meant for another
+     * phase while any exist for this one.
+     *
+     * @return void
+     */
+    public function test_a_campaign_phase_draws_the_questions_meant_for_it(): void {
+        $instance = $this->make_instance(['gamemode' => 'campaign']);
+        $otherphase = $this->make_question((int) $instance->id);
+        $thisphase = $this->make_question((int) $instance->id);
+        questions_repository::set_phase_bulk([$otherphase], (int) $instance->id, 5);
+        questions_repository::set_phase_bulk([$thisphase], (int) $instance->id, 1);
+
+        $this->setUser($this->student);
+        $token = $this->make_attempt_token((int) $instance->id);
+
+        $result = $this->call_draw_question([
+            'cmid' => $instance->cmid,
+            'token' => $token,
+            'eventoffset' => 1,
+            'movelog' => [self::DUE_MOVE],
+        ]);
+
+        $this->assertTrue($result['data']['available']);
+        $this->assertSame($thisphase, $result['data']['id']);
+    }
+
+    /**
      * Tests that a question's own hint is never offered when hints_enabled is off, even
      * though the question genuinely has one — the client-side "Use Hint" button renders
      * purely off this flag, so forcing it false here is what hides it, with no changes

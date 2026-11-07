@@ -39,8 +39,23 @@ quantas vezes foi sorteada, e oferece:
 * **Adicionar uma questão** à mão, com uma dica opcional.
 * **Gerar com IA** — veja abaixo.
 * **Aprovar, reativar, editar ou excluir** questões, uma a uma ou em lote.
+* **Definir a fase** para a qual uma questão serve, uma a uma no formulário da questão ou nas
+  questões selecionadas de uma vez — veja abaixo.
 
 Só questões **aprovadas** são sorteadas numa partida.
+
+## Questões por fase
+
+Na Campanha, cada questão pode servir a uma fase de um nível (todo nível tem 10), de modo que as
+questões mais fáceis abram o nível e as mais difíceis o fechem. A fase é *Qualquer fase* até o
+professor defini-la, e uma nova importação do banco nunca a altera.
+
+Cada fase é jogada com as questões dela mais as de qualquer fase. Quando não há nenhuma das duas,
+o jogo sorteia entre todas as questões aprovadas, então uma fase que ninguém preparou nunca fica
+sem questões. A Partida Única e a Demo não têm fases e sorteiam sempre entre todas as aprovadas.
+
+A fase se repete em todo nível de uma Campanha: a questão da *Fase 3* é sorteada na terceira fase
+de cada nível.
 
 ## Geração por IA
 

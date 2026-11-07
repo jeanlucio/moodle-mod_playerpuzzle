@@ -282,4 +282,21 @@ final class question_form_test extends \advanced_testcase {
 
         $this->assertSame([], $errors);
     }
+
+    /**
+     * Tests that the form offers any phase and each phase of a level, defaulting to any.
+     *
+     * @return void
+     */
+    public function test_offers_any_phase_and_each_phase_of_a_level(): void {
+        $options = question_form::phase_options();
+
+        $this->assertSame(range(0, 10), array_keys($options));
+        $this->assertSame(get_string('questionphase_any', 'mod_playerpuzzle'), $options[0]);
+        $this->assertSame(get_string('questionphase_n', 'mod_playerpuzzle', 10), $options[10]);
+
+        $mform = $this->build_form();
+        $this->assertTrue($mform->elementExists('phase'));
+        $this->assertSame(0, (int) $mform->exportValue('phase'));
+    }
 }

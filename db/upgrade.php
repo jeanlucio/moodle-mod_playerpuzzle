@@ -880,5 +880,16 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110602, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026110701) {
+        // The phase of a level a Campaign question is meant for; 0 keeps every existing question valid for any phase.
+        $table = new xmldb_table('playerpuzzle_questions');
+        $field = new xmldb_field('phase', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'approved');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026110701, 'playerpuzzle');
+    }
+
     return true;
 }

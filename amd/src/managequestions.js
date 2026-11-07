@@ -36,6 +36,7 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
     let selectAllCheckbox = null;
     let bulkDeleteBtn = null;
     let bulkApproveBtn = null;
+    let bulkPhaseBtn = null;
 
     /**
      * Refreshes both bulk-action button states and labels based on current selection.
@@ -54,6 +55,11 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
         if (bulkDeleteBtn) {
             bulkDeleteBtn.disabled = totalCount === 0;
             bulkDeleteBtn.textContent = `${bulkDeleteBtn.dataset.labelbase} (${totalCount})`;
+        }
+
+        if (bulkPhaseBtn) {
+            bulkPhaseBtn.disabled = totalCount === 0;
+            bulkPhaseBtn.textContent = `${bulkPhaseBtn.dataset.labelbase} (${totalCount})`;
         }
 
         if (bulkApproveBtn) {
@@ -132,9 +138,20 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
         bulkActionField = document.getElementById('playerpuzzle-bulk-action');
         bulkDeleteBtn = document.getElementById('playerpuzzle-bulk-delete-btn');
         bulkApproveBtn = document.getElementById('playerpuzzle-bulk-approve-btn');
+        bulkPhaseBtn = document.getElementById('playerpuzzle-bulk-phase-btn');
 
         if (!bulkForm) {
             return;
+        }
+
+        if (bulkPhaseBtn) {
+            // Not destructive, so no confirmation: the page says what changed and the phase can be set again.
+            bulkPhaseBtn.addEventListener('click', () => {
+                if (bulkActionField) {
+                    bulkActionField.value = 'phase';
+                }
+                bulkForm.submit();
+            });
         }
 
         if (bulkDeleteBtn) {

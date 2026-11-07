@@ -24,6 +24,7 @@
 
 namespace mod_playerpuzzle\form;
 
+use mod_playerpuzzle\local\campaigns;
 use mod_playerpuzzle\local\question_editor_files;
 
 defined('MOODLE_INTERNAL') || die();
@@ -72,6 +73,19 @@ class question_form extends \moodleform {
         return max(5, $existinganswercount);
     }
 
+    /**
+     * The phases a question can be meant for: any phase, then each phase of a level.
+     *
+     * @return string[] Phase (0 for any) => label.
+     */
+    public static function phase_options(): array {
+        $options = [0 => get_string('questionphase_any', 'mod_playerpuzzle')];
+        for ($phase = 1; $phase <= campaigns::PHASES_PER_LEVEL; $phase++) {
+            $options[$phase] = get_string('questionphase_n', 'mod_playerpuzzle', $phase);
+        }
+        return $options;
+    }
+
     #[\Override]
     protected function definition(): void {
         $mform = $this->_form;
@@ -97,6 +111,11 @@ class question_form extends \moodleform {
             $editoroptions
         );
         $mform->setType('questiontext_editor', PARAM_RAW);
+
+        $mform->addElement('select', 'phase', get_string('questionphase', 'mod_playerpuzzle'), self::phase_options());
+        $mform->setType('phase', PARAM_INT);
+        $mform->setDefault('phase', 0);
+        $mform->addHelpButton('phase', 'questionphase', 'mod_playerpuzzle');
 
         $mform->addElement('textarea', 'hint', get_string('hint', 'mod_playerpuzzle'), ['rows' => 2]);
         $mform->setType('hint', PARAM_TEXT);

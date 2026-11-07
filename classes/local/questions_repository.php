@@ -63,6 +63,7 @@ class questions_repository {
      * @param int $questiontextformat FORMAT_* constant for questiontext.
      * @param int|null $sourceid When source='bank': the question_bank_entries.id it was
      *  imported from. Null otherwise.
+     * @param int $phase Phase of a level the question is meant for in a Campaign, 0 for any phase.
      * @return int The new question id.
      */
     public static function add_question(
@@ -75,7 +76,8 @@ class questions_repository {
         string $source = 'manual',
         bool $approved = true,
         int $questiontextformat = FORMAT_PLAIN,
-        ?int $sourceid = null
+        ?int $sourceid = null,
+        int $phase = 0
     ): int {
         global $DB;
 
@@ -90,6 +92,7 @@ class questions_repository {
             'source' => $source,
             'sourceid' => $sourceid,
             'approved' => $approved ? 1 : 0,
+            'phase' => self::clean_phase($phase),
             'timecreated' => $now,
             'timemodified' => $now,
             'addedby' => $userid,
@@ -227,6 +230,7 @@ class questions_repository {
      * @param string $hint Optional hint text; empty string stored as null.
      * @param array $answers List of ['text' => string, 'iscorrect' => bool], in display order.
      * @param context|null $context Module context, to purge stale answer file areas.
+     * @param int|null $phase Phase of a level the question is meant for, 0 for any phase; null leaves it as it is.
      * @return void
      */
     public static function update_question(
@@ -235,17 +239,22 @@ class questions_repository {
         string $questiontext,
         string $hint,
         array $answers,
-        ?context $context = null
+        ?context $context = null,
+        ?int $phase = null
     ): void {
         global $DB;
 
-        $DB->update_record('playerpuzzle_questions', (object) [
+        $record = (object) [
             'id' => $questionid,
             'qtype' => $qtype,
             'questiontext' => $questiontext,
             'hint' => $hint !== '' ? $hint : null,
             'timemodified' => time(),
-        ]);
+        ];
+        if ($phase !== null) {
+            $record->phase = self::clean_phase($phase);
+        }
+        $DB->update_record('playerpuzzle_questions', $record);
 
         self::delete_answers($questionid, $context);
         self::save_answers($questionid, $answers);
@@ -544,6 +553,38 @@ class questions_repository {
         $DB->set_field_select('playerpuzzle_questions', 'approved', 1, $condition, $inparams);
         $DB->set_field_select('playerpuzzle_questions', 'sourceid', null, $condition, $inparams);
         $DB->set_field_select('playerpuzzle_questions', 'timemodified', time(), $condition, $inparams);
+    }
+
+    /**
+     * Sets the phase of every given question belonging to the instance in one statement, the
+     * management listing's "Set phase for selected".
+     *
+     * @param int[] $questionids Question ids to update.
+     * @param int $playerpuzzleid The instance every id must belong to.
+     * @param int $phase Phase of a level (1 to 10), or 0 for any phase.
+     * @return void
+     */
+    public static function set_phase_bulk(array $questionids, int $playerpuzzleid, int $phase): void {
+        global $DB;
+
+        if (empty($questionids)) {
+            return;
+        }
+        [$insql, $inparams] = $DB->get_in_or_equal($questionids, SQL_PARAMS_NAMED, 'qid');
+        $inparams['playerpuzzleid'] = $playerpuzzleid;
+        $condition = "id $insql AND playerpuzzleid = :playerpuzzleid";
+        $DB->set_field_select('playerpuzzle_questions', 'phase', self::clean_phase($phase), $condition, $inparams);
+        $DB->set_field_select('playerpuzzle_questions', 'timemodified', time(), $condition, $inparams);
+    }
+
+    /**
+     * Coerces a phase to a value a question can hold: 1 to the phases in a level, or 0 for any phase.
+     *
+     * @param int $phase Raw phase.
+     * @return int
+     */
+    public static function clean_phase(int $phase): int {
+        return $phase >= 1 && $phase <= campaigns::PHASES_PER_LEVEL ? $phase : 0;
     }
 
     /**

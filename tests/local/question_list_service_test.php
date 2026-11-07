@@ -170,4 +170,47 @@ final class question_list_service_test extends \advanced_testcase {
         $this->assertFalse($row['canapprove']);
         $this->assertSame('', $row['approveurl']);
     }
+
+    /**
+     * Tests that each row names the phase its question is meant for, and that the bulk picker offers any
+     * phase and each phase of a level.
+     *
+     * @return void
+     */
+    public function test_rows_show_the_phase_and_the_bulk_picker_lists_every_phase(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+        [$instance, $context] = $this->make_instance_and_context();
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Phased?',
+            '',
+            $answers,
+            2,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            3
+        );
+        questions_repository::add_question((int) $instance->id, 'multichoice', 'Unphased?', '', $answers, 2);
+
+        $listcontext = question_list_service::build_list_context(
+            $instance,
+            (int) get_coursemodule_from_instance('playerpuzzle', $instance->id)->id,
+            $PAGE->get_renderer('core'),
+            $context
+        );
+
+        $labels = [];
+        foreach ($listcontext['questions'] as $row) {
+            $labels[$row['questiontext']] = $row['phaselabel'];
+        }
+        $this->assertSame(get_string('questionphase_n', 'mod_playerpuzzle', 3), $labels['Phased?']);
+        $this->assertSame(get_string('questionphase_any', 'mod_playerpuzzle'), $labels['Unphased?']);
+        $this->assertSame(range(0, 10), array_column($listcontext['bulkphaseoptions'], 'value'));
+    }
 }

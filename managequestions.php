@@ -74,6 +74,10 @@ if ($bulkaction !== '') {
     if ($bulkaction === 'delete') {
         questions_repository::delete_questions_bulk($bulkids, (int) $instance->id, $context);
         redirect($url, get_string('bulkdeleted', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
+    } else if ($bulkaction === 'phase') {
+        $bulkphase = optional_param('bulkphase', 0, PARAM_INT);
+        questions_repository::set_phase_bulk($bulkids, (int) $instance->id, $bulkphase);
+        redirect($url, get_string('bulkphaseupdated', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
     } else if ($bulkaction === 'approve') {
         questions_repository::approve_questions_bulk($bulkids, (int) $instance->id);
         redirect($url, get_string('bulkapproved', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
@@ -161,7 +165,8 @@ if ($mform->is_cancelled()) {
             $data->questiontext_editor['text'],
             $data->hint,
             $answers,
-            $context
+            $context,
+            (int) $data->phase
         );
         $questionid = (int) $data->qid;
     } else {
@@ -171,7 +176,12 @@ if ($mform->is_cancelled()) {
             $data->questiontext_editor['text'],
             $data->hint,
             $answers,
-            (int) $USER->id
+            (int) $USER->id,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            (int) $data->phase
         );
     }
 
@@ -209,6 +219,7 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
         $formdata->cmid = $cm->id;
         $formdata->qtype = $question->qtype;
         $formdata->hint = $question->hint ?? '';
+        $formdata->phase = (int) $question->phase;
         $formdata->questiontext_editor = question_editor_files::prepare(
             $question->questiontext,
             (int) $question->questiontextformat,

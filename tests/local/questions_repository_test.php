@@ -886,4 +886,110 @@ final class questions_repository_test extends \advanced_testcase {
         $this->assertCount(0, $qfiles);
         $this->assertCount(0, $afiles);
     }
+
+    /**
+     * Tests that a question is created for any phase unless one is given, and that a phase outside the
+     * phases of a level is stored as any phase.
+     *
+     * @return void
+     */
+    public function test_add_question_stores_the_phase(): void {
+        $this->resetAfterTest();
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+
+        $default = questions_repository::add_question(7, 'multichoice', 'Q1?', '', $answers, 42);
+        $phased = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Q2?',
+            '',
+            $answers,
+            42,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            4
+        );
+        $invalid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Q3?',
+            '',
+            $answers,
+            42,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            99
+        );
+
+        $this->assertSame(0, (int) questions_repository::get_question($default, 7)->phase);
+        $this->assertSame(4, (int) questions_repository::get_question($phased, 7)->phase);
+        $this->assertSame(0, (int) questions_repository::get_question($invalid, 7)->phase);
+    }
+
+    /**
+     * Tests that editing a question changes its phase only when one is given, and that a bank re-sync's
+     * content refresh never touches it.
+     *
+     * @return void
+     */
+    public function test_update_question_changes_the_phase_only_when_given(): void {
+        $this->resetAfterTest();
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        $questionid = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Q?',
+            '',
+            $answers,
+            42,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            3
+        );
+
+        questions_repository::update_question($questionid, 'multichoice', 'Q edited?', '', $answers);
+        $this->assertSame(3, (int) questions_repository::get_question($questionid, 7)->phase);
+
+        questions_repository::update_question_content($questionid, 'multichoice', 'Q synced?', FORMAT_PLAIN, $answers);
+        $this->assertSame(3, (int) questions_repository::get_question($questionid, 7)->phase);
+
+        questions_repository::update_question($questionid, 'multichoice', 'Q edited?', '', $answers, null, 8);
+        $this->assertSame(8, (int) questions_repository::get_question($questionid, 7)->phase);
+
+        questions_repository::update_question($questionid, 'multichoice', 'Q edited?', '', $answers, null, 0);
+        $this->assertSame(0, (int) questions_repository::get_question($questionid, 7)->phase);
+    }
+
+    /**
+     * Tests that the bulk phase change reaches only the given questions of the given instance.
+     *
+     * @return void
+     */
+    public function test_set_phase_bulk_is_scoped_to_the_given_questions_and_instance(): void {
+        $this->resetAfterTest();
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        $one = questions_repository::add_question(7, 'multichoice', 'Q1?', '', $answers, 42);
+        $two = questions_repository::add_question(7, 'multichoice', 'Q2?', '', $answers, 42);
+        $untouched = questions_repository::add_question(7, 'multichoice', 'Q3?', '', $answers, 42);
+        $foreign = questions_repository::add_question(9, 'multichoice', 'Q4?', '', $answers, 42);
+
+        questions_repository::set_phase_bulk([$one, $two, $foreign], 7, 6);
+
+        $this->assertSame(6, (int) questions_repository::get_question($one, 7)->phase);
+        $this->assertSame(6, (int) questions_repository::get_question($two, 7)->phase);
+        $this->assertSame(0, (int) questions_repository::get_question($untouched, 7)->phase);
+        $this->assertSame(0, (int) questions_repository::get_question($foreign, 9)->phase);
+
+        questions_repository::set_phase_bulk([$one, $two], 7, 0);
+        $this->assertSame(0, (int) questions_repository::get_question($one, 7)->phase);
+
+        questions_repository::set_phase_bulk([], 7, 3);
+        $this->assertSame(0, (int) questions_repository::get_question($two, 7)->phase);
+    }
 }

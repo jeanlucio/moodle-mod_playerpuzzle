@@ -25,6 +25,7 @@
 namespace mod_playerpuzzle\local;
 
 use context;
+use mod_playerpuzzle\form\question_form;
 use moodle_url;
 use renderer_base;
 use stdClass;
@@ -145,6 +146,7 @@ class question_list_service {
                 'qtypelabel' => get_string('qtype_' . $question->qtype, 'mod_playerpuzzle'),
                 'answerspreview' => implode(' · ', $answerspreview),
                 'sourcelabel' => get_string('source_' . $question->source, 'mod_playerpuzzle'),
+                'phaselabel' => question_form::phase_options()[(int) $question->phase] ?? '',
                 'statuslabel' => $statuslabel,
                 'statusbadgeclass' => $statusbadgeclass,
                 'canapprove' => $canapprove,
@@ -167,6 +169,7 @@ class question_list_service {
             'questioncolumnlabel' => get_string('question', 'mod_playerpuzzle'),
             'typecolumnlabel' => get_string('questiontype', 'mod_playerpuzzle'),
             'sourcecolumnlabel' => get_string('source', 'mod_playerpuzzle'),
+            'phasecolumnlabel' => get_string('questionphase', 'mod_playerpuzzle'),
             'statuscolumnlabel' => get_string('statuscolumnlabel', 'mod_playerpuzzle'),
             'drawcountcolumnlabel' => get_string('drawcountcolumnlabel', 'mod_playerpuzzle'),
             'actionscolumnlabel' => get_string('actions'),
@@ -181,6 +184,13 @@ class question_list_service {
             'bulkapprovebutton' => get_string('bulkapprovebutton', 'mod_playerpuzzle'),
             'bulkapprovebuttontitle' => get_string('bulkapprovebuttontitle', 'mod_playerpuzzle'),
             'bulkapproveconfirm' => get_string('bulkapproveconfirm', 'mod_playerpuzzle'),
+            'bulkphaseselectlabel' => get_string('bulkphaseselectlabel', 'mod_playerpuzzle'),
+            'bulkphaseoptions' => array_map(
+                static fn(int $value, string $label): array => ['value' => $value, 'label' => $label],
+                array_keys(question_form::phase_options()),
+                array_values(question_form::phase_options())
+            ),
+            'bulkphasebutton' => get_string('bulkphasebutton', 'mod_playerpuzzle'),
             'bulkdeletebutton' => get_string('bulkdeletebutton', 'mod_playerpuzzle'),
             'bulkdeleteconfirm' => get_string('bulkdeleteconfirm', 'mod_playerpuzzle'),
             'deletequestionbutton' => get_string('delete'),

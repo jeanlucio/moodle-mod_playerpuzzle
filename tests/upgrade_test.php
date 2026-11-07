@@ -133,4 +133,39 @@ final class upgrade_test extends \advanced_testcase {
             array_map('intval', $DB->get_records_menu('playerpuzzle_attempts', null, 'id', 'id, frozenmaxlevels'))
         );
     }
+
+    /**
+     * Tests that the upgrade adds the phase a question is meant for, leaving every question already in the
+     * bank valid for any phase.
+     *
+     * @return void
+     */
+    public function test_upgrade_adds_the_question_phase_as_any_phase(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $dbman = $DB->get_manager();
+        $table = new \xmldb_table('playerpuzzle_questions');
+        $field = new \xmldb_field('phase');
+        $dbman->drop_field($table, $field);
+        $this->assertFalse($dbman->field_exists($table, $field));
+
+        $questionid = $DB->insert_record('playerpuzzle_questions', (object) [
+            'playerpuzzleid' => 7,
+            'qtype' => 'truefalse',
+            'questiontext' => 'Old question?',
+            'questiontextformat' => 2,
+            'source' => 'manual',
+            'approved' => 1,
+            'timecreated' => 1000,
+            'timemodified' => 1000,
+            'addedby' => 2,
+        ]);
+
+        set_config('version', 2026110605, 'mod_playerpuzzle');
+        xmldb_playerpuzzle_upgrade(2026110605);
+
+        $this->assertTrue($dbman->field_exists($table, new \xmldb_field('phase')));
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle_questions', 'phase', ['id' => $questionid]));
+    }
 }

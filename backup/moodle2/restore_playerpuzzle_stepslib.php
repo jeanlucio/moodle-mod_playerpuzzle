@@ -171,6 +171,8 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         // Fall back to 0 (anonymous) when unmapped — addedby is content metadata, not
         // personal data itself, so it is always present here regardless of $userinfo.
         $data->addedby = (int) $this->get_mappingid('user', $data->addedby, 0);
+        // A backup made before the phase existed carries none: the question then fits any phase.
+        $data->phase = (int) ($data->phase ?? 0);
         $data->sourceid = $this->resolve_bank_entry($data->sourceid ?? null, (int) $data->playerpuzzleid);
 
         $newitemid = $DB->insert_record('playerpuzzle_questions', $data);

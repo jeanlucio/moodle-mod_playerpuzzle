@@ -37,18 +37,34 @@ class question_fetcher {
      * play" — the client never chooses, so it cannot name an arbitrary questionid to
      * validate_answer's forwhom=boss path.
      *
+     * With a phase (a Campaign phase), the draw is from the approved questions meant for that phase
+     * and those meant for any phase; when none of them exists, from every approved question, so a
+     * phase nobody prepared a question for still has one rather than going without.
+     *
      * @param int $playerpuzzleid The instance id.
+     * @param int|null $phase Phase of the level being played (1 to 10), or null to draw from every approved question.
      * @return int|null
      */
-    public static function draw_random_question_id(int $playerpuzzleid): ?int {
+    public static function draw_random_question_id(int $playerpuzzleid, ?int $phase = null): ?int {
         global $DB;
 
-        $ids = $DB->get_fieldset_select(
-            'playerpuzzle_questions',
-            'id',
-            'playerpuzzleid = :ppid AND approved = 1',
-            ['ppid' => $playerpuzzleid]
-        );
+        $ids = [];
+        if ($phase !== null) {
+            $ids = $DB->get_fieldset_select(
+                'playerpuzzle_questions',
+                'id',
+                'playerpuzzleid = :ppid AND approved = 1 AND (phase = :phase OR phase = 0)',
+                ['ppid' => $playerpuzzleid, 'phase' => $phase]
+            );
+        }
+        if (empty($ids)) {
+            $ids = $DB->get_fieldset_select(
+                'playerpuzzle_questions',
+                'id',
+                'playerpuzzleid = :ppid AND approved = 1',
+                ['ppid' => $playerpuzzleid]
+            );
+        }
         if (empty($ids)) {
             return null;
         }

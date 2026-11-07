@@ -37,8 +37,24 @@ many times it has been drawn, and offers:
 * **Add a question** by hand, with an optional hint.
 * **Generate with AI** — see below.
 * **Approve, reactivate, edit or delete** questions, one by one or in bulk.
+* **Set the phase** a question is meant for, one by one in the question's form or for the selected
+  questions at once — see below.
 
 Only **approved** questions are ever drawn in a match.
+
+## Questions by Phase
+
+In a Campaign, each question can be meant for one phase of a level (every level has 10), so the
+easier questions can open a level and the harder ones close it. The phase is *Any phase* until the
+teacher sets it, and a bank re-import never changes it.
+
+A phase is played with the questions meant for it plus those meant for any phase. When it has none
+of either, the game draws from every approved question, so a phase nobody prepared is never left
+without questions. A Single Match and the Demo have no phases and always draw from every approved
+question.
+
+The phase repeats on every level of a Campaign: the question for *Phase 3* is drawn on the third
+phase of every level.
 
 ## AI Generation
 

@@ -81,10 +81,7 @@ final class replay_vectors_test extends \advanced_testcase {
             ]);
         }
 
-        // The fixture spells the questions_total column the JavaScript way.
         $fields = $vector['attempt'];
-        $fields['questions_total'] = $fields['questionsTotal'];
-        unset($fields['questionsTotal']);
 
         // A case that names no opponent is an attempt whose opponent was never frozen, which
         // fights with no profile. A case that names one carries the modifiers the JavaScript side

@@ -316,7 +316,7 @@ class combat_engine {
      * Whether the boss reaching 0 HP right now should revive it instead of ending the match.
      *
      * @param int $minquestions The instance's configured minimum, 0 = no minimum.
-     * @param int $questionstotal Questions answered so far this attempt.
+     * @param int $questionstotal Questions answered so far in this match.
      * @return bool True when the boss should revive instead of the match ending.
      */
     public static function needs_revive(int $minquestions, int $questionstotal): bool {

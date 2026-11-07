@@ -162,8 +162,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
  * those choices would have sent.
  *
  * @param {object} params
- * @param {object} params.attempt See phaseSetup(), plus rngseed and questionsTotal (the
- *  attempt's questions_total column).
+ * @param {object} params.attempt See phaseSetup(), plus rngseed.
  * @param {object} params.playerpuzzle See phaseSetup(), plus minquestions.
  * @param {object} [params.modifiers] See phaseSetup(); none when absent.
  * @param {Array<string>} [params.powers] See phaseSetup(); none when absent.
@@ -184,11 +183,10 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, breathEvery, events
 
     let state = CombatRules.initialState(maxPlayerHp, maxBossHp, config);
 
-    const countedInPhase = outcomes.filter(outcome => outcome.counted).length;
     const sim = {
         events, eventIndex: 0,
         outcomes, outcomeIndex: 0,
-        questionsTotal: Math.max(0, attempt.questionsTotal - countedInPhase),
+        questionsTotal: 0,
         loggedUses: {potion: 0, shield: 0, magic: 0, sword: 0},
         questionCount: {player: 0, boss: 0},
     };

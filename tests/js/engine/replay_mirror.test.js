@@ -63,7 +63,7 @@ function deriveRaw(attempt, playerpuzzle, events, outcomes = [], serverUses = {}
     return ReplayMirror.derive({
         attempt: Object.assign({
             rngseed: 1, currentlevel: 1, currentphase: 1, difficulty: 'normal',
-            questionsTotal: 0, frozenbasebosshp: 1000, frozenbossdamage: 10, frozencoingain: 10,
+            frozenbasebosshp: 1000, frozenbossdamage: 10, frozencoingain: 10,
         }, attempt),
         playerpuzzle: Object.assign({minquestions: 0, basestudenthp: 1000}, playerpuzzle),
         events,
@@ -158,7 +158,7 @@ test('the boss revives instead of dying while minquestions is unmet', () => {
 
 test('question outcomes come from the server on seed 56', () => {
     const seed56 = (outcome, outcomes, bosshp = 40) => derive(
-        {rngseed: 56, frozenbasebosshp: bosshp, questionsTotal: outcomes.length},
+        {rngseed: 56, frozenbasebosshp: bosshp},
         {basestudenthp: 100},
         seed56Log(outcome),
         outcomes
@@ -224,7 +224,7 @@ test('an opening declared unavailable while the pool has questions is refused', 
     const decoded = [];
     assert.equal(ReplayMirror.derive({
         attempt: {
-            rngseed: 2, currentlevel: 1, currentphase: 1, difficulty: 'normal', questionsTotal: 0,
+            rngseed: 2, currentlevel: 1, currentphase: 1, difficulty: 'normal',
             frozenbasebosshp: 10, frozenbossdamage: 10, frozencoingain: 10,
         },
         playerpuzzle: {minquestions: 0, basestudenthp: 1000},
@@ -237,7 +237,7 @@ test('an opening declared unavailable while the pool has questions is refused', 
 
 test('an opening answered right leaves the move to the student, and counts as an answered question', () => {
     const right = deriveRaw(
-        {rngseed: 2, frozenbasebosshp: 10, questionsTotal: 1}, {minquestions: 1},
+        {rngseed: 2, frozenbasebosshp: 10}, {minquestions: 1},
         [{type: 'question', side: 'player', outcome: 'answered'}, ...seed2Win],
         [['player', true, true]]
     );
@@ -259,7 +259,7 @@ test('an opening missed, failed or skipped gives the opponent the first move', (
     }
     assert.deepEqual(
         deriveRaw(
-            {rngseed: 2, questionsTotal: 1}, {basestudenthp: 1},
+            {rngseed: 2}, {basestudenthp: 1},
             [{type: 'question', side: 'player', outcome: 'answered'}],
             [['player', false, true]]
         ),
@@ -268,7 +268,7 @@ test('an opening missed, failed or skipped gives the opponent the first move', (
     // Moving first, the same student has not lost yet: a log with only the opening is not a finished phase.
     assert.equal(
         deriveRaw(
-            {rngseed: 2, questionsTotal: 1}, {basestudenthp: 1},
+            {rngseed: 2}, {basestudenthp: 1},
             [{type: 'question', side: 'player', outcome: 'answered'}],
             [['player', true, true]]
         ),

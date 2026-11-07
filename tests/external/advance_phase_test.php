@@ -954,7 +954,11 @@ final class advance_phase_test extends \advanced_testcase {
         $instance = $this->make_instance(['basebosshp' => 100, 'minquestions' => 3]);
         $this->setUser($this->student);
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
-        $DB->set_field('playerpuzzle_attempts', 'questions_total', 1, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'questionresults', json_encode(array_fill(
+            0,
+            1,
+            ['side' => 'player', 'correct' => true, 'counted' => true]
+        )), ['token' => $token]);
 
         $result = $this->call_advance_phase([
             'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100,
@@ -980,7 +984,11 @@ final class advance_phase_test extends \advanced_testcase {
         $instance = $this->make_instance(['basebosshp' => 100, 'minquestions' => 3]);
         $this->setUser($this->student);
         $token = $this->put_attempt_at((int) $instance->id, 1, 1);
-        $DB->set_field('playerpuzzle_attempts', 'questions_total', 3, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'questionresults', json_encode(array_fill(
+            0,
+            3,
+            ['side' => 'player', 'correct' => true, 'counted' => true]
+        )), ['token' => $token]);
 
         $result = $this->call_advance_phase([
             'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100,

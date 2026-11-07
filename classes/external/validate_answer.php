@@ -190,7 +190,7 @@ class validate_answer extends external_api {
             $correct
         );
 
-        $result = ['correct' => $correct, 'questionstotal' => (int) $attempt->questions_total];
+        $result = ['correct' => $correct, 'questionstotal' => question_results::count_counted($attempt->questionresults)];
         if (!$correct && $correctanswerid !== null) {
             $result['correctanswerid'] = $correctanswerid;
         }

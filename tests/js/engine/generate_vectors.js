@@ -614,7 +614,6 @@ function buildReplayVectors() {
             currentlevel: spec.level || 1,
             currentphase: spec.phase || 1,
             difficulty: spec.difficulty || 'normal',
-            questionsTotal: 0,
             frozenbasebosshp: spec.boss,
             frozenbossdamage: spec.damage,
             frozencoingain: spec.coin,
@@ -645,7 +644,6 @@ function buildReplayVectors() {
         if (recorded.result === null) {
             throw new Error(`Replay case "${spec.name}" did not reach a conclusive end.`);
         }
-        attempt.questionsTotal = recorded.outcomes.filter(outcome => outcome.counted).length;
 
         const vector = {
             name: spec.name,

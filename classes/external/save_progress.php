@@ -39,6 +39,7 @@ use mod_playerpuzzle\local\engine\combat_engine;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hud_service;
 use mod_playerpuzzle\local\move_log;
+use mod_playerpuzzle\local\question_results;
 use mod_playerpuzzle\local\replay_credit;
 use mod_playerpuzzle\local\user_stock;
 use moodle_exception;
@@ -136,7 +137,7 @@ class save_progress extends external_api {
                 // should never actually reach this: the revive keeps the boss alive until
                 // enough questions are answered. A Demo has no minimum (see
                 // game_page_service::build_game_config()).
-                $belowminimum = (int) $attempt->questions_total < (int) $playerpuzzle->minquestions;
+                $belowminimum = question_results::count_counted($attempt->questionresults) < (int) $playerpuzzle->minquestions;
                 if ($claimedvictory && !(bool) $attempt->isdemo && $belowminimum) {
                     throw new moodle_exception(
                         'minquestionsnotmet',

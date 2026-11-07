@@ -960,9 +960,8 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that resuming an in-progress attempt carries its questions_total forward into
-     * the game config — the count is cumulative for the whole Campaign attempt, not reset
-     * by reloading play.php.
+     * Tests that resuming an in-progress match carries the questions already answered in it
+     * into the game config — reloading play.php does not reset the match's own count.
      *
      * @return void
      */
@@ -976,7 +975,11 @@ final class game_page_service_test extends \advanced_testcase {
             (int) $instance->id,
             (int) $this->student->id
         );
-        $DB->set_field('playerpuzzle_attempts', 'questions_total', 4, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'questionresults', json_encode(array_fill(
+            0,
+            4,
+            ['side' => 'player', 'correct' => true, 'counted' => true]
+        )), ['token' => $token]);
 
         $config = game_page_service::build_game_config($cm, $instance, $context, (int) $this->student->id, false);
 

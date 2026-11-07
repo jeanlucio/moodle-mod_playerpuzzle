@@ -208,17 +208,16 @@ class replay {
         $state = combat_engine::initial_state((float) $maxplayerhp, (float) $maxbosshp, $config);
 
         $outcomes = question_results::decode($attempt->questionresults);
-        $countedinphase = count(array_filter($outcomes, static fn(array $outcome): bool => !empty($outcome['counted'])));
-        // Everything the turn loop consumes as it goes. questions_total is a lifetime counter on
-        // the attempt, never reset per phase: subtracting this phase's own counted outcomes
-        // gives the value it had when the phase started, advanced below one outcome at a time,
-        // so needs_revive() sees what the live client's own mirror saw at each point.
+        // Everything the turn loop consumes as it goes. The minimum-questions counter is per
+        // match: it starts at zero and advances one counted outcome at a time, so needs_revive()
+        // sees what the live client's own mirror saw at each point. (questions_total on the
+        // attempt is the lifetime tally the grade reads and plays no part here.)
         $sim = [
             'events' => move_log::decode($attempt->movelog),
             'eventindex' => 0,
             'outcomes' => $outcomes,
             'outcomeindex' => 0,
-            'questionstotal' => max(0, (int) $attempt->questions_total - $countedinphase),
+            'questionstotal' => 0,
             'minquestions' => (int) $playerpuzzle->minquestions,
             'playerpuzzleid' => (int) ($playerpuzzle->id ?? 0),
             'poolempty' => null,

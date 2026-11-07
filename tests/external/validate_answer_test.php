@@ -632,6 +632,36 @@ final class validate_answer_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the counter the response carries is the match's own: answers given in earlier
+     * phases of the attempt stay in the lifetime questions_total the grade reads, but do not
+     * count towards the minimum of the match being played.
+     *
+     * @return void
+     */
+    public function test_response_counts_only_the_current_match(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $questionid = $this->make_question((int) $instance->id);
+        $correctid = $this->find_answer_id($questionid, (int) $instance->id, 'One');
+
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'questions_total', 7, ['id' => $attemptid]);
+
+        $this->put_question_open($token, $questionid);
+        $result = $this->call_validate_answer([
+            'cmid'     => $instance->cmid,
+            'token'    => $token,
+            'answerid' => $correctid,
+        ]);
+
+        $this->assertSame(1, $result['data']['questionstotal']);
+        $this->assertSame(8, (int) $DB->get_field('playerpuzzle_attempts', 'questions_total', ['id' => $attemptid]));
+    }
+
+    /**
      * Tests that the boss's own guess never touches the attempt's question counters —
      * only the student's own answers count toward the minimum-questions requirement.
      *

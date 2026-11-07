@@ -29,6 +29,7 @@ use mod_playerpuzzle\local\combat_state;
 use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\heroes;
 use mod_playerpuzzle\local\opponents;
+use mod_playerpuzzle\local\question_results;
 use mod_playerpuzzle\local\replay_credit;
 use mod_playerpuzzle\local\user_hero;
 
@@ -405,7 +406,7 @@ class security {
                 'currentlevel' => (int) $attempt->currentlevel,
                 'currentphase' => (int) $attempt->currentphase,
                 'difficulty' => self::clean_difficulty((string) $attempt->difficulty),
-                'questionstotal' => (int) $attempt->questions_total,
+                'questionstotal' => question_results::count_counted($attempt->questionresults),
                 'coinsearned' => (int) $attempt->coins_earned,
                 'bosscoinsearned' => (int) $attempt->boss_coins_earned,
                 'combatstate' => $combatstate,

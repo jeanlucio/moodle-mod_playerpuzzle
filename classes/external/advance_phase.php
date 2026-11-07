@@ -37,6 +37,7 @@ use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\hero_shop;
 use mod_playerpuzzle\local\hud_service;
 use mod_playerpuzzle\local\move_log;
+use mod_playerpuzzle\local\question_results;
 use mod_playerpuzzle\local\replay_credit;
 use mod_playerpuzzle\local\user_stock;
 use moodle_exception;
@@ -194,7 +195,7 @@ class advance_phase extends external_api {
                 // never persisted above this point on this path, so a rejection leaves it
                 // untouched and still resumable. The client should never actually reach this:
                 // the revive keeps the boss alive until enough questions are answered.
-                if ((int) $attempt->questions_total < (int) $playerpuzzle->minquestions) {
+                if (question_results::count_counted($attempt->questionresults) < (int) $playerpuzzle->minquestions) {
                     throw new moodle_exception(
                         'minquestionsnotmet',
                         'mod_playerpuzzle',

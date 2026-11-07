@@ -723,9 +723,8 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
-     * Tests resuming an in-progress attempt carries forward the questions already answered
-     * in earlier phases — the minimum-questions counter is cumulative for the whole
-     * attempt and never resets on a page reload.
+     * Tests resuming an in-progress match carries forward the questions already answered in it
+     * — a page reload never resets the minimum-questions counter.
      *
      * @return void
      */
@@ -733,11 +732,32 @@ final class security_test extends \advanced_testcase {
         global $DB;
 
         $firsttoken = security::generate_attempt_token($this->playerpuzzleid, 2);
-        $DB->set_field('playerpuzzle_attempts', 'questions_total', 5, ['token' => $firsttoken]);
+        $DB->set_field('playerpuzzle_attempts', 'questionresults', json_encode(array_fill(
+            0,
+            5,
+            ['side' => 'player', 'correct' => true, 'counted' => true]
+        )), ['token' => $firsttoken]);
 
         $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
 
         $this->assertSame(5, $result->questionstotal);
+    }
+
+    /**
+     * Tests the counter is per match: the lifetime tally the grade reads, built up by earlier
+     * phases of the Campaign, does not carry into a phase that has answered nothing yet.
+     *
+     * @return void
+     */
+    public function test_resume_or_create_questionstotal_ignores_earlier_phases(): void {
+        global $DB;
+
+        $firsttoken = security::generate_attempt_token($this->playerpuzzleid, 2);
+        $DB->set_field('playerpuzzle_attempts', 'questions_total', 9, ['token' => $firsttoken]);
+
+        $result = security::resume_or_create_attempt_token($this->playerpuzzleid, 2);
+
+        $this->assertSame(0, $result->questionstotal);
     }
 
     /**

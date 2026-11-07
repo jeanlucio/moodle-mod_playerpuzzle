@@ -302,7 +302,7 @@
          * answered enough yet.
          *
          * @param {number} minQuestions The instance's configured minimum, 0 = no minimum.
-         * @param {number} questionsTotal Questions answered so far this attempt.
+         * @param {number} questionsTotal Questions answered so far in this match.
          * @return {boolean} True when the boss should revive instead of the match ending.
          */
         function needsRevive(minQuestions, questionsTotal) {

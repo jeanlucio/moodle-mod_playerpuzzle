@@ -140,7 +140,7 @@ function playMatch({
     const attempt = {
         frozenbasebosshp: INSTANCE.basebosshp, frozenbossdamage: INSTANCE.bossdamage,
         frozencoingain: INSTANCE.coingain, currentlevel: level, currentphase: phase,
-        difficulty, rngseed: seed, questionsTotal: 0,
+        difficulty, rngseed: seed,
     };
     if (opponent) {
         attempt.frozenopponent = opponent;

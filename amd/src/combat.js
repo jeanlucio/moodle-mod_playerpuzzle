@@ -108,9 +108,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // The opponent's powers (classes/local/opponents.php), none in a Demo.
             this.bossPowers = Array.isArray(gameConfig.bosspowers) ? gameConfig.bosspowers : [];
             // Minimum-questions rule: the server is the only source of truth for how many
-            // questions this attempt has answered (questionsTotal starts at whatever a resumed
-            // attempt already carries from earlier phases and only ever moves forward, mirroring
-            // validate_answer.php's own count) — the client never counts on its own.
+            // questions the student has answered in this match (questionsTotal starts at whatever a
+            // resumed match already carries, zero for a new one, and only ever moves forward,
+            // mirroring validate_answer.php's own count) — the client never counts on its own.
             this.minQuestions = parseInt(gameConfig.minquestions, 10) || 0;
             this.questionsTotal = parseInt(gameConfig.questionstotal, 10) || 0;
             // Consumables: uses carried forward from the current phase/match's own use-count
@@ -958,8 +958,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * Whether the boss reaching 0 HP right now should revive it instead of ending the
          * match — true when a minimum question count is configured and the attempt hasn't
          * answered enough yet. questionsTotal never resets on revive, so once the minimum is
-         * met (in this phase or an earlier one, for a Campaign attempt spanning several), the
-         * boss simply dies for good like before this rule existed.
+         * met in this match, the boss simply dies for good like before this rule existed.
          *
          * @returns {boolean} True when the boss should revive instead of the match ending.
          */

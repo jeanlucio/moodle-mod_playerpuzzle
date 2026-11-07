@@ -53,6 +53,19 @@ class question_results {
     }
 
     /**
+     * Counts the outcomes that advanced the phase's question counter, which is what the
+     * minimum-questions rule and the "Perguntas: X/N" HUD counter read: the column is cleared
+     * at the start of every phase, so this is the number of questions the student answered in
+     * the current match only.
+     *
+     * @param string|null $raw Raw column value.
+     * @return int Number of counted outcomes.
+     */
+    public static function count_counted(?string $raw): int {
+        return count(array_filter(self::decode($raw), static fn(array $outcome): bool => !empty($outcome['counted'])));
+    }
+
+    /**
      * Decodes the stored outcomes.
      *
      * @param string|null $raw Raw column value (null when nothing was decided yet this phase).

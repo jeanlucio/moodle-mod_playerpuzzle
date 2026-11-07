@@ -631,7 +631,11 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
-        $DB->set_field('playerpuzzle_attempts', 'questions_total', 2, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'questionresults', json_encode(array_fill(
+            0,
+            2,
+            ['side' => 'player', 'correct' => true, 'counted' => true]
+        )), ['token' => $token]);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
@@ -661,7 +665,11 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
-        $DB->set_field('playerpuzzle_attempts', 'questions_total', 1, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'questionresults', json_encode(array_fill(
+            0,
+            1,
+            ['side' => 'player', 'correct' => true, 'counted' => true]
+        )), ['token' => $token]);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,
@@ -688,7 +696,11 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->setUser($this->student);
         $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id);
-        $DB->set_field('playerpuzzle_attempts', 'questions_total', 3, ['token' => $token]);
+        $DB->set_field('playerpuzzle_attempts', 'questionresults', json_encode(array_fill(
+            0,
+            3,
+            ['side' => 'player', 'correct' => true, 'counted' => true]
+        )), ['token' => $token]);
 
         $result = $this->call_save_progress([
             'cmid'                 => $instance->cmid,

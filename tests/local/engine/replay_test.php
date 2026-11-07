@@ -462,6 +462,32 @@ final class replay_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the minimum-questions rule counts the match's own questions: a large lifetime
+     * questions_total on the attempt, built up by earlier phases of the Campaign, does not
+     * stop the boss from reviving in a phase where the student has answered nothing yet.
+     *
+     * @return void
+     */
+    public function test_derive_revive_ignores_questions_of_earlier_phases(): void {
+        $attempt = $this->make_attempt([
+            'rngseed' => 22,
+            'movelog' => move_log::encode([
+                self::OPENING,
+                ['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 2, 'c2' => 6],
+                ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 1, 'c2' => 3],
+                ['type' => 'question', 'side' => 'boss', 'outcome' => 'answered'],
+                ['type' => 'move', 'r1' => 2, 'c1' => 0, 'r2' => 2, 'c2' => 1],
+                ['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 0, 'c2' => 5],
+            ]),
+            'frozenbasebosshp' => 15,
+            'questions_total' => 20,
+            'questionresults' => question_results::append(null, 'boss', true, false),
+        ]);
+
+        $this->assertNull(replay::derive($attempt, $this->make_playerpuzzle(['minquestions' => 5])));
+    }
+
+    /**
      * Builds seed 56's one-move attempt: its first swap triggers a player question five
      * cascade rounds in, and with the boss at 40 HP only a correct answer's critical hit
      * finishes it inside that cascade.

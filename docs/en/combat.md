@@ -76,6 +76,12 @@ doubles for both sides, so the match lasts as long as a Normal one and the stude
 On Normal the final boss also has 15% more HP, which puts it a little above what a hero with every upgrade can
 reach.
 
+The hero grows over a Campaign (HP, attack and armor, all bought in the shop) and the opponents' powers stay the
+same, so from Normal up the opponent's hits also grow with the Campaign's progress, from nothing at the first phase
+to 60% more at the last on Normal and 160% more on Hard; Easy does not grow. On Hard this keeps the fight
+demanding to the end: without consumables a prepared hero wins roughly one phase in four at the first try, and the
+Potions, Swords and Shields from the shop are what bring it to about one in two.
+
 In Campaign the choice is made for each phase: in the Lobby for the first one, and on the
 "Phase won" screen for the next.
 

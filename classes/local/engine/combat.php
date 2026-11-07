@@ -69,13 +69,15 @@ class combat {
     private const NORMAL_FINAL_BOSS_HP_FACTOR = 1.15;
 
     /**
-     * How much harder, at the Campaign's last phase, a Normal opponent hits than at its first: the extra grows
-     * in a straight line over the Campaign's phases. The hero grows in three ways (HP, attack, armor) and the
+     * How much harder, at the Campaign's last phase, an opponent hits than at its first, by difficulty: the extra
+     * grows in a straight line over the Campaign's phases. The hero grows in three ways (HP, attack, armor) and the
      * opponent only in HP, so without this the Normal went from about 55% of phases won at the first try to
-     * about 90% by the end. Normal only: Hard is already far above the hero, and Easy is meant to stay easy.
-     * Tuned with tests/js/engine/simulate_heroes.js.
+     * about 90% by the end, and the Hard from about 25% to about 70%, with the coins the Hard pays left over
+     * because the hero had nothing more to buy. Easy is meant to stay easy and does not grow. The Hard's extra is
+     * the one that keeps its first-try rate flat, near 25-30% without consumables, so that it is the consumables
+     * that bring a prepared student to about 40-55%. Tuned with tests/js/engine/simulate_heroes.js.
      */
-    private const NORMAL_ATTACK_GROWTH = 0.6;
+    private const ATTACK_GROWTH = ['easy' => 0.0, 'normal' => 0.6, 'hard' => 1.6];
 
     /** @var int Phases in a level, which the Campaign's progress is counted in. */
     private const PHASES_PER_LEVEL = 10;
@@ -213,10 +215,10 @@ class combat {
     }
 
     /**
-     * The multiplier on the opponent's hits once the Campaign's progress is counted in: a Normal opponent hits
-     * up to NORMAL_ATTACK_GROWTH harder the further into the Campaign the phase is, from nothing at the first
-     * phase to the full extra at the last. Rounded to three decimals with floor(), like the other values the
-     * replay mirror in JavaScript must land on exactly.
+     * The multiplier on the opponent's hits once the Campaign's progress is counted in: an opponent hits up to
+     * ATTACK_GROWTH of its difficulty harder the further into the Campaign the phase is, from nothing at the first
+     * phase to the full extra at the last, and an Easy one not at all. Rounded to three decimals with floor(), like
+     * the other values the replay mirror in JavaScript must land on exactly.
      *
      * @param float $attack The opponent's own multiplier, from its profile.
      * @param string $difficulty The phase's difficulty.
@@ -226,13 +228,14 @@ class combat {
      * @return float
      */
     public static function scale_attack(float $attack, string $difficulty, int $level, int $phase, int $maxlevels): float {
-        if ($difficulty !== constants::DIFFICULTY_NORMAL) {
+        $growth = self::ATTACK_GROWTH[$difficulty] ?? 0.0;
+        if ($growth <= 0.0) {
             return $attack;
         }
         $last = max(1, $maxlevels) * self::PHASES_PER_LEVEL - 1;
         $progress = min(1.0, max(0.0, (($level - 1) * self::PHASES_PER_LEVEL + $phase - 1) / $last));
 
-        return floor($attack * (1 + self::NORMAL_ATTACK_GROWTH * $progress) * 1000 + 0.5) / 1000;
+        return floor($attack * (1 + $growth * $progress) * 1000 + 0.5) / 1000;
     }
 
     /**

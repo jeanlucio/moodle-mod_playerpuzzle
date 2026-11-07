@@ -76,6 +76,12 @@ segura. No Difícil tudo dobra para os dois lados, então a partida dura o mesmo
 metade do tempo para sobreviver. No Normal o chefão final também tem 15% a mais de HP, o que o põe um pouco
 acima do que um herói com todas as melhorias consegue alcançar.
 
+O herói cresce ao longo da Campanha (HP, ataque e armadura, comprados na loja) e os poderes dos oponentes
+continuam os mesmos, então do Normal para cima os golpes do oponente também crescem com o progresso da Campanha:
+de nada na primeira fase a 60% a mais na última no Normal e 160% a mais no Difícil; o Fácil não cresce. No
+Difícil isso mantém a luta exigente até o fim: sem consumíveis um herói preparado vence mais ou menos uma fase em
+quatro de primeira, e as Poções, Espadas e Escudos da loja é que o levam a cerca de uma em duas.
+
 Na Campanha a escolha é feita a cada fase: no Lobby para a primeira, e na tela "Fase vencida"
 para a seguinte.
 

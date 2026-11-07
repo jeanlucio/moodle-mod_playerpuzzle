@@ -203,7 +203,7 @@ test('the opponent of each difficulty has the HP and the unit the server gives i
     assert.deepEqual([hard.baseDamage, hard.playerBaseDamage], [38, 38]);
 });
 
-test('scaleAttack grows a Normal opponent\'s attack over the Campaign and leaves the other difficulties alone', () => {
+test('scaleAttack grows a Normal and a Hard opponent\'s attack over the Campaign and leaves Easy alone', () => {
     // The same cases combat_test.php pins for combat::scale_attack().
     assert.equal(ReplayMirror.scaleAttack(1.0, 'normal', 1, 1, 1), 1.0);
     assert.equal(ReplayMirror.scaleAttack(1.0, 'normal', 1, 5, 1), 1.267);
@@ -212,7 +212,11 @@ test('scaleAttack grows a Normal opponent\'s attack over the Campaign and leaves
     assert.equal(ReplayMirror.scaleAttack(1.0, 'normal', 10, 10, 10), 1.6);
     assert.equal(ReplayMirror.scaleAttack(1.0, 'normal', 1, 1, 0), 1.0);
     assert.equal(ReplayMirror.scaleAttack(1.0, 'normal', 3, 10, 1), 1.6);
-    assert.equal(ReplayMirror.scaleAttack(1.15, 'hard', 1, 10, 1), 1.15);
+    assert.equal(ReplayMirror.scaleAttack(1.0, 'hard', 1, 1, 1), 1.0);
+    assert.equal(ReplayMirror.scaleAttack(1.0, 'hard', 1, 5, 1), 1.711);
+    assert.equal(ReplayMirror.scaleAttack(1.0, 'hard', 1, 10, 1), 2.6);
+    assert.equal(ReplayMirror.scaleAttack(1.15, 'hard', 2, 5, 3), 2.038);
+    assert.equal(ReplayMirror.scaleAttack(1.15, 'hard', 1, 10, 1), 2.99);
     assert.equal(ReplayMirror.scaleAttack(1.0, 'easy', 1, 10, 1), 1.0);
 });
 

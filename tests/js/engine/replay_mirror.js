@@ -66,14 +66,14 @@ const DIFFICULTY_HP_FACTORS = {easy: 0.5, normal: 1.0, hard: 2.0};
 // What a Normal final boss has on top of its HP, see combat::NORMAL_FINAL_BOSS_HP_FACTOR.
 const NORMAL_FINAL_BOSS_HP_FACTOR = 1.15;
 const DIFFICULTY_PLAYER_FACTORS = {easy: 1.0, normal: 1.0, hard: 2.0};
-// How much harder a Normal opponent hits at the Campaign's last phase, see combat::NORMAL_ATTACK_GROWTH.
-const NORMAL_ATTACK_GROWTH = 0.6;
+// How much harder an opponent hits at the Campaign's last phase, by difficulty, see combat::ATTACK_GROWTH.
+const ATTACK_GROWTH = {easy: 0.0, normal: 0.6, hard: 1.6};
 const PHASES_PER_LEVEL = 10;
 const DIFFICULTY_COIN_FACTORS = {easy: 0.5, normal: 1.0, hard: 3.0};
 
 /**
- * Mirrors combat::scale_attack(): a Normal opponent hits up to NORMAL_ATTACK_GROWTH harder the further into the
- * Campaign the phase is. Rounded to three decimals the way the PHP does it.
+ * Mirrors combat::scale_attack(): an opponent hits up to ATTACK_GROWTH of its difficulty harder the further into the
+ * Campaign the phase is, an Easy one not at all. Rounded to three decimals the way the PHP does it.
  *
  * @param {number} attack The opponent's own multiplier, from its profile.
  * @param {string} difficulty The phase's difficulty.
@@ -83,12 +83,13 @@ const DIFFICULTY_COIN_FACTORS = {easy: 0.5, normal: 1.0, hard: 3.0};
  * @return {number}
  */
 function scaleAttack(attack, difficulty, level, phase, maxLevels) {
-    if (difficulty !== 'normal') {
+    const growth = ATTACK_GROWTH[difficulty] ?? 0.0;
+    if (growth <= 0) {
         return attack;
     }
     const last = (Math.max(1, maxLevels) * PHASES_PER_LEVEL) - 1;
     const progress = Math.min(1, Math.max(0, (((level - 1) * PHASES_PER_LEVEL) + phase - 1) / last));
-    return Math.floor((attack * (1 + (NORMAL_ATTACK_GROWTH * progress)) * 1000) + 0.5) / 1000;
+    return Math.floor((attack * (1 + (growth * progress)) * 1000) + 0.5) / 1000;
 }
 
 /**

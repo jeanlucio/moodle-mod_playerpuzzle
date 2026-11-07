@@ -1293,29 +1293,14 @@
             {"type":"move","r1":0,"c1":1,"r2":0,"c2":2},
             {"type":"move","r1":1,"c1":6,"r2":2,"c2":6},
             {"type":"move","r1":3,"c1":6,"r2":3,"c2":7},
-            {"type":"question","side":"boss","outcome":"answered"},
-            {"type":"move","r1":0,"c1":6,"r2":0,"c2":7},
-            {"type":"move","r1":2,"c1":3,"r2":3,"c2":3},
-            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
-            {"type":"move","r1":0,"c1":3,"r2":1,"c2":3},
-            {"type":"move","r1":4,"c1":6,"r2":4,"c2":7},
-            {"type":"move","r1":1,"c1":6,"r2":2,"c2":6},
-            {"type":"move","r1":0,"c1":3,"r2":1,"c2":3},
-            {"type":"move","r1":2,"c1":5,"r2":3,"c2":5},
-            {"type":"move","r1":3,"c1":2,"r2":3,"c2":3},
-            {"type":"move","r1":2,"c1":0,"r2":2,"c2":1},
-            {"type":"question","side":"player","outcome":"answered"},
-            {"type":"move","r1":0,"c1":3,"r2":1,"c2":3},
-            {"type":"move","r1":1,"c1":4,"r2":2,"c2":4},
-            {"type":"move","r1":0,"c1":2,"r2":0,"c2":3}
+            {"type":"question","side":"boss","outcome":"answered"}
         ],
         "outcomes": [
             {"side":"player","correct":true,"counted":true},
-            {"side":"boss","correct":true,"counted":false},
-            {"side":"player","correct":false,"counted":true}
+            {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":75,"playergold":90,"bossgold":135,"bossdefeated":false}
+        "expected": {"damage":0,"playergold":30,"bossgold":0,"bossdefeated":false}
     },
     {
         "name": "brute opponent, minquestions",

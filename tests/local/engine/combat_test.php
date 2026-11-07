@@ -236,12 +236,14 @@ final class combat_test extends \basic_testcase {
     public function test_phase_opponent_scales_the_frozen_values_and_applies_the_profile(): void {
         $instance = (object) ['basebosshp' => 900, 'bossdamage' => 90];
 
+        // The instance has no level count, which counts as one, so this phase is past the end of the Campaign and
+        // the Hard opponent's attack has grown all the way: 1.15 x 2.6.
         $brute = combat::phase_opponent($this->make_attempt([
             'currentlevel' => 2, 'currentphase' => 3, 'difficulty' => 'hard',
         ]), $instance);
         $this->assertSame(
             [
-                'maxbosshp' => 340, 'basedamage' => 34, 'playerbasedamage' => 34, 'bossattack' => 1.15, 'bossarmor' => 0.0,
+                'maxbosshp' => 340, 'basedamage' => 34, 'playerbasedamage' => 34, 'bossattack' => 2.99, 'bossarmor' => 0.0,
                 'bosspowers' => ['ambush'],
                 'bossbreathevery' => 0, 'bosskit' => ['potion' => 1, 'sword' => 1],
             ],
@@ -261,12 +263,12 @@ final class combat_test extends \basic_testcase {
 
     /**
      * Tests that a Normal opponent hits harder the further into the Campaign the phase is, from nothing at the
-     * first phase to 60% more at the last, and that the other difficulties are left alone. The same cases are
+     * first phase to 60% more at the last, a Hard one to 160% more, and that Easy is left alone. The same cases are
      * pinned in replay_mirror.test.js against the JavaScript mirror.
      *
      * @return void
      */
-    public function test_scale_attack_grows_over_the_campaign_on_normal_only(): void {
+    public function test_scale_attack_grows_over_the_campaign_on_normal_and_hard(): void {
         $this->assertSame(1.0, combat::scale_attack(1.0, 'normal', 1, 1, 1));
         $this->assertSame(1.267, combat::scale_attack(1.0, 'normal', 1, 5, 1));
         $this->assertSame(1.6, combat::scale_attack(1.0, 'normal', 1, 10, 1));
@@ -275,7 +277,11 @@ final class combat_test extends \basic_testcase {
         // A Campaign of no levels counts as one, and the progress never passes the end.
         $this->assertSame(1.0, combat::scale_attack(1.0, 'normal', 1, 1, 0));
         $this->assertSame(1.6, combat::scale_attack(1.0, 'normal', 3, 10, 1));
-        $this->assertSame(1.15, combat::scale_attack(1.15, 'hard', 1, 10, 1));
+        $this->assertSame(1.0, combat::scale_attack(1.0, 'hard', 1, 1, 1));
+        $this->assertSame(1.711, combat::scale_attack(1.0, 'hard', 1, 5, 1));
+        $this->assertSame(2.6, combat::scale_attack(1.0, 'hard', 1, 10, 1));
+        $this->assertSame(2.038, combat::scale_attack(1.15, 'hard', 2, 5, 3));
+        $this->assertSame(2.99, combat::scale_attack(1.15, 'hard', 1, 10, 1));
         $this->assertSame(1.0, combat::scale_attack(1.0, 'easy', 1, 10, 1));
     }
 

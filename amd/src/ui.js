@@ -1377,17 +1377,18 @@ define(
             me.musicOn = this.gameConfig.musicenabled !== false;
             me.sfxOn = this.gameConfig.sfxenabled !== false;
 
-            // Row of 3 compact icon buttons, right-aligned — rightmost is Expand, matching
-            // where the old bracket-text button always sat; Sound Effects and Music step leftward
-            // from there by the same gap.
+            // Two groups of compact icon buttons, split by what they act on. The game's own controls,
+            // Give Up and Help, start at the left edge, away from the ones tapped by habit and apart from
+            // each other's neighbours; the screen's controls, Expand, Sound Effects and Music, are
+            // right-aligned with Expand rightmost, where the old bracket-text button always sat.
             const y = L.topBtnY;
             const r = L.topBtnRadius;
             const gap = L.topBtnGap;
+            const xGiveUp = 30;
+            const xHelp = xGiveUp + gap;
             const xExpand = L.w - 30;
             const xEffects = xExpand - gap;
             const xMusic = xEffects - gap;
-            const xHelp = xMusic - gap;
-            const xGiveUp = xHelp - gap;
             // Where each button sits, for the Demo walkthrough to point at.
             this.topButtons = {
                 giveup: {x: xGiveUp, y, r}, help: {x: xHelp, y, r}, music: {x: xMusic, y, r},

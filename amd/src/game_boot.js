@@ -252,12 +252,13 @@ define([
                 // bottom of the ring row above it.
                 historyTitleY: 538, historyBannerH: 46, historyLines: 4, historyLineY: 565, historyLineHeight: 19,
 
-                // Compact circular icon buttons (Music/Sound Effects/Expand), right-aligned —
+                // Compact circular icon buttons: Give Up and Help at the left edge, Music/Sound Effects/Expand
+                // right-aligned —
                 // replaces the old bracket-text "[ Word ]" buttons, which read as
                 // generic HTML/Bootstrap controls rather than the game's own bronze-accent
                 // dark-fill language already used for rings/badges. ui.js computes each
-                // button's own X from L.w, topBtnGap and its position in the row (rightmost =
-                // Expand), so only the shared Y/radius/gap live here.
+                // button's own X from L.w, topBtnGap and its position in its group (Give Up first
+                // from the left, Expand last from the right), so only the shared Y/radius/gap live here.
                 topBtnY: 26, topBtnRadius: 20, topBtnGap: 50
             } : {
                 // Portrait layout: a stage band across the top, then the opponent's HUD, the
@@ -274,7 +275,7 @@ define([
                 stageBandH: 236,
                 backdropColor: 0x2b241e,
 
-                // Over the band: the icon-button row (Music/Sound Effects/Expand, see the
+                // Over the band: the icon buttons (Give Up/Help left, Music/Sound Effects/Expand right, see the
                 // desktop L's own topBtnY/Radius/Gap comment) on row 1, and the level/phase
                 // indicator on its own row 2 — the full pt_BR progress string does not fit next
                 // to the buttons at any readable size.

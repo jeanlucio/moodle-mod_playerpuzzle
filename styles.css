@@ -1683,6 +1683,21 @@ body.path-mod-playerpuzzle .pp-gameover-card {
     max-width: 90%;
 }
 
+/**
+ * The Demo's closing note on the items that never showed up: a short list that scrolls rather than
+ * pushing the buttons off a small screen.
+ */
+body.path-mod-playerpuzzle .pp-gameover-unseen {
+    max-width: 32rem;
+    max-height: 5.5rem;
+    overflow-y: auto;
+    text-align: start;
+}
+
+body.path-mod-playerpuzzle .pp-gameover-unseen ul {
+    padding-inline-start: 1.25rem;
+}
+
 body.path-mod-playerpuzzle .pp-themed .pp-victory {
     color: var(--pp-gold-hi);
     text-shadow: 0 0 18px rgba(224, 168, 62, 0.45);

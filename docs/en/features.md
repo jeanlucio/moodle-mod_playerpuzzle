@@ -20,8 +20,9 @@
   answered the required number of questions, and each Orb combo then asks the next one.
 * **Resume anywhere:** the board and the fight are saved while playing, so closing the tab or
   reloading picks the fight up where it was.
-* **Demo match:** a guided practice fight, always available from the Lobby, that never counts for
-  grade, coins or attempts.
+* **Demo match:** a guided practice fight (100 HP on both sides), always available from the Lobby, that
+  never counts for grade, coins or attempts. A one-time balloon explains each piece the first time the
+  student matches it, and the closing screen lists the pieces that never came up.
 * **Review after the match:** every question answered, with the student's answer and the correct
   one.
 

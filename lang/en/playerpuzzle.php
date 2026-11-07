@@ -121,6 +121,7 @@ $string['demostep_sfx_text'] = 'This button turns your move sound effects on or 
 $string['demostep_sfx_title'] = 'Sound Effects Button';
 $string['demostep_welcome_text'] = 'Match 3 or more of the same piece to trigger battle effects. This is a quick practice match — it never counts toward your grade or coins.';
 $string['demostep_welcome_title'] = 'Welcome to the Demo!';
+$string['demounseen'] = 'These items did not show up in this practice:';
 $string['demowalkthrough_next'] = 'Next';
 $string['demowalkthrough_progress'] = 'Step {$a->current} of {$a->total}';
 $string['demowalkthrough_start'] = 'Start!';

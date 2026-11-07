@@ -604,6 +604,24 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
+         * The Demo's closing note: the piece types whose one-time balloon never came up, each with the
+         * balloon's own text, so the practice still teaches every item. Empty outside a Demo and when the
+         * student saw them all.
+         *
+         * @returns {object} Template context: unseentitle and unseen, or nothing at all.
+         */
+        unseenItemsContext() {
+            if (!this.isdemo) {
+                return {};
+            }
+            const unseen = PIECE_TUTORIAL_KEYS
+                .map((key, type) => ({type, text: this.strings[key]}))
+                .filter(item => item.text && !this.tutorialSeenTypes.has(item.type))
+                .map(({text}) => ({text}));
+            return unseen.length > 0 ? {unseentitle: this.strings.demounseen, unseen} : {};
+        }
+
+        /**
          * Appends one action-history line per non-zero gain resolved by this turn's match, to
          * the acting side's own history panel (this.currentTurn). The Swords' damage is logged
          * where the hit lands (see logHit()), as it lands after attack, armor and Shield.
@@ -1807,6 +1825,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 btnreview: strings.debriefreview,
                 btnplayagain: strings.btnplayagain,
                 btnexitgame: strings.btnexitgame,
+                ...this.unseenItemsContext(),
             };
 
             const html = await Templates.render('mod_playerpuzzle/gameover_overlay', context);

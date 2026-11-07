@@ -21,8 +21,9 @@
   ter respondido o número exigido de perguntas, e cada combo de Orbe faz a próxima.
 * **Retome de onde parou:** o tabuleiro e a luta são salvos durante o jogo, então fechar a aba ou
   recarregar a página retoma a luta de onde estava.
-* **Partida Demo:** uma luta de prática guiada, sempre disponível no Lobby, que nunca conta para
-  nota, moedas ou tentativas.
+* **Partida Demo:** uma luta de prática guiada (100 de HP dos dois lados), sempre disponível no Lobby,
+  que nunca conta para nota, moedas ou tentativas. Um balão explica cada peça na primeira vez em que o
+  estudante a combina, e a tela final lista as peças que não apareceram.
 * **Revisão após a partida:** cada pergunta respondida, com a resposta do estudante e a correta.
 
 ## 🏛️ Lobby e economia

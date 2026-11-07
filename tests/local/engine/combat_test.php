@@ -206,7 +206,7 @@ final class combat_test extends \basic_testcase {
      * @return void
      */
     public function test_demo_hp_is_fixed_at_fifty(): void {
-        $this->assertSame(50, combat::DEMO_HP);
+        $this->assertSame(100, combat::DEMO_HP);
     }
 
     /**

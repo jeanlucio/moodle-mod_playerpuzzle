@@ -121,6 +121,7 @@ $string['demostep_sfx_text'] = 'Esse botão liga e desliga os efeitos sonoros da
 $string['demostep_sfx_title'] = 'Botão de Efeitos Sonoros';
 $string['demostep_welcome_text'] = 'Combine 3 ou mais peças iguais pra causar efeitos na batalha. Essa é uma partida rápida de treino — ela nunca conta pra sua nota ou moedas.';
 $string['demostep_welcome_title'] = 'Bem-vindo à Demonstração!';
+$string['demounseen'] = 'Estes itens não apareceram nesta prática:';
 $string['demowalkthrough_next'] = 'Próximo';
 $string['demowalkthrough_progress'] = 'Passo {$a->current} de {$a->total}';
 $string['demowalkthrough_start'] = 'Começar!';

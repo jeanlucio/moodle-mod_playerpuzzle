@@ -134,7 +134,7 @@ class combat {
      * ignores the instance's own basebosshp/basestudenthp/difficulty/level/phase scaling
      * entirely: a Demo is not a scaled-down real fight, it is a fixed, predictable one.
      */
-    public const DEMO_HP = 50;
+    public const DEMO_HP = 100;
 
     /**
      * The opponent's side of a phase as the fight runs it: its max HP, the phase's base damage

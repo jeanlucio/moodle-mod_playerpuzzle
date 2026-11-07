@@ -904,8 +904,8 @@ final class game_page_service_test extends \advanced_testcase {
             true
         );
 
-        $this->assertSame(50, $config['bosshp']);
-        $this->assertSame(50, $config['studenthp']);
+        $this->assertSame(\mod_playerpuzzle\local\engine\combat::DEMO_HP, $config['bosshp']);
+        $this->assertSame(\mod_playerpuzzle\local\engine\combat::DEMO_HP, $config['studenthp']);
         $this->assertSame(constants::GAMEMODE_SINGLE, $config['gamemode']);
         $this->assertSame(1, $config['currentlevel']);
         $this->assertSame(1, $config['currentphase']);

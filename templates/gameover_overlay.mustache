@@ -30,7 +30,9 @@
         "savingprogress": "Saving progress...",
         "btnreview": "Review questions",
         "btnplayagain": "Play Again",
-        "btnexitgame": "Exit Game"
+        "btnexitgame": "Exit Game",
+        "unseentitle": "These items did not show up in this practice:",
+        "unseen": [{"text": "Coin: earns coins to spend in the shop."}]
     }
 }}
 <div id="playerpuzzle-gameover" class="d-flex flex-column justify-content-center align-items-center">
@@ -40,6 +42,16 @@
             {{coinscollected}} <strong class="pp-accent">{{playergold}}</strong><br>
             {{maxmultiplier}} <strong class="pp-accent">x{{playermultiplier}}</strong>
         </p>
+        {{#unseentitle}}
+        <div class="pp-gameover-unseen small">
+            <p class="mb-1">{{unseentitle}}</p>
+            <ul class="mb-2">
+                {{#unseen}}
+                <li>{{text}}</li>
+                {{/unseen}}
+            </ul>
+        </div>
+        {{/unseentitle}}
         <p id="pp-save-status" class="text-light small">{{savingprogress}}</p>
         <div class="pp-gameover-buttons">
             <button id="btn-pp-review" hidden class="btn btn-outline-light btn-lg shadow">

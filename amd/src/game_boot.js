@@ -566,7 +566,7 @@ define([
                     'power_regen', 'power_rootheal',
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
                     'questionerror', 'questionscounter', 'questionsprogress',
-                    'requirejserror', 'saveerror', 'savingprogress',
+                    'requirejserror', 'retrydifficulty', 'saveerror', 'savingprogress',
                     'shoperror', 'shuffling',
                     'turnstart_intro', 'turnstart_move',
                     'tutorialballoon_coin', 'tutorialballoon_grimoire', 'tutorialballoon_orb',

@@ -1155,8 +1155,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * the new attempt is created with it, so the student stays on the difficulty they
          * were playing; on a phase advance the attempt already exists and play.php ignores
          * this in favour of the value advance_phase stored.
+         *
+         * @param {?string} difficulty The difficulty picked on the defeat screen for the new attempt; null
+         *  keeps the one this phase was played on.
          */
-        submitRestartForm() {
+        submitRestartForm(difficulty = null) {
             const restartForm = document.createElement('form');
             restartForm.method = 'POST';
             let restarturl = `${M.cfg.wwwroot}/mod/playerpuzzle/play.php?id=${this.gameConfig.cmid}`;
@@ -1166,7 +1169,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             restartForm.action = restarturl;
             const fields = {
                 sesskey: M.cfg.sesskey,
-                difficulty: this.gameConfig.difficulty || 'normal',
+                difficulty: difficulty || this.gameConfig.difficulty || 'normal',
             };
             if (this.gameConfig.isdemo) {
                 // "Play Again" from a Demo's end screen starts another Demo, never a real
@@ -1786,6 +1789,21 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             return victory ? this.strings.campaigncomplete : this.strings.phaselost;
         }
 
+        /**
+         * The defeat screen's difficulty picker, for the next try. A defeat closes the attempt, so the "Play again"
+         * that follows starts a new one with whatever difficulty it posts; a win leads elsewhere (the next phase
+         * has its own picker) and a Demo has no difficulty at all.
+         *
+         * @param {boolean} victory Whether the student won.
+         * @returns {object} The template's difficulty fields, or nothing to leave the picker out.
+         */
+        retryDifficultyContext(victory) {
+            if (victory || this.isdemo) {
+                return {};
+            }
+            return {difficultylabel: this.strings.retrydifficulty, difficultychoices: this.difficultyChoices()};
+        }
+
         async showEndScreen(victory) {
             // The match can end by itself while a dialog is open or an opponent's move is still playing out.
             if (this.matchSaved) {
@@ -1826,6 +1844,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 btnplayagain: strings.btnplayagain,
                 btnexitgame: strings.btnexitgame,
                 ...this.unseenItemsContext(),
+                ...this.retryDifficultyContext(victory),
             };
 
             const html = await Templates.render('mod_playerpuzzle/gameover_overlay', context);
@@ -1869,7 +1888,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     $('#pp-save-status').removeClass('text-muted').addClass('text-success')
                         .text(successMsg);
                 }
-                $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
+                $('#btn-pp-restart, #btn-pp-exit, #pp-retry-difficulty').prop('disabled', false);
                 if (res.questionlog && res.questionlog.length > 0) {
                     $('#btn-pp-review').prop('hidden', false)
                         .off('click').on('click', () => this.showDebrief(res.questionlog));
@@ -1881,7 +1900,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             });
 
             $('#btn-pp-restart').on('click', () => {
-                this.submitRestartForm();
+                const retry = document.getElementById('pp-retry-difficulty');
+                this.submitRestartForm(retry ? retry.value : null);
             });
             $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;

@@ -77,6 +77,72 @@ class question_bank_sync {
     }
 
     /**
+     * Counts, for each given category, the questions an import would take from it: the same rule
+     * sync_from_category() and load_answers() apply, written as one grouped query so the category picker can
+     * show it without reading every question. A category with none is present with 0.
+     *
+     * Kept in step with the import by a test that compares the two over every kind of question the import
+     * skips. A question the import would skip (a type the game cannot grade, several correct choices, none, a
+     * version that is not ready, another author's when the user only holds usemine) is not counted.
+     *
+     * @param stdClass[] $categories Category records (id, contextid), as get_importable_categories() returns.
+     * @return int[] Category id => importable questions.
+     */
+    public static function count_importable_questions(array $categories): array {
+        global $DB, $USER;
+
+        $counts = [];
+        $useall = [];
+        foreach ($categories as $category) {
+            $counts[(int) $category->id] = 0;
+            if (has_capability('moodle/question:useall', context::instance_by_id((int) $category->contextid))) {
+                $useall[] = (int) $category->id;
+            }
+        }
+        if (empty($counts)) {
+            return [];
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal(array_keys($counts), SQL_PARAMS_NAMED, 'cat');
+        $params['ready'] = question_version_status::QUESTION_STATUS_READY;
+        $params['createdby'] = (int) $USER->id;
+
+        // Without useall on a category, only the user's own questions of it are theirs to import.
+        $ownclause = 'q.createdby = :createdby';
+        if (!empty($useall)) {
+            [$allsql, $allparams] = $DB->get_in_or_equal($useall, SQL_PARAMS_NAMED, 'all');
+            $ownclause = "(qbe.questioncategoryid $allsql OR q.createdby = :createdby)";
+            $params += $allparams;
+        }
+
+        $records = $DB->get_records_sql(
+            "SELECT qbe.questioncategoryid AS categoryid, COUNT(q.id) AS total
+               FROM {question} q
+               JOIN {question_versions} qv ON qv.questionid = q.id
+               JOIN {question_bank_entries} qbe ON qbe.id = qv.questionbankentryid
+          LEFT JOIN {qtype_multichoice_options} mo ON mo.questionid = q.id
+              WHERE q.parent = 0
+                AND qbe.questioncategoryid $insql
+                AND q.qtype IN ('multichoice', 'truefalse')
+                AND (q.qtype <> 'multichoice' OR mo.single IS NULL OR mo.single <> 0)
+                AND $ownclause
+                AND qv.version = (SELECT MAX(v2.version)
+                                     FROM {question_versions} v2
+                                    WHERE v2.questionbankentryid = qbe.id AND v2.status = :ready)
+                AND (SELECT COUNT(qa.id)
+                       FROM {question_answers} qa
+                      WHERE qa.question = q.id AND qa.fraction >= 0.999999) = 1
+           GROUP BY qbe.questioncategoryid",
+            $params
+        );
+        foreach ($records as $record) {
+            $counts[(int) $record->categoryid] = (int) $record->total;
+        }
+
+        return $counts;
+    }
+
+    /**
      * Imports every approved, single-answer multichoice/truefalse question from the given
      * category into the instance's own question bank.
      *

@@ -35,7 +35,9 @@ quantas vezes foi sorteada, e oferece:
 * **Importar do Banco de Questões** — escolha uma categoria e importe suas questões aprovadas de
   Múltipla Escolha de resposta única e de Verdadeiro/Falso. Importar de novo atualiza as cópias;
   uma questão que saiu da categoria é desativada em vez de excluída, porque tentativas passadas
-  ainda podem se referir a ela. Imagens e arquivos incorporados são copiados junto.
+  ainda podem se referir a ela. Imagens e arquivos incorporados são copiados junto. A lista de categorias mostra quantas questões
+  cada uma importaria, sem contar as que a importação ignora (outros tipos de questão, várias
+  alternativas corretas ou nenhuma).
 * **Adicionar uma questão** à mão, com uma dica opcional.
 * **Gerar com IA** — veja abaixo.
 * **Aprovar, reativar, editar ou excluir** questões, uma a uma ou em lote.

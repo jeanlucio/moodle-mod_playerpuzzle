@@ -42,10 +42,11 @@ final class import_form_test extends \advanced_testcase {
      * MoodleQuickForm so the test can inspect elements/options.
      *
      * @param \stdClass[] $categories Category records (id, name).
+     * @param int[] $counts Category id => importable questions, to show beside each name.
      * @return \MoodleQuickForm
      */
-    private function build_form(array $categories): \MoodleQuickForm {
-        $form = new import_form(null, ['categories' => $categories]);
+    private function build_form(array $categories, array $counts = []): \MoodleQuickForm {
+        $form = new import_form(null, ['categories' => $categories, 'counts' => $counts]);
 
         $refclass = new \ReflectionClass($form);
         $prop = $refclass->getProperty('_form');
@@ -122,6 +123,27 @@ final class import_form_test extends \advanced_testcase {
         $this->assertSame(
             get_string('importbutton', 'mod_playerpuzzle'),
             $mform->getElement('submitbutton')->getValue()
+        );
+    }
+
+    /**
+     * Tests that each category shows how many questions an import takes from it, with the singular for one
+     * and a category with none shown as having 0.
+     *
+     * @return void
+     */
+    public function test_categoryid_options_show_how_many_questions_each_category_has(): void {
+        $categories = [
+            (object) ['id' => 5, 'name' => 'Category A'],
+            (object) ['id' => 9, 'name' => 'Category B'],
+            (object) ['id' => 11, 'name' => 'Category C'],
+        ];
+
+        $mform = $this->build_form($categories, [5 => 12, 9 => 1, 11 => 0]);
+
+        $this->assertSame(
+            ['5' => 'Category A (12 questions)', '9' => 'Category B (1 question)', '11' => 'Category C (0 questions)'],
+            $this->get_select_options($mform->getElement('categoryid'))
         );
     }
 }

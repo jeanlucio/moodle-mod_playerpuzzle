@@ -37,9 +37,22 @@ class import_form extends \moodleform {
         $mform = $this->_form;
         $categories = $this->_customdata['categories'];
 
+        // Category id => importable questions; a caller that has no counts gets the plain names.
+        $counts = $this->_customdata['counts'] ?? [];
+
         $options = [];
         foreach ($categories as $category) {
-            $options[$category->id] = format_string($category->name);
+            $name = format_string($category->name);
+            if (isset($counts[$category->id])) {
+                $count = (int) $counts[$category->id];
+                $options[$category->id] = get_string(
+                    $count === 1 ? 'importcategoryoption_one' : 'importcategoryoption',
+                    'mod_playerpuzzle',
+                    (object) ['name' => $name, 'count' => $count]
+                );
+            } else {
+                $options[$category->id] = $name;
+            }
         }
 
         $mform->addElement('select', 'categoryid', get_string('importcategory', 'mod_playerpuzzle'), $options);

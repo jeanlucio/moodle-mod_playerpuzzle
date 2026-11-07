@@ -98,7 +98,10 @@ if (!in_array($dir, ['ASC', 'DESC'], true)) {
 }
 
 $importablecategories = question_bank_sync::get_importable_categories($cm);
-$importform = new import_form($url, ['categories' => $importablecategories]);
+$importform = new import_form($url, [
+    'categories' => $importablecategories,
+    'counts' => question_bank_sync::count_importable_questions($importablecategories),
+]);
 
 if (!empty($importablecategories) && ($importdata = $importform->get_data())) {
     $stats = question_bank_sync::sync_from_category($cm, (int) $instance->id, (int) $importdata->categoryid);

@@ -33,7 +33,9 @@ many times it has been drawn, and offers:
 * **Import from the Question Bank** — pick a category and import its approved, single-answer
   Multiple Choice and True/False questions. Importing again refreshes the copies; a question that
   left the category is disabled rather than deleted, because past attempts may still refer to it.
-  Embedded images and files are copied along.
+  Embedded images and files are copied along. The category list shows how many questions each
+  one would import, leaving out the ones the import skips (other question types, several correct
+  choices, none).
 * **Add a question** by hand, with an optional hint.
 * **Generate with AI** — see below.
 * **Approve, reactivate, edit or delete** questions, one by one or in bulk.

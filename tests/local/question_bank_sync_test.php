@@ -755,4 +755,79 @@ final class question_bank_sync_test extends \advanced_testcase {
         $ids = array_map(fn($c) => (int) $c->id, $categories);
         $this->assertContains((int) $category->id, $ids);
     }
+
+    /**
+     * Tests that the count shown in the category picker is the number the import would take: it leaves out
+     * what the import skips (a type the game cannot grade, several correct choices, none), and an empty
+     * category is present with 0.
+     *
+     * @return void
+     */
+    public function test_count_importable_questions_matches_what_the_import_takes(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $empty = $this->make_category();
+        $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+        $questiongenerator->create_question('truefalse', 'true', ['category' => $category->id]);
+        $questiongenerator->create_question('truefalse', 'true', ['category' => $category->id]);
+        $questiongenerator->create_question('multichoice', 'two_of_four', ['category' => $category->id]);
+        $questiongenerator->create_question('essay', 'editor', ['category' => $category->id]);
+        $twocorrect = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+        $wrong = $DB->get_records_select(
+            'question_answers',
+            'question = :q AND fraction = 0',
+            ['q' => $twocorrect->id],
+            'id ASC',
+            'id',
+            0,
+            1
+        );
+        $DB->set_field('question_answers', 'fraction', 1, ['id' => key($wrong)]);
+        $nocorrect = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+        $DB->set_field('question_answers', 'fraction', 0.5, ['question' => $nocorrect->id]);
+
+        $counts = question_bank_sync::count_importable_questions([$category, $empty]);
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(3, $counts[(int) $category->id]);
+        $this->assertSame($stats->imported, $counts[(int) $category->id]);
+        $this->assertSame(0, $counts[(int) $empty->id]);
+        $this->assertSame([], question_bank_sync::count_importable_questions([]));
+    }
+
+    /**
+     * Tests that a user limited to their own questions is shown only how many of their own the import takes,
+     * as the import itself imports only those, while a user with every author's sees all of them.
+     *
+     * @return void
+     */
+    public function test_count_importable_questions_follows_usemine_and_useall(): void {
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $restrictedteacher = $this->make_usemine_only_teacher();
+        $otherauthor = $this->getDataGenerator()->create_user();
+        $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => $restrictedteacher->id,
+        ]);
+        $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => $otherauthor->id,
+        ]);
+        $questiongenerator->create_question('truefalse', 'true', [
+            'category' => $category->id,
+            'createdby' => $otherauthor->id,
+        ]);
+
+        $this->assertSame(3, question_bank_sync::count_importable_questions([$category])[(int) $category->id]);
+
+        $this->setUser($restrictedteacher);
+        $counts = question_bank_sync::count_importable_questions([$category]);
+        $stats = question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(1, $counts[(int) $category->id]);
+        $this->assertSame($stats->imported, $counts[(int) $category->id]);
+    }
 }

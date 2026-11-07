@@ -145,24 +145,33 @@ define([
             // enough for the piece icons' own colors to keep full contrast.
             graphics.fillStyle(0x2b1f16, 0.95).fillRect(rx, ry, gridWidth, gridHeight + overlap);
             // A bronze frame around the board, drawn over the panels' inner edge (the board's depth is above
-            // the panel art's) so it reads as a raised plate between them. It runs down to the canvas
-            // bottom with the fill above, and has no bottom bar. Each band lies between two distances
-            // from the grid's edge; the later bands sit on the earlier ones.
-            const band = (from, to, color) => {
-                const height = gridHeight + overlap + to;
+            // the panel art's) so it reads as a raised plate between them. It closes under the grid with
+            // a bar as thick as the top one, ending just above the canvas bottom, where the fill above
+            // goes on for the last few pixels. Each band lies between two distances from the grid's
+            // edge; the later bands sit on the earlier ones. The light band is the lit edge, so it
+            // covers the top and the sides down to the grid's bottom and leaves the bottom bar dark.
+            const band = (from, to, color, lit = false) => {
+                const height = gridHeight + (lit ? to : 2 * to);
                 graphics.fillStyle(color, 1);
                 graphics.fillRect(rx - to, ry - to, gridWidth + (2 * to), to - from);
                 graphics.fillRect(rx - to, ry - to, to - from, height);
                 graphics.fillRect(rx + gridWidth + from, ry - to, to - from, height);
+                if (!lit) {
+                    graphics.fillRect(rx - to, ry + gridHeight + from, gridWidth + (2 * to), to - from);
+                }
             };
             band(0, 9, BRONZE_SHADOW);
             band(1, 8, BRONZE);
-            band(1, 3, BRONZE_LIGHT);
+            band(1, 3, BRONZE_LIGHT, true);
             band(7, 8, BRONZE_SHADOW);
-            [rx - 4, rx + gridWidth + 4].forEach(studX => {
-                graphics.fillStyle(BRONZE_SHADOW, 1).fillCircle(studX, ry - 4, 6);
-                graphics.fillStyle(BRONZE_LIGHT, 1).fillCircle(studX, ry - 4, 4);
-                graphics.fillStyle(BRONZE, 1).fillCircle(studX + 1, ry - 3, 2);
+            // A rivet at each corner, the bottom pair mirroring the top one.
+            [ry - 4, ry + gridHeight + 4].forEach((studY, row) => {
+                [rx - 4, rx + gridWidth + 4].forEach(studX => {
+                    const shine = row === 0 ? 1 : -1;
+                    graphics.fillStyle(BRONZE_SHADOW, 1).fillCircle(studX, studY, 6);
+                    graphics.fillStyle(BRONZE_LIGHT, 1).fillCircle(studX, studY, 4);
+                    graphics.fillStyle(BRONZE, 1).fillCircle(studX + 1, studY + shine, 2);
+                });
             });
             graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, gridWidth, gridHeight);
             graphics.lineStyle(2, 0x333333, 0.4);

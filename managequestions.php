@@ -24,6 +24,7 @@
 
 use mod_playerpuzzle\form\import_form;
 use mod_playerpuzzle\form\question_form;
+use mod_playerpuzzle\local\campaigns;
 use mod_playerpuzzle\local\question_bank_sync;
 use mod_playerpuzzle\local\question_editor_files;
 use mod_playerpuzzle\local\question_list_service;
@@ -44,7 +45,49 @@ require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/playerpuzzle:managequestions', $context);
 
-$url = new moodle_url('/mod/playerpuzzle/managequestions.php', ['id' => $cmid]);
+// How the listing is filtered and sorted. Kept in $url, which every redirect and form of this page goes back to,
+// so approving, deleting, editing or setting a phase never drops the teacher out of the view they were working in.
+$sort = optional_param('sort', 'id', PARAM_ALPHA);
+$dir = strtoupper(optional_param('dir', 'DESC', PARAM_ALPHA));
+$page = optional_param('page', 0, PARAM_INT);
+$phasefilter = optional_param('phase', '', PARAM_ALPHANUM);
+$statusfilter = optional_param('status', '', PARAM_ALPHA);
+
+$allowedsorts = ['id', 'qtype', 'source', 'phase', 'status', 'drawn'];
+if ($sort === 'approved') {
+    $sort = 'status';
+}
+if (!in_array($sort, $allowedsorts, true)) {
+    $sort = 'id';
+}
+if (!in_array($dir, ['ASC', 'DESC'], true)) {
+    $dir = 'DESC';
+}
+$phasevalue = null;
+if ($phasefilter === 'none') {
+    $phasevalue = 0;
+} else if (ctype_digit($phasefilter) && (int) $phasefilter >= 1 && (int) $phasefilter <= campaigns::PHASES_PER_LEVEL) {
+    $phasevalue = (int) $phasefilter;
+} else {
+    $phasefilter = '';
+}
+if (!in_array($statusfilter, questions_repository::MANAGE_STATUSES, true)) {
+    $statusfilter = '';
+}
+
+$viewparams = ['id' => $cmid];
+if ($phasefilter !== '') {
+    $viewparams['phase'] = $phasefilter;
+}
+if ($statusfilter !== '') {
+    $viewparams['status'] = $statusfilter;
+}
+if ($sort !== 'id' || $dir !== 'DESC') {
+    $viewparams['sort'] = $sort;
+    $viewparams['dir'] = $dir;
+}
+
+$url = new moodle_url('/mod/playerpuzzle/managequestions.php', $viewparams);
 $PAGE->set_url($url);
 $PAGE->set_title(get_string('managequestions', 'mod_playerpuzzle'));
 $PAGE->set_heading(format_string($course->fullname));
@@ -82,19 +125,6 @@ if ($bulkaction !== '') {
         questions_repository::approve_questions_bulk($bulkids, (int) $instance->id);
         redirect($url, get_string('bulkapproved', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
-}
-
-$sort = optional_param('sort', 'id', PARAM_ALPHA);
-$dir = optional_param('dir', 'DESC', PARAM_ALPHA);
-$page = optional_param('page', 0, PARAM_INT);
-
-$allowedsorts = ['id', 'qtype', 'source', 'approved'];
-if (!in_array($sort, $allowedsorts, true)) {
-    $sort = 'id';
-}
-$dir = strtoupper($dir);
-if (!in_array($dir, ['ASC', 'DESC'], true)) {
-    $dir = 'DESC';
 }
 
 $importablecategories = question_bank_sync::get_importable_categories($cm);
@@ -274,20 +304,26 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
 
     $mform->display();
 } else {
-    echo $OUTPUT->heading(format_string($instance->name, true, ['context' => $context]));
+    // The import-from-bank option is one of the actions above the list, next to adding and generating
+    // questions, rather than a block of its own pushing the list down. Its panel is part of the
+    // template and collapses in managequestions.js; without JavaScript it simply stays open.
+    $importhtml = empty($importablecategories)
+        ? $OUTPUT->notification(get_string('noimportablecategories', 'mod_playerpuzzle'), 'info')
+        : $importform->render();
 
-    // The import-from-bank option lives above the question list, not after it — a teacher
-    // scanning the page top-to-bottom sees it before deciding whether to add/generate
-    // questions manually, instead of risking it going unnoticed at the very end of a long,
-    // paginated list.
-    echo $OUTPUT->heading(get_string('importheader', 'mod_playerpuzzle'), 3);
-    if (empty($importablecategories)) {
-        echo $OUTPUT->notification(get_string('noimportablecategories', 'mod_playerpuzzle'), 'info');
-    } else {
-        $importform->display();
-    }
-
-    $listcontext = question_list_service::build_list_context($instance, $cmid, $OUTPUT, $context, $sort, $dir, $page);
+    $listcontext = question_list_service::build_list_context(
+        $instance,
+        $cmid,
+        $OUTPUT,
+        $context,
+        $sort,
+        $dir,
+        $page,
+        $viewparams,
+        $importhtml,
+        $phasevalue,
+        $statusfilter !== '' ? $statusfilter : null
+    );
     if ($listcontext['aiavailable']) {
         $PAGE->requires->js_call_amd('mod_playerpuzzle/ai_generate', 'init', [$cmid]);
     }

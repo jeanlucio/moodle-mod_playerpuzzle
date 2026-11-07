@@ -29,10 +29,11 @@ ou no tráfego de rede revela a resposta com antecedência. Esse é o primeiro d
 ## Gerenciando Questões
 
 Os professores (quem tem a capability *Gerenciar o banco de questões do PlayerPuzzle*) ganham uma
-página **Gerenciar questões** na atividade. Ela lista cada questão com sua origem, seu status e
-quantas vezes foi sorteada, e oferece:
+página **Gerenciar questões** na atividade. Ela lista cada questão com seu tipo, sua origem, sua
+fase, seu status e quantas vezes foi sorteada, e oferece:
 
-* **Importar do Banco de Questões** — escolha uma categoria e importe suas questões aprovadas de
+* **Importar do Banco de Questões** — um botão ao lado de *Adicionar questão* abre o painel de
+  importação; escolha uma categoria e importe suas questões aprovadas de
   Múltipla Escolha de resposta única e de Verdadeiro/Falso. Importar de novo atualiza as cópias;
   uma questão que saiu da categoria é desativada em vez de excluída, porque tentativas passadas
   ainda podem se referir a ela. Imagens e arquivos incorporados são copiados junto. A lista de categorias mostra quantas questões
@@ -45,6 +46,12 @@ quantas vezes foi sorteada, e oferece:
   questões selecionadas de uma vez — veja abaixo.
 
 Só questões **aprovadas** são sorteadas numa partida.
+
+**Localizar e ordenar.** A lista pode ser filtrada por fase (inclusive *Sem fase definida*) e por
+status (aprovadas, pendentes, desativadas), e ordenada por mais recentes, fase, status, mais
+sorteadas, tipo ou fonte. Os filtros se aplicam assim que mudam e acompanham cada ação, então
+aprovar, editar ou definir a fase numa lista filtrada traz o professor de volta à mesma lista. As
+ações em lote (aprovar, definir fase, excluir) aparecem numa barra assim que há questões marcadas.
 
 ## Questões por fase
 

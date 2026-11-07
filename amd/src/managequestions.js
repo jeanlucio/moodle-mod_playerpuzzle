@@ -23,6 +23,10 @@
  * confirmation modal before submitting. Single-row "Approve" stays a plain link (no
  * confirmation needed — approving is non-destructive), so it is not handled here.
  *
+ * Also keeps the page usable without any of this: the bulk actions show only while questions are
+ * selected, the import panel collapses behind its button, and the filter selects apply on change.
+ * All three are server-rendered in their open/visible state and only narrowed here.
+ *
  * @module     mod_playerpuzzle/managequestions
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -37,6 +41,7 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
     let bulkDeleteBtn = null;
     let bulkApproveBtn = null;
     let bulkPhaseBtn = null;
+    let bulkBar = null;
 
     /**
      * Refreshes both bulk-action button states and labels based on current selection.
@@ -48,6 +53,19 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
      */
     const updateBulkButtons = () => {
         const totalCount = document.querySelectorAll('.playerpuzzle-bulk-check:checked').length;
+
+        if (bulkBar) {
+            // Without a selection the bar is only a hint; the actions have nothing to act on.
+            const hint = document.getElementById('pp-bulk-hint');
+            const actions = document.getElementById('pp-bulk-actions');
+            const count = document.getElementById('pp-bulk-count');
+            hint.hidden = totalCount > 0;
+            actions.hidden = totalCount === 0;
+            bulkBar.classList.toggle('pp-bulkbar-on', totalCount > 0);
+            count.textContent = totalCount === 1
+                ? bulkBar.dataset.one
+                : bulkBar.dataset.many.replace('{$a}', totalCount);
+        }
         const approvableCount = document.querySelectorAll(
             '.playerpuzzle-bulk-check:checked[data-approvable="1"]'
         ).length;
@@ -59,7 +77,6 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
 
         if (bulkPhaseBtn) {
             bulkPhaseBtn.disabled = totalCount === 0;
-            bulkPhaseBtn.textContent = `${bulkPhaseBtn.dataset.labelbase} (${totalCount})`;
         }
 
         if (bulkApproveBtn) {
@@ -139,9 +156,24 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
         bulkDeleteBtn = document.getElementById('playerpuzzle-bulk-delete-btn');
         bulkApproveBtn = document.getElementById('playerpuzzle-bulk-approve-btn');
         bulkPhaseBtn = document.getElementById('playerpuzzle-bulk-phase-btn');
+        bulkBar = document.getElementById('pp-bulkbar');
 
         if (!bulkForm) {
             return;
+        }
+
+        const clearBtn = document.getElementById('pp-bulk-clear');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                document.querySelectorAll('.playerpuzzle-bulk-check').forEach((cb) => {
+                    cb.checked = false;
+                });
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                }
+                updateBulkButtons();
+            });
         }
 
         if (bulkPhaseBtn) {
@@ -216,6 +248,47 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
         });
     };
 
+    /**
+     * Collapses the import panel behind its button, which only exists for this: without JavaScript the
+     * panel stays open and the button stays hidden, so importing never depends on it.
+     */
+    const initImportToggle = () => {
+        const toggle = document.getElementById('pp-import-toggle');
+        const panel = document.getElementById('pp-import-panel');
+        if (!toggle || !panel) {
+            return;
+        }
+        toggle.hidden = false;
+        panel.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.addEventListener('click', () => {
+            panel.hidden = !panel.hidden;
+            toggle.setAttribute('aria-expanded', String(!panel.hidden));
+        });
+    };
+
+    /**
+     * Applies the filters and the sort as soon as one of them changes, so the Apply button, the only way to
+     * submit without JavaScript, is not needed. Picking a column to sort by also picks the order that suits it:
+     * newest and most drawn first, the others from the start.
+     */
+    const initFilters = () => {
+        const form = document.getElementById('pp-filter-form');
+        if (!form) {
+            return;
+        }
+        const apply = document.getElementById('pp-filter-apply');
+        if (apply) {
+            apply.hidden = true;
+        }
+        form.addEventListener('change', (event) => {
+            if (event.target.id === 'pp-filter-sort') {
+                form.elements.dir.value = ['id', 'drawn'].includes(event.target.value) ? 'DESC' : 'ASC';
+            }
+            form.requestSubmit();
+        });
+    };
+
     return {
         /**
          * Entry point called by managequestions.php via $PAGE->requires->js_call_amd().
@@ -224,6 +297,8 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
             initSelectAll();
             initBulkActions();
             initSingleDelete();
+            initImportToggle();
+            initFilters();
             updateBulkButtons();
         },
     };

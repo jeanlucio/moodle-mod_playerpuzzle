@@ -213,4 +213,111 @@ final class question_list_service_test extends \advanced_testcase {
         $this->assertSame(get_string('questionphase_any', 'mod_playerpuzzle'), $labels['Unphased?']);
         $this->assertSame(range(0, 10), array_column($listcontext['bulkphaseoptions'], 'value'));
     }
+
+    /**
+     * Tests that the listing's links and forms carry the view along (filters and sort), that the filter selects
+     * mark what is applied, and that the count says how many of the instance's questions are shown.
+     *
+     * @return void
+     */
+    public function test_the_view_travels_with_every_link_and_the_filters_mark_what_is_applied(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+        [$instance, $context] = $this->make_instance_and_context();
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Third?',
+            '',
+            $answers,
+            2,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            3
+        );
+        questions_repository::add_question((int) $instance->id, 'multichoice', 'Any?', '', $answers, 2);
+        $cmid = (int) get_coursemodule_from_instance('playerpuzzle', $instance->id)->id;
+
+        $listcontext = question_list_service::build_list_context(
+            $instance,
+            $cmid,
+            $PAGE->get_renderer('core'),
+            $context,
+            'phase',
+            'ASC',
+            0,
+            ['id' => $cmid, 'phase' => '3', 'sort' => 'phase', 'dir' => 'ASC'],
+            '<p>import</p>',
+            3,
+            null
+        );
+
+        $this->assertCount(1, $listcontext['questions']);
+        $this->assertTrue($listcontext['hasrows']);
+        $this->assertStringContainsString('phase=3', $listcontext['questions'][0]['editurl']);
+        $this->assertStringContainsString('sort=phase', $listcontext['questions'][0]['editurl']);
+        $this->assertStringContainsString('phase=3', $listcontext['sort_status_url']);
+        $this->assertStringContainsString('sort=status', $listcontext['sort_status_url']);
+        $this->assertSame('ascending', $listcontext['sort_phase_aria']);
+        $this->assertSame('none', $listcontext['sort_drawn_aria']);
+        $this->assertContains(['name' => 'phase', 'value' => '3'], $listcontext['bulkhidden']);
+        $this->assertTrue($listcontext['filtersactive']);
+        $this->assertStringNotContainsString('phase=', $listcontext['clearfiltersurl']);
+        $this->assertStringContainsString('sort=phase', $listcontext['clearfiltersurl']);
+        $this->assertSame(
+            get_string('showingcount', 'mod_playerpuzzle', (object) ['shown' => 1, 'total' => 2]),
+            $listcontext['showingcount']
+        );
+        $this->assertSame('<p>import</p>', $listcontext['importhtml']);
+
+        $isselected = static fn(array $option): bool => $option['selected'];
+        $selected = array_values(array_filter($listcontext['phasefilteroptions'], $isselected));
+        $this->assertSame('3', $selected[0]['value']);
+        $this->assertCount(12, $listcontext['phasefilteroptions']);
+        $sorted = array_values(array_filter($listcontext['sortoptions'], $isselected));
+        $this->assertSame('phase', $sorted[0]['value']);
+    }
+
+    /**
+     * Tests that a filter matching nothing still shows the listing, saying so and offering to clear, instead of
+     * the "no questions yet" state.
+     *
+     * @return void
+     */
+    public function test_a_filter_with_no_match_is_not_the_empty_state(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+        [$instance, $context] = $this->make_instance_and_context();
+        questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Any?',
+            '',
+            [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]],
+            2
+        );
+
+        $listcontext = question_list_service::build_list_context(
+            $instance,
+            (int) get_coursemodule_from_instance('playerpuzzle', $instance->id)->id,
+            $PAGE->get_renderer('core'),
+            $context,
+            'id',
+            'DESC',
+            0,
+            [],
+            '',
+            7,
+            null
+        );
+
+        $this->assertTrue($listcontext['hasquestions']);
+        $this->assertFalse($listcontext['hasrows']);
+        $this->assertSame([], $listcontext['questions']);
+    }
 }

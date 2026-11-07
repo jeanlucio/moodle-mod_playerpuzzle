@@ -27,24 +27,63 @@
         "addquestionlabel": "Add question",
         "aiavailable": true,
         "generatewithailabel": "Generate with AI",
+        "importheader": "Import from the question bank",
+        "importtogglelabel": "Import from the question bank",
+        "importhtml": "<form><label for=\"id_categoryid\">Category</label><select id=\"id_categoryid\"><option>Cat (2 questions)</option></select></form>",
         "hasquestions": true,
+        "hasrows": true,
         "noquestionslabel": "No questions have been added yet.",
+        "nomatchlabel": "No questions match these filters.",
+        "filteraction": "https://example.com/mod/playerpuzzle/managequestions.php",
+        "filterlabel": "Filter and sort the questions",
+        "filterbutton": "Apply",
+        "phasefilterlabel": "Phase",
+        "phasefilteroptions": [
+            {"value": "", "label": "All phases", "selected": true},
+            {"value": "none", "label": "No phase set", "selected": false},
+            {"value": "1", "label": "Phase 1", "selected": false}
+        ],
+        "statusfilterlabel": "Status",
+        "statusfilteroptions": [
+            {"value": "", "label": "All", "selected": true},
+            {"value": "approved", "label": "Approved", "selected": false}
+        ],
+        "sortbylabel": "Sort by",
+        "sortoptions": [
+            {"value": "id", "label": "Most recent", "selected": true},
+            {"value": "phase", "label": "Phase", "selected": false}
+        ],
+        "sortdirlabel": "Order",
+        "sortdiroptions": [
+            {"value": "ASC", "label": "Ascending", "selected": false},
+            {"value": "DESC", "label": "Descending", "selected": true}
+        ],
+        "showingcount": "Showing 1 of 1",
+        "filtersactive": true,
+        "clearfiltersurl": "https://example.com/mod/playerpuzzle/managequestions.php?id=2",
+        "clearfilterslabel": "Clear filters",
         "questioncolumnlabel": "Question",
-        "typecolumnlabel": "Type",
-        "sourcecolumnlabel": "Source",
         "phasecolumnlabel": "Phase",
         "statuscolumnlabel": "Status",
         "drawcountcolumnlabel": "Times drawn",
         "actionscolumnlabel": "Actions",
-        "sort_qtype_url": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&sort=qtype&dir=ASC",
-        "sort_qtype_icon": "fa-sort",
-        "sort_source_url": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&sort=source&dir=ASC",
-        "sort_source_icon": "fa-sort",
-        "sort_approved_url": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&sort=approved&dir=ASC",
-        "sort_approved_icon": "fa-sort",
+        "sort_phase_url": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&sort=phase&dir=ASC",
+        "sort_phase_icon": "fa-sort",
+        "sort_phase_aria": "none",
+        "sort_status_url": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&sort=status&dir=ASC",
+        "sort_status_icon": "fa-sort",
+        "sort_status_aria": "none",
+        "sort_drawn_url": "https://example.com/mod/playerpuzzle/managequestions.php?id=2&sort=drawn&dir=ASC",
+        "sort_drawn_icon": "fa-sort",
+        "sort_drawn_aria": "none",
         "selectalllabel": "Select all questions",
         "selectquestionlabel": "Select question",
-        "bulkapprovebutton": "Approve selected",
+        "bulkhidden": [{"name": "id", "value": "2"}],
+        "bulkhint": "Select questions to approve them, set their phase or delete them.",
+        "bulkselectedone": "1 selected",
+        "bulkselectedmany": "{$a} selected",
+        "bulkclearbutton": "Clear selection",
+        "bulkapprovebutton": "Approve",
         "bulkapprovebuttontitle": "Approve selected questions",
         "bulkapproveconfirm": "Are you sure you want to approve the selected questions?",
         "bulkphaseselectlabel": "Phase to set on the selected questions",
@@ -52,8 +91,8 @@
             {"value": 0, "label": "Any phase"},
             {"value": 1, "label": "Phase 1"}
         ],
-        "bulkphasebutton": "Set phase for selected",
-        "bulkdeletebutton": "Delete selected",
+        "bulkphasebutton": "Set phase",
+        "bulkdeletebutton": "Delete",
         "bulkdeleteconfirm": "Are you sure you want to delete the selected questions?",
         "deletequestionbutton": "Delete",
         "deletequestiontitle": "Delete question",
@@ -63,10 +102,10 @@
             {
                 "id": 5,
                 "questiontext": "What is 2 + 2?",
-                "qtypelabel": "Multiple choice",
                 "answerspreview": "✓ 4 · 3 · 5",
-                "sourcelabel": "Manual",
-                "phaselabel": "Any phase",
+                "metaline": "Multiple choice · Manual",
+                "phaselabel": "Phase 3",
+                "hasphase": true,
                 "statuslabel": "Pending approval",
                 "statusbadgeclass": "bg-warning text-dark",
                 "canapprove": true,
@@ -81,59 +120,121 @@
         "backlabel": "Back"
     }
 }}
-<a href="{{addurl}}" class="btn btn-primary mb-3">{{addquestionlabel}}</a>
-{{#aiavailable}}
-<button type="button" class="btn btn-outline-primary mb-3 ms-2" data-action="pp-ai-generate" data-cmid="{{cmid}}">
-    {{generatewithailabel}}
-</button>
-{{/aiavailable}}
+<div class="pp-actionbar">
+    <a href="{{addurl}}" class="btn btn-primary">{{addquestionlabel}}</a>
+    {{#aiavailable}}
+    <button type="button" class="btn btn-outline-primary" data-action="pp-ai-generate" data-cmid="{{cmid}}">
+        {{generatewithailabel}}
+    </button>
+    {{/aiavailable}}
+    <button type="button"
+            id="pp-import-toggle"
+            class="btn btn-outline-secondary"
+            aria-expanded="true"
+            aria-controls="pp-import-panel"
+            hidden>
+        {{importtogglelabel}}
+    </button>
+</div>
+
+<div id="pp-import-panel" class="pp-import-panel">
+    <h3 class="h5">{{importheader}}</h3>
+    {{{importhtml}}}
+</div>
 
 {{^hasquestions}}
 <div class="alert alert-info" role="alert">{{noquestionslabel}}</div>
 {{/hasquestions}}
 
 {{#hasquestions}}
-<form id="playerpuzzle-bulk-form" method="post" action="{{{config.wwwroot}}}/mod/playerpuzzle/managequestions.php">
+<form id="pp-filter-form" class="pp-filters" method="get" action="{{{filteraction}}}" aria-label="{{filterlabel}}">
     <input type="hidden" name="id" value="{{cmid}}">
+    <div class="pp-filter-group">
+        <label for="pp-filter-phase">{{phasefilterlabel}}</label>
+        <select id="pp-filter-phase" name="phase" class="form-select form-select-sm custom-select custom-select-sm">
+            {{#phasefilteroptions}}
+            <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+            {{/phasefilteroptions}}
+        </select>
+    </div>
+    <div class="pp-filter-group">
+        <label for="pp-filter-status">{{statusfilterlabel}}</label>
+        <select id="pp-filter-status" name="status" class="form-select form-select-sm custom-select custom-select-sm">
+            {{#statusfilteroptions}}
+            <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+            {{/statusfilteroptions}}
+        </select>
+    </div>
+    <div class="pp-filter-group">
+        <label for="pp-filter-sort">{{sortbylabel}}</label>
+        <span class="pp-ig">
+            <select id="pp-filter-sort" name="sort" class="form-select form-select-sm custom-select custom-select-sm">
+                {{#sortoptions}}
+                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                {{/sortoptions}}
+            </select>
+            <select id="pp-filter-dir" name="dir" class="form-select form-select-sm custom-select custom-select-sm" aria-label="{{sortdirlabel}}">
+                {{#sortdiroptions}}
+                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                {{/sortdiroptions}}
+            </select>
+        </span>
+    </div>
+    <button type="submit" id="pp-filter-apply" class="btn btn-outline-secondary btn-sm">{{filterbutton}}</button>
+    {{#filtersactive}}
+    <a href="{{{clearfiltersurl}}}" class="pp-filter-clear">{{clearfilterslabel}}</a>
+    {{/filtersactive}}
+    <span class="pp-filter-count" role="status">{{showingcount}}</span>
+</form>
+
+<form id="playerpuzzle-bulk-form" method="post" action="{{{config.wwwroot}}}/mod/playerpuzzle/managequestions.php">
+    {{#bulkhidden}}
+    <input type="hidden" name="{{name}}" value="{{value}}">
+    {{/bulkhidden}}
     <input type="hidden" id="playerpuzzle-bulk-action" name="bulkaction" value="">
     <input type="hidden" name="sesskey" value="{{sesskey}}">
 
-    <div class="mb-2">
-        <button type="button"
-                id="playerpuzzle-bulk-approve-btn"
-                class="btn btn-outline-success btn-sm me-2"
-                data-labelbase="{{bulkapprovebutton}}"
-                data-title="{{bulkapprovebuttontitle}}"
-                data-confirm="{{bulkapproveconfirm}}"
-                disabled>
-            {{bulkapprovebutton}}
-        </button>
-        <label for="playerpuzzle-bulk-phase" class="visually-hidden">{{bulkphaseselectlabel}}</label>
-        <select id="playerpuzzle-bulk-phase" name="bulkphase" class="form-select form-select-sm d-inline-block w-auto me-1">
-            {{#bulkphaseoptions}}
-            <option value="{{value}}">{{label}}</option>
-            {{/bulkphaseoptions}}
-        </select>
-        <button type="button"
-                id="playerpuzzle-bulk-phase-btn"
-                class="btn btn-outline-secondary btn-sm me-2"
-                data-labelbase="{{bulkphasebutton}}"
-                disabled>
-            {{bulkphasebutton}}
-        </button>
-        <button type="button"
-                id="playerpuzzle-bulk-delete-btn"
-                class="btn btn-outline-danger btn-sm"
-                data-labelbase="{{bulkdeletebutton}}"
-                data-title="{{deletequestiontitle}}"
-                data-confirm="{{bulkdeleteconfirm}}"
-                disabled>
-            {{bulkdeletebutton}}
-        </button>
+    <div class="pp-bulkbar" id="pp-bulkbar"
+         data-one="{{bulkselectedone}}"
+         data-many="{{bulkselectedmany}}">
+        <span class="pp-bulkbar-hint" id="pp-bulk-hint">{{bulkhint}}</span>
+        <div class="pp-bulkbar-actions" id="pp-bulk-actions">
+            <strong class="pp-bulk-count" id="pp-bulk-count" role="status"></strong>
+            <button type="button"
+                    id="playerpuzzle-bulk-approve-btn"
+                    class="btn btn-outline-success btn-sm"
+                    data-labelbase="{{bulkapprovebutton}}"
+                    data-title="{{bulkapprovebuttontitle}}"
+                    data-confirm="{{bulkapproveconfirm}}"
+                    disabled>
+                {{bulkapprovebutton}}
+            </button>
+            <span class="pp-ig">
+                <label for="playerpuzzle-bulk-phase" class="visually-hidden">{{bulkphaseselectlabel}}</label>
+                <select id="playerpuzzle-bulk-phase" name="bulkphase" class="form-select form-select-sm custom-select custom-select-sm">
+                    {{#bulkphaseoptions}}
+                    <option value="{{value}}">{{label}}</option>
+                    {{/bulkphaseoptions}}
+                </select>
+                <button type="button" id="playerpuzzle-bulk-phase-btn" class="btn btn-outline-secondary btn-sm">
+                    {{bulkphasebutton}}
+                </button>
+            </span>
+            <button type="button"
+                    id="playerpuzzle-bulk-delete-btn"
+                    class="btn btn-outline-danger btn-sm"
+                    data-labelbase="{{bulkdeletebutton}}"
+                    data-title="{{deletequestiontitle}}"
+                    data-confirm="{{bulkdeleteconfirm}}"
+                    disabled>
+                {{bulkdeletebutton}}
+            </button>
+            <button type="button" id="pp-bulk-clear" class="btn btn-link btn-sm">{{bulkclearbutton}}</button>
+        </div>
     </div>
 
     <div class="table-responsive">
-        <table class="generaltable">
+        <table class="generaltable pp-questions">
             <thead>
                 <tr>
                     <th scope="col">
@@ -143,30 +244,36 @@
                                aria-label="{{selectalllabel}}">
                     </th>
                     <th scope="col">{{questioncolumnlabel}}</th>
-                    <th scope="col">
-                        <a href="{{sort_qtype_url}}" class="text-reset text-decoration-none">
-                            {{typecolumnlabel}}
-                            <i class="fa {{sort_qtype_icon}}" aria-hidden="true"></i>
+                    <th scope="col" aria-sort="{{sort_phase_aria}}">
+                        <a href="{{{sort_phase_url}}}" class="text-reset text-decoration-none">
+                            {{phasecolumnlabel}}
+                            <i class="fa {{sort_phase_icon}}" aria-hidden="true"></i>
                         </a>
                     </th>
-                    <th scope="col">
-                        <a href="{{sort_source_url}}" class="text-reset text-decoration-none">
-                            {{sourcecolumnlabel}}
-                            <i class="fa {{sort_source_icon}}" aria-hidden="true"></i>
-                        </a>
-                    </th>
-                    <th scope="col">{{phasecolumnlabel}}</th>
-                    <th scope="col">
-                        <a href="{{sort_approved_url}}" class="text-reset text-decoration-none">
+                    <th scope="col" aria-sort="{{sort_status_aria}}">
+                        <a href="{{{sort_status_url}}}" class="text-reset text-decoration-none">
                             {{statuscolumnlabel}}
-                            <i class="fa {{sort_approved_icon}}" aria-hidden="true"></i>
+                            <i class="fa {{sort_status_icon}}" aria-hidden="true"></i>
                         </a>
                     </th>
-                    <th scope="col">{{drawcountcolumnlabel}}</th>
+                    <th scope="col" aria-sort="{{sort_drawn_aria}}">
+                        <a href="{{{sort_drawn_url}}}" class="text-reset text-decoration-none">
+                            {{drawcountcolumnlabel}}
+                            <i class="fa {{sort_drawn_icon}}" aria-hidden="true"></i>
+                        </a>
+                    </th>
                     <th scope="col">{{actionscolumnlabel}}</th>
                 </tr>
             </thead>
             <tbody>
+                {{^hasrows}}
+                <tr>
+                    <td colspan="6" class="text-center">
+                        {{nomatchlabel}}
+                        <a href="{{{clearfiltersurl}}}">{{clearfilterslabel}}</a>
+                    </td>
+                </tr>
+                {{/hasrows}}
                 {{#questions}}
                 <tr>
                     <td>
@@ -177,33 +284,37 @@
                                aria-label="{{selectquestionlabel}} {{questiontext}}"
                                {{#canapprove}}data-approvable="1"{{/canapprove}}>
                     </td>
-                    <td>
-                        {{questiontext}}
-                        <div class="text-muted small">{{answerspreview}}</div>
+                    <td class="pp-question-cell">
+                        <div class="pp-question-text">{{questiontext}}</div>
+                        <div class="pp-question-answers">{{answerspreview}}</div>
+                        <div class="pp-question-meta">{{metaline}}</div>
                     </td>
-                    <td>{{qtypelabel}}</td>
-                    <td>{{sourcelabel}}</td>
-                    <td>{{phaselabel}}</td>
-                    <td>
+                    <td class="text-nowrap">
+                        {{#hasphase}}<span class="pp-phase-pill">{{phaselabel}}</span>{{/hasphase}}
+                        {{^hasphase}}<span class="pp-phase-any">{{phaselabel}}</span>{{/hasphase}}
+                    </td>
+                    <td class="text-nowrap">
                         <span class="badge {{statusbadgeclass}}">{{statuslabel}}</span>
                     </td>
                     <td>{{drawcount}}</td>
                     <td>
-                        <a href="{{editurl}}" class="btn btn-outline-secondary btn-sm me-1">
-                            {{editquestionbutton}}
-                        </a>
-                        {{#canapprove}}
-                        <a href="{{approveurl}}" class="btn btn-outline-success btn-sm me-1">
-                            {{approvelabel}}
-                        </a>
-                        {{/canapprove}}
-                        <button type="button"
-                                class="btn btn-outline-danger btn-sm playerpuzzle-single-delete-btn"
-                                data-questionid="{{id}}"
-                                data-title="{{deletequestiontitle}}"
-                                data-confirm="{{deletequestionconfirm}}">
-                            {{deletequestionbutton}}
-                        </button>
+                        <div class="pp-row-actions">
+                            <a href="{{{editurl}}}" class="btn btn-outline-secondary btn-sm">
+                                {{editquestionbutton}}
+                            </a>
+                            {{#canapprove}}
+                            <a href="{{{approveurl}}}" class="btn btn-outline-success btn-sm">
+                                {{approvelabel}}
+                            </a>
+                            {{/canapprove}}
+                            <button type="button"
+                                    class="btn btn-outline-danger btn-sm playerpuzzle-single-delete-btn"
+                                    data-questionid="{{id}}"
+                                    data-title="{{deletequestiontitle}}"
+                                    data-confirm="{{deletequestionconfirm}}">
+                                {{deletequestionbutton}}
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 {{/questions}}

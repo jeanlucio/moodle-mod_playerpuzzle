@@ -27,10 +27,10 @@ This is the first of the plugin's [three anti-cheat pillars](#security).
 ## Managing Questions
 
 Teachers (users with the *Manage the PlayerPuzzle question bank* capability) get a **Manage
-questions** page in the activity. It lists every question with its source, its status and how
-many times it has been drawn, and offers:
+questions** page in the activity. It lists every question with its type, source, phase, status
+and how many times it has been drawn, and offers:
 
-* **Import from the Question Bank** — pick a category and import its approved, single-answer
+* **Import from the Question Bank** — a button beside *Add question* opens the import panel; pick a category and import its approved, single-answer
   Multiple Choice and True/False questions. Importing again refreshes the copies; a question that
   left the category is disabled rather than deleted, because past attempts may still refer to it.
   Embedded images and files are copied along. The category list shows how many questions each
@@ -43,6 +43,12 @@ many times it has been drawn, and offers:
   questions at once — see below.
 
 Only **approved** questions are ever drawn in a match.
+
+**Finding and sorting.** The list can be filtered by phase (including *No phase set*) and by status
+(approved, pending, disabled), and sorted by most recent, phase, status, most drawn, type or source.
+The filters apply as soon as they change and travel with every action, so approving, editing or setting
+a phase on a filtered list brings the teacher back to the same list. The bulk actions (approve, set
+phase, delete) appear in a bar once questions are selected.
 
 ## Questions by Phase
 

@@ -992,4 +992,141 @@ final class questions_repository_test extends \advanced_testcase {
         questions_repository::set_phase_bulk([], 7, 3);
         $this->assertSame(0, (int) questions_repository::get_question($two, 7)->phase);
     }
+
+    /**
+     * Creates the question set the management filter and sort tests share: instance 7 with one question per
+     * kind, and one of another instance that must never show.
+     *
+     * @return array<string, int> Name => question id.
+     */
+    private function make_management_set(): array {
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        $make = static fn(string $text, int $phase, string $source, bool $approved, int $instance = 7): int =>
+            questions_repository::add_question(
+                $instance,
+                'multichoice',
+                $text,
+                '',
+                $answers,
+                42,
+                $source,
+                $approved,
+                FORMAT_PLAIN,
+                null,
+                $phase
+            );
+        $ids = [
+            'any' => $make('any', 0, 'manual', true),
+            'p3' => $make('p3', 3, 'manual', true),
+            'p10' => $make('p10', 10, 'manual', true),
+            'pending' => $make('pending', 3, 'ai', false),
+            'disabled' => $make('disabled', 0, 'bank', false),
+        ];
+        $make('other instance', 3, 'manual', true, 9);
+
+        return $ids;
+    }
+
+    /**
+     * Extracts the ids of a management page, in order.
+     *
+     * @param array $pool What get_questions_for_management() returned.
+     * @return int[]
+     */
+    private function ids_of(array $pool): array {
+        return array_map(static fn(\stdClass $row): int => (int) $row->id, $pool['rows']);
+    }
+
+    /**
+     * Tests that the management listing filters by phase: one phase, or the questions meant for none in
+     * particular, with 'total' counting the matches and 'all' the whole instance.
+     *
+     * @return void
+     */
+    public function test_get_questions_for_management_filters_by_phase(): void {
+        $this->resetAfterTest();
+        $ids = $this->make_management_set();
+
+        $three = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', 3);
+        $this->assertSame([$ids['p3'], $ids['pending']], $this->ids_of($three));
+        $this->assertSame(2, $three['total']);
+        $this->assertSame(5, $three['all']);
+
+        $none = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', 0);
+        $this->assertSame([$ids['any'], $ids['disabled']], $this->ids_of($none));
+
+        $nothing = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', 5);
+        $this->assertSame([], $nothing['rows']);
+        $this->assertSame(0, $nothing['total']);
+        $this->assertSame(5, $nothing['all']);
+    }
+
+    /**
+     * Tests that the management listing filters by status, with pending meaning not approved and AI-generated
+     * and disabled meaning not approved from any other source, and that an unknown status filters nothing.
+     *
+     * @return void
+     */
+    public function test_get_questions_for_management_filters_by_status(): void {
+        $this->resetAfterTest();
+        $ids = $this->make_management_set();
+
+        $approved = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', null, 'approved');
+        $this->assertSame([$ids['any'], $ids['p3'], $ids['p10']], $this->ids_of($approved));
+
+        $pending = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', null, 'pending');
+        $this->assertSame([$ids['pending']], $this->ids_of($pending));
+
+        $disabled = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', null, 'disabled');
+        $this->assertSame([$ids['disabled']], $this->ids_of($disabled));
+
+        $unknown = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', null, 'nonsense');
+        $this->assertSame(5, $unknown['total']);
+
+        $both = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', 3, 'approved');
+        $this->assertSame([$ids['p3']], $this->ids_of($both));
+    }
+
+    /**
+     * Tests the new sorts: by phase (the phases in order, the questions meant for any phase last when
+     * ascending), by status (pending, then disabled, then approved) and by how many times drawn.
+     *
+     * @return void
+     */
+    public function test_get_questions_for_management_sorts_by_phase_status_and_drawn(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $ids = $this->make_management_set();
+
+        // Ties (two questions of phase 3, two for any phase) keep the newest first.
+        $byphase = questions_repository::get_questions_for_management(7, 0, 30, 'phase', 'ASC');
+        $this->assertSame(
+            [$ids['pending'], $ids['p3'], $ids['p10'], $ids['disabled'], $ids['any']],
+            $this->ids_of($byphase)
+        );
+        $byphasedesc = questions_repository::get_questions_for_management(7, 0, 30, 'phase', 'DESC');
+        $this->assertSame([$ids['disabled'], $ids['any']], array_slice($this->ids_of($byphasedesc), 0, 2));
+
+        $bystatus = questions_repository::get_questions_for_management(7, 0, 30, 'status', 'ASC');
+        $this->assertSame([$ids['pending'], $ids['disabled']], array_slice($this->ids_of($bystatus), 0, 2));
+        $legacy = questions_repository::get_questions_for_management(7, 0, 30, 'approved', 'ASC');
+        $this->assertSame($this->ids_of($bystatus), $this->ids_of($legacy));
+
+        $attemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => 7,
+            'userid' => 2,
+            'token' => 'tok-sort',
+            'timecreated' => time(),
+        ]);
+        foreach ([$ids['p10'], $ids['p10'], $ids['any']] as $questionid) {
+            $DB->insert_record('playerpuzzle_attempt_questions', (object) [
+                'attemptid' => $attemptid,
+                'questionid' => $questionid,
+                'iscorrect' => 1,
+                'timecreated' => time(),
+            ]);
+        }
+        $bydrawn = questions_repository::get_questions_for_management(7, 0, 30, 'drawn', 'DESC');
+        $this->assertSame([$ids['p10'], $ids['any']], array_slice($this->ids_of($bydrawn), 0, 2));
+    }
 }

@@ -45,7 +45,10 @@ class questions_repository {
     public const MANAGE_PERPAGE = 30;
 
     /** @var string[] Columns get_questions_for_management() may sort by. */
-    private const MANAGE_SORTABLE_COLUMNS = ['id', 'qtype', 'source', 'approved'];
+    private const MANAGE_SORTABLE_COLUMNS = ['id', 'qtype', 'source', 'phase', 'status', 'drawn'];
+
+    /** @var string[] Statuses the management listing can be filtered by. */
+    public const MANAGE_STATUSES = ['approved', 'pending', 'disabled'];
 
     /**
      * Creates a question with its answers in one transaction-free pair of inserts (answers
@@ -445,50 +448,93 @@ class questions_repository {
      * Returns one page of an instance's question pool, ordered by the given column, for the
      * management listing. Mirrors mod_playerwords\local\words_repository::get_recent_words().
      *
-     * $sort/$dir are re-validated here against the same allow-list managequestions.php already
+     * $sort/$dir/$status are re-validated here against the same allow-lists managequestions.php already
      * applies before calling this — defence in depth, so the method is safe by construction for
      * any future caller, not only the one that happens to validate correctly today.
+     *
+     * A question's status is derived, never stored: approved, pending (not approved and AI-generated, waiting
+     * for the teacher) or disabled (not approved and from any other source, e.g. a bank question that left
+     * its category), the same split the listing's badges make.
      *
      * @param int $playerpuzzleid The instance id.
      * @param int $page Zero-based page number.
      * @param int $perpage Rows per page. Pass 0 together with $page = 0 for every row unpaginated.
-     * @param string $sort Column to order by; falls back to 'id' when not in the allow-list.
+     * @param string $sort Column to order by, one of self::MANAGE_SORTABLE_COLUMNS ('approved' is the old name of
+     *  'status'); falls back to 'id' when not in the allow-list.
      * @param string $dir 'ASC' or 'DESC'; falls back to 'DESC'.
-     * @return array{rows: stdClass[], total: int} Rows have ->answers attached, same shape as
-     *  get_question(); 'total' is the unpaginated row count, for the paging bar.
+     * @param int|null $phase Only the questions meant for this phase (1 to 10), or for no phase in particular
+     *  with 0; null for every phase.
+     * @param string|null $status Only the questions with this status, one of self::MANAGE_STATUSES; null for any.
+     * @return array{rows: stdClass[], total: int, all: int} Rows have ->answers attached, same shape as
+     *  get_question(); 'total' is the unpaginated count of rows matching the filters, for the paging bar, and 'all'
+     *  the count of the instance's questions whatever the filters.
      */
     public static function get_questions_for_management(
         int $playerpuzzleid,
         int $page = 0,
         int $perpage = 0,
         string $sort = 'id',
-        string $dir = 'DESC'
+        string $dir = 'DESC',
+        ?int $phase = null,
+        ?string $status = null
     ): array {
         global $DB;
 
+        if ($sort === 'approved') {
+            $sort = 'status';
+        }
         if (!in_array($sort, self::MANAGE_SORTABLE_COLUMNS, true)) {
             $sort = 'id';
         }
         $dir = (strtoupper($dir) === 'ASC') ? 'ASC' : 'DESC';
 
-        $total = $DB->count_records('playerpuzzle_questions', ['playerpuzzleid' => $playerpuzzleid]);
+        $where = 'q.playerpuzzleid = :playerpuzzleid';
+        $params = ['playerpuzzleid' => $playerpuzzleid];
+        if ($phase !== null) {
+            $where .= ' AND q.phase = :phase';
+            $params['phase'] = self::clean_phase($phase);
+        }
+        if ($status === 'approved') {
+            $where .= ' AND q.approved = 1';
+        } else if ($status === 'pending') {
+            $where .= " AND q.approved = 0 AND q.source = 'ai'";
+        } else if ($status === 'disabled') {
+            $where .= " AND q.approved = 0 AND q.source <> 'ai'";
+        }
 
-        $questions = $DB->get_records(
-            'playerpuzzle_questions',
-            ['playerpuzzleid' => $playerpuzzleid],
-            "$sort $dir, id DESC",
-            '*',
+        // Phase 0 (any phase) goes last when ascending, after phase 10; a pending question comes before a
+        // disabled one and both before the approved, so the ones needing attention surface first.
+        $orderby = [
+            'id' => 'q.id',
+            'qtype' => 'q.qtype',
+            'source' => 'q.source',
+            'phase' => 'CASE WHEN q.phase = 0 THEN 99 ELSE q.phase END',
+            'status' => "CASE WHEN q.approved = 1 THEN 2 WHEN q.source = 'ai' THEN 0 ELSE 1 END",
+            'drawn' => '(SELECT COUNT(aq.id) FROM {playerpuzzle_attempt_questions} aq WHERE aq.questionid = q.id)',
+        ][$sort];
+
+        $all = $DB->count_records('playerpuzzle_questions', ['playerpuzzleid' => $playerpuzzleid]);
+        $total = ($phase === null && $status === null)
+            ? $all
+            : $DB->count_records_sql("SELECT COUNT(q.id) FROM {playerpuzzle_questions} q WHERE $where", $params);
+
+        $questions = $DB->get_records_sql(
+            "SELECT q.*
+               FROM {playerpuzzle_questions} q
+              WHERE $where
+           ORDER BY $orderby $dir, q.id DESC",
+            $params,
             $page * $perpage,
             $perpage
         );
 
         if ($questions) {
             $answersbyquestion = [];
-            [$insql, $params] = $DB->get_in_or_equal(array_keys($questions));
+            [$insql, $answerparams] = $DB->get_in_or_equal(array_keys($questions));
             $allanswers = $DB->get_records_select(
                 'playerpuzzle_question_answers',
                 "questionid $insql",
-                $params,
+                $answerparams,
                 'questionid ASC, sortorder ASC'
             );
             foreach ($allanswers as $answer) {
@@ -502,6 +548,7 @@ class questions_repository {
         return [
             'rows' => array_values($questions),
             'total' => (int) $total,
+            'all' => (int) $all,
         ];
     }
 

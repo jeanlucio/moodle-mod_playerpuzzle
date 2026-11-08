@@ -42,7 +42,8 @@ and how many times it has been drawn, and offers:
 * **Set the phase** a question is meant for, one by one in the question's form or for the selected
   questions at once — see below.
 
-Only **approved** questions are ever drawn in a match.
+Only **approved** questions are ever drawn in a match. A question already answered in a phase is not asked
+again in that phase while the pool still has another; once all have been asked they come around again.
 
 **Finding and sorting.** The list can be filtered by phase (including *No phase set*) and by status
 (approved, pending, disabled), and sorted by most recent, phase, status, most drawn, type or source.

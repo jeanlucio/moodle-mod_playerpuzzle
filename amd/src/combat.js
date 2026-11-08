@@ -1286,7 +1286,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
                             .text(strings.victoryunverifiedrestart);
                         Accessibility.announce(strings.victoryunverifiedrestart);
-                        me.time.delayedCall(4000, () => this.submitRestartForm());
+                        window.setTimeout(() => this.submitRestartForm(), 4000);
                     } else {
                         // The replay found a defeat: record it as one, through the end screen.
                         document.getElementById('playerpuzzle-phasecomplete').close();
@@ -1872,7 +1872,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
                         .text(strings.victoryunverifiedrestart);
                     Accessibility.announce(strings.victoryunverifiedrestart);
-                    me.time.delayedCall(4000, () => this.submitRestartForm());
+                    window.setTimeout(() => this.submitRestartForm(), 4000);
                     return;
                 }
                 if (victory && res.outcome !== 'won') {
@@ -1922,14 +1922,15 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const total = parseInt(this.gameConfig.maxlevels, 10) * 10 || 10;
             const startNext = () => {
                 // Announce the transition for screen-reader users, then give it a beat to be read
-                // before the full page reload wipes the live region.
+                // before the full page reload wipes the live region. The beat is counted on the real clock, not
+                // the game's, which slows down together with a slow device and would stretch it to many seconds.
                 Accessibility.announce(
                     strings.phaseadvanced
                         .replace('{$a->level}', res.currentlevel)
                         .replace('{$a->phase}', res.currentphase)
                         .replace('{$a->total}', total)
                 );
-                this.scene.time.delayedCall(1600, () => this.submitRestartForm());
+                window.setTimeout(() => this.submitRestartForm(), 1600);
             };
 
             try {

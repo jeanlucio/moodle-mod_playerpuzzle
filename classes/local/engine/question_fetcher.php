@@ -41,11 +41,16 @@ class question_fetcher {
      * and those meant for any phase; when none of them exists, from every approved question, so a
      * phase nobody prepared a question for still has one rather than going without.
      *
+     * Questions already answered in this phase are left out while any other is left to draw, so a match does not ask
+     * the same question twice while its pool still has another. Once every one has been asked they come around again:
+     * a small pool is not a reason to leave the match without a question.
+     *
      * @param int $playerpuzzleid The instance id.
      * @param int|null $phase Phase of the level being played (1 to 10), or null to draw from every approved question.
+     * @param int[] $answered Ids of the questions already answered in this phase of the attempt.
      * @return int|null
      */
-    public static function draw_random_question_id(int $playerpuzzleid, ?int $phase = null): ?int {
+    public static function draw_random_question_id(int $playerpuzzleid, ?int $phase = null, array $answered = []): ?int {
         global $DB;
 
         $ids = [];
@@ -69,7 +74,10 @@ class question_fetcher {
             return null;
         }
 
-        return (int) $ids[array_rand($ids)];
+        $fresh = array_values(array_diff(array_map('intval', $ids), $answered));
+        $pool = !empty($fresh) ? $fresh : $ids;
+
+        return (int) $pool[array_rand($pool)];
     }
 
     /**

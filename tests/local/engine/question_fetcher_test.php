@@ -530,4 +530,51 @@ final class question_fetcher_test extends \advanced_testcase {
 
         $this->assertNull(question_fetcher::get_hint_text($questionid, 7, \context_system::instance()));
     }
+
+    /**
+     * Tests that a draw leaves out the questions already answered while another is left, so a match does not ask
+     * the same question twice.
+     *
+     * @return void
+     */
+    public function test_draw_skips_the_questions_already_answered(): void {
+        $first = $this->make_phase_question(7, 0);
+        $second = $this->make_phase_question(7, 0);
+        $third = $this->make_phase_question(7, 0);
+
+        for ($i = 0; $i < 30; $i++) {
+            $this->assertSame($third, question_fetcher::draw_random_question_id(7, null, [$first, $second]));
+        }
+    }
+
+    /**
+     * Tests that once every question of the pool was answered they come around again, rather than the match being
+     * left without a question.
+     *
+     * @return void
+     */
+    public function test_draw_repeats_once_every_question_was_answered(): void {
+        $first = $this->make_phase_question(7, 0);
+        $second = $this->make_phase_question(7, 0);
+
+        $drawn = question_fetcher::draw_random_question_id(7, null, [$first, $second]);
+
+        $this->assertContains($drawn, [$first, $second]);
+    }
+
+    /**
+     * Tests that leaving out the answered ones works inside a phase's own pool: the draw never turns to a question
+     * meant for another phase while one of the phase's own is left.
+     *
+     * @return void
+     */
+    public function test_draw_skips_the_answered_inside_the_phase_pool(): void {
+        $own = $this->make_phase_question(7, 1);
+        $any = $this->make_phase_question(7, 0);
+        $this->make_phase_question(7, 5);
+
+        for ($i = 0; $i < 30; $i++) {
+            $this->assertSame($any, question_fetcher::draw_random_question_id(7, 1, [$own]));
+        }
+    }
 }

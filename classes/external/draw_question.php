@@ -30,6 +30,7 @@ use core_external\external_function_parameters;
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use mod_playerpuzzle\local\attempt_questions;
 use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\engine\replay;
@@ -126,7 +127,12 @@ class draw_question extends external_api {
                     $phase = $playerpuzzle->gamemode === constants::GAMEMODE_CAMPAIGN && empty($attempt->isdemo)
                         ? (int) $attempt->currentphase
                         : null;
-                    $questionid = question_fetcher::draw_random_question_id((int) $playerpuzzle->id, $phase);
+                    $answered = attempt_questions::answered_question_ids(
+                        (int) $attempt->id,
+                        (int) $attempt->currentlevel,
+                        (int) $attempt->currentphase
+                    );
+                    $questionid = question_fetcher::draw_random_question_id((int) $playerpuzzle->id, $phase, $answered);
                     $attempt->currentquestionid = $questionid ?? 0;
                     $current = $questionid !== null
                         ? question_fetcher::get_single_question($questionid, (int) $playerpuzzle->id, $context)

@@ -45,7 +45,8 @@ fase, seu status e quantas vezes foi sorteada, e oferece:
 * **Definir a fase** para a qual uma questão serve, uma a uma no formulário da questão ou nas
   questões selecionadas de uma vez — veja abaixo.
 
-Só questões **aprovadas** são sorteadas numa partida.
+Só questões **aprovadas** são sorteadas numa partida. Uma questão já respondida numa fase não é perguntada
+de novo nessa fase enquanto o conjunto tiver outra; quando todas já foram feitas, voltam a entrar.
 
 **Localizar e ordenar.** A lista pode ser filtrada por fase (inclusive *Sem fase definida*) e por
 status (aprovadas, pendentes, desativadas), e ordenada por mais recentes, fase, status, mais

@@ -27,6 +27,7 @@ namespace mod_playerpuzzle\external;
 
 use context_module;
 use core_external\external_api;
+use mod_playerpuzzle\local\attempt_questions;
 use mod_playerpuzzle\local\engine\question_fetcher;
 use mod_playerpuzzle\local\engine\security;
 use mod_playerpuzzle\local\move_log;
@@ -545,5 +546,33 @@ final class draw_question_test extends \advanced_testcase {
         ]);
         $this->assertFalse($after['error']);
         $this->assertTrue($after['data']['available']);
+    }
+
+    /**
+     * Tests that a question already answered in this phase of the attempt is not drawn again while another exists.
+     *
+     * @return void
+     */
+    public function test_a_question_answered_in_this_phase_is_not_drawn_again(): void {
+        global $DB;
+
+        $instance = $this->make_instance();
+        $answered = $this->make_question((int) $instance->id);
+        $fresh = $this->make_question((int) $instance->id);
+
+        $this->setUser($this->student);
+        $token = $this->make_attempt_token((int) $instance->id);
+        $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token], MUST_EXIST);
+        attempt_questions::record($attemptid, $answered, 1, 1, 'Asked before', 'One', 'One', true);
+
+        $result = $this->call_draw_question([
+            'cmid' => $instance->cmid,
+            'token' => $token,
+            'eventoffset' => 1,
+            'movelog' => [self::DUE_MOVE],
+        ]);
+
+        $this->assertTrue($result['data']['available']);
+        $this->assertSame($fresh, $result['data']['id']);
     }
 }

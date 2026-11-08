@@ -392,11 +392,11 @@ final class report_service_test extends \advanced_testcase {
         $this->getDataGenerator()->create_group_member(['groupid' => $groupa->id, 'userid' => $samegroup->id]);
         $this->getDataGenerator()->create_group_member(['groupid' => $groupb->id, 'userid' => $othergroup->id]);
 
-        // Group A only ever gets "Easy question" right; group B only ever answers
-        // "Hard question", and always wrong. A viewer scoped to group A must not see
+        // Group A only ever answers "Easy question", and gets it wrong once; group B only ever
+        // answers "Hard question", and always wrong. A viewer scoped to group A must not see
         // "Hard question" at all, since none of their own students ever answered it.
         $attemptidsamegroup = $this->make_attempt($samegroup);
-        $this->log_question($attemptidsamegroup, 1, 'Easy question', 1);
+        $this->log_question($attemptidsamegroup, 1, 'Easy question', 0);
 
         $attemptidothergroup = $this->make_attempt($othergroup);
         $this->log_question($attemptidothergroup, 2, 'Hard question', 0);
@@ -593,5 +593,28 @@ final class report_service_test extends \advanced_testcase {
             $this->assertStringContainsString('Questions &amp; Answers &gt; 3', $html, "striptags={$striptags}");
             $this->assertStringNotContainsString('&amp;amp;', $html, "striptags={$striptags}");
         }
+    }
+
+    /**
+     * A question nobody got wrong is not a missed question, so it is not listed; with only such questions the list is
+     * empty.
+     *
+     * @return void
+     */
+    public function test_get_most_missed_questions_leaves_out_the_ones_nobody_got_wrong(): void {
+        $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        $attemptid = $this->make_attempt($student);
+
+        $this->log_question($attemptid, 1, 'Always right', 1);
+        $this->log_question($attemptid, 1, 'Always right', 1);
+        $rows = report_service::get_most_missed_questions($this->instance, $this->cm, $this->context, 0);
+        $this->assertSame([], $rows);
+
+        $this->log_question($attemptid, 2, 'Once wrong', 1);
+        $this->log_question($attemptid, 2, 'Once wrong', 0);
+        $rows = report_service::get_most_missed_questions($this->instance, $this->cm, $this->context, 0);
+        $this->assertCount(1, $rows);
+        $this->assertSame('Once wrong', $rows[0]['questiontext']);
     }
 }

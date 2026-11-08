@@ -70,6 +70,26 @@ class attempt_questions {
     }
 
     /**
+     * The ids of the questions already answered on one phase of an attempt, so that the next draw of that phase can
+     * leave them out.
+     *
+     * @param int $attemptid The attempt id.
+     * @param int $level The attempt's level.
+     * @param int $phase The attempt's phase.
+     * @return int[]
+     */
+    public static function answered_question_ids(int $attemptid, int $level, int $phase): array {
+        global $DB;
+
+        return array_map('intval', $DB->get_fieldset_select(
+            'playerpuzzle_attempt_questions',
+            'DISTINCT questionid',
+            'attemptid = :attemptid AND attemptlevel = :level AND attemptphase = :phase',
+            ['attemptid' => $attemptid, 'level' => $level, 'phase' => $phase]
+        ));
+    }
+
+    /**
      * Returns the answered-question rows for one phase of an attempt, oldest first, shaped
      * for the review template.
      *

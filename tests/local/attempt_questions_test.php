@@ -58,4 +58,27 @@ final class attempt_questions_test extends \advanced_testcase {
         $this->assertCount(1, attempt_questions::get_phase_log(5, 2, 4));
         $this->assertCount(0, attempt_questions::get_phase_log(5, 1, 1));
     }
+
+    /**
+     * Tests that answered_question_ids() lists each question of one phase of one attempt once, and never the ones of
+     * another attempt, level or phase.
+     *
+     * @return void
+     */
+    public function test_answered_question_ids_is_scoped_to_the_attempt_level_and_phase(): void {
+        $this->resetAfterTest();
+
+        attempt_questions::record(5, 100, 2, 3, 'Q1', 'A', 'A', true);
+        attempt_questions::record(5, 100, 2, 3, 'Q1 again', 'A', 'A', false);
+        attempt_questions::record(5, 101, 2, 3, 'Q2', 'B', 'B', true);
+        attempt_questions::record(5, 102, 2, 4, 'Q3', 'C', 'C', true);
+        attempt_questions::record(5, 103, 1, 3, 'Q4', 'D', 'D', true);
+        attempt_questions::record(9, 104, 2, 3, 'Q5', 'E', 'E', true);
+
+        $ids = attempt_questions::answered_question_ids(5, 2, 3);
+        sort($ids);
+
+        $this->assertSame([100, 101], $ids);
+        $this->assertSame([], attempt_questions::answered_question_ids(5, 9, 9));
+    }
 }

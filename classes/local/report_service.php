@@ -176,7 +176,8 @@ class report_service {
      * @param context $context Module context.
      * @param int $viewerid Current viewer's user id, for SEPARATEGROUPS scoping.
      * @param int $limit Maximum number of questions to return.
-     * @return array Rows: {questiontext, errors, total, errorrate}, most missed first.
+     * @return array Rows: {questiontext, errors, total, errorrate}, most missed first. A question nobody got wrong is
+     *  not a missed question, so it is left out.
      */
     public static function get_most_missed_questions(
         stdClass $instance,
@@ -204,7 +205,8 @@ class report_service {
                                AND a.isdemo = 0
                                AND a.userid $insql
                       GROUP BY aq.questionid) stats
-                  JOIN {playerpuzzle_attempt_questions} sample ON sample.id = stats.sampleid";
+                  JOIN {playerpuzzle_attempt_questions} sample ON sample.id = stats.sampleid
+                 WHERE stats.errors > 0";
         $records = $DB->get_records_sql(
             $sql,
             array_merge(['instanceid' => (int) $instance->id], $inparams)

@@ -1690,8 +1690,16 @@ body.path-mod-playerpuzzle .pp-gameover-card {
 body.path-mod-playerpuzzle .pp-gameover-unseen {
     max-width: 32rem;
     max-height: 5.5rem;
+    margin-block-end: 0.75rem;
     overflow-y: auto;
     text-align: start;
+}
+
+/* A portrait canvas on a tall screen has room for the list to show more of its items before it scrolls. */
+@media (orientation: portrait) and (min-height: 700px) {
+    body.path-mod-playerpuzzle .pp-gameover-unseen {
+        max-height: 11rem;
+    }
 }
 
 body.path-mod-playerpuzzle .pp-gameover-unseen ul {

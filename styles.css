@@ -1678,9 +1678,19 @@ body.path-mod-playerpuzzle .pp-themed .border {
 /**
  * The game over screen: the overlay dims the canvas and the result sits on a stone card.
  */
+/* On a screen narrow enough for the card to outgrow the canvas, which clips what passes its edge, the card
+   scrolls inside itself so its buttons can always be reached. */
 body.path-mod-playerpuzzle .pp-gameover-card {
     padding: 1.5rem 2.5rem;
     max-width: 90%;
+    max-height: 96%;
+    overflow-y: auto;
+}
+
+/* Without this the browser shrinks the card's parts, the list of unseen items down to nothing, to fit the card in
+   its height, instead of letting the card scroll. */
+body.path-mod-playerpuzzle .pp-gameover-card > * {
+    flex-shrink: 0;
 }
 
 /**

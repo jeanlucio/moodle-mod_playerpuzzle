@@ -10,7 +10,7 @@ Sounds and music (CC0)
 
 All of them are released under Creative Commons Zero (https://creativecommons.org/publicdomain/zero/1.0/); credit
 is not required, it is given here as a courtesy. Converted to MP3 and level-adjusted; the hit is a mix of two
-files.
+files. The music is mono at 64 kbps, to keep the plugin small; its loudness is the same as the original.
 
 pix/music.mp3   "King's Feast" (Loop_Kings_Feast.wav), RandomMind
                 https://opengameart.org/content/medieval-kings-feast

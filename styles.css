@@ -65,6 +65,40 @@ body.path-mod-playerpuzzle .pp-loading-text {
 }
 
 /**
+ * The stage of the game: the game's own coordinate space, scaled to the width of its container by --pp-stage-scale.
+ * Left-to-right whatever the page language, as the picture of the game always was.
+ */
+body.path-mod-playerpuzzle .pp-stage {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    direction: ltr;
+}
+
+body.path-mod-playerpuzzle .pp-stage-design {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: var(--pp-stage-w);
+    height: var(--pp-stage-h);
+    transform-origin: 0 0;
+    transform: scale(var(--pp-stage-scale, 1));
+}
+
+body.path-mod-playerpuzzle .pp-stage-layer {
+    position: absolute;
+    inset: 0;
+}
+
+body.path-mod-playerpuzzle .pp-stage-veil {
+    position: absolute;
+    inset: 0;
+    background-color: var(--bs-black, #000);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/**
  * Loading screen overlay: replaces inline style injected by setupLoader().
  * Covers the canvas container while Phaser assets load.
  */

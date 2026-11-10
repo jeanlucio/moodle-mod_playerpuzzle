@@ -88,6 +88,15 @@ body.path-mod-playerpuzzle .pp-stage-design {
 body.path-mod-playerpuzzle .pp-stage-layer {
     position: absolute;
     inset: 0;
+    /* A layer covers the whole stage; only what is made to be pressed takes the pointer, the rest lets it through. */
+    pointer-events: none;
+}
+
+body.path-mod-playerpuzzle .pp-stage-layer button,
+body.path-mod-playerpuzzle .pp-stage-layer .pp-board-cells,
+body.path-mod-playerpuzzle .pp-stage-layer .pp-dim,
+body.path-mod-playerpuzzle .pp-stage-layer .pp-history-modal {
+    pointer-events: auto;
 }
 
 body.path-mod-playerpuzzle .pp-stage-veil {
@@ -380,6 +389,86 @@ body.path-mod-playerpuzzle .pp-stage .pp-history-close {
 body.path-mod-playerpuzzle .pp-stage .pp-history-close {
     padding: 8px 16px;
     background-color: #822;
+}
+
+/* The board: its pieces, the grid of cells over them that the pointer, the keyboard and the screen reader share, and
+   the notice shown while the pieces are shuffled. */
+body.path-mod-playerpuzzle .pp-stage .pp-board-frame {
+    overflow: visible;
+    pointer-events: none;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-board-pieces {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-board-piece {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 51px;
+    max-width: none;
+    height: 51px;
+    pointer-events: none;
+    user-select: none;
+    transform-origin: 50% 50%;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-board-cells {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--w);
+    height: var(--h);
+    margin: 0;
+    border-spacing: 0;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+/* The id, not a class: Boost borders the body, the rows and the cells of every table that is not a .table, with a selector no class
+   selector of ours can outweigh. */
+body.path-mod-playerpuzzle .pp-stage #pp-board-grid tbody,
+body.path-mod-playerpuzzle .pp-stage #pp-board-grid tr,
+body.path-mod-playerpuzzle .pp-stage #pp-board-grid td {
+    border: 0;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-board-cells td {
+    width: 55px;
+    height: 55px;
+    padding: 0;
+    overflow: hidden;
+    font-size: 11px;
+    color: transparent;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-board-cells.pp-board-keyboard td:focus {
+    outline: 3px solid #f2c14e;
+    outline-offset: -3px;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-board-notice {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    z-index: 100;
+    padding: 20px;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--bs-white, #fff);
+    text-align: center;
+    white-space: nowrap;
+    background-color: var(--bs-black, #000);
+    transform: translate(-50%, -50%);
 }
 
 /**

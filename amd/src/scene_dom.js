@@ -20,7 +20,7 @@
  * object it makes answers to the names combat.js and board.js use (time, tweens, input, scene, the sounds) with the
  * stage runtime behind them.
  *
- * The sounds are silent here for now, and the board draws nothing: those come with their own parts.
+ * The sounds are silent here for now: they come with their own part.
  *
  * @module     mod_playerpuzzle/scene_dom
  * @copyright  2026 Jean Lúcio
@@ -32,11 +32,11 @@ define([
     'mod_playerpuzzle/hud',
     'mod_playerpuzzle/combat',
     'mod_playerpuzzle/board',
-    'mod_playerpuzzle/board_view_blank',
+    'mod_playerpuzzle/board_view',
     'mod_playerpuzzle/stage/runtime',
     'mod_playerpuzzle/stage/stage',
     'mod_playerpuzzle/stage/assets',
-], (Layout, Hud, CombatHandler, BoardHandler, BoardViewBlank, RuntimeModule, StageModule, Assets) => {
+], (Layout, Hud, CombatHandler, BoardHandler, BoardView, RuntimeModule, StageModule, Assets) => {
     'use strict';
 
     /**
@@ -147,7 +147,7 @@ define([
         scene.ui = new Hud(scene, L, gameConfig, strings);
         scene.ui.setupStaticUI();
         scene.combat = new CombatHandler(scene, gameConfig, strings);
-        scene.board = new BoardHandler(scene, L, strings, BoardViewBlank);
+        scene.board = new BoardHandler(scene, L, strings, BoardView);
         scene.ui.createOpponentItems(scene.combat.ruleConfig().bossKit);
 
         scene.combat.updateUI();

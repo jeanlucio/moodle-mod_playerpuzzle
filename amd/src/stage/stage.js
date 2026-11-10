@@ -107,6 +107,19 @@ define([], () => {
             place,
 
             /**
+             * Where a point of the page is on the stage, in the game's own coordinates.
+             *
+             * @param {number} clientX The point's x, as in a pointer event.
+             * @param {number} clientY The point's y.
+             * @return {{x: number, y: number}}
+             */
+            toDesign(clientX, clientY) {
+                const rect = design.getBoundingClientRect();
+                const scale = rect.width > 0 ? rect.width / width : 1;
+                return {x: (clientX - rect.left) / scale, y: (clientY - rect.top) / scale};
+            },
+
+            /**
              * Fades the veil over the whole stage to a given opacity.
              *
              * @param {number} alpha Opacity, 0 to 1.

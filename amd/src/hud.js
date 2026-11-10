@@ -1482,11 +1482,13 @@ define([
             const expand = this.roundButton('expand', strings.stage_fullscreen, xExpand, y, r);
             this.drawFullscreenIcon(expand, r, false);
             expand.setAttribute('aria-pressed', 'false');
+            // The screen fades to black, goes full screen or back while it is black, and fades in, as the canvas did.
             expand.addEventListener('click', whenActive(() => {
                 const stage = me.stage;
-                stage.fadeVeil(1, 200, () => {
+                stage.fadeVeil(1, 200);
+                me.time.delayedCall(200, () => {
                     stage.toggleFullscreen();
-                    me.time.delayedCall(200, () => stage.fadeVeil(0, 200));
+                    stage.fadeVeil(0, 200);
                 });
             }));
             me.stage.onFullscreenChange(on => {

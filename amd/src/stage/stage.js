@@ -84,9 +84,15 @@ define([], () => {
         const veilState = {alpha: 0};
         let veilTween = null;
 
+        // The stage is scaled to fit its container, whole, and centred: in the page the container has the stage's own
+        // shape, so it fills it; in full screen the screen has its own, and what the stage does not cover is the
+        // container's background.
         const rescale = () => {
-            const scale = container.clientWidth > 0 ? container.clientWidth / width : 1;
-            root.style.setProperty('--pp-stage-scale', String(scale));
+            const fit = container.clientWidth > 0 && container.clientHeight > 0
+                ? Math.min(container.clientWidth / width, container.clientHeight / height) : 1;
+            root.style.setProperty('--pp-stage-scale', String(fit));
+            root.style.setProperty('--pp-stage-x', `${Math.max(0, (container.clientWidth - (width * fit)) / 2)}px`);
+            root.style.setProperty('--pp-stage-y', `${Math.max(0, (container.clientHeight - (height * fit)) / 2)}px`);
         };
         rescale();
         let observer = null;

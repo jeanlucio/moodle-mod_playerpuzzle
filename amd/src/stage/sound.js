@@ -17,9 +17,11 @@
  * The game's sound: three short effects decoded in memory and the background music streamed, each with its own
  * volume, both switchable, and the unlocking browsers ask for before they let a page play anything.
  *
- * Browsers keep a page silent until the person has touched it. The effects wait in a suspended audio context that the
- * first touch, click or key resumes; the music asks to play, is refused, and plays when the same touch arrives. The
- * music file is only fetched when the music is first asked for, so a student who keeps it off never downloads it.
+ * Browsers keep a page silent until the person has touched it, and not every touch counts: on Android a finger that has
+ * only gone down does not, one that has gone up does. The effects wait in a suspended audio context and the music asks
+ * to play and is refused, so on every touch, click or key the sound tries again, and stops listening only once the
+ * context is really running. The music file is only fetched when the music is first asked for, so a student who keeps
+ * it off never downloads it.
  *
  * UMD-wrapped, with every browser object handed in, so the logic runs in Node tests with fakes.
  *
@@ -44,7 +46,7 @@
          * @param {Function} env.createContext Returns a Web Audio context.
          * @param {Function} env.fetchBuffer (url) => Promise of the file's bytes.
          * @param {Function} env.createMusic (url) => an object with play() returning a promise, pause(), volume and loop.
-         * @param {Function} env.onFirstGesture (callback) => calls it once on the first touch, click or key.
+         * @param {Function} env.onGesture (callback) => calls it on every touch, click or key until it answers true.
          * @param {object} [options]
          * @param {boolean} [options.effectsOn] Whether the effects start on.
          * @param {boolean} [options.musicOn] Whether the music starts on.
@@ -59,7 +61,6 @@
             let music = null;
             let musicUrl = null;
             let musicWanted = false;
-            let unlocked = false;
 
             const getContext = () => {
                 if (context === null) {
@@ -85,17 +86,25 @@
                 }
             };
 
-            const unlock = async() => {
-                if (unlocked) {
+            const isRunning = () => context !== null && context.state === 'running';
+
+            // Both are started before either is awaited: some browsers only let the music play from the very turn of
+            // the gesture's own call.
+            const resumeContext = async() => {
+                if (context === null || context.state !== 'suspended') {
                     return;
                 }
-                unlocked = true;
-                if (context !== null && context.state === 'suspended') {
+                try {
                     await context.resume();
+                } catch (error) {
+                    // Still suspended: the next gesture tries again.
                 }
-                await tryMusic();
             };
-            env.onFirstGesture(unlock);
+            const unlock = async() => {
+                await Promise.all([resumeContext(), tryMusic()]);
+                return context === null || isRunning();
+            };
+            env.onGesture(unlock);
 
             return {
                 /**
@@ -123,7 +132,7 @@
                  * @param {string} name 'swap', 'match' or 'hit'.
                  */
                 playEffect(name) {
-                    if (!effectsOn || context === null || context.state !== 'running' || !buffers[name]) {
+                    if (!effectsOn || !isRunning() || !buffers[name]) {
                         return;
                     }
                     const source = context.createBufferSource();
@@ -180,12 +189,12 @@
                 },
 
                 /**
-                 * Whether a first gesture has unlocked the sound.
+                 * Whether a gesture has unlocked the sound.
                  *
                  * @return {boolean}
                  */
                 isUnlocked() {
-                    return unlocked;
+                    return isRunning();
                 },
 
                 EFFECT_VOLUME,
@@ -199,17 +208,19 @@
          * @return {object} What create() asks for, made of the page's own audio, fetch and events.
          */
         function browserEnv() {
-            const gestures = ['pointerdown', 'touchend', 'keydown'];
+            // It is pointerup, not pointerdown: a finger that has only gone down is not an activation to the browser.
+            const gestures = ['pointerup', 'touchend', 'click', 'keydown'];
             return {
                 createContext: () => new (window.AudioContext || window.webkitAudioContext)(),
                 fetchBuffer: async url => (await fetch(url)).arrayBuffer(),
                 createMusic: url => new Audio(url),
-                onFirstGesture: callback => {
-                    const once = () => {
-                        gestures.forEach(name => document.removeEventListener(name, once, true));
-                        callback();
+                onGesture: callback => {
+                    const listener = async() => {
+                        if (await callback()) {
+                            gestures.forEach(name => document.removeEventListener(name, listener, true));
+                        }
                     };
-                    gestures.forEach(name => document.addEventListener(name, once, true));
+                    gestures.forEach(name => document.addEventListener(name, listener, true));
                 },
             };
         }

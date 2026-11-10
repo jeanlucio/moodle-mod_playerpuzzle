@@ -20,7 +20,8 @@
  * object it makes answers to the names combat.js and board.js use (time, tweens, input, scene, the sounds) with the
  * stage runtime behind them.
  *
- * The sounds are silent here for now: they come with their own part.
+ * Loading waits for the images (the sounds are loaded alongside and the game goes on without them if they fail) and
+ * gives up with the boot error when nothing at all has arrived for twenty seconds.
  *
  * @module     mod_playerpuzzle/scene_dom
  * @copyright  2026 Jean Lúcio
@@ -36,20 +37,27 @@ define([
     'mod_playerpuzzle/stage/runtime',
     'mod_playerpuzzle/stage/stage',
     'mod_playerpuzzle/stage/assets',
-], (Layout, Hud, CombatHandler, BoardHandler, BoardView, RuntimeModule, StageModule, Assets) => {
+    'mod_playerpuzzle/stage/sound',
+], (Layout, Hud, CombatHandler, BoardHandler, BoardView, RuntimeModule, StageModule, Assets, SoundModule) => {
     'use strict';
 
+    // How long the game waits for something, anything, to finish loading before it gives up.
+    const BOOT_STALL_MS = 20000;
+
     /**
-     * A sound effect that plays nothing, with the calls the game makes on one.
+     * What the game says and does with a sound effect, by the name the stage's sound knows it by. Setting a volume
+     * is, to this game, only ever on or off.
      *
+     * @param {object} sound The stage's sound.
+     * @param {string} name 'swap', 'match' or 'hit'.
      * @return {{play: Function, setVolume: Function}}
      */
-    const silentEffect = () => ({
+    const effect = (sound, name) => ({
         play() {
-            // Silent for now.
+            sound.playEffect(name);
         },
-        setVolume() {
-            // Silent for now.
+        setVolume(volume) {
+            sound.setEffects(volume > 0);
         },
     });
 
@@ -90,6 +98,54 @@ define([
     };
 
     /**
+     * Loads the images and the sound effects, filling the bar as each file arrives. A boot that stalls (not one file
+     * arriving for twenty seconds, however slow the connection, since each file starts the count again) is an error,
+     * and so is an image that fails; a sound that fails is only a game without it.
+     *
+     * @param {object} urls The images by key.
+     * @param {object} sound The stage's sound.
+     * @return {Promise<void>}
+     */
+    const load = async(urls, sound) => {
+        const effects = {
+            swap: `${M.cfg.wwwroot}/mod/playerpuzzle/pix/swap.mp3`,
+            match: `${M.cfg.wwwroot}/mod/playerpuzzle/pix/match.mp3`,
+            hit: `${M.cfg.wwwroot}/mod/playerpuzzle/pix/hit.mp3`,
+        };
+        const total = Object.keys(urls).length + Object.keys(effects).length;
+        let loaded = 0;
+        let timer = null;
+        let giveUp = null;
+        const stalled = new Promise((resolve, reject) => {
+            giveUp = reject;
+        });
+        const arm = () => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(
+                () => giveUp(new Error('PlayerPuzzle boot stalled: no loading progress for 20s.')),
+                BOOT_STALL_MS
+            );
+        };
+        const arrived = () => {
+            loaded++;
+            showProgress(loaded, total);
+            arm();
+        };
+        arm();
+        try {
+            await Promise.race([
+                Promise.all([
+                    Assets.preloadImages(Object.keys(urls).map(key => ({key, url: urls[key]})), {onProgress: arrived}),
+                    sound.loadEffects(effects, arrived).catch(error => window.console.warn('PlayerPuzzle sounds failed:', error)),
+                ]),
+                stalled,
+            ]);
+        } finally {
+            window.clearTimeout(timer);
+        }
+    };
+
+    /**
      * Starts the game.
      *
      * @param {object} gameConfig The game's configuration.
@@ -101,8 +157,13 @@ define([
         const L = Layout.build(isDesk);
         const container = document.getElementById('playerpuzzle-canvas-container');
 
+        const sound = SoundModule.create(SoundModule.browserEnv(), {
+            effectsOn: gameConfig.sfxenabled !== false,
+            musicOn: gameConfig.musicenabled !== false,
+        });
+        sound.setMusicUrl(`${M.cfg.wwwroot}/mod/playerpuzzle/pix/music.mp3`);
         const urls = imageUrls(gameConfig, isDesk);
-        await Assets.preloadImages(Object.keys(urls).map(key => ({key, url: urls[key]})), {onProgress: showProgress});
+        await load(urls, sound);
 
         container.querySelectorAll('p').forEach(el => el.remove());
         container.classList.toggle('pp-canvas-desktop', isDesk);
@@ -133,19 +194,24 @@ define([
                 resume: () => runtime.resume(),
             },
             imageUrl: key => urls[key],
-            sfxSwap: silentEffect(),
-            sfxMatch: silentEffect(),
-            sfxHit: silentEffect(),
+            sound,
+            sfxSwap: effect(sound, 'swap'),
+            sfxMatch: effect(sound, 'match'),
+            sfxHit: effect(sound, 'hit'),
             bgMusic: null,
             playMusic() {
-                // Silent for now.
+                if (scene.musicOn) {
+                    sound.setMusic(true);
+                }
             },
             pauseMusic() {
-                // Silent for now.
+                sound.setMusic(false);
             },
         };
         scene.ui = new Hud(scene, L, gameConfig, strings);
         scene.ui.setupStaticUI();
+        // The music is fetched now only when it is on, in the background, and plays as soon as the browser lets it.
+        scene.playMusic();
         scene.combat = new CombatHandler(scene, gameConfig, strings);
         scene.board = new BoardHandler(scene, L, strings, BoardView);
         scene.ui.createOpponentItems(scene.combat.ruleConfig().bossKit);

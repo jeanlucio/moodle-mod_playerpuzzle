@@ -64,12 +64,16 @@ test('preloadImages() fails when one file fails', async() => {
  */
 const fakeSound = (options = {}) => {
     const played = [];
-    const state = {gesture: null, musicFetched: 0, unlockedByGesture: false};
+    const state = {gesture: null, musicFetched: 0, unlockedByGesture: false, gestures: 0, listening: true, resumeFails: 0};
     const context = {
         state: 'suspended',
         destination: {},
         decodeAudioData: async bytes => ({bytes}),
         resume: async() => {
+            if (state.resumeFails > 0) {
+                state.resumeFails--;
+                throw new Error('The browser did not take that touch as an activation');
+            }
             context.state = 'running';
         },
         createGain: () => ({gain: {value: 1}, connect: () => null}),
@@ -102,10 +106,17 @@ const fakeSound = (options = {}) => {
             music.url = url;
             return music;
         },
-        onFirstGesture: callback => {
+        // The way the browser's helper does it: the sound is told of every gesture until it answers true.
+        onGesture: callback => {
             state.gesture = async() => {
+                if (!state.listening) {
+                    return;
+                }
+                state.gestures++;
                 state.unlockedByGesture = true;
-                await callback();
+                if (await callback()) {
+                    state.listening = false;
+                }
             };
         },
     }, options);
@@ -160,4 +171,38 @@ test('music off pauses it and never fetches it when it was never on', async() =>
     assert.equal(music.plays, 1);
     await sound.setMusic(false);
     assert.equal(music.paused, true);
+});
+
+test('a touch the browser does not take as an activation is tried again on the next one, until the sound is running', async() => {
+    const {sound, context, played, state} = fakeSound();
+    await sound.loadEffects({swap: 'swap.mp3'});
+    state.resumeFails = 2;
+    await state.gesture();
+    assert.equal(context.state, 'suspended');
+    assert.equal(sound.isUnlocked(), false);
+    assert.equal(state.listening, true, 'it keeps listening');
+    sound.playEffect('swap');
+    assert.equal(played.length, 0);
+    await state.gesture();
+    assert.equal(sound.isUnlocked(), false);
+    await state.gesture();
+    assert.equal(sound.isUnlocked(), true);
+    assert.equal(state.listening, false, 'and stops once it runs');
+    assert.equal(state.gestures, 3);
+    sound.playEffect('swap');
+    assert.equal(played.length, 1);
+});
+
+test('the music asked for before the browser allows it plays on the gesture that finally unlocks it', async() => {
+    const {sound, music, state} = fakeSound();
+    sound.setMusicUrl('music.mp3');
+    state.resumeFails = 1;
+    await sound.loadEffects({});
+    await sound.startMusic();
+    assert.equal(music.plays, 0);
+    await state.gesture();
+    // The first gesture let the music play (the browser only refused the audio context), the next one unlocks the rest.
+    assert.equal(music.plays, 1);
+    await state.gesture();
+    assert.equal(sound.isUnlocked(), true);
 });

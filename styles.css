@@ -98,6 +98,290 @@ body.path-mod-playerpuzzle .pp-stage-veil {
     pointer-events: none;
 }
 
+/* What stands on the stage: every element sits at --x, --y and --w, --h of the game's own coordinate space. */
+body.path-mod-playerpuzzle .pp-stage {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--bs-white, #fff);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-el {
+    position: absolute;
+    inset-inline-start: auto;
+    left: var(--x);
+    top: var(--y);
+    width: var(--w);
+    height: var(--h);
+    box-sizing: border-box;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-img {
+    display: block;
+    max-width: none;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-flip {
+    transform: scaleX(-1);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-band-img {
+    left: 50%;
+    width: auto;
+    height: var(--pp-band-h);
+    transform: translateX(-50%);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-backdrop {
+    z-index: 0;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-simple-panel {
+    background-color: rgba(26, 20, 16, 0.55);
+    border: 1px solid rgba(106, 74, 42, 0.6);
+    border-radius: 12px;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-text {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-anchor-center {
+    transform: translate(-50%, -50%);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-anchor-left {
+    transform: translateY(-50%);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-anchor-top {
+    transform: translateX(-50%);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-hp {
+    background-color: rgba(28, 23, 18, 0.95);
+    box-shadow: 0 0 0 1px #9c6b2e, inset 0 0 0 1px #9c6b2e;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-hp-fill {
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    height: calc(100% - 6px);
+    background-image: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.14));
+    background-repeat: no-repeat;
+    background-size: 100% 40%;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-hp-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--bs-white, #fff);
+    paint-order: stroke fill;
+    -webkit-text-stroke: 3px #120d09;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-chip-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--bs-white, #fff);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-item-count {
+    padding: 1px 3px;
+    font-weight: 700;
+    color: var(--bs-white, #fff);
+    background-color: #1c1712;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-counter {
+    font-size: 13px;
+    color: #e9e6dd;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-progress {
+    padding: 7px 16px;
+    font-family: Georgia, Cambria, "Times New Roman", serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #f1e3c2;
+    background-color: rgba(28, 23, 18, 0.92);
+    border-radius: 10px;
+    box-shadow: 0 0 0 1px #9c6b2e, inset 0 0 0 1px #9c6b2e;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4a2f16;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-line {
+    font-size: 13px;
+    color: #e9e6dd;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-line.pp-history-newest {
+    color: #d9973f;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-ring svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-status-badge {
+    background-color: rgba(26, 20, 16, 0.85);
+    border-radius: 50%;
+    box-shadow: 0 0 0 0.5px #6a4a2a, inset 0 0 0 0.5px #6a4a2a;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-status-count {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--bs-white, #fff);
+    background-color: #2a1a10;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0.5px #fff, inset 0 0 0 0.5px #fff;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-turn-frame {
+    pointer-events: none;
+    box-shadow: 0 0 0 1.5px var(--pp-turn-gold), inset 0 0 0 1.5px var(--pp-turn-gold);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-badge-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffa;
+    cursor: pointer;
+    background-color: #1c1712;
+    border: 0;
+    box-shadow: 0 0 0 1px #9c6b2e, inset 0 0 0 1px #9c6b2e;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-badge-btn[aria-disabled="true"] {
+    opacity: 0.4;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-round-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    color: #e8dcc8;
+    cursor: pointer;
+    background-color: rgba(28, 23, 18, 0.9);
+    border: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px #9c6b2e, inset 0 0 0 1px #9c6b2e;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-round-btn svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+body.path-mod-playerpuzzle .pp-stage button:focus-visible {
+    outline: 3px solid var(--bs-white, #fff);
+    outline-offset: 2px;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-balloon {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    z-index: 20;
+    width: var(--w);
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.36;
+    color: #2a1c10;
+    text-align: center;
+    background-color: rgba(255, 216, 115, 0.95);
+    border-radius: 10px;
+    box-shadow: 0 0 0 1px #b9822a, inset 0 0 0 1px #b9822a;
+    transform: translateY(-50%);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-demo-ring {
+    z-index: 90;
+    pointer-events: none;
+    box-shadow: 0 0 0 2px #f2c14e, inset 0 0 0 2px #f2c14e;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-dim {
+    z-index: 99;
+    background-color: rgba(0, 0, 0, 0.85);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-modal,
+body.path-mod-playerpuzzle .pp-stage .pp-history-box {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--w);
+    height: var(--h);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-modal {
+    z-index: 20;
+    background-color: rgba(0, 0, 0, 0.75);
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-box {
+    z-index: 21;
+    background-color: #222018;
+    border-radius: 16px;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-heading {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-heading-player {
+    color: #5fd95f;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-heading-boss {
+    color: #ff6b6b;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-btn,
+body.path-mod-playerpuzzle .pp-stage .pp-history-close {
+    padding: 8px 12px;
+    font-size: 16px;
+    color: var(--bs-white, #fff);
+    cursor: pointer;
+    background-color: #3a2a1a;
+    border: 0;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-history-close {
+    padding: 8px 16px;
+    background-color: #822;
+}
+
 /**
  * Loading screen overlay: replaces inline style injected by setupLoader().
  * Covers the canvas container while Phaser assets load.

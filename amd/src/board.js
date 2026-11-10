@@ -34,7 +34,7 @@ define([
     ];
 
     class BoardHandler {
-        constructor(scene, layout, strings) {
+        constructor(scene, layout, strings, ViewClass = BoardView) {
             this.scene = scene;
             this.L = layout;
             this.strings = strings;
@@ -53,7 +53,7 @@ define([
 
             this.a11yCells = null;
 
-            this.view = new BoardView(scene, layout, {
+            this.view = new ViewClass(scene, layout, {
                 onPress: (piece, point) => this.startSwipe(piece, point),
                 onRelease: point => this.endSwipe(point),
                 isPlayersTurn: () => this.scene.combat.currentTurn === 'player',

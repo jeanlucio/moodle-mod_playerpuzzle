@@ -111,6 +111,10 @@ $jsconfig = \mod_playerpuzzle\local\game_page_service::start_game(
     $hero
 );
 
+// While the game is being redrawn without the canvas, a developer opens it with the new drawing by adding
+// renderer=dom to this page's address; no one else ever gets it.
+$jsconfig['renderer'] = (!empty($CFG->debugdeveloper) && optional_param('renderer', '', PARAM_ALPHA) === 'dom') ? 'dom' : 'phaser';
+
 // Phaser itself is loaded dynamically from inside game_boot.js (mirrors
 // filter_mathjaxloader's loadMathJax()), not queued here as a static <script> — see the
 // loadPhaser() comment in amd/src/game_boot.js for why.

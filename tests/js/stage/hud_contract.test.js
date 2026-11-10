@@ -14,9 +14,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Headless test that the two drawings of the HUD, the canvas one (ui.js) and the one made of elements (hud.js), answer
- * to the same calls. The game talks to its HUD through the calls found in combat.js, board.js, game_boot.js and
- * scene_dom.js; every one of them has to exist in both files for the game to run on either.
+ * Headless test that the HUD (hud.js) answers to every call the game makes on it. The game talks to its HUD through
+ * the calls found in combat.js, board.js and scene_dom.js; a call with no method behind it only fails when that
+ * moment of the match is reached, so this finds it without playing one.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -63,9 +63,8 @@ const calledOnHud = files => {
     return found;
 };
 
-const callers = ['combat.js', 'board.js', 'game_boot.js', 'scene_dom.js'];
+const callers = ['combat.js', 'board.js', 'scene_dom.js'];
 const called = calledOnHud(callers);
-const canvas = definedMethods(read('ui.js'));
 const elements = definedMethods(read('hud.js'));
 
 test('the game calls a good number of things on its HUD, so this test is looking in the right place', () => {
@@ -75,26 +74,7 @@ test('the game calls a good number of things on its HUD, so this test is looking
     });
 });
 
-test('every call the game makes on its HUD exists in the canvas drawing', () => {
-    const missing = [...called].filter(name => !canvas.has(name));
-    assert.deepEqual(missing, []);
-});
-
-// The canvas drawing loads its own images, through Phaser's loader; the one made of elements has them loaded by the
-// scene before it exists.
-const ofTheCanvasLoader = new Set(['setupLoader']);
-
-test('every call the game makes on its HUD exists in the drawing made of elements', () => {
-    const missing = [...called].filter(name => !ofTheCanvasLoader.has(name) && !elements.has(name));
-    assert.deepEqual(missing, []);
-});
-
-test('the drawing made of elements answers to every call the canvas drawing answers to, but the ones of the canvas itself', () => {
-    // What belongs to the canvas: its loading bar, its font, its double tap guard and the shapes it draws buttons from.
-    const ofTheCanvas = new Set([
-        'setupLoader', 'useUiFont', 'guardAgainstDoubleTap', 'hpBarCorners', 'createButtonBadge', 'createMusicIcon',
-        'createGlyphIcon', 'createEffectsIcon', 'moveCharacter',
-    ]);
-    const missing = [...canvas].filter(name => !ofTheCanvas.has(name) && !elements.has(name));
+test('every call the game makes on its HUD exists in the HUD', () => {
+    const missing = [...called].filter(name => !elements.has(name));
     assert.deepEqual(missing, []);
 });

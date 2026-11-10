@@ -19,9 +19,8 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `lib_supports_test.php` | 2 | `playerpuzzle_supports()` retorna o valor declarado pra toda funcionalidade conhecida e `null` pra uma não reconhecida — a mesma chamada também fataria se algum constante referenciado fosse usado incondicionalmente, então isso também serve de guarda pra `FEATURE_MOD_OTHERPURPOSE`, só checada quando de fato definida (Moodle 5.1+) |
 | `lib_update_grades_test.php` | 7 | Limpa a nota obsoleta de um estudante específico assim que sua última tentativa é removida; ignora tentativas de Demo; recalcula a partir do progresso restante mais distante quando outras tentativas ainda existem; recalcula a nota de todo mundo quando `$userid = 0`; a data de envio é informada com cada nota, e mudar o método de avaliação ou o número de níveis recalcula as notas já registradas |
 | `mod_form_test.php` | 21 | A seção do PlayerHUD aparece/some conforme a presença do bloco no curso e preserva um item configurado obsoleto como opção selecionável; `gamemode` tem padrão Campanha; os campos exclusivos de Campanha (`maxlevels`, `maxattempts`) e os exclusivos de Partida Única (`max_single_matches`, `grademethod`) registram o `hideIf` certo nos dois sentidos; `minquestions` tem padrão 3; `considererrors` desativa quando `minquestions` é 0; os campos de quantidade de custo de retentativa/prêmio de vitória do PlayerHUD somem quando o item não está configurado, e a validação rejeita um item configurado com quantidade abaixo de 1; a validação rejeita HP e dano do oponente abaixo de 1, ganho de moeda negativo, limite de tentativas negativo (só do modo selecionado), cooldown negativo e escala como nota, e aceita os valores padrão; um cooldown salvo em segundos volta a ser um valor e uma unidade; o campo de nome tem uma regra de tamanho máximo que cabe na coluna e traz o rótulo "Nome" do próprio Moodle |
-| `phaser_loading_test.php` | 2 | Guarda de regressão estrutural: `play.php` nunca enfileira `phaser.min.js` como `<script>` estático (que poderia competir com `core_message/message_drawer.js` no rodapé da página), e `game_boot.js` o carrega dinamicamente em vez disso |
 | `uninstall_test.php` | 2 | `xmldb_playerpuzzle_uninstall()` apaga só as linhas de `user_preferences` prefixadas com `mod_playerpuzzle`, deixando as demais (inclusive de outros plugins) intactas, e é um no-op inofensivo quando nada bate |
-| **Subtotal** | **77** | |
+| **Subtotal** | **75** | |
 
 ### Testes de Conclusão (`tests/completion/`)
 
@@ -112,7 +111,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 36 | `get_metadata()` declara `playerpuzzle_attempts` e as três preferências de som, e — conferido contra o schema real via `$DB->get_columns()`, não uma lista fixa de chaves — toda coluna real de `playerpuzzle_attempts`, `playerpuzzle_questions` e `playerpuzzle_user_stock` é declarada ou uma exclusão documentada e justificada (mecânica de replay anti-trapaça, FKs estruturais), enquanto `playerpuzzle_question_answers` não carrega dado pessoal nenhum; `export_user_preferences()` exporta só um canal alterado; contextos/usuários são descobertos via tentativas, só estoque de loadout, ou só autoria de questão; `export_user_data()` carrega dados de tentativa incluindo o log de movimentos e os resultados de questão (diferente dos campos irmãos de anti-trapaça), entre múltiplos contextos, e é um no-op pra um contexto que não é de módulo; a exclusão (por usuário, por vários usuários, e contexto inteiro) remove só as linhas/contextos pretendidos, é um no-op pra contextos que não são de módulo ou um módulo de curso ausente, e — pra autoria de questão especificamente — anonimiza `addedby` em vez de apagar a questão em si, nos três caminhos de exclusão; uma guarda de regressão confirma que toda consulta faz join por `{modules}.name = 'playerpuzzle'` pra que um id de instância colidindo com outro tipo de módulo nunca seja confundido com dado deste |
 | **Subtotal** | **36** | |
 
-| **Total Geral** | **724** |
+| **Total Geral** | **722** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
@@ -155,7 +154,7 @@ determinística de match-3/combate/PRNG que o cliente precisa reproduzir bit a b
 próprio motor PHP do servidor (`classes/local/engine/`) pra que o replay anti-trapaça algum
 dia concorde com o que foi de fato jogado. Essa matemática é extraída em módulos UMD pequenos
 e testada sem cabeça (headless) via o test runner nativo do Node — sem Jest, sem navegador,
-sem runtime nenhum de Moodle/RequireJS/Phaser. O wrapper UMD de cada módulo cai pra um
+sem runtime nenhum de Moodle/RequireJS. O wrapper UMD de cada módulo cai pra um
 `module.exports` CommonJS simples fora de um ambiente `define()`, então um teste faz
 `require()` dele direto. Este é o primeiro plugin do ecossistema com uma camada de teste JS
 própria, então ainda não existe uma convenção da casa a seguir — veja o
@@ -182,16 +181,35 @@ descompasso real entre cliente e servidor aparecer.
 node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
 ```
 
+## JavaScript — Testes do Palco (`tests/js/stage/`)
+
+`amd/src/stage/` guarda o pequeno motor que desenha o jogo com elementos HTML em vez de um canvas. O código de
+tempo dele é testado sem navegador, com o executor embutido do Node, contra vetores amostrados quadro a quadro (60 fps)
+no Phaser que o plugin trazia (`tests/fixtures/tween_vectors.json` e `clock_vectors.json`), então cada animação dura e
+suaviza como os jogadores já conheciam.
+
+| Arquivo de teste | Casos | O que cobre |
+|------------------|------:|-------------|
+| `assets.test.js` | 8 | As imagens carregam com callback de progresso e uma que falha faz a carga inteira falhar; os efeitos ficam em silêncio até o primeiro gesto destravar o navegador e tocam no volume próprio; efeitos desligados não fazem som; a música só é baixada quando pedida e toca no gesto que a destrava, e uma música pedida antes de o navegador permitir toca no gesto que enfim permite; música desligada a pausa e nunca a baixa se nunca foi ligada; um toque que o navegador não aceita como ativação é tentado de novo no seguinte até o som estar rodando |
+| `clock.test.js` | 14 | Chamadas com atraso e repetições disparam nos mesmos quadros das amostradas do Phaser; uma pausa congela os tweens e o relógio, e o que esperava dispara no mesmo quadro de antes; `step()` move o tempo em quadros e termina na quantidade exata; `removeAllEvents()` descarta também as chamadas em espera; o laço move o tempo pelo tempo real entre quadros e nunca por mais de cem milissegundos |
+| `hud_contract.test.js` | 2 | Toda chamada que `combat.js`, `board.js` e `scene_dom.js` fazem no HUD existe em `hud.js`, então um método que falta não espera aquele momento da partida para falhar |
+| `tween.test.js` | 20 | Cada tween amostrado dá os mesmos valores e quadros de término do Phaser, dentro de uma fração do percurso; as curvas guardam seus extremos e o meio; `stop()` deixa os valores onde estão e nunca chama `onComplete`; `killTweensOf()` para só os tweens de um objeto; um tween em vários alvos move todos; um tween é lido de onde o alvo está quando começa a contar |
+| **Subtotal** | **44** | |
+
+```bash
+node --test tests/js/stage/*.test.js
+```
+
 ## Behat — Testes de Aceitação
 
 | Arquivo de feature | Cenários | O que é coberto |
 |---------------------|---------:|------------------|
-| `mod_playerpuzzle_accessibility.feature` | 4 | O tabuleiro acessível (uma `<table role="grid">` real espelhando o Canvas — veja [Acessibilidade](#accessibility)) anuncia de quem é a vez; captura o foco do teclado sozinho, sem precisar de Tab; `Space` relê os movimentos disponíveis sem agir; uma tecla numérica executa um movimento sem erro |
-| `mod_playerpuzzle_gameplay.feature` | 4 | Restrito deliberadamente à moldura do Moodle ao redor da loja de loadout pré-partida — nunca à mecânica de tabuleiro/combate, que roda inteira no Canvas sem seed determinística pra guiar uma partida real sem um cenário instável de tentar-até-bater: o Lobby mostra o saldo de PuzzleCoin e a loja; comprar um consumível debita/credita via AJAX sem recarregar a página; comprar sem PuzzleCoin suficiente mostra um erro em vez de falhar silenciosamente; uma compra de loadout não bloqueia a entrada no jogo |
+| `mod_playerpuzzle_accessibility.feature` | 4 | O tabuleiro acessível (uma `<table role="grid">` real sobre o tabuleiro — veja [Acessibilidade](#accessibility)) anuncia de quem é a vez; captura o foco do teclado sozinho, sem precisar de Tab; `Space` relê os movimentos disponíveis sem agir; uma tecla numérica executa um movimento sem erro |
+| `mod_playerpuzzle_gameplay.feature` | 4 | Restrito deliberadamente à moldura do Moodle ao redor da loja de loadout pré-partida — nunca à mecânica de tabuleiro/combate, que roda inteira no palco do jogo sem seed determinística pra guiar uma partida real sem um cenário instável de tentar-até-bater: o Lobby mostra o saldo de PuzzleCoin e a loja; comprar um consumível debita/credita via AJAX sem recarregar a página; comprar sem PuzzleCoin suficiente mostra um erro em vez de falhar silenciosamente; uma compra de loadout não bloqueia a entrada no jogo |
 | `mod_playerpuzzle_match.feature` | 3 | Toda tentativa semeada com a seed PRNG 2, então os movimentos anunciados pelo tabuleiro acessível são fixos e determinísticos (o movimento 4, uma combinação de Espada, sempre bate com o HP configurado do oponente): um movimento vencedor termina em vitória verificada que banca suas moedas; um movimento que deixa o estudante pro turno do oponente termina em derrota verificada; uma vitória que o replay do servidor não consegue verificar reinicia a fase em vez de contar |
 | `mod_playerpuzzle_ranking.feature` | 3 | A matemática de ranking de uma campanha de um nível (a fase N credita (N-1)×10 de 100 pontos): o painel de ranking abre no lugar do próprio painel do Lobby e fecha de volta pra ele; um professor pode desligar o ranking; com grupos separados um estudante só vê o ranking do próprio grupo |
 | `mod_playerpuzzle_settings.feature` | 1 | Um professor adiciona uma atividade PlayerPuzzle e ela aparece na página do curso |
-| `mod_playerpuzzle_smoke.feature` | 1 | Um estudante abre o Lobby e consegue começar o jogo — o fluxo básico da moldura Moodle (adicionar a atividade, chegar ao Lobby, entrar numa partida), deliberadamente sem tocar nos pixels do Canvas |
+| `mod_playerpuzzle_smoke.feature` | 1 | Um estudante abre o Lobby e consegue começar o jogo — o fluxo básico da moldura Moodle (adicionar a atividade, chegar ao Lobby, entrar numa partida), deliberadamente sem tocar no próprio palco do jogo |
 | **Subtotal** | **16** | |
 
 ```bash

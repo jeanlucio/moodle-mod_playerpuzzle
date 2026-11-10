@@ -14,10 +14,9 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
-/**
  * Draws the match-3 board with elements on the stage: the frame and the grid, the pieces and their animations, and
  * the pointer and touch handling over them. board.js decides what happens on the board and tells this module what to
- * show; this module decides nothing and keeps no rules. It answers to the same calls as the canvas board view.
+ * show; this module decides nothing and keeps no rules. It answers to the calls board.js makes on its view.
  *
  * Three things stand over each other, from the back: the frame (one drawing), the pieces (images moved by the stage's
  * tweens, hidden from assistive technology) and the grid of cells the board builds for the keyboard and the screen

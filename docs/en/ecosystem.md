@@ -29,8 +29,8 @@ throughout this page.
   (`local\*_page_service` entry-point classes, PlayerHUD integration conventions).
   👉 [github.com/jeanlucio/moodle-mod_playercross](https://github.com/jeanlucio/moodle-mod_playercross)
 
-* **PlayerLand:** Another Phaser-based activity module in the ecosystem, sharing the same
-  dynamic-script-loading pattern for its own bundled game engine.
+* **PlayerLand:** An activity module in the ecosystem that bundles its own game engine (Phaser),
+  which PlayerPuzzle no longer needs: its board and HUD are drawn with HTML elements.
   👉 [github.com/jeanlucio/moodle-mod_playerland](https://github.com/jeanlucio/moodle-mod_playerland)
 
 * **PlayerGroup:** Lets students autonomously form their own groups directly from the activity

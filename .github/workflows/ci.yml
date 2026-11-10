@@ -153,7 +153,7 @@ jobs:
           node-version: '20'
 
       # These extract the deterministic match-3/combat/rng math into UMD modules under
-      # amd/src/engine/ so it can be exercised headless, without a Moodle/Phaser runtime.
+      # amd/src/engine/ so it can be exercised headless, without a Moodle runtime.
       # See amd/src/engine/board_rules.js, combat_rules.js and prng.js.
       - name: JS unit tests
         if: ${{ !cancelled() && matrix.runchecks == 'all' }}

@@ -2,12 +2,17 @@
 
 ## O Desenho
 
-O gameplay Match-3 vive num Canvas, que é opaco para leitores de tela por natureza. A abordagem de
-acessibilidade do PlayerPuzzle é uma camada HTML paralela e sempre presente, e não um remendo de
-última hora:
+O jogo é desenhado com elementos HTML comuns num palco que se ajusta à página, e não num canvas, então
+não há um desenho opaco que a tecnologia assistiva deixe passar. As peças, o cenário e os efeitos ficam
+escondidos dos leitores de tela, e o jogo é operado por controles reais e rotulados, e não por uma
+camada de última hora:
 
-* Uma `<table role="grid">` visualmente oculta espelha o tabuleiro 8×8, navegável célula a célula
-  com as setas; cada célula é lida com o nome da peça.
+* Uma `<table role="grid">` real fica sobre o tabuleiro 8×8, e suas células são as mesmas em que o
+  mouse e o toque agem. Ela é navegável célula a célula com as setas, e cada célula é lida com o nome
+  da peça. O contorno de foco só aparece para quem usa o teclado.
+* Os botões (desistir, ajuda, música, efeitos sonoros, tela cheia, usar item) são elementos `<button>`
+  reais com nomes acessíveis. O histórico e o balão do tutorial não são lidos em voz alta, então a
+  região viva abaixo continua sendo o único canal.
 * No início do turno do estudante, as jogadas disponíveis são anunciadas por uma região
   `aria-live="polite"`, que também carrega os demais eventos do turno — dano causado e recebido,
   barra de energia cheia, uma pergunta respondida, o oponente revivendo, uma fase avançada.

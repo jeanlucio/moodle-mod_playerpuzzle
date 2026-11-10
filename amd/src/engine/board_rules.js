@@ -18,9 +18,9 @@
  *
  * Every function here operates on a plain `grid` — a `rows`x`cols` array of arrays, each
  * cell either a piece type (an integer 0-6) or `null` for an empty cell mid-cascade. Never a
- * Phaser object, never anything with methods. Results that identify a cell are always plain
+ * display object, never anything with methods. Results that identify a cell are always plain
  * `{row, col}` coordinates, never object references — board.js (the rendering layer) is the
- * one place that maps a coordinate back to the real Phaser image it needs to animate/destroy.
+ * one place that maps a coordinate back to the real piece it needs to animate/destroy.
  *
  * Cell values are compared with strict equality against `null`, never truthiness: type `0`
  * (the Star piece) is a valid, common value that is falsy in JavaScript, so `!grid[r][c]` or
@@ -30,7 +30,7 @@
  * UMD-wrapped so the same file loads as an AMD module in the browser (via RequireJS, like
  * every other file in amd/src) and as a plain CommonJS module in Node (via `require()`, no
  * RequireJS involved) — the second path is what lets tests/js/engine/board_rules.test.js run
- * this logic headless with `node --test`, with no Phaser and no browser at all.
+ * this logic headless with `node --test`, with no browser at all.
  *
  * @module     mod_playerpuzzle/engine/board_rules
  * @copyright  2026 Jean Lúcio
@@ -561,7 +561,7 @@
         /**
          * Compacts each column downward (each empty cell pulls down the nearest non-empty
          * cell above it, if any) and refills whatever stays empty at the top with a freshly
-         * rolled type — the two passes applyGravity() always ran, minus the Phaser tween/image
+         * rolled type — the two passes applyGravity() always ran, minus the tween/element
          * creation, which stays in board.js and uses the arrays this returns to know what to
          * animate.
          *

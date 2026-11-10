@@ -279,7 +279,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * Starts the reload-resilience checkpoint: every ~10s, if something
          * changed since the last one and the tab is visible, persists the current board/HP/
          * meters/turn so a reload resumes this same fight instead of restarting the phase
-         * from scratch. A plain setInterval, not Phaser's own scene time source, so it keeps
+         * from scratch. A plain setInterval, not the stage's own clock, so it keeps
          * ticking even while the question modal has the scene paused — real time still
          * passes, and the state at that point is still the current one to save.
          *
@@ -557,7 +557,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * costs nothing beyond the one extra call site.
          *
          * Only ever shows one balloon per call, even when several different types are
-         * destroyed in the same turn: ui.js::showTutorialBalloon() replaces whatever balloon
+         * destroyed in the same turn: hud.js::showTutorialBalloon() replaces whatever balloon
          * is currently up, so showing more than one here would just have each new call erase
          * the previous before the student ever sees it. Only the type actually shown is
          * marked "seen" — every other new type this turn stays eligible and gets its own
@@ -997,7 +997,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Uses a consumable, clicked from its use badge (ui.js::createPurchaseBadge()).
+         * Uses a consumable, clicked from its use badge (hud.js::createPurchaseBadge()).
          * There is no purchase here — stock was already bought pre-match in the Lobby; this
          * only spends it. Shield alone gets a client-side "already armed" guard — there is
          * nothing to gain from using a second charge before the first is spent, so it is
@@ -1141,8 +1141,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Submits a real POST to play.php, mirroring the Lobby's own Play form. A Phaser
-         * scene.restart() would only reset client-side state and keep reusing a token the
+         * Submits a real POST to play.php, mirroring the Lobby's own Play form. A scene
+         * restart would only reset client-side state and keep reusing a token the
          * server has already rotated or consumed, so the next attempt's own save/advance
          * call would always fail with an invalid-token error.
          *
@@ -1326,7 +1326,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 if (dialogEl) {
                     // Native <dialog> restores no focus of its own on close() — the
                     // element that had focus when the dialog opened (typically nothing,
-                    // since Phaser's canvas is not itself focusable) is saved here and
+                    // since the stage is not itself focusable) is saved here and
                     // restored explicitly to it when the dialog closes.
                     const previouslyFocused = document.activeElement;
 

@@ -43,7 +43,7 @@ body.path-mod-playerpuzzle .pp-canvas-desktop {
     aspect-ratio: 16/9;
     /* Capped instead of 100%, so the game embeds at a modest, playerland-style footprint
        (960x540) rather than stretching edge to edge of the course content column — the
-       Expand button (Phaser's own Scale.FIT + the browser Fullscreen API) still fills the
+       Expand button (the stage's own fit + the browser Fullscreen API) still fills the
        whole screen on request, since fullscreen sizing is independent of this cap. */
     max-width: 960px;
 }
@@ -500,8 +500,7 @@ body.path-mod-playerpuzzle .pp-stage .pp-board-notice {
 }
 
 /**
- * Loading screen overlay: replaces inline style injected by setupLoader().
- * Covers the canvas container while Phaser assets load.
+ * Loading screen overlay: covers the game container while the images load.
  */
 body.path-mod-playerpuzzle #pp-bootstrap-loader {
     position: absolute;

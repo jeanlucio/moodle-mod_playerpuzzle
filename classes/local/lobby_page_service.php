@@ -195,7 +195,7 @@ class lobby_page_service {
     /**
      * Builds the three audio toggles' context: spoken narration, Music and Sound Effects —
      * all per-student preferences (see sound_preferences), never a site setting. Music/Sound
-     * Effects mirror the same badges already offered inside the in-game HUD (ui.js); the
+     * Effects mirror the same badges already offered inside the in-game HUD (hud.js); the
      * Lobby copy lets the student set them before starting a match, not only mid-game.
      *
      * @param int $userid Current user ID.

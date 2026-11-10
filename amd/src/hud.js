@@ -14,12 +14,11 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
-/**
- * The HUD and the stage of the game, drawn with elements on the stage instead of on a canvas: the scenery, the side
+ * The HUD and the stage of the game, drawn with elements on the stage: the scenery, the side
  * panels, the characters, the HP bars, the rings, the chips, the history, the balloon and the round buttons.
  *
- * It answers to the same calls as the canvas version (mod_playerpuzzle/ui), so combat.js and board.js do not know
- * which one they talk to. Everything stands where the layout says, in the stage's own coordinates; the stage scales
+ * combat.js and board.js talk to it through the calls the contract test in tests/js/stage/hud_contract.test.js
+ * checks. Everything stands where the layout says, in the stage's own coordinates; the stage scales
  * it all to the width of the page. The buttons are real buttons. The effects (the lunges and the hits, the sparks, the
  * numbers that rise, the trail behind an HP bar, the breathing and the pulses) are moved by the stage's tweens.
  *
@@ -174,7 +173,7 @@ define([
     };
 
     /**
-     * The tint of a character: a colour that multiplies each channel of its picture, as the canvas's tint did, made by a
+     * The tint of a character: a colour that multiplies each channel of its picture, made by a
      * filter of one colour matrix per colour, defined once in the stage.
      *
      * @param {HTMLElement} root The stage's root.
@@ -667,7 +666,7 @@ define([
             const fontSize = Math.min(34, Math.max(22, Math.round(size * 0.16)));
             const gain = delta > 0;
             this.floatCount = ((this.floatCount || 0) + 1) % 3;
-            // A character stands on its feet: the box's bottom edge is where its sprite sits, as the canvas had it.
+            // A character stands on its feet: the box's bottom edge is where its sprite sits.
             const feetY = (side === 'player' ? this.L.playerY : this.L.bossY) + (size / 2);
             const startY = feetY - (size * 0.75) - (this.floatCount * fontSize * 0.8);
             const element = this.text(
@@ -1482,7 +1481,7 @@ define([
             const expand = this.roundButton('expand', strings.stage_fullscreen, xExpand, y, r);
             this.drawFullscreenIcon(expand, r, false);
             expand.setAttribute('aria-pressed', 'false');
-            // The screen fades to black, goes full screen or back while it is black, and fades in, as the canvas did.
+            // The screen fades to black, goes full screen or back while it is black, and fades in.
             expand.addEventListener('click', whenActive(() => {
                 const stage = me.stage;
                 stage.fadeVeil(1, 200);

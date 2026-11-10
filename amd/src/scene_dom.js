@@ -14,9 +14,8 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
-/**
  * Builds the game on the stage drawn with elements: the images are loaded with a progress bar, the stage and the
- * HUD are made, and the combat and the board are started with the same calls the canvas version makes. The scene
+ * HUD are made, and the combat and the board are started. The scene
  * object it makes answers to the names combat.js and board.js use (time, tweens, input, scene, the sounds) with the
  * stage runtime behind them.
  *
@@ -33,12 +32,11 @@ define([
     'mod_playerpuzzle/hud',
     'mod_playerpuzzle/combat',
     'mod_playerpuzzle/board',
-    'mod_playerpuzzle/board_view',
     'mod_playerpuzzle/stage/runtime',
     'mod_playerpuzzle/stage/stage',
     'mod_playerpuzzle/stage/assets',
     'mod_playerpuzzle/stage/sound',
-], (Layout, Hud, CombatHandler, BoardHandler, BoardView, RuntimeModule, StageModule, Assets, SoundModule) => {
+], (Layout, Hud, CombatHandler, BoardHandler, RuntimeModule, StageModule, Assets, SoundModule) => {
     'use strict';
 
     // How long the game waits for something, anything, to finish loading before it gives up.
@@ -213,7 +211,7 @@ define([
         // The music is fetched now only when it is on, in the background, and plays as soon as the browser lets it.
         scene.playMusic();
         scene.combat = new CombatHandler(scene, gameConfig, strings);
-        scene.board = new BoardHandler(scene, L, strings, BoardView);
+        scene.board = new BoardHandler(scene, L, strings);
         scene.ui.createOpponentItems(scene.combat.ruleConfig().bossKit);
 
         scene.combat.updateUI();

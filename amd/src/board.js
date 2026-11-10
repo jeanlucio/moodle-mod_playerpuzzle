@@ -22,7 +22,7 @@
  */
 
 define([
-    'mod_playerpuzzle/accessibility', 'mod_playerpuzzle/board_view_phaser', 'mod_playerpuzzle/engine/board_rules'
+    'mod_playerpuzzle/accessibility', 'mod_playerpuzzle/board_view', 'mod_playerpuzzle/engine/board_rules'
 ], (Accessibility, BoardView, BoardRules) => {
     'use strict';
 
@@ -34,7 +34,7 @@ define([
     ];
 
     class BoardHandler {
-        constructor(scene, layout, strings, ViewClass = BoardView) {
+        constructor(scene, layout, strings) {
             this.scene = scene;
             this.L = layout;
             this.strings = strings;
@@ -53,7 +53,7 @@ define([
 
             this.a11yCells = null;
 
-            this.view = new ViewClass(scene, layout, {
+            this.view = new BoardView(scene, layout, {
                 onPress: (piece, point) => this.startSwipe(piece, point),
                 onRelease: point => this.endSwipe(point),
                 isPlayersTurn: () => this.scene.combat.currentTurn === 'player',
@@ -315,8 +315,8 @@ define([
         /**
          * The pointer was released: a short press is a click on the pressed piece, and a longer drag past a
          * threshold is a swipe that swaps it with the neighbour in that direction. The coordinates are in the
-         * layout's own space, which the camera zoom no longer maps 1:1 to the canvas pixels, so the threshold
-         * means the same whatever the zoom.
+         * layout's own space, which the stage scales to the page, so the threshold
+         * means the same whatever the size of the page.
          *
          * @param {{x: number, y: number}} point Where the pointer was released.
          */
@@ -535,7 +535,7 @@ define([
         /**
          * Executes the Nth move from the list last posted by announceTurnStart(), so a keyboard
          * user can act on what was just read out loud without needing precise pointer control
-         * over the (visually-hidden, for this purpose) canvas board. A no-op outside the
+         * over the board drawn on the stage. A no-op outside the
          * player's own turn, once input is disabled mid-swap, or when the index is out of range
          * (e.g. the player pressed a digit higher than the announced move count).
          *

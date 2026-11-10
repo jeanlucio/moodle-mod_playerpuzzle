@@ -30,8 +30,8 @@ libera as integrações documentadas ao longo desta página.
   PlayerHUD).
   👉 [github.com/jeanlucio/moodle-mod_playercross](https://github.com/jeanlucio/moodle-mod_playercross)
 
-* **PlayerLand:** outra atividade baseada em Phaser no ecossistema, compartilhando o mesmo
-  padrão de carregamento dinâmico de script pro seu próprio motor de jogo embutido.
+* **PlayerLand:** uma atividade do ecossistema que traz o próprio motor de jogo (Phaser), do qual o
+  PlayerPuzzle não precisa mais: o tabuleiro e o HUD são desenhados com elementos HTML.
   👉 [github.com/jeanlucio/moodle-mod_playerland](https://github.com/jeanlucio/moodle-mod_playerland)
 
 * **PlayerGroup:** permite que estudantes formem seus próprios grupos de forma autônoma direto

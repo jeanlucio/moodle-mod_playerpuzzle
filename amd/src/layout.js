@@ -14,11 +14,10 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
-/**
  * The layout of the game: where everything stands on the stage, in the stage's own coordinate space. One for the
  * horizontal screen (1280 x 720, with the character stage and the carved side panels) and one for the vertical one
- * (540 x 960, a stage band over a dark backdrop and compact panels). Every renderer draws from these numbers, so a
- * thing stands in the same place whichever one draws it.
+ * (540 x 960, a stage band over a dark backdrop and compact panels). The stage and the HUD draw from these numbers, so
+ * a thing stands in the same place in every layout.
  *
  * @module     mod_playerpuzzle/layout
  * @copyright  2026 Jean Lúcio
@@ -55,11 +54,11 @@ define([], () => {
             // two flanking panels — matches the reference screenshot the plugin is modeled
             // after — and board.js reuses the same number to extend its own backdrop fill
             // past the grid's real bottom edge, so the gap that rise opens up before the
-            // true canvas bottom (720) stays covered.
+            // true stage bottom (720) stays covered.
             panelY: 280, panelOverlap: 14, panelW: 420,
             // The carved frame (pix/panel_frame.webp) starts higher than panelY: its crest rises into the
             // stage band, just under the characters' feet (all the sprites stand at y 236), and the frame
-            // runs to the bottom of the canvas. Inside it the content has x 70-350 and y 332-646 to itself.
+            // runs to the bottom of the stage. Inside it the content has x 70-350 and y 332-646 to itself.
             panelTop: 244,
             // A different pair, boardOffX/Y, is fed only to board.js: it treats this pair
             // as the center of the first cell (pieces are origin-centered images) rather
@@ -110,7 +109,7 @@ define([], () => {
             // Action history: 4 lines per side, below the rings. Desktop-only, same as
             // the player character and resource chips — no mobile equivalent yet. Title Y
             // (and the line Y that follows it) both shifted down — at the old 500/520 the
-            // scroll banner behind the title (see ui.js createHistoryLog()) overlapped the
+            // scroll banner behind the title (see hud.js createHistoryLog()) overlapped the
             // bottom of the ring row above it.
             historyTitleY: 538, historyBannerH: 46, historyLines: 4, historyLineY: 565, historyLineHeight: 19,
 
@@ -118,7 +117,7 @@ define([], () => {
             // right-aligned —
             // replaces the old bracket-text "[ Word ]" buttons, which read as
             // generic HTML/Bootstrap controls rather than the game's own bronze-accent
-            // dark-fill language already used for rings/badges. ui.js computes each
+            // dark-fill language already used for rings/badges. hud.js computes each
             // button's own X from L.w, topBtnGap and its position in its group (Give Up first
             // from the left, Expand last from the right), so only the shared Y/radius/gap live here.
             topBtnY: 26, topBtnRadius: 20, topBtnGap: 50
@@ -130,7 +129,7 @@ define([], () => {
             // needed; the student and the opponent stand at its two ends, at a size that
             // reads on a phone. Below the band, a plain dark backdrop: every px here is
             // shared with the fixed 440x440 board, so the HUD clusters are single compact
-            // rows on a translucent panel (ui.js::drawSimplePanel()), not the desktop's
+            // rows on a translucent panel (hud.js::drawSimplePanel()), not the desktop's
             // panel_stone.png/scroll_banner.png artwork.
             w: 540, h: 960, aspect: '9/16', maxW: '540px',
             hasCharacterStage: false,
@@ -181,19 +180,19 @@ define([], () => {
 
             // History: one button (not two always-visible 5-line blocks like desktop —
             // there's no room) opening a modal with Player/Boss tabs, see
-            // ui.js::showHistoryModalMobile().
+            // hud.js::showHistoryModalMobile().
             historyBtnY: 904,
 
             resourceIconSize: 32,
             ringRadius: 16, ringThickness: 4, ringIconSize: 22,
 
-            // Purchase badge scale for ui.js::createPurchaseBadge() — the desktop's default
+            // Purchase badge scale for hud.js::createPurchaseBadge() — the desktop's default
             // 46x34 badge is bigger than mobile's own 32px-diameter ring, swallowing its
             // colored arc entirely. 0.72 is the smallest scale that still clears the WCAG
             // 24x24 real-px floor at mobile's true 1:1 CSS scale (34 * 0.72 ≈ 24.5),
             // leaving the ring's own icon/arc visible next to it. See
             // createPurchaseBadge()'s own docblock for the full scale math (desktop vs
-            // mobile canvas CSS shrink).
+            // mobile stage scaling).
             badgeScale: 0.72
         };
     };

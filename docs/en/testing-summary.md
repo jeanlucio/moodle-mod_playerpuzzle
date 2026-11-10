@@ -18,9 +18,8 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `lib_supports_test.php` | 2 |
 | `lib_update_grades_test.php` | 7 |
 | `mod_form_test.php` | 21 |
-| `phaser_loading_test.php` | 2 |
 | `uninstall_test.php` | 2 |
-| **Subtotal** | **77** |
+| **Subtotal** | **75** |
 
 ### Completion Tests (`tests/completion/`)
 
@@ -111,7 +110,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `provider_test.php` | 36 |
 | **Subtotal** | **36** |
 
-| **Grand Total** | **724** |
+| **Grand Total** | **722** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
@@ -135,6 +134,24 @@ The deterministic match-3/combat/PRNG math, run headless via Node's own test run
 
 ```bash
 node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
+```
+
+## JavaScript — Stage Tests (`tests/js/stage/`)
+
+The small runtime that draws the game with HTML elements (tweens, clock, asset loading and sound) and the
+contract between the game and its HUD, run headless with `node --test`. The tween and clock vectors in
+`tests/fixtures/` were sampled from the Phaser the plugin used to ship, so the timing is the one players already knew.
+
+| Test file | Cases |
+|-----------|------:|
+| `assets.test.js` | 8 |
+| `clock.test.js` | 14 |
+| `hud_contract.test.js` | 2 |
+| `tween.test.js` | 20 |
+| **Subtotal** | **44** |
+
+```bash
+node --test tests/js/stage/*.test.js
 ```
 
 ## Behat — Acceptance Tests

@@ -2,11 +2,17 @@
 
 ## The Design
 
-Match-3 gameplay lives on a Canvas, which is opaque to screen readers by design. PlayerPuzzle's
-accessibility approach is a parallel, always-present HTML layer rather than an afterthought bolt-on:
+The game is drawn with ordinary HTML elements on a stage that scales to the page, not on a canvas, so
+there is no opaque drawing for assistive technology to miss. The pieces, scenery and effects are
+hidden from screen readers, and the game is operated through real, labelled controls instead of
+an afterthought bolt-on layer:
 
-* A visually-hidden `<table role="grid">` mirrors the 8×8 board, navigable cell by cell with the
-  arrow keys; each cell is read with its piece name.
+* A real `<table role="grid">` lies over the 8×8 board, and its cells are the same ones the mouse
+  and touch act on. It is navigable cell by cell with the arrow keys, and each cell is read with its
+  piece name. The focus outline shows only for keyboard users.
+* The buttons (give up, help, music, sound effects, full screen, use item) are real `<button>`
+  elements with accessible names. The history log and the tutorial balloon are not read aloud, so the
+  live region below stays the one channel.
 * At the start of the student's turn, the available moves are announced through an
   `aria-live="polite"` region, which also carries the other turn-by-turn events — damage dealt and
   taken, energy bar full, a question answered, the opponent reviving, a phase advanced.

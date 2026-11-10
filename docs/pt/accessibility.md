@@ -9,9 +9,11 @@ camada de última hora:
 
 * Uma `<table role="grid">` real fica sobre o tabuleiro 8×8, e suas células são as mesmas em que o
   mouse e o toque agem. Ela é navegável célula a célula com as setas, e cada célula é lida com o nome
-  da peça. O contorno de foco só aparece para quem usa o teclado.
+  da peça. O contorno de foco só aparece para quem usa o teclado. As setas só movem o foco: a jogada é
+  feita com o ponteiro ou com as teclas numéricas abaixo.
 * Os botões (desistir, ajuda, música, efeitos sonoros, tela cheia, usar item) são elementos `<button>`
-  reais com nomes acessíveis. O histórico e o balão do tutorial não são lidos em voz alta, então a
+  reais com nomes acessíveis; música, efeitos sonoros e tela cheia também informam se estão ligados ou
+  desligados (`aria-pressed`). O histórico e o balão do tutorial não são lidos em voz alta, então a
   região viva abaixo continua sendo o único canal.
 * No início do turno do estudante, as jogadas disponíveis são anunciadas por uma região
   `aria-live="polite"`, que também carrega os demais eventos do turno — dano causado e recebido,

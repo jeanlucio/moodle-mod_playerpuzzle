@@ -9,9 +9,11 @@ an afterthought bolt-on layer:
 
 * A real `<table role="grid">` lies over the 8×8 board, and its cells are the same ones the mouse
   and touch act on. It is navigable cell by cell with the arrow keys, and each cell is read with its
-  piece name. The focus outline shows only for keyboard users.
+  piece name. The focus outline shows only for keyboard users. The arrow keys only move the focus: a
+  move is made with the pointer, or with the number keys below.
 * The buttons (give up, help, music, sound effects, full screen, use item) are real `<button>`
-  elements with accessible names. The history log and the tutorial balloon are not read aloud, so the
+  elements with accessible names; music, sound effects and full screen also say whether they are on
+  or off (`aria-pressed`). The history log and the tutorial balloon are not read aloud, so the
   live region below stays the one channel.
 * At the start of the student's turn, the available moves are announced through an
   `aria-live="polite"` region, which also carries the other turn-by-turn events — damage dealt and

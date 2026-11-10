@@ -1404,7 +1404,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     };
 
                     if (question.options && question.options.length > 0) {
-                        const btnClass = ctx.gameConfig.mobile
+                        // A phone on its side is wide, so it is not "mobile" to the server, but it is too short for the
+                        // large buttons and their margin: it gets the compact ones (the sizes are in styles.css).
+                        const shortScreen = window.matchMedia('(max-height: 520px)').matches;
+                        const btnClass = ctx.gameConfig.mobile || shortScreen
                             ? 'btn btn-outline-primary w-100 pp-answer-btn'
                             : 'btn btn-outline-primary btn-lg mb-3 w-100';
 

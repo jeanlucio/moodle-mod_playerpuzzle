@@ -1204,6 +1204,14 @@ define(
         }
 
         /**
+         * Darkens the whole stage under the dialog that ends the match or the phase.
+         */
+        dimStage() {
+            const L = this.L;
+            this.scene.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, L.w, L.h).setDepth(99);
+        }
+
+        /**
          * Shows "Level X — Phase Y of 10" in the HUD for Campaign mode. Single Match has
          * no levels/phases, so the indicator is skipped entirely for it. Desktop keeps it on
          * the button row (y:20); mobile gives it a dedicated row below the buttons instead —

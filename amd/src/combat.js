@@ -503,10 +503,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * onto this.* and handles everything that function deliberately never touches: sound,
          * grid mutation, the destroy tween, the history log, and the tutorial balloon.
          *
-         * @param {Array} destroyedPieces Pieces destroyed this turn (real Phaser objects —
-         *  board.js still deals in those, only the calculation itself moved to pure logic).
-         * @param {Array} matchGroups Match groups this turn, {type, pieces} (pieces: real
-         *  Phaser objects; only their count is passed into the pure calculation).
+         * @param {Array} destroyedPieces Pieces destroyed this turn, as the board holds them ({type, row, col}).
+         * @param {Array} matchGroups Match groups this turn, {type, pieces} (only the count of pieces goes
+         *  into the pure calculation).
          * @return {{damage: number, question: boolean, trigger: string|null}}
          */
         processEffects(destroyedPieces, matchGroups) {
@@ -533,13 +532,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             }
             for (const piece of destroyedPieces) {
                 me.board.grid[piece.row][piece.col] = null;
-                me.ui.burstSparks(piece.x, piece.y, piece.type, piece.displayWidth);
-                me.tweens.add({
-                    targets: piece, scaleX: 0, scaleY: 0, duration: 200,
-                    onComplete: (tween, targets) => {
-                        targets[0].destroy();
-                    }
-                });
+                const {x, y, size} = me.board.view.metrics(piece);
+                me.ui.burstSparks(x, y, piece.type, size);
+                me.board.view.pop(piece);
             }
 
             this.logTurnEffects(
@@ -1214,7 +1209,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const me = this.scene;
             const strings = this.strings;
             me.input.enabled = false;
-            me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
+            me.ui.dimStage();
 
             const netGold = this.netCoinBalance();
 
@@ -1822,7 +1817,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // The save_progress call below consumes the attempt's token and carries every event
             // still pending, so any later checkpoint could only fail against the spent token.
             this.matchSaved = true;
-            me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
+            me.ui.dimStage();
 
             // The boss's own Coin total (bossGold) never buys it anything — it exists purely to
             // net against the student's balance here, the only place it is spent.

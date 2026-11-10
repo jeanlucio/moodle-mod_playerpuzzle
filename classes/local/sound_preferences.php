@@ -43,12 +43,13 @@ class sound_preferences {
     private const PREFERENCE_PREFIX = 'mod_playerpuzzle_';
 
     /**
-     * Default state per channel when a user has never touched it. Music/Sound Effects
-     * default on, matching the in-game default before this preference existed; narration
-     * defaults off — it speaks over the game through the browser's speech synthesis, so
-     * turning it on should always be a deliberate choice, never a surprise on first load.
+     * Default state per channel when a user has never touched it. Sound Effects default on. Music
+     * and narration default off: the music is long and loops, so it plays under a screen reader's
+     * voice (a browser cannot tell whether one is running, so the default has to be safe for it),
+     * and narration speaks over the game through the browser's speech synthesis. Turning either on
+     * is a deliberate choice, never a surprise on first load. A user who already chose keeps the choice.
      */
-    private const DEFAULTS = ['music' => true, 'sfx' => true, 'speech' => false];
+    private const DEFAULTS = ['music' => false, 'sfx' => true, 'speech' => false];
 
     /**
      * Name of the underlying user preference for a channel, exposed for the privacy

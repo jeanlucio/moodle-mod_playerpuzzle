@@ -85,9 +85,9 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `ranking_service_test.php` | 9 |
 | `replay_credit_test.php` | 8 |
 | `report_service_test.php` | 19 |
-| `sound_preferences_test.php` | 7 |
+| `sound_preferences_test.php` | 8 |
 | `user_stock_test.php` | 10 |
-| **Subtotal** | **261** |
+| **Subtotal** | **262** |
 
 ### Combat Engine Tests (`tests/local/engine/`)
 
@@ -110,7 +110,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `provider_test.php` | 36 |
 | **Subtotal** | **36** |
 
-| **Grand Total** | **722** |
+| **Grand Total** | **723** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
@@ -146,9 +146,10 @@ contract between the game and its HUD, run headless with `node --test`. The twee
 |-----------|------:|
 | `assets.test.js` | 8 |
 | `clock.test.js` | 14 |
+| `emoji.test.js` | 5 |
 | `hud_contract.test.js` | 2 |
 | `tween.test.js` | 20 |
-| **Subtotal** | **44** |
+| **Subtotal** | **49** |
 
 ```bash
 node --test tests/js/stage/*.test.js

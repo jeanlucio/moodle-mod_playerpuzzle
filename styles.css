@@ -597,6 +597,12 @@ body.path-mod-playerpuzzle .pp-question-modal-footer {
     padding: 0.75rem 1.25rem;
 }
 
+/* The question takes the focus when the modal opens, so the screen reader starts from it; it is not a control, so it
+   needs no outline. */
+body.path-mod-playerpuzzle #playerpuzzle-question-text:focus {
+    outline: none;
+}
+
 /* A short screen also gets a tighter modal, so the question and all its answers fit before the body has to scroll. */
 @media (max-height: 520px) {
     body.path-mod-playerpuzzle .pp-question-modal-header {

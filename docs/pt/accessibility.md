@@ -9,8 +9,11 @@ camada de última hora:
 
 * Uma `<table role="grid">` real fica sobre o tabuleiro 8×8, e suas células são as mesmas em que o
   mouse e o toque agem. Ela é navegável célula a célula com as setas, e cada célula é lida com o nome
-  da peça. O contorno de foco só aparece para quem usa o teclado. As setas só movem o foco: a jogada é
-  feita com o ponteiro ou com as teclas numéricas abaixo.
+  da peça. O contorno de foco só aparece para quem usa o teclado. **Enter** seleciona a peça da célula em
+  foco (anunciada e marcada com `aria-selected`), e Enter numa célula vizinha troca as duas; Enter na mesma
+  peça desfaz a seleção. As teclas numéricas abaixo fazem uma jogada sem percorrer a grade.
+* A área do jogo é uma região rotulada (com o nome da atividade), e não uma região de aplicação, então o
+  leitor de tela mantém o modo de navegação normal ao redor do tabuleiro e dos botões.
 * Os botões (desistir, ajuda, música, efeitos sonoros, tela cheia, usar item) são elementos `<button>`
   reais com nomes acessíveis; música, efeitos sonoros e tela cheia também informam se estão ligados ou
   desligados (`aria-pressed`). O histórico e o balão do tutorial não são lidos em voz alta, então a
@@ -21,9 +24,23 @@ camada de última hora:
 * As teclas numéricas `1`–`9` executam a jogada anunciada correspondente, e `Espaço` relê a lista
   de jogadas disponíveis.
 * O desafio de pergunta é um `<dialog>` HTML nativo: o foco é preso e centralizado pelo próprio
-  navegador, e devolvido ao elemento que o disparou quando ele fecha.
+  navegador, e devolvido ao elemento que o disparou quando ele fecha. Quando abre, o foco vai para a
+  pergunta, então o leitor de tela começa pelo que está sendo perguntado e as respostas vêm em seguida,
+  por Tab. A resposta escolhida é exposta como pressionada (`aria-pressed`). Apertar Atacar mantém o foco
+  no botão, que passa a ser Continuar, então o teclado nunca é jogado para fora do diálogo. Tudo fora de um
+  diálogo modal aberto fica inerte e não é ouvido, então enquanto um diálogo está aberto os anúncios vão
+  para uma região viva dentro dele.
 * O Lobby, a loja, o ranking e o relatório são páginas e formulários comuns do Moodle, então
   seguem o comportamento de acessibilidade do próprio tema.
+
+## Emoji e som
+
+* Os emojis dos textos do jogo ficam fora da árvore de acessibilidade (cada um vai num `span` com
+  `aria-hidden`) e são removidos do que é anunciado ou falado, então um botão lê "Atacar!" e não
+  "espadas cruzadas Atacar!".
+* A música fica desligada até o estudante ligar, e os efeitos sonoros ficam ligados: o navegador não
+  consegue saber se um leitor de tela está rodando, e uma música em laço por baixo da voz dele é o pior
+  padrão. Quem já escolheu mantém a escolha. Os dois têm botões no jogo (com o estado) e chaves no Lobby.
 
 ## Narração Falada
 

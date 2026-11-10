@@ -21,9 +21,10 @@
     Bootstrap modal specifically for this element so focus trapping, ESC handling, and
     top-layer stacking are all handled natively by the browser instead of depending on
     Bootstrap's own modal JS. combat.js opens it with showModal() only once
-    its content (question text, answer buttons) is already in the DOM, so the browser's
-    own auto-focus lands on a real answer button, and saves/restores focus to whatever
-    triggered it.
+    its content (question text, answer buttons) is already in the DOM, then moves the focus to the
+    question itself (tabindex -1), so a screen reader starts from what is being asked, and saves/restores
+    focus to whatever triggered it. The live region inside the dialog carries the announcements while it is
+    open: everything outside a modal dialog is inert, so the page's own live region is not heard.
 
     Example context (json):
     {
@@ -34,7 +35,7 @@
         <h5 class="pp-question-modal-title">{{#str}} questionchallenge, mod_playerpuzzle {{/str}}</h5>
     </div>
     <div class="pp-question-modal-body">
-        <h4 id="playerpuzzle-question-text">{{#str}} loading, mod_playerpuzzle {{/str}}</h4>
+        <h4 id="playerpuzzle-question-text" tabindex="-1">{{#str}} loading, mod_playerpuzzle {{/str}}</h4>
         <div id="playerpuzzle-answers-container" class="d-grid gap-2"></div>
         <div id="playerpuzzle-hint-text" class="alert alert-info mt-2"></div>
     </div>
@@ -49,4 +50,5 @@
             {{#str}} close, mod_playerpuzzle {{/str}}
         </button>
     </div>
+    <div class="visually-hidden pp-dialog-live" role="status" aria-live="polite"></div>
 </dialog>

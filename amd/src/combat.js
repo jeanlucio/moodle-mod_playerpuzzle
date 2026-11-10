@@ -1384,7 +1384,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     // question closes with the button still disabled (it only enables once an
                     // answer is picked), and the boss's or an empty question's "Continue" would
                     // otherwise come up disabled, leaving no way to close the modal.
-                    $('#playerpuzzle-btn-confirm').hide().prop('disabled', false).off('click');
+                    $('#playerpuzzle-btn-confirm').hide().prop('disabled', false).removeClass('disabled')
+                        .removeAttr('aria-disabled').off('click');
                     $('#playerpuzzle-btn-skip').hide().off('click');
                     $('#playerpuzzle-hint-text').hide().empty();
                     $('#playerpuzzle-btn-hint').hide().prop('disabled', false).off('click');
@@ -1438,14 +1439,19 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                             let selectedAnswer = null;
 
                             question.options.forEach(option => {
-                                const btn = $(`<button class="${btnClass}" data-answerid="${option.id}">${option.text}</button>`);
+                                const btn = $(
+                                    `<button class="${btnClass}" data-answerid="${option.id}" aria-pressed="false">`
+                                    + `${option.text}</button>`
+                                );
 
                                 // Using function() to preserve jQuery's this binding for the clicked button.
                                 btn.on('click', function() {
                                     answersContainer.find('button')
                                         .removeClass('btn-warning')
-                                        .addClass('btn-outline-primary');
-                                    $(this).removeClass('btn-outline-primary').addClass('btn-warning');
+                                        .addClass('btn-outline-primary')
+                                        .attr('aria-pressed', 'false');
+                                    $(this).removeClass('btn-outline-primary').addClass('btn-warning')
+                                        .attr('aria-pressed', 'true');
                                     selectedAnswer = option;
                                     $('#playerpuzzle-btn-confirm').prop('disabled', false);
                                 });
@@ -1453,20 +1459,30 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 answersContainer.append(btn);
                             });
 
+                            // Once Attack is pressed the button waits for the server's word without being disabled: a
+                            // disabled button that has the focus throws it out to the page, and a keyboard or screen
+                            // reader user would have to find the way back to Continue.
+                            let answering = false;
+                            const showContinue = () => {
+                                $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
+                                    .prop('disabled', false).removeClass('disabled').removeAttr('aria-disabled')
+                                    .off('click').on('click', closeModal).trigger('focus');
+                            };
+
                             $('#playerpuzzle-btn-confirm').off('click').on('click', () => {
-                                if (!selectedAnswer) {
+                                if (!selectedAnswer || answering) {
                                     return;
                                 }
+                                answering = true;
                                 answersContainer.find('button').prop('disabled', true);
                                 $('#playerpuzzle-btn-skip').hide();
-                                $('#playerpuzzle-btn-confirm').prop('disabled', true);
+                                $('#playerpuzzle-btn-confirm').addClass('disabled').attr('aria-disabled', 'true');
 
                                 const applyResult = (isCorrect, correctanswerid) => {
                                     if (opening) {
                                         openingFirst = isCorrect ? 'player' : 'boss';
                                         ctx.showOpeningResult(isCorrect, correctanswerid, answersContainer);
-                                        $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
-                                            .prop('disabled', false).off('click').on('click', closeModal);
+                                        showContinue();
                                         return;
                                     }
                                     const outcome = CombatRules.questionOutcome(
@@ -1512,8 +1528,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                         }
                                     }
                                     answersContainer.append(feedbackMsg);
-                                    $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
-                                        .prop('disabled', false).off('click').on('click', closeModal);
+                                    Accessibility.announce($('<div>').html(feedbackMsg).text().replace(/\s+/g, ' '));
+                                    showContinue();
                                 };
 
                                 Ajax.call([{
@@ -1602,6 +1618,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     }
                                 }
                                 answersContainer.append(bossFeedback);
+                                Accessibility.announce($('<div>').html(bossFeedback).text().replace(/\s+/g, ' '));
                                 $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue).show()
                                     .off('click').on('click', closeModal);
                             };
@@ -1638,10 +1655,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                             .off('click').on('click', closeModal);
                     }
 
-                    // Content (question text, answer buttons) is already in the DOM at
-                    // this point, so the browser's own auto-focus on showModal() lands on
-                    // a real answer button — no extra JS-driven focus call needed.
+                    // Content (question text, answer buttons) is already in the DOM at this point. showModal()
+                    // would put the focus on the first answer, and a screen reader would start from it; the
+                    // question takes the focus instead, so what is being asked is the first thing heard and the
+                    // answers come next, by Tab.
                     dialogEl.showModal();
+                    document.getElementById('playerpuzzle-question-text').focus({preventScroll: true});
                 } else {
                     me.scene.resume();
                     if (opening) {

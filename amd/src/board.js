@@ -228,6 +228,12 @@ define([
          * @return {void}
          */
         handleGridKeydown(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.selectFromKeyboard(event.currentTarget);
+                return;
+            }
+
             if (event.key === ' ') {
                 event.preventDefault();
                 // Same gate as executeAnnouncedMove(): outside the player's own turn the move
@@ -394,6 +400,66 @@ define([
                     this.view.tint(p2, 0xaaaaaa);
                 }
             }
+            this.syncSelectionState();
+        }
+
+        /**
+         * Enter on a cell of the accessible grid does what a click on the piece does: the first one selects it, and
+         * Enter on a neighbouring cell swaps the two. What happened is announced, since nothing else tells a screen
+         * reader user that a piece is selected, or that the selection was dropped.
+         *
+         * @param {HTMLElement} cell The focused cell.
+         * @return {void}
+         */
+        selectFromKeyboard(cell) {
+            if (this.scene.combat.currentTurn !== 'player' || !this.scene.input.enabled) {
+                return;
+            }
+            const row = parseInt(cell.dataset.row, 10);
+            const col = parseInt(cell.dataset.col, 10);
+            const piece = this.grid[row][col];
+            if (!piece) {
+                return;
+            }
+
+            const previous = this.selectedPiece;
+            const swaps = previous !== null && Math.abs(previous.row - piece.row) + Math.abs(previous.col - piece.col) === 1;
+            this.resetHint();
+            this.handleClick(piece);
+
+            if (this.selectedPiece !== null) {
+                const name = this.strings[PIECE_NAME_KEYS[this.selectedPiece.type]];
+                Accessibility.announce(
+                    this.strings.pieceselected
+                        .replace('{$a->piece}', name)
+                        .replace('{$a->row}', String(this.selectedPiece.row + 1))
+                        .replace('{$a->col}', String(this.selectedPiece.col + 1))
+                );
+            } else if (previous !== null && !swaps) {
+                // Dropped by Enter on the same piece; a swap announces itself through the match it makes.
+                Accessibility.announce(this.strings.selectioncleared);
+            }
+        }
+
+        /**
+         * Marks the selected piece's cell in the accessible grid (aria-selected), so a screen reader can tell it from
+         * the others whichever way it was selected, by the pointer or by the keyboard.
+         *
+         * @return {void}
+         */
+        syncSelectionState() {
+            if (!this.a11yCells) {
+                return;
+            }
+            const selected = this.selectedPiece;
+            this.a11yCells.forEach((cells, row) => cells.forEach((cell, col) => {
+                const isSelected = selected !== null && selected.row === row && selected.col === col;
+                if (isSelected) {
+                    cell.setAttribute('aria-selected', 'true');
+                } else {
+                    cell.removeAttribute('aria-selected');
+                }
+            }));
         }
 
         swapPieces(piece1, piece2, isRevert) {

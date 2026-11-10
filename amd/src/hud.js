@@ -294,6 +294,11 @@ define([
         text(parent, className, x, y, text = '') {
             const element = make('div', `pp-text ${className}`, parent, {x, y});
             element.textContent = text;
+            // The history and the coin and star counts are for the eye: the live region says what happens, and the
+            // HP is read from its own bar. Left in the page, a screen reader would read them as loose text.
+            if (/\bpp-(history-title|history-line|chip-text)\b/.test(className)) {
+                element.setAttribute('aria-hidden', 'true');
+            }
             return element;
         }
 

@@ -26,8 +26,8 @@
    uma linha para cada Campanha, com o herói, as fases vencidas, as tentativas usadas e os pontos.
 2. Use **Jogar Demo** para uma luta de prática guiada que nunca conta para nada.
 3. Abra a **Loja**, que mostra seu saldo de PuzzleCoin, para comprar consumíveis antes da partida e —
-   quando o professor ligou o PlayerHUD — para transferir moedas para cá. **Configurações** guarda música, efeitos
-   sonoros e narração falada, e **Ranking** mostra a classificação da turma.
+   quando o professor ligou o PlayerHUD — para transferir moedas para cá. **Configurações** guarda música (desligada até você ligar), efeitos
+   sonoros e narração falada (também desligada), e **Ranking** mostra a classificação da turma.
 4. Selecione **Jogar** para começar (ou retomar) uma partida.
 5. Combine peças para atacar o oponente, encha a barra do Orbe de Mana para disparar um
    [Desafio de Pergunta](#questions), e responda certo para um acerto crítico.

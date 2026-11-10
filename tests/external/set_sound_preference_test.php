@@ -85,12 +85,13 @@ final class set_sound_preference_test extends \advanced_testcase {
         $result = $this->call_set_sound_preference([
             'cmid'    => $instance->cmid,
             'type'    => 'music',
-            'enabled' => false,
+            'enabled' => true,
         ]);
 
         $this->assertFalse($result['error']);
         $this->assertTrue($result['data']['success']);
-        $this->assertFalse(sound_preferences::is_enabled('music', (int) $this->student->id));
+        // Music is off for a student who never chose, so only a saved choice can make this true.
+        $this->assertTrue(sound_preferences::is_enabled('music', (int) $this->student->id));
     }
 
     /**
@@ -103,6 +104,7 @@ final class set_sound_preference_test extends \advanced_testcase {
         $instance = $this->make_instance();
         $this->setUser($this->student);
 
+        $this->call_set_sound_preference(['cmid' => $instance->cmid, 'type' => 'music', 'enabled' => true]);
         $this->call_set_sound_preference(['cmid' => $instance->cmid, 'type' => 'sfx', 'enabled' => false]);
 
         $this->assertTrue(sound_preferences::is_enabled('music', (int) $this->student->id));

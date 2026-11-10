@@ -40,6 +40,8 @@ define([
 
                 const config = JSON.parse(configStr);
                 Accessibility.setSpeechEnabled(!!config.enablespeech);
+                Accessibility.hideEmojis(container);
+                Accessibility.hideEmojis(document.getElementById('playerpuzzle-modal'));
 
                 // Apply desktop layout immediately so the loading screen renders at the correct size.
                 if (window.innerWidth > window.innerHeight) {
@@ -91,6 +93,7 @@ define([
                     'openingright', 'openingtrigger', 'openingwrong',
                     'phaseadvanced', 'phaseadvanceerror', 'phasecompletetitle', 'phasedifficulty', 'phaselost', 'phaseshoptitle',
                     'shop_hero_evolved',
+                    'pieceselected',
                     'piece_coin', 'piece_coin_plural', 'piece_grimoire', 'piece_grimoire_plural',
                     'piece_orb', 'piece_orb_plural', 'piece_potion', 'piece_potion_plural',
                     'piece_shield', 'piece_shield_plural', 'piece_star', 'piece_star_plural',
@@ -103,7 +106,7 @@ define([
                     'playerlostmultiplier', 'playerwrong', 'progressindicator', 'progresssaved',
                     'questionerror', 'questionscounter', 'questionsprogress',
                     'requirejserror', 'retrydifficulty', 'saveerror', 'savingprogress',
-                    'shoperror', 'shuffling',
+                    'selectioncleared', 'shoperror', 'shuffling',
                     'stage_fullscreen', 'stage_giveup', 'stage_help', 'stage_use_item',
                     'lobby_music_label', 'lobby_sfx_label',
                     'turnstart_intro', 'turnstart_move',

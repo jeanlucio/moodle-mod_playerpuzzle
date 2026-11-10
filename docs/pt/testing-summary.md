@@ -86,9 +86,9 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `ranking_service_test.php` | 9 |
 | `replay_credit_test.php` | 8 |
 | `report_service_test.php` | 19 |
-| `sound_preferences_test.php` | 7 |
+| `sound_preferences_test.php` | 8 |
 | `user_stock_test.php` | 10 |
-| **Subtotal** | **261** |
+| **Subtotal** | **262** |
 
 ### Testes do Motor de Combate (`tests/local/engine/`)
 
@@ -111,7 +111,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 36 |
 | **Subtotal** | **36** |
 
-| **Total Geral** | **722** |
+| **Total Geral** | **723** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
@@ -148,9 +148,10 @@ contrato entre o jogo e o HUD, rodados sem navegador com `node --test`. Os vetor
 |------------------|------:|
 | `assets.test.js` | 8 |
 | `clock.test.js` | 14 |
+| `emoji.test.js` | 5 |
 | `hud_contract.test.js` | 2 |
 | `tween.test.js` | 20 |
-| **Subtotal** | **44** |
+| **Subtotal** | **49** |
 
 ```bash
 node --test tests/js/stage/*.test.js

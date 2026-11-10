@@ -46,9 +46,14 @@
             </button>
             <button type="button" class="btn btn-outline-info" id="playerpuzzle-btn-hint"></button>
         </div>
-        <button type="button" class="btn btn-secondary" id="playerpuzzle-btn-confirm">
-            {{#str}} close, mod_playerpuzzle {{/str}}
-        </button>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-secondary" id="playerpuzzle-btn-confirm">
+                {{#str}} close, mod_playerpuzzle {{/str}}
+            </button>
+            <button type="button" class="btn btn-secondary" id="playerpuzzle-btn-continue" hidden>
+                {{#str}} btncontinue, mod_playerpuzzle {{/str}}
+            </button>
+        </div>
     </div>
     <div class="visually-hidden pp-dialog-live" role="status" aria-live="polite"></div>
 </dialog>

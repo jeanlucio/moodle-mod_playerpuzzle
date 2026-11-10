@@ -27,7 +27,9 @@ camada de última hora:
   navegador, e devolvido ao elemento que o disparou quando ele fecha. Quando abre, o foco vai para a
   pergunta, então o leitor de tela começa pelo que está sendo perguntado e as respostas vêm em seguida,
   por Tab. A resposta escolhida é exposta como pressionada (`aria-pressed`). Apertar Atacar mantém o foco
-  no botão, que passa a ser Continuar, então o teclado nunca é jogado para fora do diálogo. Tudo fora de um
+  onde está até a resposta ser julgada, e então um botão Continuar separado, novo na página, o recebe: o teclado
+  nunca é jogado para fora do diálogo, e o leitor de tela encontra o Continuar como um controle novo, e não como
+  um antigo que mudou. Tudo fora de um
   diálogo modal aberto fica inerte e não é ouvido, então enquanto um diálogo está aberto os anúncios vão
   para uma região viva dentro dele.
 * O Lobby, a loja, o ranking e o relatório são páginas e formulários comuns do Moodle, então

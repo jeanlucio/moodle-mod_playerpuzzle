@@ -26,8 +26,9 @@ an afterthought bolt-on layer:
 * The question challenge is a native HTML `<dialog>`: focus is trapped and centred by the browser,
   and restored to whatever triggered it when it closes. When it opens, the focus goes to the question, so
   the screen reader starts from what is being asked and the answers come next, by Tab. The picked answer is
-  exposed as pressed (`aria-pressed`). Pressing Attack keeps the focus on the button, which becomes Continue,
-  so the keyboard is never thrown out to the page. Everything outside an open modal dialog is inert and so
+  exposed as pressed (`aria-pressed`). Pressing Attack keeps the focus where it is until the answer is judged,
+  and then a separate Continue button, new to the page, takes it: the keyboard is never thrown out to the page,
+  and the screen reader meets Continue as a new control instead of an old one that changed. Everything outside an open modal dialog is inert and so
   is not heard, so while a dialog is open the announcements go to a live region inside it.
 * The Lobby, shop, ranking and report are ordinary Moodle pages and forms, so they follow the
   theme's own accessibility behaviour.

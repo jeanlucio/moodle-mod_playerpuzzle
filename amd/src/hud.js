@@ -20,8 +20,8 @@
  *
  * It answers to the same calls as the canvas version (mod_playerpuzzle/ui), so combat.js and board.js do not know
  * which one they talk to. Everything stands where the layout says, in the stage's own coordinates; the stage scales
- * it all to the width of the page. The buttons are real buttons. The effects (the hits, the sparks, the numbers that
- * rise, the breathing and the pulses) answer the calls and do nothing yet.
+ * it all to the width of the page. The buttons are real buttons. The effects (the lunges and the hits, the sparks, the
+ * numbers that rise, the trail behind an HP bar, the breathing and the pulses) are moved by the stage's tweens.
  *
  * @module     mod_playerpuzzle/hud
  * @copyright  2026 Jean Lúcio
@@ -37,6 +37,47 @@ define([
     // The fill of each side's HP bar: a moss green and a brick red dark enough for white text to read on them.
     const HP_FILL = {player: '#3f7a2e', boss: '#9b2d28'};
     const TRANSLUCENT_ALPHA = 0.45;
+
+    // The characters' idle breathing: how much taller they get at the top of a breath, and how long half a breath
+    // lasts, in ms.
+    const BREATH_SCALE = 1.02;
+    const BREATH_DURATION = 1400;
+
+    // Character moves on the stage, in design px toward the other character (negative: away from it) and ms per leg: the
+    // lunge of a hit and of a critical answer, the recoil of the side hit, and the tremor of a blocked hit or a poison
+    // tick.
+    const LUNGE = {distance: 35, duration: 110};
+    const CRITICAL_LUNGE = {distance: 60, duration: 140};
+    const RECOIL = {distance: -14, duration: 110};
+    const TREMOR = {distance: -4, duration: 45, times: 3};
+
+    // The red of a hit, which lasts 200 ms, and the purple of a poison tick, blinked twice.
+    const HIT_TINT = 0xff0000;
+    const POISON_TINT = 0xff00ff;
+
+    // The numbers that rise off a character when its HP changes: the colour of a loss and of a gain, how far they rise
+    // and how long they last (ms), and the share of that time a number stays fully opaque before it fades out.
+    const FLOAT_LOSS = '#ff6b5c';
+    const FLOAT_GAIN = '#7be06f';
+    const FLOAT_RISE = 56;
+    const FLOAT_DURATION = 1500;
+    const FLOAT_HOLD = 0.6;
+
+    // The pale trail an HP bar keeps behind a loss before it catches up: its colour, the wait and the catch-up (ms).
+    const HP_TRAIL = '#e9d9a6';
+    const TRAIL_DELAY = 450;
+    const TRAIL_DURATION = 450;
+
+    // The sparks a destroyed piece throws, by piece type (star, grimoire, orb, coin, shield, potion, sword): how many and
+    // how long they last (ms).
+    const SPARK_COLORS = [0xf2c14e, 0xb35fe0, 0x4aa3ff, 0xffd54a, 0xa9bccf, 0xe05252, 0xe3eaf2];
+    const SPARK_COUNT = 6;
+    const SPARK_DURATION = 450;
+
+    // How fast the gold frame of the turn and the ring of a Demo step pulse (ms), and how faint the ring gets.
+    const TURN_PULSE = 650;
+    const RING_FAINTEST = 0.35;
+    const TURN_FAINTEST = 0.45;
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
     // The Font Awesome class of each round button's icon, the second one for the off state of a toggle.
@@ -132,6 +173,72 @@ define([
         return element;
     };
 
+    /**
+     * The tint of a character: a colour that multiplies each channel of its picture, as the canvas's tint did, made by a
+     * filter of one colour matrix per colour, defined once in the stage.
+     *
+     * @param {HTMLElement} root The stage's root.
+     * @param {number} color The tint, such as 0xff0000.
+     * @return {string} The filter, for the style of an element.
+     */
+    const tintFilter = (root, color) => {
+        const id = `pp-tint-${color.toString(16).padStart(6, '0')}`;
+        if (!root.querySelector(`#${id}`)) {
+            let defs = root.querySelector('.pp-filters defs');
+            if (!defs) {
+                const holder = svg('svg', {'class': 'pp-filters', width: 0, height: 0, 'aria-hidden': 'true'}, root);
+                defs = svg('defs', {}, holder);
+            }
+            const filter = svg('filter', {id, 'color-interpolation-filters': 'sRGB'}, defs);
+            const [r, g, b] = [16, 8, 0].map(shift => (Math.floor(color / (2 ** shift)) % 256) / 255);
+            svg('feColorMatrix', {type: 'matrix', values: `${r} 0 0 0 0  0 ${g} 0 0 0  0 0 ${b} 0 0  0 0 0 1 0`}, filter);
+        }
+        return `url(#${id})`;
+    };
+
+    /**
+     * A character's picture and what moves it: where it stands (x, as the middle of its box), how tall it is breathing,
+     * how opaque it is and its tint. Tweens change these numbers and call render().
+     */
+    class CharacterSprite {
+        /**
+         * @param {HTMLElement} element The picture.
+         * @param {number} homeX The middle of the box it stands in.
+         * @param {object} stage The stage, whose root holds the tint filters.
+         */
+        constructor(element, homeX, stage) {
+            this.element = element;
+            this.homeX = homeX;
+            this.stage = stage;
+            this.x = homeX;
+            this.scaleY = 1;
+            this.alpha = 1;
+            this.tint = null;
+        }
+
+        render() {
+            this.element.style.transform = `translateX(${this.x - this.homeX}px) scaleY(${this.scaleY})`;
+            this.element.style.opacity = String(this.alpha);
+            this.element.style.filter = this.tint === null ? '' : tintFilter(this.stage.root, this.tint);
+        }
+
+        setAlpha(alpha) {
+            this.alpha = alpha;
+            this.render();
+            return this;
+        }
+
+        setTint(color) {
+            this.tint = color;
+            this.render();
+            return this;
+        }
+
+        clearTint() {
+            return this.setTint(null);
+        }
+    }
+
     class HudHandler {
         /**
          * @param {object} scene The scene: stage, time, tweens, input, combat, board and the sound objects.
@@ -150,6 +257,7 @@ define([
             this.playerLog = [];
             this.bossLog = [];
             this.shownHp = {};
+            this.hpTrail = {};
             this.hp = {};
             this.turnSide = null;
             this.turnFrame = null;
@@ -280,9 +388,12 @@ define([
             const L = this.L;
             const bar = make('div', `pp-el pp-hp pp-hp-${side}`, this.layers.middle, {x, y, w: L.hpBarW, h: L.hpBarH});
             bar.style.borderRadius = `${L.hpBarRadius}px`;
+            // The trail is under the fill, so it only shows where the fill has already shrunk.
+            const ghost = make('div', 'pp-hp-fill', bar);
+            ghost.hidden = true;
             const fill = make('div', 'pp-hp-fill', bar);
             const label = this.text(this.layers.middle, 'pp-hp-text pp-anchor-center', x + (L.hpBarW / 2), textY);
-            this.hp[side] = {bar, fill, label};
+            this.hp[side] = {bar, ghost, fill, label};
         }
 
         /**
@@ -293,14 +404,24 @@ define([
          * @param {number} pct The share, 0 to 1.
          */
         drawHpFill(side, pct) {
+            this.paintFill(this.hp[side].fill, pct, HP_FILL[side]);
+        }
+
+        /**
+         * Paints a fill element to a share of the bar's width, in a colour.
+         *
+         * @param {HTMLElement} fill The fill: the bar's own or its trail.
+         * @param {number} pct The share, 0 to 1.
+         * @param {string} color The colour.
+         */
+        paintFill(fill, pct, color) {
             const L = this.L;
             const inset = 3;
             const fillW = Math.max(0, (L.hpBarW - (inset * 2)) * Math.max(0, pct));
             const fillH = L.hpBarH - (inset * 2);
-            const {fill} = this.hp[side];
             fill.hidden = fillW <= 0;
             fill.style.width = `${fillW}px`;
-            fill.style.backgroundColor = HP_FILL[side];
+            fill.style.backgroundColor = color;
             fill.style.borderRadius = `${Math.max(0, Math.min(L.hpBarRadius - inset, fillW / 2, fillH / 2))}px`;
         }
 
@@ -371,17 +492,34 @@ define([
         }
 
         /**
-         * The two characters on the stage, facing each other. Each stands on its feet, in a box as tall as it is wide.
+         * The two characters on the stage, facing each other. Each stands on its feet, in a box as tall as it is wide,
+         * and breathes: it grows a little taller, from the feet up, and back, the two half a breath apart so they
+         * never breathe in step.
          */
         createCharacters() {
             const L = this.L;
-            const add = (x, y, key, size) => wrap(this.image(this.layers.back, key, centered(x, y, size), 'pp-character'));
+            const add = (x, y, key, size) => {
+                const element = this.image(this.layers.back, key, centered(x, y, size), 'pp-character');
+                return new CharacterSprite(element, x, this.scene.stage);
+            };
             this.playerSprite = add(L.playerX, L.playerY, 'player', L.playerScale);
             this.bossSprite = add(L.bossX, L.bossY, 'boss', L.bossScale);
             this.characters = {
-                player: {sprite: this.playerSprite, homeX: L.playerX, forward: 1, motion: null},
-                boss: {sprite: this.bossSprite, homeX: L.bossX, forward: -1, motion: null},
+                player: {sprite: this.playerSprite, homeX: L.playerX, size: L.playerScale, forward: 1, motion: null},
+                boss: {sprite: this.bossSprite, homeX: L.bossX, size: L.bossScale, forward: -1, motion: null},
             };
+            [this.playerSprite, this.bossSprite].forEach((sprite, index) => {
+                this.scene.tweens.add({
+                    targets: sprite,
+                    scaleY: BREATH_SCALE,
+                    duration: BREATH_DURATION,
+                    delay: index * BREATH_DURATION,
+                    ease: 'Sine.easeInOut',
+                    yoyo: true,
+                    repeat: -1,
+                    onUpdate: () => sprite.render(),
+                });
+            });
         }
 
         /**
@@ -398,57 +536,203 @@ define([
         }
 
         /**
-         * Moves a character out and back. Not drawn yet.
+         * Moves a character out and back to where it stands. A move still running is stopped and the new one starts
+         * from wherever the character is, so moves that overlap (a lunge and the recoil of a hit right after it) never
+         * leave it out of place. Only the look: nothing in the fight waits for a move to finish.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {{distance: number, duration: number, times: (number|undefined)}} move Toward the other character for
+         *  a positive distance; times repeats a short move as a tremor.
          */
-        moveCharacter() {
-            // The effects arrive with the animations.
+        moveCharacter(side, move) {
+            const character = this.characters[side];
+            const sprite = character.sprite;
+            if (character.motion) {
+                character.motion.stop();
+            }
+            const comeBack = () => {
+                character.motion = this.scene.tweens.add({
+                    targets: sprite,
+                    x: character.homeX,
+                    duration: move.duration,
+                    ease: 'Quad.easeIn',
+                    onUpdate: () => sprite.render(),
+                    onComplete: () => {
+                        character.motion = null;
+                    },
+                });
+            };
+            character.motion = this.scene.tweens.add({
+                targets: sprite,
+                x: character.homeX + (move.distance * character.forward),
+                duration: move.duration,
+                ease: 'Quad.easeOut',
+                yoyo: Boolean(move.times),
+                repeat: move.times ? move.times - 1 : 0,
+                onUpdate: () => sprite.render(),
+                onComplete: comeBack,
+            });
         }
 
         /**
-         * The lunge of a side landing a hit. Not drawn yet.
+         * The lunge of a side landing a hit, longer for a critical answer.
+         *
+         * @param {string} side 'player' or 'boss': who hits.
+         * @param {boolean} critical Whether the hit is a critical answer.
          */
-        lungeCharacter() {
-            // The effects arrive with the animations.
+        lungeCharacter(side, critical) {
+            this.moveCharacter(side, critical ? CRITICAL_LUNGE : LUNGE);
         }
 
         /**
-         * A side taking a hit. Not drawn yet.
+         * A side taking a hit: a red flash and a recoil, or only a tremor when its Shield blocked the hit.
+         *
+         * @param {string} side 'player' or 'boss': who is hit.
+         * @param {boolean} blocked Whether a Shield blocked it.
          */
-        hitCharacter() {
-            // The effects arrive with the animations.
+        hitCharacter(side, blocked) {
+            if (blocked) {
+                this.moveCharacter(side, TREMOR);
+                return;
+            }
+            const {sprite} = this.characters[side];
+            sprite.setTint(HIT_TINT);
+            this.scene.time.delayedCall(200, () => sprite.clearTint());
+            this.moveCharacter(side, RECOIL);
         }
 
         /**
-         * A side taking a poison tick. Not drawn yet.
+         * A side taking a poison tick: two purple blinks and a tremor.
+         *
+         * @param {string} side 'player' or 'boss'.
          */
-        poisonCharacter() {
-            // The effects arrive with the animations.
+        poisonCharacter(side) {
+            const {sprite} = this.characters[side];
+            [0, 300].forEach(start => {
+                this.scene.time.delayedCall(start, () => sprite.setTint(POISON_TINT));
+                this.scene.time.delayedCall(start + 180, () => sprite.clearTint());
+            });
+            this.moveCharacter(side, TREMOR);
         }
 
         /**
-         * Throws sparks off a piece being destroyed. Not drawn yet.
+         * Throws a few sparks off a piece that is being destroyed, in the colour of its type. Only the look: they
+         * live under half a second and nothing waits for them.
+         *
+         * @param {number} x Where the piece was.
+         * @param {number} y Where the piece was.
+         * @param {number} type The piece's type, 0 to 6.
+         * @param {number} size The piece's size on screen, which the sparks scale with.
          */
-        burstSparks() {
-            // The effects arrive with the animations.
+        burstSparks(x, y, type, size) {
+            const color = css(SPARK_COLORS[type] ?? 0xffffff);
+            const radius = Math.max(3, size * 0.1);
+            for (let i = 0; i < SPARK_COUNT; i++) {
+                const angle = ((i + Math.random()) / SPARK_COUNT) * 2 * Math.PI;
+                const distance = size * (0.5 + (Math.random() * 0.5));
+                const element = make('div', 'pp-spark', this.layers.floating);
+                element.style.width = `${radius * 2}px`;
+                element.style.height = `${radius * 2}px`;
+                element.style.backgroundColor = color;
+                const spark = {x, y, alpha: 1, scale: 1};
+                const draw = () => {
+                    element.style.transform = `translate(${spark.x - radius}px, ${spark.y - radius}px) scale(${spark.scale})`;
+                    element.style.opacity = String(spark.alpha);
+                };
+                draw();
+                this.scene.tweens.add({
+                    targets: spark,
+                    x: x + (Math.cos(angle) * distance),
+                    y: y + (Math.sin(angle) * distance),
+                    alpha: 0,
+                    scale: 0.4,
+                    duration: SPARK_DURATION,
+                    ease: 'Quad.easeOut',
+                    onUpdate: draw,
+                    onComplete: () => element.remove(),
+                });
+            }
         }
 
         /**
-         * Lets a number rise off a character for a change in its HP. Not drawn yet.
+         * Lets a number rise off a character and fade, for a change in its HP: red for a loss, green for a gain. Only
+         * the look. Numbers that arrive together start at slightly different heights so they do not sit on top of
+         * each other.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {number} delta The HP change, negative for a loss.
          */
-        floatNumber() {
-            // The effects arrive with the animations.
+        floatNumber(side, delta) {
+            const {homeX, size} = this.characters[side];
+            const fontSize = Math.min(34, Math.max(22, Math.round(size * 0.16)));
+            const gain = delta > 0;
+            this.floatCount = ((this.floatCount || 0) + 1) % 3;
+            // A character stands on its feet: the box's bottom edge is where its sprite sits, as the canvas had it.
+            const feetY = (side === 'player' ? this.L.playerY : this.L.bossY) + (size / 2);
+            const startY = feetY - (size * 0.75) - (this.floatCount * fontSize * 0.8);
+            const element = this.text(
+                this.layers.floating, 'pp-float pp-anchor-center', homeX, startY, `${gain ? '+' : '-'}${Math.abs(delta)}`
+            );
+            element.style.fontSize = `${fontSize}px`;
+            element.style.color = gain ? FLOAT_GAIN : FLOAT_LOSS;
+            const number = {y: startY, alpha: 1};
+            const draw = () => {
+                element.style.top = `${number.y}px`;
+                element.style.opacity = String(number.alpha);
+            };
+            // Rising and fading are separate tweens: one easing on both would spend most of the fade in the first
+            // moments and leave the number barely visible for half its time.
+            this.scene.tweens.add({
+                targets: number, y: startY - FLOAT_RISE, duration: FLOAT_DURATION, ease: 'Cubic.easeOut', onUpdate: draw,
+            });
+            this.scene.tweens.add({
+                targets: number,
+                alpha: 0,
+                delay: FLOAT_DURATION * FLOAT_HOLD,
+                duration: FLOAT_DURATION * (1 - FLOAT_HOLD),
+                ease: 'Linear',
+                onUpdate: draw,
+                onComplete: () => element.remove(),
+            });
         }
 
         /**
-         * Keeps a pale trail behind an HP bar that lost HP. Not drawn yet.
+         * Keeps a pale trail behind an HP bar that has just lost HP: it stays where the bar was for a moment, then
+         * shrinks down to the bar. A gain, or a new loss, takes the old trail away.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {number} pct The bar's share now, 0 to 1.
          */
-        trailHp() {
-            // The effects arrive with the animations.
+        trailHp(side, pct) {
+            const {ghost} = this.hp[side];
+            const state = this.hpTrail[side] || (this.hpTrail[side] = {pct, tween: null});
+            if (state.tween) {
+                state.tween.stop();
+                state.tween = null;
+            }
+            if (pct >= state.pct) {
+                state.pct = pct;
+                ghost.hidden = true;
+                return;
+            }
+            this.paintFill(ghost, state.pct, HP_TRAIL);
+            state.tween = this.scene.tweens.add({
+                targets: state,
+                pct,
+                delay: TRAIL_DELAY,
+                duration: TRAIL_DURATION,
+                ease: 'Quad.easeIn',
+                onUpdate: () => this.paintFill(ghost, state.pct, HP_TRAIL),
+                onComplete: () => {
+                    state.tween = null;
+                    ghost.hidden = true;
+                },
+            });
         }
 
         /**
-         * Remembers the HP a side shows, so the number that rises when it changes knows the difference. The first
-         * drawing only remembers: a fight resumed from a checkpoint opens with no number.
+         * Remembers the HP a side shows and lets a number rise for the difference when it changes. The first drawing
+         * only remembers: a fight resumed from a checkpoint opens with no number.
          *
          * @param {string} side 'player' or 'boss'.
          * @param {number} currentHp The HP now.
@@ -647,6 +931,7 @@ define([
         highlightDemoTarget(target) {
             const L = this.L;
             if (this.demoRing) {
+                this.demoRing.tween.stop();
                 this.demoRing.elements.forEach(element => element.remove());
                 this.demoRing = null;
             }
@@ -668,7 +953,20 @@ define([
                 ring.style.borderRadius = '50%';
                 elements.push(ring);
             }
-            this.demoRing = {elements, graphics: wrap(elements[0])};
+            const state = {alpha: 1};
+            const setAlpha = alpha => elements.forEach(element => {
+                element.style.opacity = String(alpha);
+            });
+            const tween = this.scene.tweens.add({
+                targets: state,
+                alpha: RING_FAINTEST,
+                duration: TURN_PULSE,
+                ease: 'Sine.easeInOut',
+                yoyo: true,
+                repeat: -1,
+                onUpdate: () => setAlpha(state.alpha),
+            });
+            this.demoRing = {elements, tween, graphics: {setAlpha}};
         }
 
         /**
@@ -903,6 +1201,19 @@ define([
             if (!this.turnFrame) {
                 this.turnFrame = make('div', 'pp-el pp-turn-frame', this.layers.middle);
                 this.turnFrame.style.setProperty('--pp-turn-gold', TURN_GOLD);
+                const pulse = {alpha: 1};
+                this.turnPulse = pulse;
+                this.scene.tweens.add({
+                    targets: pulse,
+                    alpha: TURN_FAINTEST,
+                    duration: TURN_PULSE,
+                    ease: 'Sine.easeInOut',
+                    yoyo: true,
+                    repeat: -1,
+                    onUpdate: () => {
+                        this.turnFrame.style.opacity = String(pulse.alpha);
+                    },
+                });
             }
             const x = side === 'player' ? L.playerUiX : L.bossUiX;
             const y = side === 'player' ? L.playerHpY : L.bossHpY;
@@ -969,6 +1280,7 @@ define([
         updateBossBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             this.trackHp('boss', currentHp);
+            this.trailHp('boss', Math.max(0, currentHp / maxHp));
             this.drawHpFill('boss', Math.max(0, currentHp / maxHp));
             // The opponent's own name leads the bar; a long one shrinks to fit the bar instead of running past its rim.
             const name = this.gameConfig.opponentname ? `${this.gameConfig.opponentname}:` : this.strings.hpboss;
@@ -1005,6 +1317,7 @@ define([
         updatePlayerBar(currentHp, maxHp, poisonMeter, poisonRounds, shieldMeter, shieldReady, mana, gold, multiplier) {
             const L = this.L;
             this.trackHp('player', currentHp);
+            this.trailHp('player', Math.max(0, currentHp / maxHp));
             this.drawHpFill('player', Math.max(0, currentHp / maxHp));
             this.hp.player.label.textContent = `${this.strings.hpyou} ${Math.round(currentHp)} / ${maxHp}`;
 

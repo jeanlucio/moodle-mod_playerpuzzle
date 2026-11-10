@@ -265,6 +265,34 @@ body.path-mod-playerpuzzle .pp-stage .pp-status-count {
     box-shadow: 0 0 0 0.5px #fff, inset 0 0 0 0.5px #fff;
 }
 
+body.path-mod-playerpuzzle .pp-stage .pp-character {
+    transform-origin: 50% 100%;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-filters {
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-spark {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 7;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-float {
+    z-index: 8;
+    font-family: Georgia, Cambria, "Times New Roman", serif;
+    font-weight: 700;
+    pointer-events: none;
+    paint-order: stroke fill;
+    -webkit-text-stroke: 5px #120d09;
+}
+
 body.path-mod-playerpuzzle .pp-stage .pp-turn-frame {
     pointer-events: none;
     box-shadow: 0 0 0 1.5px var(--pp-turn-gold), inset 0 0 0 1.5px var(--pp-turn-gold);
@@ -317,7 +345,7 @@ body.path-mod-playerpuzzle .pp-stage .pp-balloon {
     position: absolute;
     left: var(--x);
     top: var(--y);
-    z-index: 20;
+    z-index: 19;
     width: var(--w);
     box-sizing: border-box;
     padding: 10px 12px;

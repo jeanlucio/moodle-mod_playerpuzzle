@@ -21,8 +21,8 @@
 
 1. Open the activity to reach the **Lobby**: your progress (Campaign), the difficulty and the
    minimum-questions notice. The difficulty is a button: press it to step through Easy, Normal and
-   Hard (a line under it says what each changes). Once a phase is under way it is locked until the
-   next "Phase won" screen. In a Campaign, the Campaign button opens your **Campaign history**:
+   Hard (a line under it says what each changes). Once a phase is under way (a move, an
+   answer or an item used) it is locked until its "Phase won" screen; before that, you can still change it. In a Campaign, the Campaign button opens your **Campaign history**:
    a line for each Campaign with its hero, the phases won, the attempts used and its points.
 2. Use **Play Demo** for a guided practice fight that never counts for anything.
 3. Open the **Shop**, which shows your PuzzleCoin balance, to buy consumables before the match, and —

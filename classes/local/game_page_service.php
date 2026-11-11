@@ -423,6 +423,7 @@ class game_page_service {
      * @param bool $isdemo Whether this is a disposable Demo attempt.
      * @param moodle_url $returnurl URL to send the student back to when a gate rejects the attempt.
      * @param string $hero The hero a new Single Match or Demo is fought with, see build_game_config().
+     * @param string|null $chosendifficulty The difficulty picked in the Lobby for a resumed attempt, see build_game_config().
      * @return array JS game config for game_boot.js, see build_game_config().
      * @throws moodle_exception When a gate rejects the attempt, or another start of the same student
      *  does not finish in time.
@@ -436,7 +437,8 @@ class game_page_service {
         string $difficulty,
         bool $isdemo,
         moodle_url $returnurl,
-        string $hero = ''
+        string $hero = '',
+        ?string $chosendifficulty = null
     ): array {
         if ($isdemo) {
             self::check_has_questions($instance, $returnurl);
@@ -446,9 +448,29 @@ class game_page_service {
         $config = security::with_locked_attempt_start(
             $userid,
             (int) $instance->id,
-            function () use ($cm, $instance, $context, $userid, $ismobile, $difficulty, $returnurl, $hero): array {
+            function () use (
+                $cm,
+                $instance,
+                $context,
+                $userid,
+                $ismobile,
+                $difficulty,
+                $returnurl,
+                $hero,
+                $chosendifficulty
+            ): array {
                 self::check_can_start_attempt($instance, $userid, $returnurl);
-                return self::build_game_config($cm, $instance, $context, $userid, $ismobile, $difficulty, false, $hero);
+                return self::build_game_config(
+                    $cm,
+                    $instance,
+                    $context,
+                    $userid,
+                    $ismobile,
+                    $difficulty,
+                    false,
+                    $hero,
+                    $chosendifficulty
+                );
             }
         );
         if ($config === false) {
@@ -480,6 +502,8 @@ class game_page_service {
      *  coins, completion, or the attempt limit.
      * @param string $hero The hero a new Single Match or Demo is fought with (a key of heroes::CATALOG);
      *  a Campaign fights with the student's own, and a resumed attempt with the one it started with.
+     * @param string|null $chosendifficulty The difficulty the student picked in the Lobby for a resumed attempt whose
+     *  phase has not started (see security::phase_not_started()); null when the Lobby offered no choice.
      * @return array JS game config for game_boot.js.
      */
     public static function build_game_config(
@@ -490,7 +514,8 @@ class game_page_service {
         bool $ismobile,
         string $difficulty = 'normal',
         bool $isdemo = false,
-        string $hero = ''
+        string $hero = '',
+        ?string $chosendifficulty = null
     ): array {
         global $OUTPUT;
 
@@ -500,7 +525,8 @@ class game_page_service {
             $difficulty,
             (int) $instance->maxlevels,
             $isdemo,
-            $hero
+            $hero,
+            $chosendifficulty
         );
         $difficulty = $attemptinfo->difficulty;
 

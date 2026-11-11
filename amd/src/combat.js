@@ -1956,7 +1956,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         .replace('{$a->phase}', res.currentphase)
                         .replace('{$a->total}', total)
                 );
-                window.setTimeout(() => this.submitRestartForm(), 1600);
+                window.setTimeout(() => this.submitRestartForm(res.difficulty), 1600);
             };
 
             try {

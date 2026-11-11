@@ -31,7 +31,8 @@ each Campaign.
   that phase's opponent HP, rotates the token, and the student continues to the next phase. The same
   request cannot be replayed to skip several phases off one victory.
 * **Difficulty per phase:** the student picks a difficulty in the Lobby for the first phase and
-  again on each "Phase won" screen for the next one.
+  again on each "Phase won" screen for the next one. Leaving that screen does not close the choice: until
+  the next phase has a move, an answer or an item used in it, the Lobby still offers the difficulty button.
 * **Normal grows with the Campaign:** on Normal, the opponents hit harder the further into the Campaign
   the phase is, from their usual strength at the first phase to 60% more at the last, so the Campaign keeps
   pace with a hero that keeps growing. Easy and Hard do not change.

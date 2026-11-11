@@ -463,6 +463,99 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a phase nothing has happened in yet takes the difficulty the Lobby marked as a choice when the attempt is
+     * resumed: it sits between phases, or at the start of its first, and the student may still pick it.
+     *
+     * @return void
+     */
+    public function test_resume_applies_the_lobby_choice_to_an_untouched_phase(): void {
+        global $DB;
+
+        security::generate_attempt_token($this->playerpuzzleid, 2, 'normal');
+
+        $resumed = security::resume_or_create_attempt_token(
+            $this->playerpuzzleid,
+            2,
+            'hard',
+            10,
+            false,
+            '',
+            'hard'
+        );
+
+        $this->assertSame('hard', $resumed->difficulty);
+        $this->assertSame('hard', $DB->get_field('playerpuzzle_attempts', 'difficulty', ['id' => $resumed->attemptid]));
+    }
+
+    /**
+     * Tests that a difficulty sent without the Lobby's mark never changes a resumed attempt: the pages that reload the
+     * game after a win or a loss send the value too, and must not undo the choice the student made.
+     *
+     * @return void
+     */
+    public function test_resume_ignores_a_difficulty_the_lobby_did_not_mark_as_a_choice(): void {
+        security::generate_attempt_token($this->playerpuzzleid, 2, 'easy');
+
+        $resumed = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'hard', 10, false, '', null);
+
+        $this->assertSame('easy', $resumed->difficulty);
+    }
+
+    /**
+     * Tests that once the phase has an event in it (a move here) the difficulty is locked, whatever the Lobby sends.
+     *
+     * @return void
+     */
+    public function test_resume_keeps_the_difficulty_once_the_phase_has_started(): void {
+        global $DB;
+
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2, 'normal');
+        $DB->set_field('playerpuzzle_attempts', 'moveseq', 1, ['token' => $token]);
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'movelog',
+            json_encode([['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]]),
+            ['token' => $token]
+        );
+
+        $resumed = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'hard', 10, false, '', 'hard');
+
+        $this->assertSame('normal', $resumed->difficulty);
+    }
+
+    /**
+     * Tests every way a phase stops being untouched: a stored event, a question outcome, a consumable used, a restart,
+     * and the attempt being a Demo or no longer in progress. Each is undone before the next, so one cannot hide another.
+     *
+     * @return void
+     */
+    public function test_phase_not_started_is_false_as_soon_as_anything_happened_in_the_phase(): void {
+        global $DB;
+
+        $token = security::generate_attempt_token($this->playerpuzzleid, 2, 'normal');
+        $row = fn(): \stdClass => $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
+        $this->assertTrue(security::phase_not_started($row()));
+
+        $changes = [
+            'an event is stored' => ['moveseq', 3, 0],
+            'a move log is pending' => ['movelog', '[{"type":"move"}]', null],
+            'a question outcome is stored' => ['questionresults', '[{"side":"player","correct":true,"counted":true}]', null],
+            'the phase was restarted' => ['phaserestarts', 1, 0],
+            'the attempt is a Demo' => ['isdemo', 1, 0],
+            'the attempt is over' => ['status', 'lost', 'inprogress'],
+        ];
+        foreach ($changes as $why => [$field, $value, $back]) {
+            $DB->set_field('playerpuzzle_attempts', $field, $value, ['token' => $token]);
+            $this->assertFalse(security::phase_not_started($row()), $why);
+            $DB->set_field('playerpuzzle_attempts', $field, $back, ['token' => $token]);
+            $this->assertTrue(security::phase_not_started($row()), "after undoing: {$why}");
+        }
+
+        \mod_playerpuzzle\local\attempt_consumables::record_use((int) $row()->id, 'potion');
+        $this->assertFalse(security::phase_not_started($row()), 'a consumable was used');
+    }
+
+    /**
      * Tests that a Demo request never resumes a real in-progress attempt, and vice versa —
      * the two are entirely separate resume namespaces, so a lingering one never intercepts
      * the other.

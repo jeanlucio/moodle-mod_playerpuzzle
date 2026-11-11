@@ -28,6 +28,7 @@ use mod_playerpuzzle\local\campaigns;
 use mod_playerpuzzle\local\combat_state;
 use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\heroes;
+use mod_playerpuzzle\local\move_log;
 use mod_playerpuzzle\local\opponents;
 use mod_playerpuzzle\local\question_results;
 use mod_playerpuzzle\local\replay_credit;
@@ -51,6 +52,31 @@ class security {
      */
     public static function clean_difficulty(string $difficulty): string {
         return in_array($difficulty, self::DIFFICULTIES, true) ? $difficulty : 'normal';
+    }
+
+    /**
+     * Whether the attempt's current phase is still untouched: nothing was played, answered or used in it yet. An
+     * attempt in that state sits between phases (advance_phase just prepared the next one) or at the start of its first,
+     * and the student may still choose that phase's difficulty. Once any move, question outcome or consumable is
+     * recorded the difficulty is part of what the replay verifies, and it is locked.
+     *
+     * Opening the game and leaving does not count as playing it: the checkpoint sent when the page is left saves the
+     * board, but with no events. A restarted phase (its claimed victory could not be verified) is never untouched.
+     *
+     * @param \stdClass $attempt The attempt row, with its event log, question results and restart count.
+     * @return bool
+     */
+    public static function phase_not_started(\stdClass $attempt): bool {
+        global $DB;
+
+        if ($attempt->status !== 'inprogress' || !empty($attempt->isdemo)) {
+            return false;
+        }
+        return (int) $attempt->moveseq === 0
+            && move_log::decode($attempt->movelog) === []
+            && question_results::decode($attempt->questionresults) === []
+            && (int) $attempt->phaserestarts === 0
+            && !$DB->record_exists('playerpuzzle_attempt_consumables', ['attemptid' => $attempt->id]);
     }
 
     /**
@@ -302,6 +328,10 @@ class security {
      *  attempt, and vice versa — the two are entirely separate resume namespaces.
      * @param string $hero The hero a new Single Match or Demo is fought with; ignored when an attempt
      *  is resumed (it keeps the one it started with) and for a Campaign (the student's own hero).
+     * @param string|null $chosendifficulty The difficulty the student picked in the Lobby for the attempt being
+     *  resumed, or null when the Lobby offered no choice. Only applied when the attempt's phase is still untouched
+     *  (see phase_not_started(), checked under the attempt lock); anything else keeps the difficulty the phase was
+     *  entered at. A page that merely reloads the game never passes it.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned,
      *  ->combatstate, ->rngseed, ->moveseq, ->frozenbasebosshp, ->frozenbossdamage,
@@ -316,7 +346,8 @@ class security {
         string $difficulty = 'normal',
         int $maxlevels = 10,
         bool $isdemo = false,
-        string $hero = ''
+        string $hero = '',
+        ?string $chosendifficulty = null
     ): \stdClass {
         global $DB;
 
@@ -387,6 +418,29 @@ class security {
             // regardless.
             if (self::with_attempt_lock((int) $attempt->id, $rotate) === false) {
                 $rotate();
+            }
+
+            // The student's choice from the Lobby, for a phase nothing has happened in yet. Read again under the
+            // lock: a checkpoint beacon of the page just left may be writing events at this very moment, and a
+            // difficulty changed after the first event would no longer match what the replay verifies.
+            if ($chosendifficulty !== null && !$isdemo) {
+                $wanted = self::clean_difficulty($chosendifficulty);
+                if ($wanted !== self::clean_difficulty((string) $attempt->difficulty)) {
+                    $changed = self::with_attempt_lock(
+                        (int) $attempt->id,
+                        function () use ($DB, $attempt, $wanted): bool {
+                            $fresh = $DB->get_record('playerpuzzle_attempts', ['id' => $attempt->id], '*', MUST_EXIST);
+                            if (!self::phase_not_started($fresh)) {
+                                return false;
+                            }
+                            $DB->set_field('playerpuzzle_attempts', 'difficulty', $wanted, ['id' => $attempt->id]);
+                            return true;
+                        }
+                    );
+                    if ($changed === true) {
+                        $attempt->difficulty = $wanted;
+                    }
+                }
             }
 
             // A checkpoint with the boss already at 0 HP can only mean the phase was won and

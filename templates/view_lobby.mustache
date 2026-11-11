@@ -53,6 +53,7 @@
         "difficultydescription": "The standard fight.",
         "difficultylockedtext": "",
         "difficultycurrent": "",
+        "difficultyopennote": "",
         "speechenabled": false,
         "speechlabel": "Speak game announcements aloud",
         "demourl": "/mod/playerpuzzle/hero.php?id=1",
@@ -194,6 +195,7 @@
                         id="pp-lobby-difficulty-value"
                         value="{{difficultyvalue}}"
                     >
+                    <input type="hidden" name="difficultychoice" value="1" form="pp-lobby-playform">
                     {{/difficultychoicesjson}}
                     {{#difficultylockedtext}}
                     <span class="pp-lobby-chip">
@@ -212,6 +214,9 @@
                 {{#difficultycurrent}}
                 <p class="pp-lobby-note">{{difficultycurrent}}</p>
                 {{/difficultycurrent}}
+                {{#difficultyopennote}}
+                <p class="pp-lobby-note">{{difficultyopennote}}</p>
+                {{/difficultyopennote}}
 
                 {{#noquestions}}
                 <p class="pp-lobby-note" role="status">

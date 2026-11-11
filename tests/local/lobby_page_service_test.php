@@ -1104,13 +1104,19 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that with an attempt in progress the difficulty shows as a locked label, not a button.
+     * Tests that once the phase of an attempt in progress has started, the difficulty shows as a locked label, not a
+     * button.
      *
      * @return void
      */
-    public function test_the_lobby_locks_the_difficulty_while_an_attempt_is_in_progress(): void {
+    public function test_the_lobby_locks_the_difficulty_once_the_phase_has_started(): void {
         [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
-        \mod_playerpuzzle\local\engine\security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'hard');
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'hard'
+        );
+        $this->mark_phase_started($token);
 
         $html = $this->render_lobby(lobby_page_service::build_page_data(
             $cm,
@@ -1129,6 +1135,88 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the page of a phase nothing has happened in yet carries the difficulty button and the field that
+     * marks the value as a choice: without the mark the server keeps the difficulty the phase was entered at.
+     *
+     * @return void
+     */
+    public function test_the_lobby_renders_the_difficulty_button_and_the_choice_mark_for_an_untouched_phase(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'easy'
+        );
+
+        $html = $this->render_lobby(lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        ));
+
+        $this->assertStringContainsString('data-action="cycle-difficulty"', $html);
+        $this->assertStringContainsString('name="difficultychoice"', $html);
+        $this->assertStringNotContainsString('fa-lock', $html);
+        $this->assertStringContainsString(s(get_string('lobby_difficulty_open', 'mod_playerpuzzle')), $html);
+    }
+
+    /**
+     * Records a move in the attempt behind a token, so its phase counts as started (a fresh attempt is untouched, and
+     * the Lobby still lets the student choose the difficulty of an untouched phase).
+     *
+     * @param string $token The attempt's token.
+     * @return void
+     */
+    private function mark_phase_started(string $token): void {
+        global $DB;
+
+        $DB->set_field('playerpuzzle_attempts', 'moveseq', 1, ['token' => $token]);
+        $DB->set_field(
+            'playerpuzzle_attempts',
+            'movelog',
+            json_encode([['type' => 'move', 'r1' => 0, 'c1' => 0, 'r2' => 0, 'c2' => 1]]),
+            ['token' => $token]
+        );
+    }
+
+    /**
+     * Tests that an attempt whose phase nothing has happened in yet (it sits between phases, or at the start of its
+     * first) still gets the difficulty choice, with the attempt's own difficulty marked and a line saying why.
+     *
+     * @return void
+     */
+    public function test_build_page_data_keeps_the_difficulty_choice_open_for_an_untouched_phase(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+
+        \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'hard'
+        );
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertArrayNotHasKey('difficultylockedtext', $data);
+        $this->assertArrayNotHasKey('difficultycurrent', $data);
+        $this->assertArrayHasKey('difficultychoicesjson', $data);
+        $this->assertSame('hard', $data['difficultyvalue']);
+        $this->assertSame(
+            get_string('lobby_difficulty_selected', 'mod_playerpuzzle', get_string('difficulty_hard', 'mod_playerpuzzle')),
+            $data['difficultyselectedtext']
+        );
+        $this->assertSame(get_string('lobby_difficulty_desc_hard', 'mod_playerpuzzle'), $data['difficultydescription']);
+        $this->assertSame(get_string('lobby_difficulty_open', 'mod_playerpuzzle'), $data['difficultyopennote']);
+    }
+
+    /**
      * Tests that with an attempt in progress the Lobby shows a read-only line naming the
      * attempt's current difficulty (no picker) — the next choice is made on the
      * phase-complete screen, not here.
@@ -1138,11 +1226,12 @@ final class lobby_page_service_test extends \advanced_testcase {
     public function test_build_page_data_shows_current_difficulty_while_attempt_in_progress(): void {
         [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
 
-        \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
             (int) $instance->id,
             (int) $this->student->id,
             'hard'
         );
+        $this->mark_phase_started($token);
 
         $data = lobby_page_service::build_page_data(
             $cm,
@@ -1184,6 +1273,7 @@ final class lobby_page_service_test extends \advanced_testcase {
             (int) $this->student->id
         );
         $DB->set_field('playerpuzzle_attempts', 'difficulty', 'garbage', ['token' => $token]);
+        $this->mark_phase_started($token);
 
         $data = lobby_page_service::build_page_data(
             $cm,

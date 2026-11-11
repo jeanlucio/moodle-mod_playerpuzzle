@@ -27,6 +27,7 @@ namespace mod_playerpuzzle\local;
 use context_module;
 use core_useragent;
 use mod_playerpuzzle\local\engine\combat;
+use mod_playerpuzzle\local\engine\security;
 use moodle_url;
 use stdClass;
 
@@ -100,8 +101,8 @@ class lobby_page_service {
         }
 
         // The most recently started in-progress attempt, if any — shared by the progress and
-        // difficulty panels below. Resuming this attempt keeps its own locked difficulty, so
-        // the Lobby offers no difficulty choice while it exists.
+        // difficulty panels below. Resuming this attempt keeps its own difficulty once its phase has started, so
+        // the Lobby offers no difficulty choice then; a phase nothing has happened in yet still takes one.
         // Isolated from Demo attempts: a lingering in-progress Demo (abandoned mid-practice)
         // must never be mistaken here for a real attempt to resume, difficulty to report, or
         // progress to display — see security::resume_or_create_attempt_token()'s own isdemo
@@ -110,7 +111,8 @@ class lobby_page_service {
             'playerpuzzle_attempts',
             ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'status' => 'inprogress', 'isdemo' => 0],
             'timecreated DESC',
-            'id, currentlevel, currentphase, campaign, difficulty',
+            'id, currentlevel, currentphase, campaign, difficulty, status, isdemo, moveseq, movelog, questionresults, '
+                . 'phaserestarts',
             0,
             1
         );
@@ -431,21 +433,22 @@ class lobby_page_service {
     }
 
     /**
-     * Builds the difficulty button's context. With an attempt in progress, resuming keeps that
-     * attempt's current-phase difficulty (the next choice happens on the phase-complete
-     * screen, not here), so the button is locked and says so. With no attempt in progress, it steps
-     * through the difficulties and its value goes with the Play form, Normal first.
+     * Builds the difficulty button's context. With an attempt whose phase has started, resuming keeps that
+     * phase's difficulty (the next choice happens on the phase-complete screen, not here), so the button is locked
+     * and says so. With no attempt in progress, or one whose phase nothing has happened in yet (it sits between
+     * phases, or at the start of its first), the button steps through the difficulties and its value goes with the
+     * Play form: Normal first for a new attempt, the attempt's own difficulty for one being resumed.
      *
      * @param stdClass|null $attempt The most recent in-progress attempt, or null.
      * @return array
      */
     private static function build_difficulty_context(?stdClass $attempt): array {
         $options = playerpuzzle_get_difficulty_options();
+        $current = $attempt !== null && array_key_exists($attempt->difficulty, $options)
+            ? $attempt->difficulty
+            : constants::DIFFICULTY_NORMAL;
 
-        if ($attempt !== null) {
-            $current = array_key_exists($attempt->difficulty, $options)
-                ? $attempt->difficulty
-                : constants::DIFFICULTY_NORMAL;
+        if ($attempt !== null && !security::phase_not_started($attempt)) {
             return [
                 // The same button as the open choice, only locked, so the row looks alike either way.
                 'difficultylockedtext' => get_string('lobby_difficulty_selected', 'mod_playerpuzzle', $options[$current]),
@@ -467,19 +470,23 @@ class lobby_page_service {
                 'description' => get_string('lobby_difficulty_desc_' . $value, 'mod_playerpuzzle'),
             ];
         }
-        $selected = $options[constants::DIFFICULTY_NORMAL];
-        $normal = array_values(array_filter($choices, static fn(array $c): bool => $c['value'] === constants::DIFFICULTY_NORMAL));
+        $chosen = array_values(array_filter($choices, static fn(array $c): bool => $c['value'] === $current));
 
-        return [
+        $context = [
             'difficultylabel' => get_string('lobby_difficulty', 'mod_playerpuzzle'),
             'difficultyhelp' => get_string('lobby_difficulty_help', 'mod_playerpuzzle'),
-            'difficultyvalue' => constants::DIFFICULTY_NORMAL,
+            'difficultyvalue' => $current,
             'difficultychoicesjson' => json_encode($choices, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
             // What the button and the line under it say before the first press; lobby_settings.js keeps them in
             // step with the choice from then on.
-            'difficultyselectedtext' => get_string('lobby_difficulty_selected', 'mod_playerpuzzle', $selected),
-            'difficultydescription' => $normal[0]['description'],
+            'difficultyselectedtext' => $chosen[0]['text'],
+            'difficultydescription' => $chosen[0]['description'],
         ];
+        if ($attempt !== null) {
+            // Said only for an attempt being resumed: the student left a phase untouched and may still choose it.
+            $context['difficultyopennote'] = get_string('lobby_difficulty_open', 'mod_playerpuzzle');
+        }
+        return $context;
     }
 
     /**

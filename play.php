@@ -83,10 +83,12 @@ $PAGE->set_context($context);
 
 $ismobile = optional_param('mobile', 0, PARAM_INT) === 1;
 
-// Student's difficulty choice from the Lobby. Only used when a fresh attempt is created —
-// resuming an in-progress Campaign run keeps that run's own locked difficulty. Coerced to
+// Student's difficulty choice from the Lobby. Used when a fresh attempt is created. Resuming an attempt keeps its own
+// difficulty, except when the Lobby marked the value as a choice (difficultychoice) and the attempt's phase has not
+// started yet; the pages that reload the game after a win or a loss send the value without the mark. Coerced to
 // a known value inside security::clean_difficulty().
 $difficulty = optional_param('difficulty', constants::DIFFICULTY_NORMAL, PARAM_ALPHA);
+$chosendifficulty = optional_param('difficultychoice', 0, PARAM_INT) === 1 ? $difficulty : null;
 
 // Previously switched to a chromeless 'embedded' layout for mobile devices, opened in a new
 // tab by the Lobby's own form — removed because the game now always stays in the same window,
@@ -108,7 +110,8 @@ $jsconfig = \mod_playerpuzzle\local\game_page_service::start_game(
     $difficulty,
     $isdemo,
     $returnurl,
-    $hero
+    $hero,
+    $chosendifficulty
 );
 
 $PAGE->requires->js_call_amd('mod_playerpuzzle/game_boot', 'init', []);

@@ -18,7 +18,7 @@
  * to render it, log it, or send it anywhere.
  *
  * Every function here takes plain data (numbers, plain state objects) and returns plain data.
- * None of them touch `this.scene`, Phaser, jQuery, AJAX, sound, or the on-screen history log —
+ * None of them touch `this.scene`, the stage, jQuery, AJAX, sound, or the on-screen history log —
  * all of that stays in combat.js, which calls these functions and then handles presentation
  * with whatever they returned. Functions that update several fields at once (resolvePoisonMeters,
  * resolveShieldMeters, resolveMatchEffects, resolveConsumableEffect) take a plain state object,
@@ -27,7 +27,7 @@
  *
  * UMD-wrapped exactly like mod_playerpuzzle/engine/board_rules — the same file loads as an AMD
  * module in the browser and as a plain CommonJS module in Node, so
- * tests/js/engine/combat_rules.test.js can run this logic headless, no Phaser involved.
+ * tests/js/engine/combat_rules.test.js can run this logic headless, with no browser involved.
  *
  * @module     mod_playerpuzzle/engine/combat_rules
  * @copyright  2026 Jean Lúcio

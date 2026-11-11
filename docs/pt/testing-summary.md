@@ -19,9 +19,8 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `lib_supports_test.php` | 2 |
 | `lib_update_grades_test.php` | 7 |
 | `mod_form_test.php` | 21 |
-| `phaser_loading_test.php` | 2 |
 | `uninstall_test.php` | 2 |
-| **Subtotal** | **77** |
+| **Subtotal** | **75** |
 
 ### Testes de Conclusão (`tests/completion/`)
 
@@ -87,9 +86,9 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `ranking_service_test.php` | 9 |
 | `replay_credit_test.php` | 8 |
 | `report_service_test.php` | 19 |
-| `sound_preferences_test.php` | 7 |
+| `sound_preferences_test.php` | 8 |
 | `user_stock_test.php` | 10 |
-| **Subtotal** | **261** |
+| **Subtotal** | **262** |
 
 ### Testes do Motor de Combate (`tests/local/engine/`)
 
@@ -112,7 +111,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 36 |
 | **Subtotal** | **36** |
 
-| **Total Geral** | **724** |
+| **Total Geral** | **723** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
@@ -139,17 +138,37 @@ uma camada de teste JS própria.
 node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
 ```
 
+## JavaScript — Testes do Palco (`tests/js/stage/`)
+
+O pequeno motor que desenha o jogo com elementos HTML (tweens, relógio, carregamento de arquivos e som) e o
+contrato entre o jogo e o HUD, rodados sem navegador com `node --test`. Os vetores de tween e de relógio em
+`tests/fixtures/` foram amostrados no Phaser que o plugin trazia, então o tempo é o que os jogadores já conheciam.
+
+| Arquivo de teste | Casos |
+|------------------|------:|
+| `assets.test.js` | 8 |
+| `clock.test.js` | 14 |
+| `emoji.test.js` | 5 |
+| `hud_contract.test.js` | 2 |
+| `tween.test.js` | 20 |
+| **Subtotal** | **49** |
+
+```bash
+node --test tests/js/stage/*.test.js
+```
+
 ## Behat — Testes de Aceitação
 
 | Arquivo de feature | Cenários |
 |---------------------|---------:|
 | `mod_playerpuzzle_accessibility.feature` | 4 |
 | `mod_playerpuzzle_gameplay.feature` | 4 |
+| `mod_playerpuzzle_hero.feature` | 6 |
 | `mod_playerpuzzle_match.feature` | 3 |
 | `mod_playerpuzzle_ranking.feature` | 3 |
 | `mod_playerpuzzle_settings.feature` | 1 |
-| `mod_playerpuzzle_smoke.feature` | 1 |
-| **Subtotal** | **16** |
+| `mod_playerpuzzle_smoke.feature` | 2 |
+| **Subtotal** | **23** |
 
 ```bash
 php admin/tool/behat/cli/init.php

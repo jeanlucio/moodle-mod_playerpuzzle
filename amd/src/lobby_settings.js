@@ -32,7 +32,7 @@ const CHANNELS_BY_ID = {
 };
 
 /**
- * Persists an audio preference, fire-and-forget — mirrors ui.js's own saveSoundPreference()
+ * Persists an audio preference, fire-and-forget — mirrors hud.js's own saveSoundPreference()
  * for the in-game Music/Sound Effects badges: the checkbox has already changed state by the
  * time this runs, so nothing in the UI waits on the round trip, and a failure (network blip)
  * is silently ignored — worst case, the preference simply does not survive a reload.

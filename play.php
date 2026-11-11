@@ -91,7 +91,7 @@ $difficulty = optional_param('difficulty', constants::DIFFICULTY_NORMAL, PARAM_A
 // Previously switched to a chromeless 'embedded' layout for mobile devices, opened in a new
 // tab by the Lobby's own form — removed because the game now always stays in the same window,
 // in the normal course layout, using the same Expand/Collapse fullscreen toggle as desktop
-// (see ui.js::setupButtons()) instead of a device-specific windowing trick.
+// (see hud.js::setupButtons()) instead of a device-specific windowing trick.
 // $ismobile is still passed into the JS game config below —
 // it now only drives a CSS sizing tweak for the question modal's answer buttons.
 $PAGE->set_pagelayout('incourse');
@@ -111,9 +111,6 @@ $jsconfig = \mod_playerpuzzle\local\game_page_service::start_game(
     $hero
 );
 
-// Phaser itself is loaded dynamically from inside game_boot.js (mirrors
-// filter_mathjaxloader's loadMathJax()), not queued here as a static <script> — see the
-// loadPhaser() comment in amd/src/game_boot.js for why.
 $PAGE->requires->js_call_amd('mod_playerpuzzle/game_boot', 'init', []);
 
 $templatedata = [

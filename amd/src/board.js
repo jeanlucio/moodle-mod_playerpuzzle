@@ -22,8 +22,8 @@
  */
 
 define([
-    'mod_playerpuzzle/accessibility', 'mod_playerpuzzle/depth', 'mod_playerpuzzle/engine/board_rules'
-], (Accessibility, Depth, BoardRules) => {
+    'mod_playerpuzzle/accessibility', 'mod_playerpuzzle/board_view', 'mod_playerpuzzle/engine/board_rules'
+], (Accessibility, BoardView, BoardRules) => {
     'use strict';
 
     // Maps a piece's numeric type (0-6) to the lang string key holding its accessible
@@ -33,11 +33,6 @@ define([
         'piece_shield', 'piece_potion', 'piece_coin'
     ];
 
-    // The board frame's bronze, the same tones as the panels' carved inlay and the HP bars' rim.
-    const BRONZE = 0x9c6b2e;
-    const BRONZE_LIGHT = 0xd9a653;
-    const BRONZE_SHADOW = 0x2a1b0c;
-
     class BoardHandler {
         constructor(scene, layout, strings) {
             this.scene = scene;
@@ -46,9 +41,6 @@ define([
 
             this.rows = 8;
             this.cols = 8;
-            this.pieceSize = 55;
-            this.offsetX = layout.boardOffX;
-            this.offsetY = layout.boardOffY;
 
             this.grid = [];
             this.selectedPiece = null;
@@ -61,11 +53,14 @@ define([
 
             this.a11yCells = null;
 
-            this.drawBackground();
+            this.view = new BoardView(scene, layout, {
+                onPress: (piece, point) => this.startSwipe(piece, point),
+                onRelease: point => this.endSwipe(point),
+                isPlayersTurn: () => this.scene.combat.currentTurn === 'player',
+            }, this.rows, this.cols);
             this.buildAccessibleGrid();
             this.initGrid();
             this.syncAccessibleGrid();
-            this.setupInputs();
 
             // Moves real keyboard focus straight to the accessible board the moment it loads,
             // rather than leaving a keyboard/screen-reader user to tab past the rest of the
@@ -111,81 +106,6 @@ define([
             }
         }
 
-        drawBackground() {
-            const graphics = this.scene.add.graphics().setDepth(Depth.MIDDLE_SHAPES);
-            const gridWidth = this.cols * this.pieceSize;
-            const gridHeight = this.rows * this.pieceSize;
-            const rx = this.offsetX - (this.pieceSize / 2);
-            const ry = this.offsetY - (this.pieceSize / 2);
-            const overlap = this.L.panelOverlap || 0;
-
-            // Soft shadow halo behind the board — a few expanding, fading rects standing in
-            // for a blur (Phaser Graphics has no native blur filter) — helps the board read as
-            // its own object in front of the side panels now that panel_stone.png is a busy,
-            // similarly dark texture there, instead of the flat contrast a plain dark panel
-            // background gave for free.
-            for (let i = 4; i >= 1; i--) {
-                graphics.fillStyle(0x000000, 0.08 * i).fillRect(
-                    rx - (i * 3), ry - (i * 3), gridWidth + (i * 6), gridHeight + (i * 6) + overlap
-                );
-            }
-
-            // The offsetY passed in (boardOffY) is already shifted up by panelOverlap at the
-            // source, in game_boot.js — the grid itself rises into the stage band above, not
-            // just a decorative strip glued on top of it, so real pieces sit in the overlap
-            // and the border/grid lines below trace their true position with no extra math
-            // here. The fill extends panelOverlap further down past the grid's real bottom
-            // edge, so the gap that shift opens up before the true panel/canvas bottom (720)
-            // stays covered instead of showing bare canvas. Alpha bumped from the original
-            // 0.85 to 0.95: at 0.85, the pieces now sitting in the overlap read against the
-            // bright stage_bg image behind them, and enough of it bled through the gaps
-            // between pieces to look like a brown stripe instead of a solid platform. Warm
-            // dark brown (was pure black) — ties the board into the same leather/stone palette
-            // as panel_stone.png instead of reading as a flat black cutout, while staying dark
-            // enough for the piece icons' own colors to keep full contrast.
-            graphics.fillStyle(0x2b1f16, 0.95).fillRect(rx, ry, gridWidth, gridHeight + overlap);
-            // A bronze frame around the board, drawn over the panels' inner edge (the board's depth is above
-            // the panel art's) so it reads as a raised plate between them. It closes under the grid with
-            // a bar as thick as the top one, ending just above the canvas bottom, where the fill above
-            // goes on for the last few pixels. Each band lies between two distances from the grid's
-            // edge; the later bands sit on the earlier ones. The light band is the lit edge, so it
-            // covers the top and the sides down to the grid's bottom and leaves the bottom bar dark.
-            const band = (from, to, color, lit = false) => {
-                const height = gridHeight + (lit ? to : 2 * to);
-                graphics.fillStyle(color, 1);
-                graphics.fillRect(rx - to, ry - to, gridWidth + (2 * to), to - from);
-                graphics.fillRect(rx - to, ry - to, to - from, height);
-                graphics.fillRect(rx + gridWidth + from, ry - to, to - from, height);
-                if (!lit) {
-                    graphics.fillRect(rx - to, ry + gridHeight + from, gridWidth + (2 * to), to - from);
-                }
-            };
-            band(0, 9, BRONZE_SHADOW);
-            band(1, 8, BRONZE);
-            band(1, 3, BRONZE_LIGHT, true);
-            band(7, 8, BRONZE_SHADOW);
-            // A rivet at each corner, the bottom pair mirroring the top one.
-            [ry - 4, ry + gridHeight + 4].forEach((studY, row) => {
-                [rx - 4, rx + gridWidth + 4].forEach(studX => {
-                    const shine = row === 0 ? 1 : -1;
-                    graphics.fillStyle(BRONZE_SHADOW, 1).fillCircle(studX, studY, 6);
-                    graphics.fillStyle(BRONZE_LIGHT, 1).fillCircle(studX, studY, 4);
-                    graphics.fillStyle(BRONZE, 1).fillCircle(studX + 1, studY + shine, 2);
-                });
-            });
-            graphics.lineStyle(6, 0x111111, 1).strokeRect(rx, ry, gridWidth, gridHeight);
-            graphics.lineStyle(2, 0x333333, 0.4);
-            graphics.beginPath();
-
-            for (let i = 1; i < this.rows; i++) {
-                graphics.moveTo(rx, ry + (i * this.pieceSize));
-                graphics.lineTo(rx + gridWidth, ry + (i * this.pieceSize));
-                graphics.moveTo(rx + (i * this.pieceSize), ry);
-                graphics.lineTo(rx + (i * this.pieceSize), ry + gridHeight);
-            }
-            graphics.strokePath();
-        }
-
         initGrid() {
             const me = this.scene;
             // A resumed fight reuses its exact piece types (the server's rebuilt board, or the
@@ -205,26 +125,17 @@ define([
                         continue;
                     }
 
-                    const x = this.offsetX + (col * this.pieceSize);
-                    const y = this.offsetY + (row * this.pieceSize);
-
-                    const piece = me.add.image(x, y, `item${randomType}`).setDepth(Depth.MIDDLE_IMAGES);
-                    piece.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
-                    piece.type = randomType;
-                    piece.row = row;
-                    piece.col = col;
-                    piece.setInteractive();
-
-                    piece.on('pointerdown', this.startSwipe.bind(this, piece));
+                    const piece = {type: randomType, row, col};
+                    this.view.add(piece);
                     this.grid[row][col] = piece;
                 }
             }
         }
 
         /**
-         * Builds a plain rows x cols array of piece types from the current Phaser grid — the
+         * Builds a plain rows x cols array of piece types from the current grid of pieces — the
          * shape every mod_playerpuzzle/engine/board_rules function expects, since it never
-         * touches Phaser objects. A destroyed-but-not-yet-refilled cell (null in this.grid
+         * touches the pieces themselves. A destroyed-but-not-yet-refilled cell (null in this.grid
          * mid-cascade) stays null in the extracted grid too.
          *
          * @return {Array} The extracted types grid.
@@ -317,6 +228,12 @@ define([
          * @return {void}
          */
         handleGridKeydown(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.selectFromKeyboard(event.currentTarget);
+                return;
+            }
+
             if (event.key === ' ') {
                 event.preventDefault();
                 // Same gate as executeAnnouncedMove(): outside the player's own turn the move
@@ -401,97 +318,63 @@ define([
             }
         }
 
-        setupInputs() {
-            // Phaser's own touch.capture is off (game_boot.js) so this is the only place that
-            // blocks the browser's default touch handling — and only for a touch that starts
-            // on an actual board piece, so scrolling still works everywhere else on the canvas
-            // (HUD, panels, margins). Added directly on the canvas element, not through
-            // Phaser's input plugin, specifically so it stays non-passive and preventDefault()
-            // has any effect.
-            this.scene.game.canvas.addEventListener(
-                'touchstart', event => this.maybeBlockScroll(event), {passive: false}
-            );
+        /**
+         * The pointer was released: a short press is a click on the pressed piece, and a longer drag past a
+         * threshold is a swipe that swaps it with the neighbour in that direction. The coordinates are in the
+         * layout's own space, which the stage scales to the page, so the threshold
+         * means the same whatever the size of the page.
+         *
+         * @param {{x: number, y: number}} point Where the pointer was released.
+         */
+        endSwipe(point) {
+            if (this.scene.combat.currentTurn !== 'player' || this.swipePiece === null) {
+                return;
+            }
 
-            this.scene.input.on('pointerup', pointer => {
-                if (this.scene.combat.currentTurn !== 'player' || this.swipePiece === null) {
-                    return;
-                }
+            this.view.tint(this.swipePiece, null);
+            const dx = point.x - this.startX;
+            const dy = point.y - this.startY;
+            const threshold = 20;
 
-                this.swipePiece.clearTint();
-                // Uses worldX/worldY, not the raw x/y: those are canvas-backing-store pixels,
-                // which the camera zoom (see game_boot.js SUPERSAMPLE) no longer maps 1:1 to
-                // this board's own 1280x720-space coordinates. worldX/worldY already divide
-                // that zoom back out, keeping the threshold below meaningful regardless of it.
-                const dx = pointer.worldX - this.startX;
-                const dy = pointer.worldY - this.startY;
-                const threshold = 20;
-
-                if (Math.abs(dx) <= threshold && Math.abs(dy) <= threshold) {
-                    this.handleClick(this.swipePiece);
-                    this.swipePiece = null;
-                    return;
-                }
-
-                let tRow = this.swipePiece.row;
-                let tCol = this.swipePiece.col;
-
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    tCol += (dx > 0) ? 1 : -1;
-                } else {
-                    tRow += (dy > 0) ? 1 : -1;
-                }
-
-                if (tRow >= 0 && tRow < this.rows && tCol >= 0 && tCol < this.cols) {
-                    const target = this.grid[tRow][tCol];
-                    if (target) {
-                        this.swapPieces(this.swipePiece, target);
-                    }
-                }
+            if (Math.abs(dx) <= threshold && Math.abs(dy) <= threshold) {
+                this.handleClick(this.swipePiece);
                 this.swipePiece = null;
-            });
+                return;
+            }
+
+            let tRow = this.swipePiece.row;
+            let tCol = this.swipePiece.col;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                tCol += (dx > 0) ? 1 : -1;
+            } else {
+                tRow += (dy > 0) ? 1 : -1;
+            }
+
+            if (tRow >= 0 && tRow < this.rows && tCol >= 0 && tCol < this.cols) {
+                const target = this.grid[tRow][tCol];
+                if (target) {
+                    this.swapPieces(this.swipePiece, target);
+                }
+            }
+            this.swipePiece = null;
         }
 
-        startSwipe(piece, pointer) {
+        /**
+         * A piece was pressed: remembers where, to tell a click from a swipe when the pointer is released.
+         *
+         * @param {{type: number, row: number, col: number}} piece The pressed piece.
+         * @param {{x: number, y: number}} point Where it was pressed.
+         */
+        startSwipe(piece, point) {
             if (this.scene.combat.currentTurn !== 'player') {
                 return;
             }
             this.resetHint();
             this.swipePiece = piece;
-            this.startX = pointer.worldX;
-            this.startY = pointer.worldY;
-            piece.setTint(0xdddddd);
-        }
-
-        /**
-         * Cancels the browser's default touch handling (scroll, pinch-zoom) only when a touch
-         * starts inside the board's own screen rectangle — anywhere else on the canvas keeps
-         * native scrolling (see setupInputs()'s own comment for why this listener exists at
-         * the DOM level instead of through Phaser). Reimplements the canvas' real-to-logical
-         * pixel conversion directly from its bounding rect rather than going through Phaser's
-         * pointer system, since this fires on the raw touchstart, before Phaser has processed
-         * it into a Pointer object.
-         *
-         * @param {TouchEvent} event Native touchstart event from the canvas element.
-         */
-        maybeBlockScroll(event) {
-            if (this.scene.combat.currentTurn !== 'player' || event.touches.length !== 1) {
-                return;
-            }
-
-            const rect = this.scene.game.canvas.getBoundingClientRect();
-            const touch = event.touches[0];
-            const scale = this.L.w / rect.width;
-            const lx = (touch.clientX - rect.x) * scale;
-            const ly = (touch.clientY - rect.y) * scale;
-
-            const left = this.offsetX - (this.pieceSize / 2);
-            const top = this.offsetY - (this.pieceSize / 2);
-            const width = this.cols * this.pieceSize;
-            const height = this.rows * this.pieceSize;
-
-            if (lx >= left && lx <= left + width && ly >= top && ly <= top + height) {
-                event.preventDefault();
-            }
+            this.startX = point.x;
+            this.startY = point.y;
+            this.view.tint(piece, 0xdddddd);
         }
 
         handleClick(clickedPiece) {
@@ -501,12 +384,12 @@ define([
 
             if (this.selectedPiece === null) {
                 this.selectedPiece = clickedPiece;
-                clickedPiece.setTint(0xaaaaaa);
+                this.view.tint(clickedPiece, 0xaaaaaa);
             } else {
                 const p1 = this.selectedPiece;
                 const p2 = clickedPiece;
 
-                p1.clearTint();
+                this.view.tint(p1, null);
                 this.selectedPiece = null;
 
                 const isAdjacent = Math.abs(p1.row - p2.row) + Math.abs(p1.col - p2.col) === 1;
@@ -514,9 +397,69 @@ define([
                     this.swapPieces(p1, p2);
                 } else if (p1 !== p2) {
                     this.selectedPiece = p2;
-                    p2.setTint(0xaaaaaa);
+                    this.view.tint(p2, 0xaaaaaa);
                 }
             }
+            this.syncSelectionState();
+        }
+
+        /**
+         * Enter on a cell of the accessible grid does what a click on the piece does: the first one selects it, and
+         * Enter on a neighbouring cell swaps the two. What happened is announced, since nothing else tells a screen
+         * reader user that a piece is selected, or that the selection was dropped.
+         *
+         * @param {HTMLElement} cell The focused cell.
+         * @return {void}
+         */
+        selectFromKeyboard(cell) {
+            if (this.scene.combat.currentTurn !== 'player' || !this.scene.input.enabled) {
+                return;
+            }
+            const row = parseInt(cell.dataset.row, 10);
+            const col = parseInt(cell.dataset.col, 10);
+            const piece = this.grid[row][col];
+            if (!piece) {
+                return;
+            }
+
+            const previous = this.selectedPiece;
+            const swaps = previous !== null && Math.abs(previous.row - piece.row) + Math.abs(previous.col - piece.col) === 1;
+            this.resetHint();
+            this.handleClick(piece);
+
+            if (this.selectedPiece !== null) {
+                const name = this.strings[PIECE_NAME_KEYS[this.selectedPiece.type]];
+                Accessibility.announce(
+                    this.strings.pieceselected
+                        .replace('{$a->piece}', name)
+                        .replace('{$a->row}', String(this.selectedPiece.row + 1))
+                        .replace('{$a->col}', String(this.selectedPiece.col + 1))
+                );
+            } else if (previous !== null && !swaps) {
+                // Dropped by Enter on the same piece; a swap announces itself through the match it makes.
+                Accessibility.announce(this.strings.selectioncleared);
+            }
+        }
+
+        /**
+         * Marks the selected piece's cell in the accessible grid (aria-selected), so a screen reader can tell it from
+         * the others whichever way it was selected, by the pointer or by the keyboard.
+         *
+         * @return {void}
+         */
+        syncSelectionState() {
+            if (!this.a11yCells) {
+                return;
+            }
+            const selected = this.selectedPiece;
+            this.a11yCells.forEach((cells, row) => cells.forEach((cell, col) => {
+                const isSelected = selected !== null && selected.row === row && selected.col === col;
+                if (isSelected) {
+                    cell.setAttribute('aria-selected', 'true');
+                } else {
+                    cell.removeAttribute('aria-selected');
+                }
+            }));
         }
 
         swapPieces(piece1, piece2, isRevert) {
@@ -528,8 +471,8 @@ define([
             const tempCol = piece1.col;
 
             // A plain array-position swap works the same whether the grid holds piece types
-            // (mod_playerpuzzle/engine/board_rules' own tests) or the real Phaser objects it
-            // holds here — swapInGrid() never inspects what it is moving.
+            // (mod_playerpuzzle/engine/board_rules' own tests) or the pieces it holds here —
+            // swapInGrid() never inspects what it is moving.
             BoardRules.swapInGrid(this.grid, piece1.row, piece1.col, piece2.row, piece2.col);
 
             piece1.row = piece2.row;
@@ -543,17 +486,13 @@ define([
                 this.lastSwap = null;
             }
 
-            me.tweens.add({targets: piece1, x: piece2.x, y: piece2.y, duration: 200});
-            me.tweens.add({
-                targets: piece2, x: piece1.x, y: piece1.y, duration: 200,
-                onComplete: () => {
-                    if (!isRevert) {
-                        this.checkMatches();
-                    } else {
-                        this.syncAccessibleGrid();
-                        me.input.enabled = true;
-                        this.resetHint();
-                    }
+            this.view.swap(piece1, piece2, () => {
+                if (!isRevert) {
+                    this.checkMatches();
+                } else {
+                    this.syncAccessibleGrid();
+                    me.input.enabled = true;
+                    this.resetHint();
                 }
             });
         }
@@ -562,7 +501,7 @@ define([
          * Runs both match scans against the current board, returning the same {toDestroy,
          * matchGroups} shape checkMatches() and shuffle()'s own retry condition both need.
          * Coordinates only (as mod_playerpuzzle/engine/board_rules always returns) — mapping
-         * a coordinate back to the real Phaser piece it names is the caller's job.
+         * a coordinate back to the piece it names is the caller's job.
          *
          * @return {{toDestroy: Array, matchGroups: Array}}
          */
@@ -662,7 +601,7 @@ define([
         /**
          * Executes the Nth move from the list last posted by announceTurnStart(), so a keyboard
          * user can act on what was just read out loud without needing precise pointer control
-         * over the (visually-hidden, for this purpose) canvas board. A no-op outside the
+         * over the board drawn on the stage. A no-op outside the
          * player's own turn, once input is disabled mid-swap, or when the index is out of range
          * (e.g. the player pressed a digit higher than the announced move count).
          *
@@ -688,9 +627,7 @@ define([
         resetHint() {
             this.lastActionTime = this.scene.time.now;
             if (this.hintPiece) {
-                this.scene.tweens.killTweensOf([this.hintPiece.p1, this.hintPiece.p2]);
-                this.hintPiece.p1.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
-                this.hintPiece.p2.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
+                this.view.stopHint();
                 this.hintPiece = null;
             }
         }
@@ -704,34 +641,25 @@ define([
                 const hintMove = this.findMove();
                 if (hintMove) {
                     this.hintPiece = hintMove;
-                    this.scene.tweens.add({
-                        targets: [hintMove.p1, hintMove.p2],
-                        displayWidth: this.pieceSize + 6,
-                        displayHeight: this.pieceSize + 6,
-                        yoyo: true, repeat: -1, duration: 400
-                    });
+                    this.view.startHint(hintMove.p1, hintMove.p2);
                 }
             }
         }
 
         shuffle() {
             const me = this.scene;
-            const notice = me.add.text(this.L.w / 2, this.L.h / 2, this.strings.shuffling, {
-                fontSize: '32px', fill: '#ffffff', backgroundColor: '#000000',
-                align: 'center', fontStyle: 'bold', padding: {x: 20, y: 20}
-            }).setOrigin(0.5).setDepth(100);
+            const notice = this.view.notice(this.strings.shuffling);
 
-            // Retries entirely on a plain types grid (never touching the real Phaser pieces
-            // until a valid arrangement is found) — the pure retry loop itself moved to
-            // engine/board_rules.js::shuffleUntilValid(), which a future server-side replay
-            // reproduces against the same rng draws to arrive at the same arrangement.
+            // Retries entirely on a plain types grid (never touching the pieces until a valid arrangement is
+            // found) — the pure retry loop is engine/board_rules.js::shuffleUntilValid(), which the server-side
+            // replay reproduces against the same rng draws to arrive at the same arrangement.
             const types = this.extractTypesGrid();
             BoardRules.shuffleUntilValid(types, this.rows, this.cols, me.combat.rng);
 
             for (let r = 0; r < this.rows; r++) {
                 for (let c = 0; c < this.cols; c++) {
                     this.grid[r][c].type = types[r][c];
-                    this.grid[r][c].setTexture(`item${types[r][c]}`);
+                    this.view.retype(this.grid[r][c]);
                 }
             }
 
@@ -739,11 +667,7 @@ define([
 
             for (let r3 = 0; r3 < this.rows; r3++) {
                 for (let c3 = 0; c3 < this.cols; c3++) {
-                    const shufflePiece = this.grid[r3][c3];
-                    shufflePiece.alpha = 0;
-                    me.tweens.add({
-                        targets: shufflePiece, alpha: 1, duration: 500, delay: Math.random() * 400
-                    });
+                    this.view.fadeIn(this.grid[r3][c3], 500, Math.random() * 400);
                 }
             }
 
@@ -762,42 +686,22 @@ define([
         applyGravity() {
             const me = this.scene;
 
-            // Runs directly on the real Phaser grid, not an extracted types grid: the
-            // "fall" pass only ever moves existing references and checks null, never
-            // compares piece identity/type, so it works unchanged on real objects. The
-            // "spawn" pass writes a raw type number into each newly-emptied cell as a
-            // placeholder — replaced with the real Phaser image in the loop right below,
-            // before anything else reads this.grid again.
+            // Runs directly on the grid of pieces, not an extracted types grid: the "fall" pass only ever moves
+            // existing references and checks null, never compares piece identity/type, so it works unchanged on
+            // pieces. The "spawn" pass writes a raw type number into each newly-emptied cell as a placeholder —
+            // replaced with the real piece in the loop right below, before anything else reads this.grid again.
             const result = BoardRules.applyGravityToGrid(this.grid, this.rows, this.cols, me.combat.rng);
 
             for (const {toRow, col} of result.fell) {
                 const falling = this.grid[toRow][col];
                 falling.row = toRow;
-                me.tweens.add({
-                    targets: falling,
-                    y: this.offsetY + (toRow * this.pieceSize),
-                    duration: 250, ease: 'Quad.easeIn'
-                });
+                this.view.fall(falling);
             }
 
             for (const {row, col, type} of result.spawned) {
-                const x = this.offsetX + (col * this.pieceSize);
-                const yStart = this.offsetY - (this.pieceSize * (this.rows - row));
-                const yEnd = this.offsetY + (row * this.pieceSize);
-
-                const piece = me.add.image(x, yStart, `item${type}`).setDepth(Depth.MIDDLE_IMAGES);
-                piece.setDisplaySize(this.pieceSize - 4, this.pieceSize - 4);
-                piece.type = type;
-                piece.row = row;
-                piece.col = col;
-
-                piece.setInteractive();
-                piece.on('pointerdown', this.startSwipe.bind(this, piece));
-
+                const piece = {type, row, col};
                 this.grid[row][col] = piece;
-                me.tweens.add({
-                    targets: piece, y: yEnd, duration: 400, ease: 'Bounce.easeOut'
-                });
+                this.view.spawn(piece);
             }
 
             me.time.delayedCall(500, this.checkMatches, [], this);
@@ -850,10 +754,8 @@ define([
             }
             this.lastSwap = null;
 
-            // Combat.js still works with real Phaser pieces (it destroys them, tweens them,
-            // reads .row/.col off them) — mapping findMatches()'s coordinates back to the
-            // pieces they name here keeps that contract unchanged. Combat's own turn to move
-            // off Phaser objects is a later phase of this same refactor, not this one.
+            // Combat works with the pieces themselves (it takes them off the board and reads .row, .col and
+            // .type off them), so findMatches()'s coordinates are mapped back to the pieces they name here.
             const destroyedPieces = toDestroy.map(cell => this.grid[cell.row][cell.col]);
             const pieceMatchGroups = matchGroups.map(group => ({
                 type: group.type,

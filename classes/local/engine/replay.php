@@ -372,7 +372,7 @@ class replay {
      * Resolves one swap's full cascade (destroy -> gravity -> re-check, repeated until no
      * match remains), applying damage and consuming the question the simulation itself
      * determines was triggered along the way — mirrors board.js::checkMatches()'s own
-     * recursive settle loop, run synchronously instead of through Phaser's delayed calls.
+     * recursive settle loop, run synchronously instead of through the stage's delayed calls.
      *
      * @param array $grid The board grid (mutated in place).
      * @param \Closure $rng The phase's seeded PRNG (mutated in place via its own closure state).
@@ -414,7 +414,7 @@ class replay {
 
             // Note: combat_engine::resolve_match_effects() wants each group's piece COUNT
             // (['type', 'size']), not board_engine's own ['type', 'cells'] shape — the same
-            // reshape board.js does when it maps board_rules groups onto real Phaser pieces
+            // reshape board.js does when it maps board_rules groups onto the real pieces
             // before calling combat_rules with {type, size: pieces.length}.
             $sizedgroups = array_map(
                 static fn(array $group): array => ['type' => $group['type'], 'size' => count($group['cells'])],

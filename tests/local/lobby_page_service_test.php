@@ -196,12 +196,13 @@ final class lobby_page_service_test extends \advanced_testcase {
             (int) $this->student->id,
             $context
         );
-        $this->assertTrue($data['musicenabled']);
+        // A student who never chose has the music off and the effects on.
+        $this->assertFalse($data['musicenabled']);
         $this->assertSame(get_string('lobby_music_label', 'mod_playerpuzzle'), $data['musiclabel']);
         $this->assertTrue($data['sfxenabled']);
         $this->assertSame(get_string('lobby_sfx_label', 'mod_playerpuzzle'), $data['sfxlabel']);
 
-        sound_preferences::set_enabled('music', false, (int) $this->student->id);
+        sound_preferences::set_enabled('music', true, (int) $this->student->id);
         sound_preferences::set_enabled('sfx', false, (int) $this->student->id);
         $data = lobby_page_service::build_page_data(
             $cm,
@@ -210,7 +211,7 @@ final class lobby_page_service_test extends \advanced_testcase {
             (int) $this->student->id,
             $context
         );
-        $this->assertFalse($data['musicenabled']);
+        $this->assertTrue($data['musicenabled']);
         $this->assertFalse($data['sfxenabled']);
     }
 

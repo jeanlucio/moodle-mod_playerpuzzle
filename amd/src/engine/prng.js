@@ -27,7 +27,7 @@
  *
  * UMD-wrapped exactly like the other engine modules — the same file loads as an AMD module in
  * the browser and as a plain CommonJS module in Node, so it can run headless (e.g. to generate
- * golden vectors for a PHP port to match against), no Phaser or browser involved.
+ * golden vectors for a PHP port to match against), no browser involved.
  *
  * @module     mod_playerpuzzle/engine/prng
  * @copyright  2026 Jean Lúcio

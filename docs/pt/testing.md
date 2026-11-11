@@ -19,9 +19,8 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `lib_supports_test.php` | 2 | `playerpuzzle_supports()` retorna o valor declarado pra toda funcionalidade conhecida e `null` pra uma não reconhecida — a mesma chamada também fataria se algum constante referenciado fosse usado incondicionalmente, então isso também serve de guarda pra `FEATURE_MOD_OTHERPURPOSE`, só checada quando de fato definida (Moodle 5.1+) |
 | `lib_update_grades_test.php` | 7 | Limpa a nota obsoleta de um estudante específico assim que sua última tentativa é removida; ignora tentativas de Demo; recalcula a partir do progresso restante mais distante quando outras tentativas ainda existem; recalcula a nota de todo mundo quando `$userid = 0`; a data de envio é informada com cada nota, e mudar o método de avaliação ou o número de níveis recalcula as notas já registradas |
 | `mod_form_test.php` | 21 | A seção do PlayerHUD aparece/some conforme a presença do bloco no curso e preserva um item configurado obsoleto como opção selecionável; `gamemode` tem padrão Campanha; os campos exclusivos de Campanha (`maxlevels`, `maxattempts`) e os exclusivos de Partida Única (`max_single_matches`, `grademethod`) registram o `hideIf` certo nos dois sentidos; `minquestions` tem padrão 3; `considererrors` desativa quando `minquestions` é 0; os campos de quantidade de custo de retentativa/prêmio de vitória do PlayerHUD somem quando o item não está configurado, e a validação rejeita um item configurado com quantidade abaixo de 1; a validação rejeita HP e dano do oponente abaixo de 1, ganho de moeda negativo, limite de tentativas negativo (só do modo selecionado), cooldown negativo e escala como nota, e aceita os valores padrão; um cooldown salvo em segundos volta a ser um valor e uma unidade; o campo de nome tem uma regra de tamanho máximo que cabe na coluna e traz o rótulo "Nome" do próprio Moodle |
-| `phaser_loading_test.php` | 2 | Guarda de regressão estrutural: `play.php` nunca enfileira `phaser.min.js` como `<script>` estático (que poderia competir com `core_message/message_drawer.js` no rodapé da página), e `game_boot.js` o carrega dinamicamente em vez disso |
 | `uninstall_test.php` | 2 | `xmldb_playerpuzzle_uninstall()` apaga só as linhas de `user_preferences` prefixadas com `mod_playerpuzzle`, deixando as demais (inclusive de outros plugins) intactas, e é um no-op inofensivo quando nada bate |
-| **Subtotal** | **77** | |
+| **Subtotal** | **75** | |
 
 ### Testes de Conclusão (`tests/completion/`)
 
@@ -87,9 +86,9 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `ranking_service_test.php` | 9 | Campanha ranqueia pela distância que uma sequência de vitórias alcançou contra uma base fixa de 100 pontos (independente da própria config de nota da instância), mistura precisão quando erros contam, e empates são desfeitos por menos tentativas; Partida Única soma a pontuação de cada partida finalizada e empates são desfeitos por menos partidas depois menos tempo; partidas de Demo e a equipe nunca aparecem; grupos separados só mostram o grupo do próprio visualizador; as linhas do topo têm teto, com um visualizador ranqueado abaixo ainda vendo sua própria linha; ninguém tendo jogado dá um ranking vazio |
 | `replay_credit_test.php` | 8 | Uma vitória não verificável reinicia a fase (sem creditar nada) enquanto restam reinicializações, e conta como derrota creditando só o que o log ainda verifica quando elas se esgotam; uma derrota não verificável é simplesmente aceita, nunca reiniciada; uma alegação de Demo é mantida não verificada por design; uma vitória verificada batendo com a alegação credita silenciosamente, enquanto uma discordando de uma alegação inflada credita o valor derivado e dispara um evento `replay_diverged`; uma derrota verificada conta como perdida independente da alegação; reiniciar uma fase de fato reseta seu estado (seed nova, log vazio, moedas/usos de consumível zerados) e conta uma reinicialização |
 | `report_service_test.php` | 19 | O relatório do estudante fica vazio sem estudantes matriculados, ainda lista um estudante com zero tentativas, e calcula corretamente nota/dano médio no oponente pra uma Campanha vencida, ignorando tentativas em andamento e de Demo e excluindo os próprios visualizadores do relatório; SEPARATEGROUPS escopa tanto as linhas de estudante quanto as estatísticas de questões mais erradas ao grupo do próprio visualizador; questões mais erradas ordenam por taxa de erro; a distribuição de notas agrupa corretamente nas duas fronteiras e ignora tentativas em andamento/Demo; a taxa de conclusão conta corretamente uma vitória genuína (Campanha) ou qualquer partida finalizada (Partida Única), ignora Demo, e é um zero limpo (não um erro de divisão) sem estudante nenhum; o dano médio usa o HP do oponente congelado quando a fase foi lutada, e a lista das mais erradas volta em texto puro |
-| `sound_preferences_test.php` | 7 | Música/Efeitos Sonoros têm padrão habilitado e Narração desabilitado; `set_enabled()`/`is_enabled()` fazem round-trip por canal, independentes entre si, escopados por usuário, com um prefixo de nome de preferência consistente (o mesmo que `db/uninstall.php` casa) |
+| `sound_preferences_test.php` | 8 | Efeitos Sonoros têm padrão habilitado e Música e Narração desabilitados (uma escolha salva vale mais que o padrão); `set_enabled()`/`is_enabled()` fazem round-trip por canal, independentes entre si, escopados por usuário, com um prefixo de nome de preferência consistente (o mesmo que `db/uninstall.php` casa) |
 | `user_stock_test.php` | 10 | Um tipo nunca comprado retorna 0; `credit()` cria e depois soma, ignorando uma quantidade não positiva; `debit()` funciona quando há o suficiente e recusa (sem mudar nada) quando não há o suficiente, nunca foi possuído, ou a quantidade é não positiva; o estoque é isolado por usuário e instância; `get_all()` retorna a quantidade real de todo tipo numa única leitura em lote; `delete_for_instance()` remove só as linhas daquela instância |
-| **Subtotal** | **261** | |
+| **Subtotal** | **262** | |
 
 ### Testes do Motor de Combate (`tests/local/engine/`)
 
@@ -112,7 +111,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 36 | `get_metadata()` declara `playerpuzzle_attempts` e as três preferências de som, e — conferido contra o schema real via `$DB->get_columns()`, não uma lista fixa de chaves — toda coluna real de `playerpuzzle_attempts`, `playerpuzzle_questions` e `playerpuzzle_user_stock` é declarada ou uma exclusão documentada e justificada (mecânica de replay anti-trapaça, FKs estruturais), enquanto `playerpuzzle_question_answers` não carrega dado pessoal nenhum; `export_user_preferences()` exporta só um canal alterado; contextos/usuários são descobertos via tentativas, só estoque de loadout, ou só autoria de questão; `export_user_data()` carrega dados de tentativa incluindo o log de movimentos e os resultados de questão (diferente dos campos irmãos de anti-trapaça), entre múltiplos contextos, e é um no-op pra um contexto que não é de módulo; a exclusão (por usuário, por vários usuários, e contexto inteiro) remove só as linhas/contextos pretendidos, é um no-op pra contextos que não são de módulo ou um módulo de curso ausente, e — pra autoria de questão especificamente — anonimiza `addedby` em vez de apagar a questão em si, nos três caminhos de exclusão; uma guarda de regressão confirma que toda consulta faz join por `{modules}.name = 'playerpuzzle'` pra que um id de instância colidindo com outro tipo de módulo nunca seja confundido com dado deste |
 | **Subtotal** | **36** | |
 
-| **Total Geral** | **724** |
+| **Total Geral** | **723** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
@@ -155,7 +154,7 @@ determinística de match-3/combate/PRNG que o cliente precisa reproduzir bit a b
 próprio motor PHP do servidor (`classes/local/engine/`) pra que o replay anti-trapaça algum
 dia concorde com o que foi de fato jogado. Essa matemática é extraída em módulos UMD pequenos
 e testada sem cabeça (headless) via o test runner nativo do Node — sem Jest, sem navegador,
-sem runtime nenhum de Moodle/RequireJS/Phaser. O wrapper UMD de cada módulo cai pra um
+sem runtime nenhum de Moodle/RequireJS. O wrapper UMD de cada módulo cai pra um
 `module.exports` CommonJS simples fora de um ambiente `define()`, então um teste faz
 `require()` dele direto. Este é o primeiro plugin do ecossistema com uma camada de teste JS
 própria, então ainda não existe uma convenção da casa a seguir — veja o
@@ -182,17 +181,38 @@ descompasso real entre cliente e servidor aparecer.
 node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
 ```
 
+## JavaScript — Testes do Palco (`tests/js/stage/`)
+
+`amd/src/stage/` guarda o pequeno motor que desenha o jogo com elementos HTML em vez de um canvas. O código de
+tempo dele é testado sem navegador, com o executor embutido do Node, contra vetores amostrados quadro a quadro (60 fps)
+no Phaser que o plugin trazia (`tests/fixtures/tween_vectors.json` e `clock_vectors.json`), então cada animação dura e
+suaviza como os jogadores já conheciam.
+
+| Arquivo de teste | Casos | O que cobre |
+|------------------|------:|-------------|
+| `assets.test.js` | 8 | As imagens carregam com callback de progresso e uma que falha faz a carga inteira falhar; os efeitos ficam em silêncio até o primeiro gesto destravar o navegador e tocam no volume próprio; efeitos desligados não fazem som; a música só é baixada quando pedida e toca no gesto que a destrava, e uma música pedida antes de o navegador permitir toca no gesto que enfim permite; música desligada a pausa e nunca a baixa se nunca foi ligada; um toque que o navegador não aceita como ativação é tentado de novo no seguinte até o som estar rodando |
+| `clock.test.js` | 14 | Chamadas com atraso e repetições disparam nos mesmos quadros das amostradas do Phaser; uma pausa congela os tweens e o relógio, e o que esperava dispara no mesmo quadro de antes; `step()` move o tempo em quadros e termina na quantidade exata; `removeAllEvents()` descarta também as chamadas em espera; o laço move o tempo pelo tempo real entre quadros e nunca por mais de cem milissegundos |
+| `emoji.test.js` | 5 | `strip()` tira os pictogramas dos rótulos de botão, títulos e anúncios que o jogo realmente tem e deixa os outros textos exatamente como estavam; um pictograma com seletor de variação, tom de pele ou junção é uma só sequência; `split()` corta um texto em sequências e junta de volta no mesmo texto; `has()` |
+| `hud_contract.test.js` | 2 | Toda chamada que `combat.js`, `board.js` e `scene_dom.js` fazem no HUD existe em `hud.js`, então um método que falta não espera aquele momento da partida para falhar |
+| `tween.test.js` | 20 | Cada tween amostrado dá os mesmos valores e quadros de término do Phaser, dentro de uma fração do percurso; as curvas guardam seus extremos e o meio; `stop()` deixa os valores onde estão e nunca chama `onComplete`; `killTweensOf()` para só os tweens de um objeto; um tween em vários alvos move todos; um tween é lido de onde o alvo está quando começa a contar |
+| **Subtotal** | **49** | |
+
+```bash
+node --test tests/js/stage/*.test.js
+```
+
 ## Behat — Testes de Aceitação
 
 | Arquivo de feature | Cenários | O que é coberto |
 |---------------------|---------:|------------------|
-| `mod_playerpuzzle_accessibility.feature` | 4 | O tabuleiro acessível (uma `<table role="grid">` real espelhando o Canvas — veja [Acessibilidade](#accessibility)) anuncia de quem é a vez; captura o foco do teclado sozinho, sem precisar de Tab; `Space` relê os movimentos disponíveis sem agir; uma tecla numérica executa um movimento sem erro |
-| `mod_playerpuzzle_gameplay.feature` | 4 | Restrito deliberadamente à moldura do Moodle ao redor da loja de loadout pré-partida — nunca à mecânica de tabuleiro/combate, que roda inteira no Canvas sem seed determinística pra guiar uma partida real sem um cenário instável de tentar-até-bater: o Lobby mostra o saldo de PuzzleCoin e a loja; comprar um consumível debita/credita via AJAX sem recarregar a página; comprar sem PuzzleCoin suficiente mostra um erro em vez de falhar silenciosamente; uma compra de loadout não bloqueia a entrada no jogo |
+| `mod_playerpuzzle_accessibility.feature` | 4 | O tabuleiro acessível (uma `<table role="grid">` real sobre o tabuleiro — veja [Acessibilidade](#accessibility)) anuncia de quem é a vez; captura o foco do teclado sozinho, sem precisar de Tab; `Space` relê os movimentos disponíveis sem agir; uma tecla numérica executa um movimento sem erro |
+| `mod_playerpuzzle_gameplay.feature` | 4 | Restrito deliberadamente à moldura do Moodle ao redor da loja de loadout pré-partida — nunca à mecânica de tabuleiro/combate, que roda inteira no palco do jogo sem seed determinística pra guiar uma partida real sem um cenário instável de tentar-até-bater: o Lobby mostra o saldo de PuzzleCoin e a loja; comprar um consumível debita/credita via AJAX sem recarregar a página; comprar sem PuzzleCoin suficiente mostra um erro em vez de falhar silenciosamente; uma compra de loadout não bloqueia a entrada no jogo |
+| `mod_playerpuzzle_hero.feature` | 6 | Escolha do herói: uma Campanha começa na tela de escolha e vai para o Lobby quando um herói é escolhido, e quem já tem herói vai direto ao Lobby; uma Partida Única pede o herói ao apertar Jogar e então começa, e a Demo também pede; uma nova Campanha avisa, pede o herói e o Lobby passa a oferecê-la como em andamento; comprar uma melhoria do herói na loja do Lobby gasta PuzzleCoin e consome a compra da etapa |
 | `mod_playerpuzzle_match.feature` | 3 | Toda tentativa semeada com a seed PRNG 2, então os movimentos anunciados pelo tabuleiro acessível são fixos e determinísticos (o movimento 4, uma combinação de Espada, sempre bate com o HP configurado do oponente): um movimento vencedor termina em vitória verificada que banca suas moedas; um movimento que deixa o estudante pro turno do oponente termina em derrota verificada; uma vitória que o replay do servidor não consegue verificar reinicia a fase em vez de contar |
 | `mod_playerpuzzle_ranking.feature` | 3 | A matemática de ranking de uma campanha de um nível (a fase N credita (N-1)×10 de 100 pontos): o painel de ranking abre no lugar do próprio painel do Lobby e fecha de volta pra ele; um professor pode desligar o ranking; com grupos separados um estudante só vê o ranking do próprio grupo |
 | `mod_playerpuzzle_settings.feature` | 1 | Um professor adiciona uma atividade PlayerPuzzle e ela aparece na página do curso |
-| `mod_playerpuzzle_smoke.feature` | 1 | Um estudante abre o Lobby e consegue começar o jogo — o fluxo básico da moldura Moodle (adicionar a atividade, chegar ao Lobby, entrar numa partida), deliberadamente sem tocar nos pixels do Canvas |
-| **Subtotal** | **16** | |
+| `mod_playerpuzzle_smoke.feature` | 2 | Um estudante abre o Lobby e consegue começar o jogo — o fluxo básico da moldura Moodle (adicionar a atividade, chegar ao Lobby, entrar numa partida), deliberadamente sem tocar no próprio palco do jogo; e o Lobby não oferece partida enquanto a atividade exige perguntas e não tem nenhuma |
+| **Subtotal** | **23** | |
 
 ```bash
 php admin/tool/behat/cli/init.php

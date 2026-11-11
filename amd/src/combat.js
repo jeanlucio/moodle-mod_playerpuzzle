@@ -279,7 +279,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * Starts the reload-resilience checkpoint: every ~10s, if something
          * changed since the last one and the tab is visible, persists the current board/HP/
          * meters/turn so a reload resumes this same fight instead of restarting the phase
-         * from scratch. A plain setInterval, not Phaser's own scene time source, so it keeps
+         * from scratch. A plain setInterval, not the stage's own clock, so it keeps
          * ticking even while the question modal has the scene paused — real time still
          * passes, and the state at that point is still the current one to save.
          *
@@ -503,10 +503,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * onto this.* and handles everything that function deliberately never touches: sound,
          * grid mutation, the destroy tween, the history log, and the tutorial balloon.
          *
-         * @param {Array} destroyedPieces Pieces destroyed this turn (real Phaser objects —
-         *  board.js still deals in those, only the calculation itself moved to pure logic).
-         * @param {Array} matchGroups Match groups this turn, {type, pieces} (pieces: real
-         *  Phaser objects; only their count is passed into the pure calculation).
+         * @param {Array} destroyedPieces Pieces destroyed this turn, as the board holds them ({type, row, col}).
+         * @param {Array} matchGroups Match groups this turn, {type, pieces} (only the count of pieces goes
+         *  into the pure calculation).
          * @return {{damage: number, question: boolean, trigger: string|null}}
          */
         processEffects(destroyedPieces, matchGroups) {
@@ -533,13 +532,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             }
             for (const piece of destroyedPieces) {
                 me.board.grid[piece.row][piece.col] = null;
-                me.ui.burstSparks(piece.x, piece.y, piece.type, piece.displayWidth);
-                me.tweens.add({
-                    targets: piece, scaleX: 0, scaleY: 0, duration: 200,
-                    onComplete: (tween, targets) => {
-                        targets[0].destroy();
-                    }
-                });
+                const {x, y, size} = me.board.view.metrics(piece);
+                me.ui.burstSparks(x, y, piece.type, size);
+                me.board.view.pop(piece);
             }
 
             this.logTurnEffects(
@@ -562,7 +557,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * costs nothing beyond the one extra call site.
          *
          * Only ever shows one balloon per call, even when several different types are
-         * destroyed in the same turn: ui.js::showTutorialBalloon() replaces whatever balloon
+         * destroyed in the same turn: hud.js::showTutorialBalloon() replaces whatever balloon
          * is currently up, so showing more than one here would just have each new call erase
          * the previous before the student ever sees it. Only the type actually shown is
          * marked "seen" — every other new type this turn stays eligible and gets its own
@@ -1002,7 +997,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Uses a consumable, clicked from its use badge (ui.js::createPurchaseBadge()).
+         * Uses a consumable, clicked from its use badge (hud.js::createPurchaseBadge()).
          * There is no purchase here — stock was already bought pre-match in the Lobby; this
          * only spends it. Shield alone gets a client-side "already armed" guard — there is
          * nothing to gain from using a second charge before the first is spent, so it is
@@ -1146,8 +1141,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Submits a real POST to play.php, mirroring the Lobby's own Play form. A Phaser
-         * scene.restart() would only reset client-side state and keep reusing a token the
+         * Submits a real POST to play.php, mirroring the Lobby's own Play form. A scene
+         * restart would only reset client-side state and keep reusing a token the
          * server has already rotated or consumed, so the next attempt's own save/advance
          * call would always fail with an invalid-token error.
          *
@@ -1214,7 +1209,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const me = this.scene;
             const strings = this.strings;
             me.input.enabled = false;
-            me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
+            me.ui.dimStage();
 
             const netGold = this.netCoinBalance();
 
@@ -1331,7 +1326,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 if (dialogEl) {
                     // Native <dialog> restores no focus of its own on close() — the
                     // element that had focus when the dialog opened (typically nothing,
-                    // since Phaser's canvas is not itself focusable) is saved here and
+                    // since the stage is not itself focusable) is saved here and
                     // restored explicitly to it when the dialog closes.
                     const previouslyFocused = document.activeElement;
 
@@ -1389,7 +1384,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     // question closes with the button still disabled (it only enables once an
                     // answer is picked), and the boss's or an empty question's "Continue" would
                     // otherwise come up disabled, leaving no way to close the modal.
-                    $('#playerpuzzle-btn-confirm').hide().prop('disabled', false).off('click');
+                    $('#playerpuzzle-btn-confirm').hide().prop('disabled', false).removeClass('disabled').off('click');
+                    $('#playerpuzzle-btn-continue').off('click').prop('hidden', true);
                     $('#playerpuzzle-btn-skip').hide().off('click');
                     $('#playerpuzzle-hint-text').hide().empty();
                     $('#playerpuzzle-btn-hint').hide().prop('disabled', false).off('click');
@@ -1408,8 +1404,26 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         me.time.delayedCall(250, me.board.applyGravity, [], me.board);
                     };
 
+                    // What the student goes on with once the question is settled: a button of its own, new to the
+                    // page, and not the Attack button with another label. A screen reader reads a control that
+                    // appears and takes the focus as it is, while one that changes under its own focus can keep
+                    // being read as what it was. The opponent's question takes no focus: its answer comes in while the
+                    // student is still reading it, and Tab reaches the button.
+                    const showContinue = (takeFocus) => {
+                        $('#playerpuzzle-btn-confirm').hide();
+                        const next = document.getElementById('playerpuzzle-btn-continue');
+                        $(next).off('click').on('click', closeModal);
+                        next.hidden = false;
+                        if (takeFocus) {
+                            next.focus();
+                        }
+                    };
+
                     if (question.options && question.options.length > 0) {
-                        const btnClass = ctx.gameConfig.mobile
+                        // A phone on its side is wide, so it is not "mobile" to the server, but it is too short for the
+                        // large buttons and their margin: it gets the compact ones (the sizes are in styles.css).
+                        const shortScreen = window.matchMedia('(max-height: 520px)').matches;
+                        const btnClass = ctx.gameConfig.mobile || shortScreen
                             ? 'btn btn-outline-primary w-100 pp-answer-btn'
                             : 'btn btn-outline-primary btn-lg mb-3 w-100';
 
@@ -1440,14 +1454,19 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                             let selectedAnswer = null;
 
                             question.options.forEach(option => {
-                                const btn = $(`<button class="${btnClass}" data-answerid="${option.id}">${option.text}</button>`);
+                                const btn = $(
+                                    `<button class="${btnClass}" data-answerid="${option.id}" aria-pressed="false">`
+                                    + `${option.text}</button>`
+                                );
 
                                 // Using function() to preserve jQuery's this binding for the clicked button.
                                 btn.on('click', function() {
                                     answersContainer.find('button')
                                         .removeClass('btn-warning')
-                                        .addClass('btn-outline-primary');
-                                    $(this).removeClass('btn-outline-primary').addClass('btn-warning');
+                                        .addClass('btn-outline-primary')
+                                        .attr('aria-pressed', 'false');
+                                    $(this).removeClass('btn-outline-primary').addClass('btn-warning')
+                                        .attr('aria-pressed', 'true');
                                     selectedAnswer = option;
                                     $('#playerpuzzle-btn-confirm').prop('disabled', false);
                                 });
@@ -1455,20 +1474,26 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 answersContainer.append(btn);
                             });
 
+                            // Once Attack is pressed the button waits for the server's word without being disabled: a
+                            // disabled button that has the focus throws it out to the page. Only its look changes, never
+                            // its state for assistive technology (aria-disabled), which a screen reader could go on
+                            // reporting as unavailable after the button became something else.
+                            let answering = false;
+
                             $('#playerpuzzle-btn-confirm').off('click').on('click', () => {
-                                if (!selectedAnswer) {
+                                if (!selectedAnswer || answering) {
                                     return;
                                 }
+                                answering = true;
                                 answersContainer.find('button').prop('disabled', true);
                                 $('#playerpuzzle-btn-skip').hide();
-                                $('#playerpuzzle-btn-confirm').prop('disabled', true);
+                                $('#playerpuzzle-btn-confirm').addClass('disabled');
 
                                 const applyResult = (isCorrect, correctanswerid) => {
                                     if (opening) {
                                         openingFirst = isCorrect ? 'player' : 'boss';
                                         ctx.showOpeningResult(isCorrect, correctanswerid, answersContainer);
-                                        $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
-                                            .prop('disabled', false).off('click').on('click', closeModal);
+                                        showContinue(true);
                                         return;
                                     }
                                     const outcome = CombatRules.questionOutcome(
@@ -1514,8 +1539,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                         }
                                     }
                                     answersContainer.append(feedbackMsg);
-                                    $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue)
-                                        .prop('disabled', false).off('click').on('click', closeModal);
+                                    Accessibility.announce($('<div>').html(feedbackMsg).text().replace(/\s+/g, ' '));
+                                    showContinue(true);
                                 };
 
                                 Ajax.call([{
@@ -1604,8 +1629,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                     }
                                 }
                                 answersContainer.append(bossFeedback);
-                                $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue).show()
-                                    .off('click').on('click', closeModal);
+                                Accessibility.announce($('<div>').html(bossFeedback).text().replace(/\s+/g, ' '));
+                                showContinue(false);
                             };
 
                             // Not awaited: the modal opens right away and the boss's answer
@@ -1636,14 +1661,15 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         answersContainer.append(
                             `<p class="text-danger">${ctx.strings.noanswers}</p>`
                         );
-                        $('#playerpuzzle-btn-confirm').text(ctx.strings.btncontinue).show()
-                            .off('click').on('click', closeModal);
+                        showContinue(false);
                     }
 
-                    // Content (question text, answer buttons) is already in the DOM at
-                    // this point, so the browser's own auto-focus on showModal() lands on
-                    // a real answer button — no extra JS-driven focus call needed.
+                    // Content (question text, answer buttons) is already in the DOM at this point. showModal()
+                    // would put the focus on the first answer, and a screen reader would start from it; the
+                    // question takes the focus instead, so what is being asked is the first thing heard and the
+                    // answers come next, by Tab.
                     dialogEl.showModal();
+                    document.getElementById('playerpuzzle-question-text').focus({preventScroll: true});
                 } else {
                     me.scene.resume();
                     if (opening) {
@@ -1822,7 +1848,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             // The save_progress call below consumes the attempt's token and carries every event
             // still pending, so any later checkpoint could only fail against the spent token.
             this.matchSaved = true;
-            me.add.graphics().fillStyle(0x000000, 0.85).fillRect(0, 0, me.ui.L.w, me.ui.L.h).setDepth(99);
+            me.ui.dimStage();
 
             // The boss's own Coin total (bossGold) never buys it anything — it exists purely to
             // net against the student's balance here, the only place it is spent.

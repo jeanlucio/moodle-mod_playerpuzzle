@@ -2,7 +2,7 @@
 
 ## ⚔️ Jogabilidade
 
-* **Combate Match-3 por turnos:** um tabuleiro 8×8 (Phaser) onde o estudante troca peças para
+* **Combate Match-3 por turnos:** um tabuleiro 8×8 onde o estudante troca peças para
   atacar um oponente. Sete tipos de peça, cada uma com seu efeito — veja
   [Como o Combate Funciona](#combat).
 * **IA do oponente simétrica:** toda peça resolve exatamente do mesmo jeito no turno do oponente e no do

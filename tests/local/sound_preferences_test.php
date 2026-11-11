@@ -38,21 +38,35 @@ final class sound_preferences_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that Music/Sound Effects default to enabled for a user who never touched
-     * either preference — matches the in-game default before this preference existed.
+     * Tests that Sound Effects default to enabled and the music to disabled for a user who never touched
+     * either preference: the music loops under a screen reader's voice, and a browser cannot tell whether
+     * one is running.
      *
      * @return void
      */
-    public function test_defaults_to_enabled(): void {
+    public function test_music_defaults_to_disabled_and_effects_to_enabled(): void {
         $user = $this->getDataGenerator()->create_user();
 
-        $this->assertTrue(sound_preferences::is_enabled('music', (int) $user->id));
+        $this->assertFalse(sound_preferences::is_enabled('music', (int) $user->id));
         $this->assertTrue(sound_preferences::is_enabled('sfx', (int) $user->id));
     }
 
     /**
+     * Tests that a user who already turned the music on keeps it on: the new default only reaches users who
+     * never chose.
+     *
+     * @return void
+     */
+    public function test_a_saved_music_choice_overrides_the_default(): void {
+        $user = $this->getDataGenerator()->create_user();
+        sound_preferences::set_enabled('music', true, (int) $user->id);
+
+        $this->assertTrue(sound_preferences::is_enabled('music', (int) $user->id));
+    }
+
+    /**
      * Tests that narration defaults to disabled — it speaks over the game through the
-     * browser's speech synthesis, so a student must opt in deliberately, unlike Music/
+     * browser's speech synthesis, so a student must opt in deliberately, like the music, unlike
      * Sound Effects which default on.
      *
      * @return void
@@ -121,8 +135,8 @@ final class sound_preferences_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that turning narration on for one user never affects Music/Sound Effects, nor
-     * another user's own narration preference.
+     * Tests that turning narration on for one user leaves Music/Sound Effects at their own defaults,
+     * and never reaches another user's own narration preference.
      *
      * @return void
      */
@@ -133,7 +147,7 @@ final class sound_preferences_test extends \advanced_testcase {
         sound_preferences::set_enabled('speech', true, (int) $usera->id);
 
         $this->assertTrue(sound_preferences::is_enabled('speech', (int) $usera->id));
-        $this->assertTrue(sound_preferences::is_enabled('music', (int) $usera->id));
+        $this->assertFalse(sound_preferences::is_enabled('music', (int) $usera->id));
         $this->assertTrue(sound_preferences::is_enabled('sfx', (int) $usera->id));
         $this->assertFalse(sound_preferences::is_enabled('speech', (int) $userb->id));
     }

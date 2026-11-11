@@ -1,6 +1,6 @@
 # ⚔️ Como o Combate Funciona
 
-O combate roda num tabuleiro Match-3 8×8 (Phaser 4), priorizando retrato (540×960), se
+O combate roda num tabuleiro Match-3 8×8, priorizando retrato (540×960), se
 adaptando a um layout paisagem em telas mais largas.
 
 ## Estrutura de Turnos

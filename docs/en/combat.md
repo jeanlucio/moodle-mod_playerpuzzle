@@ -1,6 +1,6 @@
 # ⚔️ How Combat Works
 
-Combat runs on an 8×8 Match-3 board (Phaser 4), portrait-first (540×960), adapting to a
+Combat runs on an 8×8 Match-3 board, portrait-first (540×960), adapting to a
 landscape layout on wider screens.
 
 ## Turn Structure

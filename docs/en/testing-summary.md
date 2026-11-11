@@ -18,9 +18,8 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `lib_supports_test.php` | 2 |
 | `lib_update_grades_test.php` | 7 |
 | `mod_form_test.php` | 21 |
-| `phaser_loading_test.php` | 2 |
 | `uninstall_test.php` | 2 |
-| **Subtotal** | **77** |
+| **Subtotal** | **75** |
 
 ### Completion Tests (`tests/completion/`)
 
@@ -86,9 +85,9 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `ranking_service_test.php` | 9 |
 | `replay_credit_test.php` | 8 |
 | `report_service_test.php` | 19 |
-| `sound_preferences_test.php` | 7 |
+| `sound_preferences_test.php` | 8 |
 | `user_stock_test.php` | 10 |
-| **Subtotal** | **261** |
+| **Subtotal** | **262** |
 
 ### Combat Engine Tests (`tests/local/engine/`)
 
@@ -111,7 +110,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `provider_test.php` | 36 |
 | **Subtotal** | **36** |
 
-| **Grand Total** | **724** |
+| **Grand Total** | **723** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
@@ -137,17 +136,37 @@ The deterministic match-3/combat/PRNG math, run headless via Node's own test run
 node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
 ```
 
+## JavaScript — Stage Tests (`tests/js/stage/`)
+
+The small runtime that draws the game with HTML elements (tweens, clock, asset loading and sound) and the
+contract between the game and its HUD, run headless with `node --test`. The tween and clock vectors in
+`tests/fixtures/` were sampled from the Phaser the plugin used to ship, so the timing is the one players already knew.
+
+| Test file | Cases |
+|-----------|------:|
+| `assets.test.js` | 8 |
+| `clock.test.js` | 14 |
+| `emoji.test.js` | 5 |
+| `hud_contract.test.js` | 2 |
+| `tween.test.js` | 20 |
+| **Subtotal** | **49** |
+
+```bash
+node --test tests/js/stage/*.test.js
+```
+
 ## Behat — Acceptance Tests
 
 | Feature file | Scenarios |
 |--------------|----------:|
 | `mod_playerpuzzle_accessibility.feature` | 4 |
 | `mod_playerpuzzle_gameplay.feature` | 4 |
+| `mod_playerpuzzle_hero.feature` | 6 |
 | `mod_playerpuzzle_match.feature` | 3 |
 | `mod_playerpuzzle_ranking.feature` | 3 |
 | `mod_playerpuzzle_settings.feature` | 1 |
-| `mod_playerpuzzle_smoke.feature` | 1 |
-| **Subtotal** | **16** |
+| `mod_playerpuzzle_smoke.feature` | 2 |
+| **Subtotal** | **23** |
 
 ```bash
 php admin/tool/behat/cli/init.php

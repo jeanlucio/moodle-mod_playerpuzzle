@@ -18,11 +18,11 @@
     @template mod_playerpuzzle/demo_walkthrough
 
     Static step-by-step walkthrough shown before a Demo match starts,
-    rendered client-side into a native dialog by ui.js::showDemoWalkthrough(). Explains the
+    rendered client-side into a native dialog by hud.js::showDemoWalkthrough(). Explains the
     HP bars and the buttons along the top (Give up, Opponent info, Music, Sound effects, Full screen), each with
     its own icon (the full screen one is drawn as the stage draws it, four corner marks), before combat input is
     enabled. Every
-    step is rendered up front; ui.js toggles which one is visible and swaps the Next
+    step is rendered up front; hud.js toggles which one is visible and swaps the Next
     button's label on the last step.
 
     Example context (json):

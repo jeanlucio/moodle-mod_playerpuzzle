@@ -29,7 +29,11 @@
 ## 🏛️ Lobby and economy
 
 * **Lobby as a home screen:** progress, difficulty, the minimum-questions notice and **Play**, with
-  buttons for the **Shop**, the **Ranking** and **Settings**.
+  buttons for the **Shop**, the **Ranking**, **How to play** and **Settings**.
+* **How to play:** a help the student can open in the Lobby and, with the **?** button, during the fight: the
+  goal, the seven pieces, the questions, the difficulty, the shop, the game mode, how to move the pieces (mouse,
+  touch or keyboard) and what each button of the game does. What the activity does not have (the questions of an
+  empty bank, the Campaign text in a Single Match, the shop for a visitor) is left out.
 * **PuzzleCoin:** the plugin's own persistent currency, earned by winning phases and matches.
 * **Loadout shop:** before a match, the student spends PuzzleCoin on consumables — Potion, Shield,
   Quick Magic, Sword and Question Hint — and uses them during the fight, within a fixed limit per

@@ -123,6 +123,7 @@ $templatedata = [
         'closelabel' => get_string('close', 'mod_playerpuzzle'),
     ] + \mod_playerpuzzle\local\opponent_card::for_fight($jsconfig),
     'giveup' => \mod_playerpuzzle\local\game_page_service::giveup_dialog(!empty($jsconfig['isdemo'])),
+    'howtoplay' => \mod_playerpuzzle\local\howtoplay::context($playerpuzzle, is_guest($context, (int) $USER->id)),
 ];
 
 echo $OUTPUT->header();

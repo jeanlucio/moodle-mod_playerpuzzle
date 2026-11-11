@@ -1839,7 +1839,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const strings = this.strings;
             const viewurl = this.gameConfig.viewurl;
             me.input.enabled = false;
-            ['playerpuzzle-giveup', 'playerpuzzle-opponent-help'].forEach(id => {
+            ['playerpuzzle-giveup', 'playerpuzzle-opponent-help', 'playerpuzzle-howto'].forEach(id => {
                 const dialog = document.getElementById(id);
                 if (dialog && dialog.open) {
                     dialog.close();

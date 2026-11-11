@@ -166,7 +166,7 @@ define([
         container.querySelectorAll('p').forEach(el => el.remove());
         container.classList.toggle('pp-canvas-desktop', isDesk);
         container.appendChild(document.getElementById('playerpuzzle-modal'));
-        ['playerpuzzle-opponent-help', 'playerpuzzle-giveup'].forEach(id => {
+        ['playerpuzzle-opponent-help', 'playerpuzzle-giveup', 'playerpuzzle-howto'].forEach(id => {
             const dialog = document.getElementById(id);
             if (dialog) {
                 container.appendChild(dialog);

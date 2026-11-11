@@ -14,7 +14,7 @@ an afterthought bolt-on layer:
   the same piece drops the selection. The number keys below play a move without walking the grid.
 * The game area is a labelled region (the activity's name), not an application region, so a screen reader keeps
   its normal browse mode around the board and the buttons.
-* The buttons (give up, help, music, sound effects, full screen, use item) are real `<button>`
+* The buttons (give up, how to play, opponent info, music, sound effects, full screen, use item) are real `<button>`
   elements with accessible names; music, sound effects and full screen also say whether they are on
   or off (`aria-pressed`). The history log and the tutorial balloon are not read aloud, so the
   live region below stays the one channel.

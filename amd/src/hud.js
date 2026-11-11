@@ -81,7 +81,7 @@ define([
 
     // The Font Awesome class of each round button's icon, the second one for the off state of a toggle.
     const ICONS = {
-        giveup: 'fa-flag', help: 'fa-question',
+        giveup: 'fa-flag', howto: 'fa-question', opponent: 'fa-id-card',
         music: ['fa-volume-high', 'fa-volume-xmark'], effects: ['fa-bell', 'fa-bell-slash'],
     };
 
@@ -871,7 +871,11 @@ define([
                 {title: strings.demostep_welcome_title, text: strings.demostep_welcome_text, icon: '', target: null},
                 {title: strings.demostep_hp_title, text: strings.demostep_hp_text, icon: '', target: 'hp'},
                 {title: strings.demostep_giveup_title, text: strings.demostep_giveup_text, icon: 'fa-flag', target: 'giveup'},
-                {title: strings.demostep_help_title, text: strings.demostep_help_text, icon: 'fa-question', target: 'help'},
+                {title: strings.demostep_howto_title, text: strings.demostep_howto_text, icon: 'fa-question', target: 'howto'},
+                {
+                    title: strings.demostep_opponent_title, text: strings.demostep_opponent_text,
+                    icon: 'fa-id-card', target: 'opponent',
+                },
                 {title: strings.demostep_music_title, text: strings.demostep_music_text, icon: 'fa-volume-up', target: 'music'},
                 {title: strings.demostep_sfx_title, text: strings.demostep_sfx_text, icon: 'fa-bell', target: 'effects'},
                 {
@@ -1400,6 +1404,20 @@ define([
         }
 
         /**
+         * Opens the How to play help. showModal() would put the focus on the Close button at the foot of a long
+         * text; the title takes it instead, so a screen reader starts reading from the top.
+         *
+         * @return {void}
+         */
+        openHowToPlay() {
+            const dialog = document.getElementById('playerpuzzle-howto');
+            if (dialog && !dialog.open) {
+                dialog.showModal();
+                document.getElementById('pp-howto-title')?.focus({preventScroll: true});
+            }
+        }
+
+        /**
          * The round buttons of the top row: Give up and Help at the left edge, Music, Sound effects and Full screen at
          * the right. As before, they do nothing while the game has its input off.
          */
@@ -1414,13 +1432,15 @@ define([
             const r = L.topBtnRadius;
             const gap = L.topBtnGap;
             const xGiveUp = 30;
-            const xHelp = xGiveUp + gap;
+            const xHowTo = xGiveUp + gap;
+            const xOpponent = xHowTo + gap;
             const xExpand = L.w - 30;
             const xEffects = xExpand - gap;
             const xMusic = xEffects - gap;
             // Where each button sits, for the Demo walkthrough to point at.
             this.topButtons = {
-                giveup: {x: xGiveUp, y, r}, help: {x: xHelp, y, r}, music: {x: xMusic, y, r},
+                giveup: {x: xGiveUp, y, r}, howto: {x: xHowTo, y, r}, opponent: {x: xOpponent, y, r},
+                music: {x: xMusic, y, r},
                 effects: {x: xEffects, y, r}, expand: {x: xExpand, y, r},
             };
             const whenActive = action => () => {
@@ -1432,11 +1452,17 @@ define([
             const giveUp = this.roundButton('giveup', strings.stage_giveup, xGiveUp, y, r);
             this.setIcon(giveUp, ICONS.giveup);
             giveUp.addEventListener('click', whenActive(() => me.combat.openGiveUpDialog()));
-            const help = this.roundButton('help', strings.stage_help, xHelp, y, r);
-            this.setIcon(help, ICONS.help);
-            help.addEventListener('click', whenActive(() => this.openOpponentHelp()));
+            const howTo = this.roundButton('howto', strings.stage_howtoplay, xHowTo, y, r);
+            this.setIcon(howTo, ICONS.howto);
+            howTo.addEventListener('click', whenActive(() => this.openHowToPlay()));
+            const opponent = this.roundButton('opponent', strings.stage_opponent, xOpponent, y, r);
+            this.setIcon(opponent, ICONS.opponent);
+            opponent.addEventListener('click', whenActive(() => this.openOpponentHelp()));
             document.getElementById('pp-opponent-help-close')?.addEventListener('click', () => {
                 document.getElementById('playerpuzzle-opponent-help').close();
+            });
+            document.getElementById('pp-howto-close')?.addEventListener('click', () => {
+                document.getElementById('playerpuzzle-howto').close();
             });
             document.getElementById('pp-giveup-cancel')?.addEventListener('click', () => {
                 document.getElementById('playerpuzzle-giveup').close();

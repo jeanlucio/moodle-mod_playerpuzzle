@@ -24,7 +24,9 @@
    linha embaixo diz o que cada uma muda). Com uma fase em andamento (uma jogada, uma
    resposta ou um item usado), ela fica travada até a tela de fase vencida dela; antes disso, você ainda pode mudá-la. Numa Campanha, o botão da Campanha abre seu **Histórico de Campanhas**:
    uma linha para cada Campanha, com o herói, as fases vencidas, as tentativas usadas e os pontos.
-2. Use **Jogar Demo** para uma luta de prática guiada que nunca conta para nada.
+2. Use **Jogar Demo** para uma luta de prática guiada que nunca conta para nada, e **Como jogar** para ler as
+   regras: ele também fica atrás do botão **?** durante a luta, enquanto o botão com o ícone de ficha abre a
+   ficha do oponente.
 3. Abra a **Loja**, que mostra seu saldo de PuzzleCoin, para comprar consumíveis antes da partida e —
    quando o professor ligou o PlayerHUD — para transferir moedas para cá. **Configurações** guarda música (desligada até você ligar), efeitos
    sonoros e narração falada (também desligada), e **Ranking** mostra a classificação da turma.

@@ -1,0 +1,126 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+
+{{!
+    @template mod_playerpuzzle/howtoplay_body
+
+    The "How to play" help: the goal, the seven pieces, the questions, the difficulty, the shop, the game mode, how to
+    move the pieces and what the buttons of the stage do. It is the body of the Lobby's How to play panel and of the
+    dialog opened from the stage's button. Each section is shown only when it holds for the activity.
+
+    Context variables required for this template:
+    * goalheading, goaltext, turntext - What the game is about
+    * piecesheading, pieces - The seven pieces, each with imageurl and text
+    * showquestions, questionsheading, questionstext, openingtext, showminquestions, minquestionstext - Questions
+    * difficultyheading, difficultytext, difficulties (label and text), showcampaigndifficulty, campaigndifficultytext
+    * showshop, shopheading, shoptext - The shop, left out for a visitor
+    * modeheading, modetext - Campaign or Single Match
+    * controlsheading, pointertext, keyboardtext - How to move the pieces
+    * buttonsheading, buttons - The stage's buttons, each with icon, label and text
+
+    Example context (json):
+    {
+        "goalheading": "The goal",
+        "goaltext": "Swap two neighbouring pieces to line up three or more of a kind.",
+        "turntext": "You move, then the opponent moves.",
+        "piecesheading": "The seven pieces",
+        "pieces": [
+            {"imageurl": "/mod/playerpuzzle/pix/sprites/item0.png", "text": "Star: raises your attack multiplier."},
+            {"imageurl": "/mod/playerpuzzle/pix/sprites/item3.png", "text": "Sword: deals damage to the opponent."}
+        ],
+        "showquestions": true,
+        "questionsheading": "Questions",
+        "questionstext": "When the Mana Orb bar fills, the game opens a question.",
+        "openingtext": "Every phase opens with a question that decides who moves first.",
+        "showminquestions": true,
+        "minquestionstext": "You must answer at least 3 question(s) to win.",
+        "difficultyheading": "Difficulty",
+        "difficultytext": "You choose Easy, Normal or Hard.",
+        "difficulties": [
+            {"label": "Easy", "text": "The opponent's HP and damage are halved."},
+            {"label": "Normal", "text": "The standard fight."}
+        ],
+        "showcampaigndifficulty": true,
+        "campaigndifficultytext": "In a Campaign you choose it for each phase.",
+        "showshop": true,
+        "shopheading": "Coins and shop",
+        "shoptext": "Coin pieces earn PuzzleCoin to spend in the Lobby shop.",
+        "modeheading": "Game mode",
+        "modetext": "A Campaign has 1 level of 10 phases.",
+        "controlsheading": "Moving the pieces",
+        "pointertext": "With a mouse or touch, press a piece and then a neighbour.",
+        "keyboardtext": "With the keyboard, use Tab, the arrow keys and Enter.",
+        "buttonsheading": "Game buttons",
+        "buttons": [
+            {"icon": "fa-flag", "label": "Give up", "text": "Ends the match as a defeat."}
+        ]
+    }
+}}
+<div class="pp-howto">
+    <h4>{{goalheading}}</h4>
+    <p>{{goaltext}}</p>
+    <p>{{turntext}}</p>
+
+    <h4>{{piecesheading}}</h4>
+    <ul class="pp-howto-list pp-howto-pieces">
+        {{#pieces}}
+        <li>
+            <img src="{{imageurl}}" alt="" class="pp-howto-piece" width="32" height="32">
+            <span>{{text}}</span>
+        </li>
+        {{/pieces}}
+    </ul>
+
+    {{#showquestions}}
+    <h4>{{questionsheading}}</h4>
+    <p>{{questionstext}}</p>
+    <p>{{openingtext}}</p>
+    {{#showminquestions}}
+    <p>{{minquestionstext}}</p>
+    {{/showminquestions}}
+    {{/showquestions}}
+
+    <h4>{{difficultyheading}}</h4>
+    <p>{{difficultytext}}</p>
+    <ul class="pp-howto-list">
+        {{#difficulties}}
+        <li><strong>{{label}}.</strong> {{text}}</li>
+        {{/difficulties}}
+    </ul>
+    {{#showcampaigndifficulty}}
+    <p>{{campaigndifficultytext}}</p>
+    {{/showcampaigndifficulty}}
+
+    {{#showshop}}
+    <h4>{{shopheading}}</h4>
+    <p>{{shoptext}}</p>
+    {{/showshop}}
+
+    <h4>{{modeheading}}</h4>
+    <p>{{modetext}}</p>
+
+    <h4>{{controlsheading}}</h4>
+    <p>{{pointertext}}</p>
+    <p>{{keyboardtext}}</p>
+
+    <h4>{{buttonsheading}}</h4>
+    <ul class="pp-howto-list pp-howto-buttons">
+        {{#buttons}}
+        <li><i class="fa {{icon}}" aria-hidden="true"></i> <strong>{{label}}.</strong> {{text}}</li>
+        {{/buttons}}
+    </ul>
+</div>

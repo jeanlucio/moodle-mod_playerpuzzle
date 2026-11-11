@@ -14,7 +14,7 @@ camada de última hora:
   peça desfaz a seleção. As teclas numéricas abaixo fazem uma jogada sem percorrer a grade.
 * A área do jogo é uma região rotulada (com o nome da atividade), e não uma região de aplicação, então o
   leitor de tela mantém o modo de navegação normal ao redor do tabuleiro e dos botões.
-* Os botões (desistir, ajuda, música, efeitos sonoros, tela cheia, usar item) são elementos `<button>`
+* Os botões (desistir, como jogar, informações do oponente, música, efeitos sonoros, tela cheia, usar item) são elementos `<button>`
   reais com nomes acessíveis; música, efeitos sonoros e tela cheia também informam se estão ligados ou
   desligados (`aria-pressed`). O histórico e o balão do tutorial não são lidos em voz alta, então a
   região viva abaixo continua sendo o único canal.

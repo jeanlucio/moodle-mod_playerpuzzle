@@ -29,7 +29,11 @@
 ## 🏛️ Lobby e economia
 
 * **Lobby como tela inicial:** progresso, dificuldade, o aviso de mínimo de questões e **Jogar**,
-  com botões para a **Loja**, o **Ranking** e as **Configurações**.
+  com botões para a **Loja**, o **Ranking**, o **Como jogar** e as **Configurações**.
+* **Como jogar:** uma ajuda que o estudante abre no Lobby e, pelo botão **?**, durante a luta: o objetivo, as
+  sete peças, as perguntas, a dificuldade, a loja, o modo de jogo, como mexer nas peças (mouse, toque ou
+  teclado) e o que cada botão do jogo faz. O que a atividade não tem (as perguntas de um banco vazio, o texto
+  da Campanha numa Partida Única, a loja para um visitante) fica de fora.
 * **PuzzleCoin:** a moeda persistente do próprio plugin, ganha ao vencer fases e partidas.
 * **Loja de loadout:** antes da partida, o estudante gasta PuzzleCoin em consumíveis — Poção,
   Escudo, Magia Rápida, Espada e Dica da Questão — e os usa durante a luta, dentro de um limite

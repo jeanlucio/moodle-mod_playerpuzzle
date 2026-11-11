@@ -1,0 +1,57 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+
+{{!
+    @template mod_playerpuzzle/howtoplay_dialog
+
+    The How to play help during the fight, as a native <dialog> opened from the stage's How to play button. It is moved
+    inside the game's container when the game boots, so it also shows in full screen. The title takes the focus when it
+    opens, so a screen reader starts from it; the content scrolls and the Close button stays in view.
+
+    Context variables required for this template:
+    * title - The dialog's title
+    * closelabel - The close button's text
+    * All the variables of mod_playerpuzzle/howtoplay_body
+
+    Example context (json):
+    {
+        "title": "How to play",
+        "closelabel": "Close",
+        "goalheading": "The goal",
+        "goaltext": "Swap two neighbouring pieces to line up three or more of a kind.",
+        "turntext": "You move, then the opponent moves.",
+        "piecesheading": "The seven pieces",
+        "pieces": [],
+        "difficultyheading": "Difficulty",
+        "difficultytext": "You choose Easy, Normal or Hard.",
+        "difficulties": [],
+        "modeheading": "Game mode",
+        "modetext": "A Campaign has 1 level of 10 phases.",
+        "controlsheading": "Moving the pieces",
+        "pointertext": "With a mouse or touch, press a piece and then a neighbour.",
+        "keyboardtext": "With the keyboard, use Tab, the arrow keys and Enter.",
+        "buttonsheading": "Game buttons",
+        "buttons": []
+    }
+}}
+<dialog id="playerpuzzle-howto" class="pp-howto-dialog pp-themed" aria-labelledby="pp-howto-title">
+    <h3 id="pp-howto-title" class="pp-howto-title" tabindex="-1">{{title}}</h3>
+    {{> mod_playerpuzzle/howtoplay_body }}
+    <div class="pp-howto-footer">
+        <button type="button" class="btn btn-primary" id="pp-howto-close">{{closelabel}}</button>
+    </div>
+</dialog>

@@ -304,6 +304,19 @@
                         </button>
                     </form>
                     {{/noquestions}}
+                    {{#howto}}
+                    <button
+                        type="button"
+                        class="pp-lobby-menu-btn"
+                        data-action="open-panel"
+                        data-panel="pp-lobby-howto"
+                        aria-controls="pp-lobby-howto"
+                        aria-expanded="false"
+                    >
+                        <i class="fa fa-circle-question" aria-hidden="true"></i>
+                        <span>{{title}}</span>
+                    </button>
+                    {{/howto}}
                     <button
                         type="button"
                         class="pp-lobby-menu-btn"
@@ -353,6 +366,14 @@
             </section>
             {{/campaignended}}
             {{/isguest}}
+
+            {{#howto}}
+            <section id="pp-lobby-howto" class="pp-lobby-view" aria-labelledby="pp-lobby-howto-title" data-wide="true" hidden>
+                <h3 id="pp-lobby-howto-title" class="pp-lobby-view-title" tabindex="-1">{{title}}</h3>
+                {{> mod_playerpuzzle/howtoplay_body }}
+                <button type="button" class="pp-lobby-menu-btn pp-lobby-back" data-action="close-panel">{{backlabel}}</button>
+            </section>
+            {{/howto}}
 
             <section id="pp-lobby-settings" class="pp-lobby-view" aria-labelledby="pp-lobby-settings-title" hidden>
                 <h3 id="pp-lobby-settings-title" class="pp-lobby-view-title" tabindex="-1">{{settingsmenulabel}}</h3>

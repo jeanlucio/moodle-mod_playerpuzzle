@@ -24,7 +24,9 @@
    Hard (a line under it says what each changes). Once a phase is under way (a move, an
    answer or an item used) it is locked until its "Phase won" screen; before that, you can still change it. In a Campaign, the Campaign button opens your **Campaign history**:
    a line for each Campaign with its hero, the phases won, the attempts used and its points.
-2. Use **Play Demo** for a guided practice fight that never counts for anything.
+2. Use **Play Demo** for a guided practice fight that never counts for anything, and **How to play** to read
+   the rules: it is also behind the **?** button during a fight, while the button with the card icon opens the
+   opponent's card.
 3. Open the **Shop**, which shows your PuzzleCoin balance, to buy consumables before the match, and —
    when the teacher connected PlayerHUD — to transfer coins in. **Settings** holds music (off until you turn it on), sound effects and spoken
    narration (also off), and **Ranking** shows the class standings.

@@ -143,6 +143,7 @@ class lobby_page_service {
         $data += self::build_minquestions_context($instance);
         $data += self::build_noquestions_context($instance, !empty($data['canmanagequestions']));
         $data += self::build_difficulty_context($attempt);
+        $data['howto'] = howtoplay::context($instance, is_guest($context, $userid));
         $data += self::build_sound_context($userid);
         $data += self::build_ranking_context($instance, $cm, $userid, $context);
 

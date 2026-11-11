@@ -701,6 +701,27 @@ body.path-mod-playerpuzzle .pp-phase-modal::backdrop {
     background-color: transparent;
 }
 
+/* A short screen (a phone on its side): a tighter window, so Continue and Exit are in view when it opens and not only
+   after scrolling it. */
+@media (max-height: 520px) {
+    body.path-mod-playerpuzzle .pp-phase-modal {
+        padding: 0.75rem 1.5rem;
+    }
+
+    body.path-mod-playerpuzzle .pp-phase-modal .display-4 {
+        font-size: 1.75rem;
+    }
+
+    body.path-mod-playerpuzzle .pp-phase-modal .lead {
+        font-size: 1rem;
+    }
+
+    body.path-mod-playerpuzzle .pp-phase-modal .btn-lg {
+        padding: 0.3rem 1rem;
+        font-size: 1rem;
+    }
+}
+
 /**
  * Lobby "portal" screen: a bounded stage (not the full viewport) built from the game's own
  * art instead of a plain Bootstrap form, so entering a match feels like opening a game rather

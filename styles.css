@@ -672,6 +672,7 @@ body.path-mod-playerpuzzle #playerpuzzle-question-text:focus {
     }
 
     body.path-mod-playerpuzzle #playerpuzzle-btn-confirm,
+    body.path-mod-playerpuzzle #playerpuzzle-btn-continue,
     body.path-mod-playerpuzzle #playerpuzzle-btn-skip {
         font-size: 0.875rem;
     }
@@ -2301,7 +2302,7 @@ body.path-mod-playerpuzzle .pp-question-modal .btn-danger {
 }
 
 body.path-mod-playerpuzzle .pp-question-modal .btn-light,
-body.path-mod-playerpuzzle .pp-question-modal .btn-secondary:not(#playerpuzzle-btn-confirm):not(#playerpuzzle-btn-skip) {
+body.path-mod-playerpuzzle .pp-question-modal .btn-secondary:not(.pp-modal-action) {
     background: rgba(0, 0, 0, 0.12);
     border-color: var(--pp-bronze);
     color: var(--pp-ink);

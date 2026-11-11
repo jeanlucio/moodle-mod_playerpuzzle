@@ -69,9 +69,9 @@ See [Security & Anti-Cheat](#security).
 
 ## ♿ Accessibility
 
-A parallel, always-present HTML layer for the board (a hidden grid with arrow-key navigation,
-number-key moves, and `aria-live` turn announcements), a native `<dialog>` for questions, and an
-optional spoken narration. See [Accessibility](#accessibility).
+The board is a real grid over the pieces (arrow-key navigation, Enter to select a piece and swap it with a
+neighbour, number-key moves, and `aria-live` turn announcements), with real labelled buttons, a native
+`<dialog>` for questions and an optional spoken narration. See [Accessibility](#accessibility).
 
 ## 🔐 Privacy and quality
 

@@ -72,9 +72,10 @@ Veja [Segurança e Anti-Trapaça](#security).
 
 ## ♿ Acessibilidade
 
-Uma camada HTML paralela e sempre presente para o tabuleiro (uma grade oculta com navegação por
-setas, jogadas por teclas numéricas e anúncios `aria-live` a cada turno), um `<dialog>` nativo
-para as perguntas e uma narração falada opcional. Veja [Acessibilidade](#accessibility).
+O tabuleiro é uma grade de verdade sobre as peças (navegação por setas, Enter para selecionar uma peça e
+trocá-la com a vizinha, jogadas por teclas numéricas e anúncios `aria-live` a cada turno), com botões reais
+e rotulados, um `<dialog>` nativo para as perguntas e uma narração falada opcional. Veja
+[Acessibilidade](#accessibility).
 
 ## 🔐 Privacidade e qualidade
 

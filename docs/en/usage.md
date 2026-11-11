@@ -30,6 +30,10 @@
    narration (also off), and **Ranking** shows the class standings.
 4. Select **Play Game** to start (or resume) a match.
 5. Match pieces to attack the opponent, fill the Mana Orb bar to trigger a
-   [Question Challenge](#questions), and answer correctly for a critical hit.
+   [Question Challenge](#questions), and answer correctly for a critical hit. With a mouse or touch, press a
+   piece and then a neighbour, or drag one. **With the keyboard**, Tab into the board, move between squares
+   with the arrow keys, press **Enter** to select a piece and **Enter** on a neighbouring square to swap
+   the two (Enter on the same piece drops the selection), or press **1** to **9** to play the move the game
+   announced, and **Space** to hear the list again. See [Accessibility](#accessibility).
 6. After a phase or match, review the questions you answered. In Campaign mode, winning a phase
    never costs a new attempt — only losing does.

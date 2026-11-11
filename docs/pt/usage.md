@@ -30,6 +30,10 @@
    sonoros e narração falada (também desligada), e **Ranking** mostra a classificação da turma.
 4. Selecione **Jogar** para começar (ou retomar) uma partida.
 5. Combine peças para atacar o oponente, encha a barra do Orbe de Mana para disparar um
-   [Desafio de Pergunta](#questions), e responda certo para um acerto crítico.
+   [Desafio de Pergunta](#questions), e responda certo para um acerto crítico. Com mouse ou toque, aperte uma
+   peça e depois uma vizinha, ou arraste uma. **Pelo teclado**, entre no tabuleiro com Tab, ande entre as casas
+   com as setas, aperte **Enter** para selecionar a peça e **Enter** numa casa vizinha para trocar as duas
+   (Enter na mesma peça desfaz a seleção), ou aperte **1** a **9** para fazer a jogada que o jogo anunciou, e
+   **Espaço** para ouvir a lista de novo. Veja [Acessibilidade](#accessibility).
 6. Depois de uma fase ou partida, revise as perguntas que respondeu. No modo Campanha, vencer uma
    fase nunca consome uma nova tentativa — só perder consome.

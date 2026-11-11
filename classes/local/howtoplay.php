@@ -39,7 +39,7 @@ class howtoplay {
     private const BUTTONS = [
         ['icon' => 'fa-flag', 'label' => 'stage_giveup', 'text' => 'howto_btn_giveup'],
         ['icon' => 'fa-question', 'label' => 'stage_howtoplay', 'text' => 'howto_btn_howto'],
-        ['icon' => 'fa-id-card', 'label' => 'stage_opponent', 'text' => 'howto_btn_opponent'],
+        ['icon' => 'fa-dragon', 'label' => 'stage_opponent', 'text' => 'howto_btn_opponent'],
         ['icon' => 'fa-volume-high', 'label' => 'lobby_music_label', 'text' => 'howto_btn_music'],
         ['icon' => 'fa-bell', 'label' => 'lobby_sfx_label', 'text' => 'howto_btn_effects'],
         ['icon' => 'fa-expand', 'label' => 'stage_fullscreen', 'text' => 'howto_btn_fullscreen'],

@@ -81,7 +81,7 @@ define([
 
     // The Font Awesome class of each round button's icon, the second one for the off state of a toggle.
     const ICONS = {
-        giveup: 'fa-flag', howto: 'fa-question', opponent: 'fa-id-card',
+        giveup: 'fa-flag', howto: 'fa-question', opponent: 'fa-dragon',
         music: ['fa-volume-high', 'fa-volume-xmark'], effects: ['fa-bell', 'fa-bell-slash'],
     };
 
@@ -874,7 +874,7 @@ define([
                 {title: strings.demostep_howto_title, text: strings.demostep_howto_text, icon: 'fa-question', target: 'howto'},
                 {
                     title: strings.demostep_opponent_title, text: strings.demostep_opponent_text,
-                    icon: 'fa-id-card', target: 'opponent',
+                    icon: 'fa-dragon', target: 'opponent',
                 },
                 {title: strings.demostep_music_title, text: strings.demostep_music_text, icon: 'fa-volume-up', target: 'music'},
                 {title: strings.demostep_sfx_title, text: strings.demostep_sfx_text, icon: 'fa-bell', target: 'effects'},

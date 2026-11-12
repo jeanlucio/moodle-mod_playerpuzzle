@@ -250,9 +250,9 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
      * Restores a student attempt record (only when userinfo is enabled).
      *
      * @param array|object $data XML data for this element.
-     * @return void
+     * @return int|null SKIP_ALL_CHILDREN for an attempt whose user is not part of this restore, null otherwise.
      */
-    public function process_playerpuzzle_attempt(array|object $data): void {
+    public function process_playerpuzzle_attempt(array|object $data): ?int {
         global $DB;
 
         $data = (object) $data;
@@ -279,13 +279,17 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         // the moment a student resumes an in-progress attempt.
         $data->token = bin2hex(random_bytes(32));
 
-        // Skip an orphaned attempt (the user was not part of this restore).
+        // Skip an orphaned attempt (the user was not part of this restore). Dropping the row is not enough:
+        // its questions and consumables are still dispatched, and get_new_parentid() would hand them the
+        // attempt restored just before this one (another student's), or nothing at all.
         if (empty($data->userid)) {
-            return;
+            return self::SKIP_ALL_CHILDREN;
         }
 
         $newitemid = $DB->insert_record('playerpuzzle_attempts', $data);
         $this->set_mapping('playerpuzzle_attempt', $oldid, $newitemid);
+
+        return null;
     }
 
     /**
@@ -304,6 +308,9 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         $oldid = $data->id;
 
         $data->attemptid = $this->get_new_parentid('playerpuzzle_attempt');
+        if (empty($data->attemptid)) {
+            return;
+        }
         // Questionid points at this activity's own bank (see the Wave 1 revert to a single
         // question source), never the real Moodle question bank — the same namespace the
         // backup step annotates it under.
@@ -328,6 +335,9 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         $data = (object) $data;
 
         $data->attemptid = $this->get_new_parentid('playerpuzzle_attempt');
+        if (empty($data->attemptid)) {
+            return;
+        }
 
         $DB->insert_record('playerpuzzle_attempt_consumables', $data);
     }

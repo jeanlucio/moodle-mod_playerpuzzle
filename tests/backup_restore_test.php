@@ -113,12 +113,14 @@ final class backup_restore_test extends \advanced_testcase {
      * @param \stdClass $course Source course.
      * @param bool $withlogs Whether the backup includes the course logs.
      * @param int $newstartdate Start date of the restored course, 0 to leave the dates as they were.
+     * @param callable|null $tamper Called with the directory of the extracted backup before it is restored.
      * @return \stdClass The new course the backup was restored into.
      */
     private function backup_and_restore_into_new_course(
         \stdClass $course,
         bool $withlogs = false,
-        int $newstartdate = 0
+        int $newstartdate = 0,
+        ?callable $tamper = null
     ): \stdClass {
         global $CFG;
         require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
@@ -144,7 +146,11 @@ final class backup_restore_test extends \advanced_testcase {
         $newcourse = $this->getDataGenerator()->create_course();
         $tempdir = \restore_controller::get_tempdir_name($newcourse->id, $admin->id);
         $fp = get_file_packer('application/vnd.moodle.backup');
-        $backupfile->extract_to_pathname($fp, make_backup_temp_directory($tempdir));
+        $extracted = make_backup_temp_directory($tempdir);
+        $backupfile->extract_to_pathname($fp, $extracted);
+        if ($tamper !== null) {
+            $tamper($extracted);
+        }
 
         $rc = new \restore_controller(
             $tempdir,
@@ -752,6 +758,95 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertSame($newstart + (3 * DAYSECS), (int) $attempts[0]->timefinished);
         // A phase never won stays empty rather than becoming a date.
         $this->assertSame(0, (int) $attempts[1]->timephasewon);
+    }
+
+    /**
+     * Provides where the attempt of the missing user sits among the others in the backup.
+     *
+     * @return array
+     */
+    public static function orphaned_attempt_position_provider(): array {
+        return [
+            'before the restored attempt' => [true],
+            'after the restored attempt' => [false],
+        ];
+    }
+
+    /**
+     * Tests that an attempt whose user is not part of the restore takes its questions and consumables with it.
+     *
+     * The attempt is dropped, but its children are still dispatched and look their parent up with
+     * get_new_parentid(): that returns the attempt restored just before (another student's, so the review
+     * and the teacher's report show answers that are not theirs, or a unique-index clash aborts the restore)
+     * or nothing at all when the dropped attempt comes first (a NOT NULL violation aborts it).
+     *
+     * @dataProvider orphaned_attempt_position_provider
+     * @param bool $orphanfirst Whether the attempt of the missing user precedes the restored one in the backup.
+     * @return void
+     */
+    public function test_backup_restore_drops_the_children_of_an_attempt_without_a_user(bool $orphanfirst): void {
+        global $DB;
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $student = $this->getDataGenerator()->create_user();
+        $stranger = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $this->getDataGenerator()->enrol_user($stranger->id, $course->id, 'student');
+        $instance = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')
+            ->create_instance(['course' => $course->id]);
+        $insertattempt = fn(int $userid): int => $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id,
+            'userid'         => $userid,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'lost',
+            'timecreated'    => time(),
+            'timefinished'   => time(),
+        ]);
+        $orphanid = 0;
+        if ($orphanfirst) {
+            $orphanid = $insertattempt($stranger->id);
+        }
+        $keptid = $insertattempt($student->id);
+        if (!$orphanfirst) {
+            $orphanid = $insertattempt($stranger->id);
+        }
+        foreach ([$orphanid, $keptid] as $attemptid) {
+            $this->make_question_log($attemptid);
+            $this->make_consumable_use($attemptid);
+        }
+
+        // The stranger's attempt is pointed at a user the backup does not know, which is how a user the
+        // restore neither creates nor matches looks to the restore step.
+        $newcourse = $this->backup_and_restore_into_new_course(
+            $course,
+            false,
+            0,
+            function (string $dir) use ($orphanid): void {
+                $files = glob($dir . '/activities/playerpuzzle_*/playerpuzzle.xml');
+                $this->assertCount(1, $files);
+                $changed = preg_replace(
+                    '~(<attempt id="' . $orphanid . '">.*?<userid>)\d+(</userid>)~s',
+                    '${1}987654321${2}',
+                    file_get_contents($files[0]),
+                    1,
+                    $count
+                );
+                $this->assertSame(1, $count);
+                file_put_contents($files[0], $changed);
+            }
+        );
+
+        $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+        $attempts = $DB->get_records('playerpuzzle_attempts', ['playerpuzzleid' => $newinstance->id]);
+        $this->assertCount(1, $attempts);
+        $restored = reset($attempts);
+        $this->assertSame((int) $student->id, (int) $restored->userid);
+        // The source activity keeps its two rows of each; the restored one adds exactly one, its own.
+        foreach (['playerpuzzle_attempt_questions', 'playerpuzzle_attempt_consumables'] as $table) {
+            $this->assertSame(3, $DB->count_records($table), $table);
+            $this->assertSame(1, $DB->count_records($table, ['attemptid' => $restored->id]), $table);
+        }
     }
 
     /**

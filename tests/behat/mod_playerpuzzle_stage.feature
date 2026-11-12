@@ -75,7 +75,7 @@ Feature: PlayerPuzzle game controls and questions work through the keyboard and 
     Then I should see "Right! You move first." in the "#playerpuzzle-answers-container" "css_element"
     And "your answer, correct" "button" should exist
     And the focused element is "#playerpuzzle-btn-continue" "css_element"
-    And "#playerpuzzle-btn-continue[aria-describedby='playerpuzzle-outcome-0']" "css_element" should exist
+    And "#playerpuzzle-btn-continue[aria-labelledby='playerpuzzle-outcome-0 playerpuzzle-btn-continue']" "css_element" should exist
     And I click on "#playerpuzzle-btn-continue" "css_element"
     And I wait until the PlayerPuzzle board is ready
 

@@ -1385,7 +1385,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     // answer is picked), and the boss's or an empty question's "Continue" would
                     // otherwise come up disabled, leaving no way to close the modal.
                     $('#playerpuzzle-btn-confirm').hide().prop('disabled', false).removeClass('disabled').off('click');
-                    $('#playerpuzzle-btn-continue').off('click').prop('hidden', true).removeAttr('aria-describedby');
+                    $('#playerpuzzle-btn-continue').off('click').prop('hidden', true).removeAttr('aria-labelledby');
                     $('#playerpuzzle-btn-skip').hide().off('click');
                     $('#playerpuzzle-hint-text').hide().empty();
                     $('#playerpuzzle-btn-hint').hide().prop('disabled', false).off('click');
@@ -1414,13 +1414,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         const next = document.getElementById('playerpuzzle-btn-continue');
                         $(next).off('click').on('click', closeModal);
                         // Focus on a button silences the live region (the screen reader reads the button instead), so how
-                        // the question went rides on the button itself: it is read as the button's description.
+                        // the question went rides on the button itself, as the start of its name: a description is read
+                        // after the role ("Continue, button, Right!"), which sounds like part of the name.
                         const outcomes = [...answersContainer[0].querySelectorAll('.alert')];
                         outcomes.forEach((outcome, i) => {
                             outcome.id = `playerpuzzle-outcome-${i}`;
                         });
                         if (outcomes.length > 0) {
-                            next.setAttribute('aria-describedby', outcomes.map(outcome => outcome.id).join(' '));
+                            next.setAttribute('aria-labelledby', [...outcomes.map(outcome => outcome.id), next.id].join(' '));
                         }
                         next.hidden = false;
                         if (takeFocus) {

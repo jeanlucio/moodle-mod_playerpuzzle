@@ -87,7 +87,6 @@ This project is licensed under the **GNU General Public License v3 (GPLv3)**.
 
 * **Images:** the heroes, opponents, stages and board pieces were generated with Google Gemini; the stone panel and the parchment banner were generated with ChatGPT. All were created for this plugin from original prompts. The art direction, the prompts and the review of every image are the author's, who is responsible for the content.
 * **Sounds and music:** public domain (CC0). Music: "King's Feast" by [RandomMind](https://opengameart.org/content/medieval-kings-feast), loop version. Effects: "Book place" from [RPG sounds](https://opengameart.org/content/50-rpg-sound-effects) and the confirmation sound from [Interface Sounds](https://opengameart.org/content/interface-sounds), both by [Kenney](https://kenney.nl); the hit is a mix of two "RPG sounds" files (chop and metal click). Files are converted to MP3 and level-adjusted. See `pix/readme_moodle.txt`.
-* **Activity icon:** the "joystick" icon of [Bootstrap Icons](https://icons.getbootstrap.com/) (MIT), see `pix/readme_moodle.txt`.
 
 ### 👤 Maintainer
 
@@ -170,7 +169,6 @@ Este projeto é licenciado sob a **GNU General Public License v3 (GPLv3)**.
 
 * **Imagens:** os heróis, oponentes, cenários e peças do tabuleiro foram gerados com o Google Gemini; o painel de pedra e o pergaminho foram gerados com o ChatGPT. Todos foram criados para este plugin a partir de prompts originais. A direção de arte, os prompts e a revisão de todas as imagens são do autor, que responde pelo conteúdo.
 * **Sons e música:** domínio público (CC0). Música: "King's Feast" de [RandomMind](https://opengameart.org/content/medieval-kings-feast), versão em laço. Efeitos: "Book place" do pacote [RPG sounds](https://opengameart.org/content/50-rpg-sound-effects) e o som de confirmação do [Interface Sounds](https://opengameart.org/content/interface-sounds), ambos de [Kenney](https://kenney.nl); o golpe é uma mistura de dois arquivos do "RPG sounds" (golpe seco e clique de metal). Os arquivos foram convertidos para MP3 e tiveram o volume ajustado. Veja `pix/readme_moodle.txt`.
-* **Ícone da atividade:** o ícone "joystick" do [Bootstrap Icons](https://icons.getbootstrap.com/) (MIT), veja `pix/readme_moodle.txt`.
 
 ### 👤 Mantenedor
 

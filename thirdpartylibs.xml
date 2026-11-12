@@ -1,13 +1,6 @@
 <?xml version="1.0"?>
 <libraries>
   <library>
-    <location>pix/icon.svg</location>
-    <name>Bootstrap Icons (joystick icon)</name>
-    <license>MIT</license>
-    <version></version>
-    <licenseversion></licenseversion>
-  </library>
-  <library>
     <location>pix/music.mp3</location>
     <name>King's Feast (RandomMind)</name>
     <license>CC0</license>

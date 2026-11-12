@@ -217,6 +217,10 @@ class grade_calculator {
      * with, so changing the activity's level count later leaves a Campaign already played alone). Never a count of
      * `status = 'won'` rows — a single continuous attempt can cover dozens of phases of progress at once.
      *
+     * With "Considerar Erros" on (and a minimum of questions set), the progress is multiplied by the question
+     * accuracy of the whole Campaign: every answer of every attempt, since a new attempt picks up where the last
+     * one was lost rather than starting over.
+     *
      * Scaled against $base rather than always $instance->grade, so the ranking can reuse the
      * exact same formula against its own fixed base (see ranking_service::BASE_POINTS).
      *
@@ -238,7 +242,9 @@ class grade_calculator {
             $total = array_sum(array_map(fn(stdClass $a): int => (int) $a->questions_total, $attempts));
             $accuracypercent = $total > 0 ? ($correct / $total) * 100 : 100;
 
-            return (($progresspercent + $accuracypercent) / 2) * $base / 100;
+            // A product, like a Single Match win: errors only take away from the progress, never add to it, so the
+            // option cannot raise a grade for a student who answers better than they advance.
+            return ($progresspercent / 100) * ($accuracypercent / 100) * $base;
         }
 
         return ($progresspercent / 100) * $base;

@@ -168,4 +168,64 @@ final class upgrade_test extends \advanced_testcase {
         $this->assertTrue($dbman->field_exists($table, new \xmldb_field('phase')));
         $this->assertSame(0, (int) $DB->get_field('playerpuzzle_questions', 'phase', ['id' => $questionid]));
     }
+
+    /**
+     * Tests that the upgrade recomputes the grades of the Campaigns that count errors, since their formula changed,
+     * and leaves the activities it did not touch alone.
+     *
+     * @return void
+     */
+    public function test_upgrade_recomputes_the_grades_of_campaigns_that_count_errors(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        require_once($CFG->libdir . '/gradelib.php');
+
+        $course = $this->getDataGenerator()->create_course();
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $counting = $generator->create_instance([
+            'course' => $course->id, 'maxlevels' => 1, 'grade' => 100, 'minquestions' => 2, 'considererrors' => 1,
+        ]);
+        $plain = $generator->create_instance([
+            'course' => $course->id, 'maxlevels' => 1, 'grade' => 100, 'minquestions' => 2, 'considererrors' => 0,
+        ]);
+        foreach ([$counting, $plain] as $instance) {
+            $DB->insert_record('playerpuzzle_attempts', (object) [
+                'playerpuzzleid' => $instance->id,
+                'userid' => $student->id,
+                'token' => bin2hex(random_bytes(32)),
+                'status' => 'lost',
+                'currentlevel' => 1,
+                'currentphase' => 6,
+                'questions_correct' => 3,
+                'questions_total' => 5,
+                'timecreated' => 1000,
+                'timefinished' => 1100,
+            ]);
+            // The grade the old formula left behind, for both.
+            grade_update(
+                'mod/playerpuzzle',
+                $course->id,
+                'mod',
+                'playerpuzzle',
+                $instance->id,
+                0,
+                [$student->id => ['userid' => $student->id, 'rawgrade' => 77.0]],
+                ['itemname' => 'Test', 'grademax' => 100, 'grademin' => 0]
+            );
+        }
+
+        set_config('version', 2026111205, 'mod_playerpuzzle');
+        xmldb_playerpuzzle_upgrade(2026111205);
+
+        $grade = fn(\stdClass $instance): float => (float) \grade_grade::fetch([
+            'itemid' => \grade_item::fetch([
+                'itemtype' => 'mod', 'itemmodule' => 'playerpuzzle', 'iteminstance' => $instance->id, 'itemnumber' => 0,
+            ])->id,
+            'userid' => $student->id,
+        ])->finalgrade;
+        // Progress 50% multiplied by accuracy 3/5 = 30%.
+        $this->assertEqualsWithDelta(30.0, $grade($counting), 0.001);
+        $this->assertEqualsWithDelta(77.0, $grade($plain), 0.001);
+    }
 }

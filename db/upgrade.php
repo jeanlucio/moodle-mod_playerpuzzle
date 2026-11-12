@@ -891,5 +891,22 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026110701, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026111206) {
+        // A Campaign's grade with "Considerar Erros" on went from the average of its progress and its accuracy to
+        // their product, so every grade already in the gradebook for such an activity was worked out the old way
+        // and stays that way until each student plays again. Recomputed for all of them, one activity at a time.
+        $instances = $DB->get_recordset_select(
+            'playerpuzzle',
+            'gamemode = :campaign AND considererrors = 1 AND minquestions >= 1',
+            ['campaign' => 'campaign']
+        );
+        foreach ($instances as $instance) {
+            component_callback('mod_playerpuzzle', 'update_grades', [$instance]);
+        }
+        $instances->close();
+
+        upgrade_mod_savepoint(true, 2026111206, 'playerpuzzle');
+    }
+
     return true;
 }

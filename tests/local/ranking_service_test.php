@@ -138,19 +138,19 @@ final class ranking_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that Campaign blends question accuracy in when errors count, exactly like the
-     * grade: 30% progress and 50% accuracy rank at 40.
+     * Tests that Campaign weights progress by question accuracy when errors count, exactly like the
+     * grade: 30% progress and 50% accuracy rank at 15.
      *
      * @return void
      */
-    public function test_campaign_blends_accuracy_when_errors_count(): void {
+    public function test_campaign_weights_progress_by_accuracy_when_errors_count(): void {
         [$instance, $cm] = $this->make_instance(['minquestions' => 1, 'considererrors' => 1]);
         $ana = $this->make_student('Ana');
         $this->make_attempt($instance, $ana, ['currentphase' => 4, 'questions_correct' => 2, 'questions_total' => 4]);
 
         $ranking = ranking_service::get_ranking($instance, $cm, (int) $ana->id);
 
-        $this->assertSame([fullname($ana) => '40'], $this->standings($ranking));
+        $this->assertSame([fullname($ana) => '15'], $this->standings($ranking));
     }
 
     /**

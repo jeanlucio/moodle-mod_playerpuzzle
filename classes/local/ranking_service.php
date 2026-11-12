@@ -33,7 +33,7 @@ use stdClass;
  *
  * Both modes add up what the student played — engagement counts here, unlike the grade's
  * grademethod. Campaign adds up every Campaign's own score (grade_calculator::campaign_score():
- * how far it reached, blended with question accuracy when errors count), the one being played
+ * how far it reached, multiplied by question accuracy when errors count), the one being played
  * included, so the total only ever grows; ties broken by fewer attempts. Single Match adds up
  * every finished match's own score, ties broken by fewer matches, then less time played.
  *

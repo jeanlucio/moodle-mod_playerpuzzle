@@ -218,12 +218,12 @@ final class grade_calculator_test extends \basic_testcase {
     }
 
     /**
-     * Tests the Considerar Erros blend: average of progress% and aggregated question
+     * Tests the Considerar Erros weighting: progress% multiplied by the aggregated question
      * accuracy%, scaled by the configured grade.
      *
      * @return void
      */
-    public function test_campaign_grade_with_considererrors_blends_progress_and_accuracy(): void {
+    public function test_campaign_grade_with_considererrors_multiplies_progress_by_accuracy(): void {
         $instance = $this->make_instance([
             'maxlevels'      => 1,
             'grade'          => 100,
@@ -238,8 +238,57 @@ final class grade_calculator_test extends \basic_testcase {
             'questions_total'   => 5,
         ]);
 
-        // Progress: phases 1-5 won = 50%. Accuracy: 3/5 = 60%. Average = 55%.
-        $this->assertEqualsWithDelta(55.0, grade_calculator::calculate_user_grade($instance, [$attempt]), 0.001);
+        // Progress: phases 1-5 won = 50%. Accuracy: 3/5 = 60%. Product = 30%.
+        $this->assertEqualsWithDelta(30.0, grade_calculator::calculate_user_grade($instance, [$attempt]), 0.001);
+    }
+
+    /**
+     * Tests that the accuracy of a Campaign counts the answers of every attempt, not only the attempt that went furthest:
+     * a new attempt picks up where the last one was lost, so the first attempts' mistakes stay on the record.
+     *
+     * @return void
+     */
+    public function test_campaign_grade_with_considererrors_counts_the_answers_of_every_attempt(): void {
+        $instance = $this->make_instance(['maxlevels' => 1, 'considererrors' => 1, 'minquestions' => 3]);
+        $first = $this->make_attempt([
+            'currentphase' => 6,
+            'status' => 'lost',
+            'questions_correct' => 1,
+            'questions_total' => 5,
+        ]);
+        $second = $this->make_attempt([
+            'currentphase' => 9,
+            'status' => 'lost',
+            'questions_correct' => 5,
+            'questions_total' => 5,
+        ]);
+
+        // Furthest phase won is 8 = 80%. Accuracy: 6 of 10 = 60%. Product = 48%, not 80% (the last attempt's own).
+        $this->assertEqualsWithDelta(48.0, grade_calculator::calculate_user_grade($instance, [$first, $second]), 0.001);
+    }
+
+    /**
+     * Tests that Considerar Erros can only take away from a Campaign's grade, never add to it, whatever the accuracy.
+     *
+     * @return void
+     */
+    public function test_campaign_grade_with_considererrors_never_exceeds_the_progress_alone(): void {
+        $without = $this->make_instance(['maxlevels' => 1, 'considererrors' => 0, 'minquestions' => 3]);
+        $with = $this->make_instance(['maxlevels' => 1, 'considererrors' => 1, 'minquestions' => 3]);
+
+        foreach ([0, 2, 5, 8, 10] as $correct) {
+            $attempt = $this->make_attempt([
+                'currentphase' => 6,
+                'status' => 'lost',
+                'questions_correct' => $correct,
+                'questions_total' => 10,
+            ]);
+            $this->assertLessThanOrEqual(
+                grade_calculator::calculate_user_grade($without, [$attempt]),
+                grade_calculator::calculate_user_grade($with, [$attempt]),
+                "{$correct} correct out of 10"
+            );
+        }
     }
 
     /**
@@ -285,8 +334,8 @@ final class grade_calculator_test extends \basic_testcase {
         ]);
         $attempt = $this->make_attempt(['currentlevel' => 1, 'currentphase' => 6, 'status' => 'lost']);
 
-        // Progress 50%, accuracy treated as 100%: average = 75%.
-        $this->assertEqualsWithDelta(75.0, grade_calculator::calculate_user_grade($instance, [$attempt]), 0.001);
+        // Progress 50%, accuracy treated as 100%: product = 50%.
+        $this->assertEqualsWithDelta(50.0, grade_calculator::calculate_user_grade($instance, [$attempt]), 0.001);
     }
 
     /**

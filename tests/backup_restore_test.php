@@ -112,9 +112,14 @@ final class backup_restore_test extends \advanced_testcase {
      *
      * @param \stdClass $course Source course.
      * @param bool $withlogs Whether the backup includes the course logs.
+     * @param int $newstartdate Start date of the restored course, 0 to leave the dates as they were.
      * @return \stdClass The new course the backup was restored into.
      */
-    private function backup_and_restore_into_new_course(\stdClass $course, bool $withlogs = false): \stdClass {
+    private function backup_and_restore_into_new_course(
+        \stdClass $course,
+        bool $withlogs = false,
+        int $newstartdate = 0
+    ): \stdClass {
         global $CFG;
         require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
         require_once($CFG->dirroot . '/backup/util/includes/restore_includes.php');
@@ -149,6 +154,9 @@ final class backup_restore_test extends \advanced_testcase {
             $admin->id,
             \backup::TARGET_EXISTING_ADDING
         );
+        if ($newstartdate > 0) {
+            $rc->get_plan()->get_setting('course_startdate')->set_value($newstartdate);
+        }
         $rc->execute_precheck();
         $rc->execute_plan();
         $rc->destroy();
@@ -691,6 +699,59 @@ final class backup_restore_test extends \advanced_testcase {
             3,
             \mod_playerpuzzle\local\user_stock::get_quantity($user->id, (int) $newinstance->id, 'hint')
         );
+    }
+
+    /**
+     * Tests that every date of an attempt follows the start date of the restored course, the phase-won
+     * time included: the grade's submission date is worked out from it together with the finish time, so
+     * leaving it behind mixes two terms in one date.
+     *
+     * @return void
+     */
+    public function test_backup_restore_shifts_every_attempt_date_with_the_course_start(): void {
+        global $DB;
+        $this->setAdminUser();
+
+        $start = strtotime('2026-02-01 00:00:00 UTC');
+        $course = $this->getDataGenerator()->create_course(['startdate' => $start]);
+        $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'student');
+        $instance = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')
+            ->create_instance(['course' => $course->id]);
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id,
+            'userid'         => $user->id,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'lost',
+            'timecreated'    => $start + DAYSECS,
+            'timephasewon'   => $start + (2 * DAYSECS),
+            'timefinished'   => $start + (3 * DAYSECS),
+        ]);
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id,
+            'userid'         => $user->id,
+            'token'          => bin2hex(random_bytes(32)),
+            'status'         => 'lost',
+            'timecreated'    => $start + (4 * DAYSECS),
+            'timephasewon'   => 0,
+            'timefinished'   => $start + (5 * DAYSECS),
+        ]);
+        $newstart = strtotime('2026-08-01 00:00:00 UTC');
+
+        $newcourse = $this->backup_and_restore_into_new_course($course, false, $newstart);
+
+        $newinstance = $DB->get_record('playerpuzzle', ['course' => $newcourse->id], '*', MUST_EXIST);
+        $attempts = array_values($DB->get_records(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $newinstance->id],
+            'timecreated ASC'
+        ));
+        $this->assertCount(2, $attempts);
+        $this->assertSame($newstart + DAYSECS, (int) $attempts[0]->timecreated);
+        $this->assertSame($newstart + (2 * DAYSECS), (int) $attempts[0]->timephasewon);
+        $this->assertSame($newstart + (3 * DAYSECS), (int) $attempts[0]->timefinished);
+        // A phase never won stays empty rather than becoming a date.
+        $this->assertSame(0, (int) $attempts[1]->timephasewon);
     }
 
     /**

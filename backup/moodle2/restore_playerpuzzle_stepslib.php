@@ -267,6 +267,9 @@ class restore_playerpuzzle_activity_structure_step extends restore_activity_stru
         $data->currentquestionid = (int) $this->get_mappingid('playerpuzzle_bankquestion', $data->currentquestionid, 0);
         $data->timecreated = $this->apply_date_offset($data->timecreated);
         $data->timefinished = $this->apply_date_offset($data->timefinished);
+        // Shifted with the finish time: the grade's submission date is worked out from both. A backup made
+        // before the column existed carries none, and an empty value is never shifted.
+        $data->timephasewon = $this->apply_date_offset($data->timephasewon ?? 0);
         $data->timemodified = $this->apply_date_offset($data->timemodified);
         // Regenerated rather than preserved: the column carries a UNIQUE index across the
         // whole site, not scoped per instance, so restoring the exact original bytes would

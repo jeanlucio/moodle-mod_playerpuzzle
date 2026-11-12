@@ -427,7 +427,6 @@ function playerpuzzle_delete_instance(int $id): bool {
     \mod_playerpuzzle\local\user_stock::delete_for_instance((int) $playerpuzzle->id);
     \mod_playerpuzzle\local\user_hero::delete_for_instance((int) $playerpuzzle->id);
     $DB->delete_records('playerpuzzle', ['id' => $playerpuzzle->id]);
-    $DB->delete_records('event', ['modulename' => 'playerpuzzle', 'instance' => $playerpuzzle->id]);
 
     return true;
 }

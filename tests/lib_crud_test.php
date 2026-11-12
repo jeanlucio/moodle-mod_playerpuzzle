@@ -334,6 +334,33 @@ final class lib_crud_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that deleting the activity leaves its calendar events to the core, which removes them through the
+     * calendar API and so logs calendar_event_deleted; deleting the rows first would skip that event.
+     *
+     * @return void
+     */
+    public function test_deleting_the_activity_removes_its_calendar_events_through_the_calendar_api(): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $CFG->enablecompletion = 1;
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $instance = $this->getDataGenerator()->create_module('playerpuzzle', ['course' => $course->id]);
+        \core_completion\api::update_completion_date_event($instance->cmid, 'playerpuzzle', $instance, time() + DAYSECS);
+        $params = ['modulename' => 'playerpuzzle', 'instance' => $instance->id];
+        $this->assertSame(1, $DB->count_records('event', $params));
+
+        $sink = $this->redirectEvents();
+        course_delete_module($instance->cmid);
+        $events = $sink->get_events();
+        $sink->close();
+
+        $this->assertSame(0, $DB->count_records('event', $params));
+        $deleted = array_filter($events, static fn($event): bool => $event instanceof \core\event\calendar_event_deleted);
+        $this->assertCount(1, $deleted);
+    }
+
+    /**
      * Tests that deleting a non-existent instance returns false without erroring.
      *
      * @return void

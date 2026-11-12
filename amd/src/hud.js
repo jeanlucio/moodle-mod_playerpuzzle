@@ -371,6 +371,8 @@ define([
             this.txtStar = this.addResourceChip(L.starX, L.starY, 'item0', 'x1.0');
             this.image(back, 'item5', centered(L.potionX, L.potionY, L.resourceIconSize));
             this.createPurchaseBadge(L.potionX, L.potionY, 'potion', L.badgeScale);
+            this.image(back, 'item3', centered(L.swordX, L.swordY, L.resourceIconSize));
+            this.createPurchaseBadge(L.swordX, L.swordY, 'sword', L.badgeScale);
             this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
             this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
 

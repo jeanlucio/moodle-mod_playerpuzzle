@@ -156,7 +156,7 @@ define([], () => {
             hpBarW: 300, hpBarH: 22, hpBarRadius: 11,
             bossUiX: 120, bossHpY: 250, bossTxtY: 261,
             bossGoldX: 60, bossGoldY: 296, bossStarX: 160, bossStarY: 296,
-            bossRingY: 296, bossGrimoireX: 330, bossShieldRingX: 390, bossOrbX: 450,
+            bossRingY: 296, bossGrimoireX: 360, bossShieldRingX: 420, bossOrbX: 480,
             // The opponent's starting items, drawn only when it has any, between the Star
             // and the rings.
             bossPotionX: 248, bossPotionY: 296, bossSwordX: 290, bossSwordY: 296,
@@ -169,14 +169,16 @@ define([], () => {
             boardOffX: 77.5, boardOffY: 355.5,
 
             // Student HUD: HP bar, the "Perguntas: X/N" counter (only with a minimum of
-            // questions), then one row with Coin/Star, the Potion and the rings, with
-            // purchase badges on the Potion, Grimoire and Shield.
+            // questions), then one row with Coin/Star, the Potion, the Sword and the rings, with
+            // purchase badges on the Potion, Sword, Grimoire and Shield. The rings sit 30px
+            // further right than the opponent's row first had them, to make room for the Sword's
+            // icon and badge; the opponent's row moved with them so the two stay aligned.
             panelTopPlayer: 776, panelBottomPlayer: 870,
             playerUiX: 120, playerHpY: 784, playerTxtY: 795,
             questionsCounterY: 811,
             goldX: 60, goldY: 846, starX: 150, starY: 846,
-            potionX: 250, potionY: 846,
-            playerRingY: 846, playerGrimoireX: 330, playerShieldRingX: 390, playerOrbX: 450,
+            potionX: 250, potionY: 846, swordX: 305, swordY: 846,
+            playerRingY: 846, playerGrimoireX: 360, playerShieldRingX: 420, playerOrbX: 480,
 
             // History: one button (not two always-visible 5-line blocks like desktop —
             // there's no room) opening a modal with Player/Boss tabs, see

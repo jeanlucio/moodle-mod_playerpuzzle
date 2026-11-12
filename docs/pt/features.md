@@ -60,7 +60,8 @@
 * **Conclusão personalizada:** exija um número de tentativas e/ou vitórias.
 * **Relatório do professor:** progresso por estudante, dano médio ao oponente e taxa de acerto, as
   questões mais erradas, a distribuição das notas e a taxa de conclusão, respeitando grupos
-  separados.
+  separados. A tabela de estudantes é paginada, 50 por vez, então uma turma de milhares abre tão
+  rápido quanto uma pequena.
 * **Backup e restauração,** incluindo duplicar a atividade, levando junto as tentativas, o estoque
   do loadout e os logs.
 

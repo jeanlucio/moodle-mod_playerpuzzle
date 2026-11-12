@@ -68,11 +68,16 @@ class ranking_service {
         $outsiderrow = null;
         foreach ($entries as $index => $entry) {
             $position = $index + 1;
+            $iscurrentuser = (int) $entry['user']->id === $viewerid;
+            // Only the top rows and the viewer's own are shown, so only they are worth formatting.
+            if ($position > self::TOP_N && !$iscurrentuser) {
+                continue;
+            }
             $row = [
                 'position' => $position,
                 'fullname' => fullname($entry['user'], $canviewfullnames),
                 'points' => format_float($entry['points'], 1, true, true),
-                'iscurrentuser' => (int) $entry['user']->id === $viewerid,
+                'iscurrentuser' => $iscurrentuser,
             ];
             if ($position <= self::TOP_N) {
                 $rows[] = $row;
@@ -94,7 +99,7 @@ class ranking_service {
      *
      * @param stdClass $instance Activity instance.
      * @param stdClass[] $students Student pool keyed by user id (name fields included).
-     * @return array List of ['user' => stdClass, 'points' => float, 'attempts' => int,
+     * @return array List of ['user' => stdClass, 'name' => string, 'points' => float, 'attempts' => int,
      *  'timeplayed' => int], ordered.
      */
     private static function score_students(stdClass $instance, array $students): array {
@@ -126,13 +131,16 @@ class ranking_service {
             $entry = $single ? self::score_single_match($instance, $attempts) : self::score_campaign($instance, $attempts);
             if ($entry !== null) {
                 $entry['user'] = $students[$userid];
+                // Worked out once here: as part of the comparator below it ran twice per comparison, and with
+                // thousands of students that was almost the whole cost of the ranking.
+                $entry['name'] = fullname($students[$userid]);
                 $entries[] = $entry;
             }
         }
 
         usort($entries, static function (array $a, array $b): int {
-            return [$b['points'], $a['attempts'], $a['timeplayed'], fullname($a['user'])]
-                <=> [$a['points'], $b['attempts'], $b['timeplayed'], fullname($b['user'])];
+            return [$b['points'], $a['attempts'], $a['timeplayed'], $a['name']]
+                <=> [$a['points'], $b['attempts'], $b['timeplayed'], $b['name']];
         });
 
         return $entries;

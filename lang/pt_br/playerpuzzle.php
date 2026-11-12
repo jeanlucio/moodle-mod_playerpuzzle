@@ -564,6 +564,7 @@ $string['report_nostudents'] = 'Nenhum estudante para mostrar ainda.';
 $string['report_question'] = 'Questão';
 $string['report_scoredistribution'] = 'Distribuição de notas';
 $string['report_student'] = 'Estudante';
+$string['report_studentsshown'] = 'Mostrando {$a->from}–{$a->to} de {$a->total} estudantes';
 $string['report_studenttable'] = 'Estudantes';
 $string['report_title'] = 'Relatório';
 $string['requirejserror'] = 'Erro crítico: não foi possível carregar o motor do jogo.';

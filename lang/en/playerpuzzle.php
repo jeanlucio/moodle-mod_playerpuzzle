@@ -564,6 +564,7 @@ $string['report_nostudents'] = 'No students to show yet.';
 $string['report_question'] = 'Question';
 $string['report_scoredistribution'] = 'Score distribution';
 $string['report_student'] = 'Student';
+$string['report_studentsshown'] = 'Showing {$a->from}–{$a->to} of {$a->total} students';
 $string['report_studenttable'] = 'Students';
 $string['report_title'] = 'Report';
 $string['requirejserror'] = 'Critical error: could not load the game engine.';

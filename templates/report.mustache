@@ -40,6 +40,9 @@
             }
         ],
         "studentrowsempty": false,
+        "haspaging": true,
+        "pagingbar": "<nav aria-label=\"Page\"><ul class=\"pagination\"><li class=\"page-item active\"><span class=\"page-link\">1</span></li></ul></nav>",
+        "pagingsummary": "Showing 1–50 of 120 students",
         "missedquestions": [
             {"questiontext": "How much is 2 + 2?", "errors": 6, "total": 10, "errorrate": 60.0}
         ],
@@ -131,6 +134,10 @@
                         </tbody>
                     </table>
                 </div>
+                {{#haspaging}}
+                    <p class="mb-2" role="status">{{pagingsummary}}</p>
+                    {{{pagingbar}}}
+                {{/haspaging}}
             {{/studentrowsempty}}
         </div>
     </div>

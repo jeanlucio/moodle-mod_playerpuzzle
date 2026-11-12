@@ -58,7 +58,8 @@
   with a pass grade and an optional "consider errors" variant. See [Game Modes](#game-modes).
 * **Custom completion:** require a number of attempts and/or wins.
 * **Teacher report:** per-student progress, average opponent damage and accuracy, the most missed
-  questions, the score distribution and the completion rate, respecting separate groups.
+  questions, the score distribution and the completion rate, respecting separate groups. The student
+  table is paged, 50 students at a time, so a class of thousands opens as fast as a small one.
 * **Backup and restore,** including duplicating the activity, with attempts, the loadout stock and
   logs carried across.
 

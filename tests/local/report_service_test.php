@@ -137,6 +137,47 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
+     * Pages follow the name order, hold the asked number of rows, and only the page's students are scored: a student
+     * on page 2 keeps the attempts that belong to them.
+     *
+     * @return void
+     */
+    public function test_get_student_rows_pages_the_students_in_name_order(): void {
+        $students = [];
+        foreach (['Dora', 'Alice', 'Carlos', 'Bruno', 'Eva'] as $firstname) {
+            $student = $this->getDataGenerator()->create_user(['firstname' => $firstname, 'lastname' => 'Souza']);
+            $this->enrol_student($student);
+            $students[$firstname] = $student;
+        }
+        $this->make_attempt($students['Eva'], ['status' => 'lost', 'timefinished' => time(), 'questions_total' => 4]);
+
+        $names = static fn(array $rows): array => array_column($rows, 'fullname');
+        $first = report_service::get_student_rows($this->instance, $this->cm, $this->context, 0, 0, 2);
+        $second = report_service::get_student_rows($this->instance, $this->cm, $this->context, 0, 1, 2);
+        $third = report_service::get_student_rows($this->instance, $this->cm, $this->context, 0, 2, 2);
+
+        $this->assertSame(['Alice Souza', 'Bruno Souza'], $names($first));
+        $this->assertSame(['Carlos Souza', 'Dora Souza'], $names($second));
+        $this->assertSame(['Eva Souza'], $names($third));
+        $this->assertSame(1, $third[0]['attemptsused']);
+        $this->assertSame(0, $first[0]['attemptsused']);
+    }
+
+    /**
+     * A page past the last one is empty instead of failing, and no page size means every student.
+     *
+     * @return void
+     */
+    public function test_get_student_rows_past_the_last_page_is_empty(): void {
+        foreach (range(1, 3) as $unused) {
+            $this->enrol_student($this->getDataGenerator()->create_user());
+        }
+
+        $this->assertSame([], report_service::get_student_rows($this->instance, $this->cm, $this->context, 0, 5, 2));
+        $this->assertCount(3, report_service::get_student_rows($this->instance, $this->cm, $this->context, 0));
+    }
+
+    /**
      * A student who won the whole Campaign (all configured phases) gets the maximum
      * grade and a computed average boss-damage percentage.
      *

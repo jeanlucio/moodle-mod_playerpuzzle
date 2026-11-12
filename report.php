@@ -39,16 +39,24 @@ $context = context_module::instance($cm->id);
 require_login($course, true, $cm);
 require_capability('mod/playerpuzzle:viewreport', $context);
 
-$PAGE->set_url('/mod/playerpuzzle/report.php', ['id' => $cm->id]);
+$page = optional_param('page', 0, PARAM_INT);
+$PAGE->set_url('/mod/playerpuzzle/report.php', ['id' => $cm->id, 'page' => $page]);
 $PAGE->set_title(get_string('report_title', 'mod_playerpuzzle') . ' — ' . format_string($instance->name));
 $PAGE->set_heading($course->fullname);
 $PAGE->set_pagelayout('incourse');
 
 $viewerid = (int) $USER->id;
-$studentrows = report_service::get_student_rows($instance, $cm, $context, $viewerid);
 $missedquestions = report_service::get_most_missed_questions($instance, $cm, $context, $viewerid);
 $distribution = report_service::get_score_distribution($instance, $cm, $context, $viewerid);
 $completion = report_service::get_completion_rate($instance, $cm, $context, $viewerid);
+
+// The completion rate already counts the students the viewer may see, which is the table's total.
+$perpage = report_service::PER_PAGE;
+$totalstudents = (int) $completion['total'];
+$page = min(max(0, $page), max(0, (int) ceil($totalstudents / $perpage) - 1));
+$studentrows = report_service::get_student_rows($instance, $cm, $context, $viewerid, $page, $perpage);
+$baseurl = new moodle_url('/mod/playerpuzzle/report.php', ['id' => $cm->id]);
+$haspaging = $totalstudents > $perpage;
 
 $maxbucketcount = max(1, ...array_column($distribution, 'count'));
 foreach ($distribution as &$bucket) {
@@ -63,6 +71,13 @@ $templatecontext = [
     'reporttitle'           => get_string('report_title', 'mod_playerpuzzle'),
     'studentrows'           => $studentrows,
     'studentrowsempty'      => empty($studentrows),
+    'haspaging'             => $haspaging,
+    'pagingbar'             => $haspaging ? $OUTPUT->paging_bar($totalstudents, $page, $perpage, $baseurl) : '',
+    'pagingsummary'         => get_string('report_studentsshown', 'mod_playerpuzzle', (object) [
+        'from' => $page * $perpage + 1,
+        'to' => min($totalstudents, ($page + 1) * $perpage),
+        'total' => $totalstudents,
+    ]),
     'missedquestions'       => $missedquestions,
     'missedquestionsempty'  => empty($missedquestions),
     'distribution'          => $distribution,

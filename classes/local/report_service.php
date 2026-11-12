@@ -32,6 +32,9 @@ use stdClass;
  * Builds the per-student and whole-class views of the teacher report.
  */
 class report_service {
+    /** @var int Students per page of the report's student table. */
+    public const PER_PAGE = 50;
+
     /**
      * The activity's name as plain text, for a Mustache `{{ }}` tag.
      *
@@ -53,14 +56,19 @@ class report_service {
      * @param stdClass $cm Course module record.
      * @param context $context Module context.
      * @param int $viewerid Current viewer's user id, for SEPARATEGROUPS scoping.
-     * @return array Rows: {userid, fullname, hasgrade, grade, attemptsused,
+     * @param int $page Zero-based page of the name-ordered list; ignored when $perpage is 0.
+     * @param int $perpage Rows per page, 0 for every student. Only the students of the page have their attempts
+     *  loaded and scored, so a large class costs what one page costs.
+     * @return array Rows ordered by name: {userid, fullname, hasgrade, grade, attemptsused,
      *  avgdamagepercent, avgcorrect, avgtotal, lastmatch}.
      */
     public static function get_student_rows(
         stdClass $instance,
         stdClass $cm,
         context $context,
-        int $viewerid
+        int $viewerid,
+        int $page = 0,
+        int $perpage = 0
     ): array {
         global $DB;
 
@@ -68,6 +76,20 @@ class report_service {
         if (empty($students)) {
             return [];
         }
+
+        $canviewfullnames = has_capability('moodle/site:viewfullnames', $context);
+        $names = [];
+        foreach ($students as $userid => $student) {
+            $names[$userid] = fullname($student, $canviewfullnames);
+        }
+        uasort($names, 'strcmp');
+        if ($perpage > 0) {
+            $names = array_slice($names, max(0, $page) * $perpage, $perpage, true);
+        }
+        if ($names === []) {
+            return [];
+        }
+        $students = array_replace($names, array_intersect_key($students, $names));
 
         [$insql, $inparams] = $DB->get_in_or_equal(array_keys($students), SQL_PARAMS_NAMED, 'stu');
         // Demo attempts are excluded: they are disposable practice fights with fixed HP, and
@@ -89,7 +111,6 @@ class report_service {
             $byuser[(int) $attempt->userid][] = $attempt;
         }
 
-        $canviewfullnames = has_capability('moodle/site:viewfullnames', $context);
         $rows = [];
         foreach ($students as $userid => $student) {
             $rows[] = self::build_student_row(
@@ -99,8 +120,6 @@ class report_service {
                 $canviewfullnames
             );
         }
-
-        usort($rows, fn(array $a, array $b): int => strcmp($a['fullname'], $b['fullname']));
 
         return $rows;
     }

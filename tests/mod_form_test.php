@@ -634,6 +634,56 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a completion rule the selected mode's limits make impossible to meet is rejected, and
+     * that the same value passes when the limit allows it, is unlimited, or belongs to the other mode.
+     *
+     * @return void
+     */
+    public function test_validation_rejects_unreachable_completion_rules(): void {
+        [$form, $data] = $this->make_form_and_data();
+        $rules = [
+            'completionattemptsenabled' => 1,
+            'completionattempts' => 5,
+            'completionwinsenabled' => 1,
+            'completionwins' => 5,
+        ];
+
+        $single = array_merge($data, $rules, ['gamemode' => constants::GAMEMODE_SINGLE, 'max_single_matches' => 3]);
+        $errors = $form->validation($single, []);
+        $this->assertArrayHasKey('completionattemptsgroup', $errors);
+        $this->assertArrayHasKey('completionwinsgroup', $errors);
+        $errors = $form->validation(array_merge($single, ['max_single_matches' => 5]), []);
+        $this->assertArrayNotHasKey('completionattemptsgroup', $errors);
+        $this->assertArrayNotHasKey('completionwinsgroup', $errors);
+        $errors = $form->validation(array_merge($single, ['max_single_matches' => 0]), []);
+        $this->assertArrayNotHasKey('completionwinsgroup', $errors);
+
+        // A Campaign holds one win, so the wins are capped by the Campaigns, the attempts by Campaigns times attempts.
+        $campaign = array_merge($data, $rules, [
+            'gamemode' => constants::GAMEMODE_CAMPAIGN,
+            'maxcampaigns' => 2,
+            'maxattempts' => 2,
+            'max_single_matches' => 100,
+        ]);
+        $errors = $form->validation($campaign, []);
+        $this->assertArrayHasKey('completionattemptsgroup', $errors);
+        $this->assertArrayHasKey('completionwinsgroup', $errors);
+        $errors = $form->validation(array_merge($campaign, ['completionattempts' => 4, 'completionwins' => 2]), []);
+        $this->assertArrayNotHasKey('completionattemptsgroup', $errors);
+        $this->assertArrayNotHasKey('completionwinsgroup', $errors);
+        // Unlimited attempts per Campaign, or unlimited Campaigns, bound nothing.
+        $errors = $form->validation(array_merge($campaign, ['maxattempts' => 0]), []);
+        $this->assertArrayNotHasKey('completionattemptsgroup', $errors);
+        $errors = $form->validation(array_merge($campaign, ['maxcampaigns' => 0]), []);
+        $this->assertArrayNotHasKey('completionattemptsgroup', $errors);
+        $this->assertArrayNotHasKey('completionwinsgroup', $errors);
+
+        // A rule that is switched off is not checked.
+        $off = array_merge($campaign, ['completionwinsenabled' => 0]);
+        $this->assertArrayNotHasKey('completionwinsgroup', $form->validation($off, []));
+    }
+
+    /**
      * Tests that the default values pass the range checks.
      *
      * @return void

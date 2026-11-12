@@ -309,6 +309,8 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
             $errors['completionwinsgroup' . $suffix] = get_string('error_completionwins', 'mod_playerpuzzle');
         }
 
+        $errors += $this->validate_completion_reachable($data, $suffix);
+
         if ((int) ($data['cooldown_amount'] ?? 0) < 0) {
             $errors['cooldowngroup'] = get_string('error_cooldown', 'mod_playerpuzzle');
         }
@@ -321,6 +323,54 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         }
 
         return $errors + $this->validate_gameplay_ranges($data);
+    }
+
+    /**
+     * Rejects a completion rule the game limits make impossible to meet: the student would use up every
+     * attempt allowed and the activity would stay incomplete for good, with no hint to anyone. Only the
+     * limits of the selected game mode count (the other mode's fields are hidden and may hold a stale
+     * value), and a limit of 0 means unlimited, so it bounds nothing.
+     *
+     * A Single Match spends one match per finished attempt, won or lost, so both rules are capped by
+     * max_single_matches. A Campaign ends when it is won, so it holds at most one win, and at most
+     * maxattempts finished attempts: the rules are capped by maxcampaigns and maxcampaigns * maxattempts.
+     *
+     * @param array $data Submitted form data.
+     * @param string $suffix The form's element suffix.
+     * @return array Validation errors, keyed by completion group name.
+     */
+    private function validate_completion_reachable(array $data, string $suffix): array {
+        $errors = [];
+
+        if (($data['gamemode'] ?? constants::GAMEMODE_CAMPAIGN) === constants::GAMEMODE_SINGLE) {
+            $maxattempts = (int) ($data['max_single_matches'] ?? 0);
+            $maxwins = $maxattempts;
+        } else {
+            $campaigns = (int) ($data['maxcampaigns'] ?? 0);
+            $percampaign = (int) ($data['maxattempts'] ?? 0);
+            $maxwins = $campaigns;
+            $maxattempts = $campaigns * $percampaign;
+        }
+
+        $attemptsenabled = !empty($data['completionattemptsenabled' . $suffix]);
+        if ($attemptsenabled && $maxattempts > 0 && (int) $data['completionattempts' . $suffix] > $maxattempts) {
+            $errors['completionattemptsgroup' . $suffix] = get_string(
+                'error_completionattemptsunreachable',
+                'mod_playerpuzzle',
+                $maxattempts
+            );
+        }
+
+        $winsenabled = !empty($data['completionwinsenabled' . $suffix]);
+        if ($winsenabled && $maxwins > 0 && (int) $data['completionwins' . $suffix] > $maxwins) {
+            $errors['completionwinsgroup' . $suffix] = get_string(
+                'error_completionwinsunreachable',
+                'mod_playerpuzzle',
+                $maxwins
+            );
+        }
+
+        return $errors;
     }
 
     /**

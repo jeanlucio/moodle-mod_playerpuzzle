@@ -127,7 +127,7 @@ define([
                 });
 
                 try {
-                    window.__dom = {scene: await SceneDom.start(config, strings)};
+                    await SceneDom.start(config, strings);
                 } catch (err) {
                     window.console.error('PlayerPuzzle failed to start:', err);
                     container.innerHTML = `<p class="text-danger">${strings.requirejserror}</p>`;

@@ -154,7 +154,8 @@ class question_bank_sync {
      * moodle/question:usemine on the category, who sees just their own questions and so
      * disables nothing. A manual or AI-sourced question is never
      * touched, nor is one imported from another category (until that category is synced) or a
-     * copy the teacher detached from the bank.
+     * copy the teacher detached from the bank. The category is then recorded on the instance as the last one
+     * imported from.
      *
      * @param stdClass $cm Course module record for the PlayerPuzzle instance.
      * @param int $playerpuzzleid The instance id.
@@ -308,6 +309,10 @@ class question_bank_sync {
                 }
             }
         }
+
+        // Remembered so a backup carries the category along and a restore can keep the imported questions
+        // linked to their bank entries (see restore_playerpuzzle_activity_structure_step::resolve_bank_entry()).
+        $DB->set_field('playerpuzzle', 'questioncategory', $categoryid, ['id' => $playerpuzzleid]);
 
         return $stats;
     }

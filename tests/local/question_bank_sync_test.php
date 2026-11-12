@@ -147,6 +147,35 @@ final class question_bank_sync_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that an import records its category on the instance, so a backup carries it and a restore can keep
+     * the imported questions linked to their bank entries; a refused category records nothing.
+     *
+     * @return void
+     */
+    public function test_sync_records_the_category_it_imported_from(): void {
+        global $DB;
+
+        $questiongenerator = $this->getDataGenerator()->get_plugin_generator('core_question');
+        $category = $this->make_category();
+        $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle', 'questioncategory', ['id' => $this->instance->id]));
+
+        try {
+            question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, 999999);
+            $this->fail('A category that cannot be reached must be refused.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame(0, (int) $DB->get_field('playerpuzzle', 'questioncategory', ['id' => $this->instance->id]));
+        }
+
+        question_bank_sync::sync_from_category($this->cm, (int) $this->instance->id, (int) $category->id);
+
+        $this->assertSame(
+            (int) $category->id,
+            (int) $DB->get_field('playerpuzzle', 'questioncategory', ['id' => $this->instance->id])
+        );
+    }
+
+    /**
      * Tests that an image embedded in the source question's questiontext, and one embedded
      * in one of its answers, are both copied into PlayerPuzzle's own filearea for the
      * imported question/answer — and that a re-sync does not duplicate them.

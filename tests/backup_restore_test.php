@@ -928,7 +928,9 @@ final class backup_restore_test extends \advanced_testcase {
         $category = $questiongenerator->create_question_category(['contextid' => $coursecontext->id]);
         $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
-        $generator->create_instance(['course' => $course->id, 'questioncategory' => $category->id]);
+        $instance = $generator->create_instance(['course' => $course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id, $course->id, false, MUST_EXIST);
+        question_bank_sync::sync_from_category($cm, (int) $instance->id, (int) $category->id);
 
         $newcourse = $this->backup_and_restore_into_new_course($course);
 
@@ -1140,7 +1142,7 @@ final class backup_restore_test extends \advanced_testcase {
         $bankquestion = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
         $oldentryid = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $bankquestion->id]);
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
-        $instance = $generator->create_instance(['course' => $course->id, 'questioncategory' => $category->id]);
+        $instance = $generator->create_instance(['course' => $course->id]);
         $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id, $course->id, false, MUST_EXIST);
         question_bank_sync::sync_from_category($cm, (int) $instance->id, (int) $category->id);
 
@@ -1182,7 +1184,7 @@ final class backup_restore_test extends \advanced_testcase {
         $bankquestion = $questiongenerator->create_question('multichoice', 'one_of_four', ['category' => $category->id]);
         $entryid = (int) $DB->get_field('question_versions', 'questionbankentryid', ['questionid' => $bankquestion->id]);
         $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
-        $instance = $generator->create_instance(['course' => $course->id, 'questioncategory' => $category->id]);
+        $instance = $generator->create_instance(['course' => $course->id]);
         $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id, $course->id, false, MUST_EXIST);
         question_bank_sync::sync_from_category($cm, (int) $instance->id, (int) $category->id);
 

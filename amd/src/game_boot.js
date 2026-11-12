@@ -50,6 +50,7 @@ define([
 
                 const strKeys = [
                     'advancingphase',
+                    'answersr_correct', 'answersr_yourcorrect', 'answersr_yourwrong',
                     'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectblocked', 'bosscorrectfeedback',
                     'bosslostmultiplier', 'bossrevived', 'bosstrigger', 'bosswrongfeedback',
                     'btnattack', 'btncontinue', 'btnexitgame', 'btnplayagain', 'btnstartphase',

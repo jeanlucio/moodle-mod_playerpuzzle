@@ -1490,6 +1490,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                 $('#playerpuzzle-btn-confirm').addClass('disabled');
 
                                 const applyResult = (isCorrect, correctanswerid) => {
+                                    ctx.markAnswerResults(answersContainer, isCorrect, correctanswerid);
                                     if (opening) {
                                         openingFirst = isCorrect ? 'player' : 'boss';
                                         ctx.showOpeningResult(isCorrect, correctanswerid, answersContainer);
@@ -1727,6 +1728,26 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             this.scene.scene.resume();
             this.startFight('player');
             return true;
+        }
+
+        /**
+         * Tells a screen reader how the answers came out. The answer buttons are disabled once one is chosen, and a
+         * disabled button is only announced as "unavailable"; the colours alone say nothing to it. A hidden suffix
+         * names the student's answer as right or wrong and, when it was wrong, the one that was right.
+         *
+         * @param {jQuery} answersContainer The question's answers, the student's still marked as the warning one.
+         * @param {boolean} correct Whether the student's answer was right.
+         * @param {number|null} correctanswerid The right answer's id, when the answer was wrong.
+         */
+        markAnswerResults(answersContainer, correct, correctanswerid) {
+            const strings = this.strings;
+            const suffix = text => $('<span class="visually-hidden"></span>').text(`, ${text}`);
+            answersContainer.find('.btn-warning').append(
+                suffix(correct ? strings.answersr_yourcorrect : strings.answersr_yourwrong)
+            );
+            if (!correct && correctanswerid) {
+                answersContainer.find(`[data-answerid="${correctanswerid}"]`).append(suffix(strings.answersr_correct));
+            }
         }
 
         /**

@@ -28,7 +28,10 @@ an afterthought bolt-on layer:
   the screen reader starts from what is being asked and the answers come next, by Tab. The picked answer is
   exposed as pressed (`aria-pressed`). Pressing Attack keeps the focus where it is until the answer is judged,
   and then a separate Continue button, new to the page, takes it: the keyboard is never thrown out to the page,
-  and the screen reader meets Continue as a new control instead of an old one that changed. Everything outside an open modal dialog is inert and so
+  and the screen reader meets Continue as a new control instead of an old one that changed. Once judged, the
+  answers stay disabled, which a screen reader reads only as "unavailable", so a hidden suffix names the student's
+  answer ("your answer, correct" or "your answer, wrong") and, when it was wrong, the right one ("correct answer").
+  Everything outside an open modal dialog is inert and so
   is not heard, so while a dialog is open the announcements go to a live region inside it.
 * The Lobby, shop, ranking and report are ordinary Moodle pages and forms, so they follow the
   theme's own accessibility behaviour.

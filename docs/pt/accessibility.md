@@ -29,7 +29,9 @@ camada de última hora:
   por Tab. A resposta escolhida é exposta como pressionada (`aria-pressed`). Apertar Atacar mantém o foco
   onde está até a resposta ser julgada, e então um botão Continuar separado, novo na página, o recebe: o teclado
   nunca é jogado para fora do diálogo, e o leitor de tela encontra o Continuar como um controle novo, e não como
-  um antigo que mudou. Tudo fora de um
+  um antigo que mudou. Depois de julgadas, as respostas ficam desabilitadas, o que o leitor de tela lê só como
+  "indisponível"; por isso um sufixo oculto diz qual foi a resposta do estudante ("sua resposta, correta" ou "sua
+  resposta, errada") e, se errou, qual era a certa ("resposta correta"). Tudo fora de um
   diálogo modal aberto fica inerte e não é ouvido, então enquanto um diálogo está aberto os anúncios vão
   para uma região viva dentro dele.
 * O Lobby, a loja, o ranking e o relatório são páginas e formulários comuns do Moodle, então

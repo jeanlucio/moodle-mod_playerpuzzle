@@ -94,13 +94,17 @@ class report_service {
         [$insql, $inparams] = $DB->get_in_or_equal(array_keys($students), SQL_PARAMS_NAMED, 'stu');
         // Demo attempts are excluded: they are disposable practice fights with fixed HP, and
         // must never appear in a teacher-facing report as if they were real submissions.
+        // The grade shown here is worked out by the same grade_calculator as the gradebook's, which
+        // reads frozenmaxlevels from the last attempt of each Campaign: without the column, or with the
+        // attempts out of order, a later change of the level count would re-score Campaigns already played.
         $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.campaign, a.difficulty, a.status,
                        a.bosshp_remaining, a.questions_correct, a.questions_total, a.timefinished,
-                       a.isdemo, a.frozenbasebosshp, a.frozenbossdamage, a.frozenopponent
+                       a.isdemo, a.frozenbasebosshp, a.frozenbossdamage, a.frozenopponent, a.frozenmaxlevels
                   FROM {playerpuzzle_attempts} a
                  WHERE a.playerpuzzleid = :instanceid
                        AND a.isdemo = 0
-                       AND a.userid $insql";
+                       AND a.userid $insql
+              ORDER BY a.timecreated ASC, a.id ASC";
         $attempts = $DB->get_records_sql(
             $sql,
             array_merge(['instanceid' => (int) $instance->id], $inparams)

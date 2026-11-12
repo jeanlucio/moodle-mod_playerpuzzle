@@ -211,6 +211,38 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
+     * Regression test: the grade shown in the report is the gradebook's. A Campaign is scored against the
+     * level count its attempts were played with, so changing the activity's level count afterwards must
+     * leave the grade of a Campaign already played alone, in the report as in the gradebook.
+     *
+     * @return void
+     */
+    public function test_get_student_rows_scores_a_campaign_against_its_frozen_level_count(): void {
+        global $DB;
+
+        $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        // Nine of the twenty phases of a two-level Campaign won, then the teacher shortens the activity.
+        $this->make_attempt($student, [
+            'currentlevel'    => 1,
+            'currentphase'    => 10,
+            'status'          => 'lost',
+            'frozenmaxlevels' => 2,
+            'timefinished'    => time(),
+        ]);
+        $DB->set_field('playerpuzzle', 'maxlevels', 1, ['id' => $this->instance->id]);
+        $instance = $DB->get_record('playerpuzzle', ['id' => $this->instance->id], '*', MUST_EXIST);
+
+        $rows = report_service::get_student_rows($instance, $this->cm, $this->context, 0);
+
+        playerpuzzle_update_grades($instance, (int) $student->id);
+        $gradebook = grade_get_grades($this->course->id, 'mod', 'playerpuzzle', $instance->id, $student->id);
+        $gradebookgrade = (float) $gradebook->items[0]->grades[$student->id]->grade;
+        $this->assertEqualsWithDelta(45.0, $gradebookgrade, 0.001);
+        $this->assertSame(format_float($gradebookgrade, 2), $rows[0]['grade']);
+    }
+
+    /**
      * Regression test: the average damage is worked out against the boss HP the phase was
      * fought at, not the activity's current base HP, so a later teacher edit does not
      * rewrite the damage of matches already played.

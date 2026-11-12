@@ -36,9 +36,16 @@ test('strip() takes the pictographs out of a button label and a title the game r
 });
 
 test('strip() leaves a text without pictographs exactly as it was', () => {
-    ['Seu turno. 3 jogadas disponíveis.', 'Sword x2 → 30 ✓ ∞', 'x1.5', '', 'Ação: 100% 7/10'].forEach(text => {
+    ['Seu turno. 3 jogadas disponíveis.', 'Sword x2 → 30 ∞', 'x1.5', '', 'Ação: 100% 7/10'].forEach(text => {
         assert.equal(Emoji.strip(text), text);
     });
+});
+
+test('strip() takes the check and cross marks off the right and wrong messages', () => {
+    assert.equal(Emoji.strip('✓ Correto! O oponente sofre 30 de dano!'), 'Correto! O oponente sofre 30 de dano!');
+    assert.equal(Emoji.strip('✗ Errou! A resposta certa está em verde.'), 'Errou! A resposta certa está em verde.');
+    assert.equal(Emoji.strip('✔️ ok'), 'ok');
+    assert.equal(Emoji.has('✓ EAD'), true);
 });
 
 test('a pictograph with a variation selector, a skin tone or a joiner is one run, with nothing left over', () => {
@@ -60,5 +67,5 @@ test('split() cuts a text into its runs in order and joins back to the same text
 test('has() tells a text with a pictograph from one without', () => {
     assert.equal(Emoji.has('Atacar ⚔️'), true);
     assert.equal(Emoji.has('Atacar'), false);
-    assert.equal(Emoji.has('✓ correta'), false);
+    assert.equal(Emoji.has('Sword x2 → 30 ∞ correta'), false);
 });

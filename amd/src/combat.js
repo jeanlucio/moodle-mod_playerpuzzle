@@ -1385,7 +1385,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     // answer is picked), and the boss's or an empty question's "Continue" would
                     // otherwise come up disabled, leaving no way to close the modal.
                     $('#playerpuzzle-btn-confirm').hide().prop('disabled', false).removeClass('disabled').off('click');
-                    $('#playerpuzzle-btn-continue').off('click').prop('hidden', true);
+                    $('#playerpuzzle-btn-continue').off('click').prop('hidden', true).removeAttr('aria-describedby');
                     $('#playerpuzzle-btn-skip').hide().off('click');
                     $('#playerpuzzle-hint-text').hide().empty();
                     $('#playerpuzzle-btn-hint').hide().prop('disabled', false).off('click');
@@ -1413,6 +1413,15 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         $('#playerpuzzle-btn-confirm').hide();
                         const next = document.getElementById('playerpuzzle-btn-continue');
                         $(next).off('click').on('click', closeModal);
+                        // Focus on a button silences the live region (the screen reader reads the button instead), so how
+                        // the question went rides on the button itself: it is read as the button's description.
+                        const outcomes = [...answersContainer[0].querySelectorAll('.alert')];
+                        outcomes.forEach((outcome, i) => {
+                            outcome.id = `playerpuzzle-outcome-${i}`;
+                        });
+                        if (outcomes.length > 0) {
+                            next.setAttribute('aria-describedby', outcomes.map(outcome => outcome.id).join(' '));
+                        }
                         next.hidden = false;
                         if (takeFocus) {
                             next.focus();
@@ -1540,7 +1549,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                         }
                                     }
                                     answersContainer.append(feedbackMsg);
-                                    Accessibility.announce($('<div>').html(feedbackMsg).text().replace(/\s+/g, ' '));
                                     showContinue(true);
                                 };
 
@@ -1774,7 +1782,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 `<div class="alert alert-${correct ? 'success' : 'warning'} mt-2 mb-0"><strong>${message}</strong></div>`
             );
             this.scene.ui.pushHistoryLog('player', correct ? strings.historylogopening_player : strings.historylogopening_boss);
-            Accessibility.announce(message);
         }
 
         /**

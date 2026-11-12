@@ -33,7 +33,10 @@
 
         // A pictograph with its variation selector or skin tone, and the ones joined to it (a family, a flag with a sword).
         const ONE = '\\p{Extended_Pictographic}(?:\\uFE0F|\\p{Emoji_Modifier})?';
-        const SOURCE = `(?:${ONE}(?:\\u200D${ONE})*)+`;
+        // The check and cross marks that open the right and wrong messages (U+2713 to U+2718) are not pictographs in
+        // Unicode, but a screen reader speaks them all the same ("check mark"), and the words after them already say it.
+        const MARK = '[\\u2713-\\u2718]\\uFE0F?';
+        const SOURCE = `(?:${ONE}(?:\\u200D${ONE})*|${MARK})+`;
 
         /**
          * Cuts a text into the runs that are pictographs and the runs that are not, in order.

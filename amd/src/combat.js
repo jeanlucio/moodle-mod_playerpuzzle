@@ -2007,9 +2007,16 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             document.getElementById('pp-phase-main').hidden = true;
             document.getElementById('pp-phase-shop').hidden = false;
             const start = document.getElementById('btn-pp-start-phase');
+            const exit = document.getElementById('btn-pp-exit-shop');
             start.addEventListener('click', () => {
                 start.disabled = true;
+                exit.disabled = true;
                 startNext();
+            });
+            // The phase is already banked and its next one ready, as the Lobby finds it: leaving here only means
+            // starting the next phase later, with whatever was bought already registered.
+            exit.addEventListener('click', () => {
+                window.location.href = this.gameConfig.viewurl;
             });
             start.focus();
         }

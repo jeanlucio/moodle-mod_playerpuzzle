@@ -194,6 +194,30 @@ const transfer = async(cmid, button) => {
 /** @type {boolean} Whether the click handler is already on the document. */
 let wired = false;
 
+/** @type {boolean} Whether a purchase or transfer is under way. */
+let busy = false;
+
+/**
+ * Runs one shop action, and drops a click that comes while another is under way. A purchase redraws the whole shop
+ * from the server when it ends: a second click on the redrawn buttons, or on the old ones, would start another
+ * purchase whose redraw can land before the first one's, leaving the screen showing a state the server has already
+ * left (a button for something already sold out, and an error when it is pressed).
+ *
+ * @param {Function} action The action, returning a promise that settles when it is over.
+ * @return {Promise<void>}
+ */
+const run = async(action) => {
+    if (busy) {
+        return;
+    }
+    busy = true;
+    try {
+        await action();
+    } finally {
+        busy = false;
+    }
+};
+
 /**
  * Wires every "Buy" button and the "Transfer" button of the shop, once however many times it is called: the
  * Lobby calls it when it loads and the screen between phases when it opens the shop.
@@ -208,19 +232,19 @@ export const init = (cmid) => {
     document.addEventListener('click', (event) => {
         const buyButton = event.target.closest('.pp-lobby-buy');
         if (buyButton) {
-            buy(cmid, buyButton);
+            run(() => buy(cmid, buyButton));
             return;
         }
 
         const upgradeButton = event.target.closest('.pp-hero-buy');
         if (upgradeButton) {
-            buyUpgrade(cmid, upgradeButton);
+            run(() => buyUpgrade(cmid, upgradeButton));
             return;
         }
 
         const transferButton = event.target.closest('.pp-lobby-transfer-btn');
         if (transferButton) {
-            transfer(cmid, transferButton);
+            run(() => transfer(cmid, transferButton));
         }
     });
 };

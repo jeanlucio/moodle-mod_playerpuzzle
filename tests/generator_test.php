@@ -71,4 +71,38 @@ final class generator_test extends \advanced_testcase {
         $this->assertSame('lost', $pinned->status);
         $this->assertGreaterThan(0, (int) $pinned->timefinished);
     }
+
+    /**
+     * Tests that create_question() adds an approved multiple choice question whose first answer is the right one and
+     * whose others, given as a comma separated list, are the wrong ones.
+     *
+     * @return void
+     */
+    public function test_create_question_adds_an_approved_question_with_its_answers(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $course->id]);
+
+        $generator->create_question([
+            'playerpuzzleid' => $instance->id,
+            'questiontext' => 'What is the capital of Italy?',
+            'correct' => 'Rome',
+            'wrong' => 'Pisa, Bari',
+        ]);
+
+        $question = $DB->get_record('playerpuzzle_questions', ['playerpuzzleid' => $instance->id], '*', MUST_EXIST);
+        $answers = $DB->get_records_menu(
+            'playerpuzzle_question_answers',
+            ['questionid' => $question->id],
+            'id',
+            'answertext, iscorrect'
+        );
+
+        $this->assertSame(1, (int) $question->approved);
+        $this->assertEquals(['Rome' => 1, 'Pisa' => 0, 'Bari' => 0], $answers);
+        $this->assertTrue(\mod_playerpuzzle\local\questions_repository::has_approved_question((int) $instance->id));
+    }
 }

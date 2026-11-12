@@ -74,6 +74,29 @@ class mod_playerpuzzle_generator extends testing_module_generator {
     }
 
     /**
+     * Adds one approved multiple choice question with its answers to an instance, as the question editor does. Backs
+     * the "mod_playerpuzzle > questions" Behat generator step.
+     *
+     * @param array $record Fields: playerpuzzleid, questiontext, correct (the right answer's text), wrong (the wrong
+     *  answers' texts, separated by commas); optional hint.
+     * @return void
+     */
+    public function create_question(array $record): void {
+        $answers = [['text' => (string) $record['correct'], 'iscorrect' => true]];
+        foreach (array_filter(array_map('trim', explode(',', (string) $record['wrong']))) as $wrong) {
+            $answers[] = ['text' => $wrong, 'iscorrect' => false];
+        }
+        \mod_playerpuzzle\local\questions_repository::add_question(
+            (int) $record['playerpuzzleid'],
+            'multichoice',
+            (string) $record['questiontext'],
+            (string) ($record['hint'] ?? ''),
+            $answers,
+            (int) get_admin()->id
+        );
+    }
+
+    /**
      * Credits a user's loadout stock (or PuzzleCoin balance, via consumabletype = 'coin')
      * for a playerpuzzle instance, without going through the buy_stock/save_progress web
      * services. Backs the "mod_playerpuzzle > user stocks" Behat generator step.

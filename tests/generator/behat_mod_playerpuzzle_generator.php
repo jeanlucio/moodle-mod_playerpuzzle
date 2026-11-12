@@ -29,7 +29,8 @@
  * purchase in a Given step), the "heroes" entity (the hero a student already chose for
  * their Campaign, so a scenario reaches the Lobby instead of the choice screen) and the
  * "attempts" entity (an in-progress attempt with a known PRNG seed, so a scenario can play
- * a real match whose board, and outcome, are known).
+ * a real match whose board, and outcome, are known) and the "questions" entity (an approved
+ * multiple choice question, so a phase opens with its opening question).
  */
 class behat_mod_playerpuzzle_generator extends behat_generator_base {
     /**
@@ -50,6 +51,12 @@ class behat_mod_playerpuzzle_generator extends behat_generator_base {
                 'datagenerator' => 'hero',
                 'required' => ['playerpuzzle', 'user', 'hero'],
                 'switchids' => ['playerpuzzle' => 'playerpuzzleid', 'user' => 'userid'],
+            ],
+            'questions' => [
+                'singular' => 'question',
+                'datagenerator' => 'question',
+                'required' => ['playerpuzzle', 'questiontext', 'correct', 'wrong'],
+                'switchids' => ['playerpuzzle' => 'playerpuzzleid'],
             ],
             'attempts' => [
                 'singular' => 'attempt',

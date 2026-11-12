@@ -10,7 +10,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 |-----------|------:|
 | `access_test.php` | 1 |
 | `backup_restore_test.php` | 14 |
-| `generator_test.php` | 1 |
+| `generator_test.php` | 2 |
 | `lib_completion_info_test.php` | 7 |
 | `lib_crud_test.php` | 10 |
 | `lib_grade_item_update_test.php` | 5 |
@@ -162,10 +162,12 @@ node --test tests/js/stage/*.test.js
 | `mod_playerpuzzle_accessibility.feature` | 4 |
 | `mod_playerpuzzle_gameplay.feature` | 4 |
 | `mod_playerpuzzle_hero.feature` | 6 |
+| `mod_playerpuzzle_howtoplay.feature` | 4 |
 | `mod_playerpuzzle_match.feature` | 3 |
 | `mod_playerpuzzle_ranking.feature` | 3 |
 | `mod_playerpuzzle_settings.feature` | 1 |
 | `mod_playerpuzzle_smoke.feature` | 2 |
+| `mod_playerpuzzle_stage.feature` | 5 |
 | **Subtotal** | **23** |
 
 ```bash

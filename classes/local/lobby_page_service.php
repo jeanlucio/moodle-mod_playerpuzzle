@@ -157,6 +157,10 @@ class lobby_page_service {
         if (!empty($data['noquestions'])) {
             unset($data['guestdemoonlytext'], $data['minquestionstext']);
         }
+        // A visitor only plays the Demo, which has no minimum of questions: the notice is about the real match.
+        if (!empty($data['isguest'])) {
+            unset($data['minquestionstext']);
+        }
         $data += self::build_difficulty_context($attempt);
         $data['howto'] = howtoplay::context($instance, is_guest($context, $userid));
         $data += self::build_sound_context($userid);

@@ -976,6 +976,34 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a visitor is not told about the minimum of questions: the Demo, the only thing they can play, has
+     * none, and the notice is about the real match.
+     *
+     * @return void
+     */
+    public function test_build_page_data_hides_the_minquestions_notice_from_a_guest(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 3]);
+        questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Q?',
+            '',
+            [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]],
+            2
+        );
+        $context = \context_module::instance($cm->id);
+
+        $student = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id, $context);
+        $guest = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) guest_user()->id, $context);
+
+        $this->assertArrayHasKey('minquestionstext', $student);
+        $this->assertTrue($guest['isguest']);
+        $this->assertArrayNotHasKey('minquestionstext', $guest);
+        $this->assertArrayNotHasKey('noquestions', $guest);
+        $this->assertSame(get_string('guestdemoonly', 'mod_playerpuzzle'), $guest['guestdemoonlytext']);
+    }
+
+    /**
      * Tests that the minimum of questions is not announced when the activity has no questions to draw: the notice
      * that there are none already says why nothing can be played, and "answer at least 3" next to it contradicts it.
      *

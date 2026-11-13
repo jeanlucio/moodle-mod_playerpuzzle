@@ -447,7 +447,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         );
 
         $this->assertArrayNotHasKey('progresstext', $data);
-        $this->assertArrayNotHasKey('difficultycurrent', $data);
+        $this->assertArrayNotHasKey('difficultylockednote', $data);
         $this->assertArrayHasKey('difficultychoicesjson', $data);
     }
 
@@ -921,7 +921,7 @@ final class lobby_page_service_test extends \advanced_testcase {
             \context_module::instance($cm->id)
         );
 
-        $this->assertArrayNotHasKey('difficultycurrent', $data);
+        $this->assertArrayNotHasKey('difficultylockednote', $data);
         $this->assertArrayNotHasKey('difficultylockedtext', $data);
 
         // What the button steps through: each difficulty with the text the button then shows and what it changes.
@@ -1205,7 +1205,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         );
 
         $this->assertArrayNotHasKey('difficultylockedtext', $data);
-        $this->assertArrayNotHasKey('difficultycurrent', $data);
+        $this->assertArrayNotHasKey('difficultylockednote', $data);
         $this->assertArrayHasKey('difficultychoicesjson', $data);
         $this->assertSame('hard', $data['difficultyvalue']);
         $this->assertSame(
@@ -1243,12 +1243,12 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $this->assertArrayNotHasKey('difficultychoicesjson', $data);
         $this->assertArrayNotHasKey('difficultyselectedtext', $data);
-        $expected = get_string(
-            'lobby_difficulty_current',
-            'mod_playerpuzzle',
-            get_string('difficulty_hard', 'mod_playerpuzzle')
+        // The note gives the rule only: the locked button already says which difficulty it is.
+        $this->assertSame(get_string('lobby_difficulty_locked_note', 'mod_playerpuzzle'), $data['difficultylockednote']);
+        $this->assertStringNotContainsString(
+            get_string('difficulty_hard', 'mod_playerpuzzle'),
+            $data['difficultylockednote']
         );
-        $this->assertSame($expected, $data['difficultycurrent']);
         // The button is there but locked, and says the same.
         $this->assertSame(
             get_string('lobby_difficulty_selected', 'mod_playerpuzzle', get_string('difficulty_hard', 'mod_playerpuzzle')),
@@ -1283,12 +1283,11 @@ final class lobby_page_service_test extends \advanced_testcase {
             \context_module::instance($cm->id)
         );
 
-        $expected = get_string(
-            'lobby_difficulty_current',
-            'mod_playerpuzzle',
-            get_string('difficulty_normal', 'mod_playerpuzzle')
+        $this->assertSame(get_string('lobby_difficulty_locked_note', 'mod_playerpuzzle'), $data['difficultylockednote']);
+        $this->assertSame(
+            get_string('lobby_difficulty_selected', 'mod_playerpuzzle', get_string('difficulty_normal', 'mod_playerpuzzle')),
+            $data['difficultylockedtext']
         );
-        $this->assertSame($expected, $data['difficultycurrent']);
     }
 
     /**

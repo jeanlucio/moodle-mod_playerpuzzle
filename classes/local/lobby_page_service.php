@@ -453,11 +453,7 @@ class lobby_page_service {
             return [
                 // The same button as the open choice, only locked, so the row looks alike either way.
                 'difficultylockedtext' => get_string('lobby_difficulty_selected', 'mod_playerpuzzle', $options[$current]),
-                'difficultycurrent' => get_string(
-                    'lobby_difficulty_current',
-                    'mod_playerpuzzle',
-                    $options[$current]
-                ),
+                'difficultylockednote' => get_string('lobby_difficulty_locked_note', 'mod_playerpuzzle'),
             ];
         }
 

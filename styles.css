@@ -1619,18 +1619,26 @@ body.path-mod-playerpuzzle .pp-hero-legend {
     color: var(--pp-cream-soft, #f1e6c8);
 }
 
+/* Wrapping flex rather than a grid, so the cards of an incomplete last row stand in the middle, not at the left. */
 body.path-mod-playerpuzzle .pp-hero-choices {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 0.6rem;
     border: 0;
     padding: 0;
     margin: 0 0 1rem;
 }
 
+body.path-mod-playerpuzzle .pp-hero-choices .pp-hero-card {
+    flex: 0 1 calc((100% - (3 * 0.6rem)) / 4);
+    min-width: 8.5rem;
+}
+
 @media (max-width: 640px) {
-    body.path-mod-playerpuzzle .pp-hero-choices {
-        grid-template-columns: repeat(2, 1fr);
+    body.path-mod-playerpuzzle .pp-hero-choices .pp-hero-card {
+        flex-basis: calc((100% - 0.6rem) / 2);
+        min-width: 0;
     }
 
     body.path-mod-playerpuzzle .pp-hero-image {

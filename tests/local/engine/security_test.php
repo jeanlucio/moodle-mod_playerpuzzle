@@ -608,6 +608,50 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a difficulty chosen on purpose starts a new Demo when one is left half played under another,
+     * ending the old one, and that a Demo at the same difficulty, or a request that chose nothing, still resumes.
+     *
+     * @return void
+     */
+    public function test_a_chosen_difficulty_starts_a_left_demo_over(): void {
+        global $DB;
+
+        $first = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true);
+
+        $same = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true, '', 'normal');
+        $this->assertSame($first->attemptid, $same->attemptid, 'the same difficulty resumes');
+        $quiet = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'hard', 10, true);
+        $this->assertSame($first->attemptid, $quiet->attemptid, 'a reload that chose nothing resumes');
+        $this->assertSame('normal', $quiet->difficulty);
+
+        $hard = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'hard', 10, true, '', 'hard');
+        $this->assertTrue($hard->isnew);
+        $this->assertNotSame($first->attemptid, $hard->attemptid);
+        $this->assertSame('hard', $hard->difficulty);
+        $this->assertSame('abandoned', $DB->get_field('playerpuzzle_attempts', 'status', ['id' => $first->attemptid]));
+        $this->assertGreaterThan(0, (int) $DB->get_field('playerpuzzle_attempts', 'timefinished', ['id' => $first->attemptid]));
+        $this->assertSame('inprogress', $DB->get_field('playerpuzzle_attempts', 'status', ['id' => $hard->attemptid]));
+    }
+
+    /**
+     * Tests that choosing a difficulty for the Demo never touches a real attempt in progress, nor another
+     * user's Demo.
+     *
+     * @return void
+     */
+    public function test_a_chosen_demo_difficulty_leaves_real_attempts_and_other_users_alone(): void {
+        global $DB;
+
+        $real = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10);
+        $other = security::resume_or_create_attempt_token($this->playerpuzzleid, 3, 'normal', 10, true);
+
+        security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'hard', 10, true, '', 'hard');
+
+        $this->assertSame('inprogress', $DB->get_field('playerpuzzle_attempts', 'status', ['id' => $real->attemptid]));
+        $this->assertSame('inprogress', $DB->get_field('playerpuzzle_attempts', 'status', ['id' => $other->attemptid]));
+    }
+
+    /**
      * Tests that the guest Demos nobody has touched for a day are dropped, with the rows hanging from
      * them, when a guest starts a new one, and that nothing else is: not a recent guest Demo, not a real
      * user's old Demo, not an old guest Demo of another activity.

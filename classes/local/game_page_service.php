@@ -442,7 +442,17 @@ class game_page_service {
     ): array {
         if ($isdemo) {
             self::check_has_questions($instance, $returnurl);
-            return self::build_game_config($cm, $instance, $context, $userid, $ismobile, $difficulty, true, $hero);
+            return self::build_game_config(
+                $cm,
+                $instance,
+                $context,
+                $userid,
+                $ismobile,
+                $difficulty,
+                true,
+                $hero,
+                $chosendifficulty
+            );
         }
 
         $config = security::with_locked_attempt_start(

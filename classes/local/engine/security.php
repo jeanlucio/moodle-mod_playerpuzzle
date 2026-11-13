@@ -331,7 +331,8 @@ class security {
      * @param string|null $chosendifficulty The difficulty the student picked in the Lobby for the attempt being
      *  resumed, or null when the Lobby offered no choice. Only applied when the attempt's phase is still untouched
      *  (see phase_not_started(), checked under the attempt lock); anything else keeps the difficulty the phase was
-     *  entered at. A page that merely reloads the game never passes it.
+     *  entered at. A Demo left half played under another difficulty is ended instead, and a new one starts. A page
+     *  that merely reloads the game never passes it.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned,
      *  ->combatstate, ->rngseed, ->moveseq, ->frozenbasebosshp, ->frozenbossdamage,
@@ -357,6 +358,18 @@ class security {
         $guestdemo = $isdemo && isguestuser($userid);
         if ($guestdemo) {
             self::purge_stale_guest_demos($playerpuzzleid, $userid);
+        }
+
+        // A Demo is disposable practice. When the Lobby sends a difficulty chosen on purpose, one left half played under
+        // another is ended, so the choice starts a new fight instead of resuming the old one under the old difficulty.
+        if ($isdemo && !$guestdemo && $chosendifficulty !== null) {
+            $left = 'playerpuzzleid = :ppid AND userid = :uid AND isdemo = 1 AND status = :inprogress AND difficulty <> :wanted';
+            $leftparams = [
+                'ppid' => $playerpuzzleid, 'uid' => $userid, 'inprogress' => 'inprogress',
+                'wanted' => self::clean_difficulty($chosendifficulty),
+            ];
+            $DB->set_field_select('playerpuzzle_attempts', 'timefinished', time(), $left, $leftparams);
+            $DB->set_field_select('playerpuzzle_attempts', 'status', 'abandoned', $left, $leftparams);
         }
 
         $existing = $guestdemo ? [] : $DB->get_records(

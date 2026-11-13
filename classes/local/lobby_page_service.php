@@ -473,6 +473,7 @@ class lobby_page_service {
                 // The same button as the open choice, only locked, so the row looks alike either way.
                 'difficultylockedtext' => get_string('lobby_difficulty_selected', 'mod_playerpuzzle', $options[$current]),
                 'difficultylockednote' => get_string('lobby_difficulty_locked_note', 'mod_playerpuzzle'),
+                'demodifficulty' => $current,
             ];
         }
 
@@ -492,6 +493,8 @@ class lobby_page_service {
             'difficultylabel' => get_string('lobby_difficulty', 'mod_playerpuzzle'),
             'difficultyhelp' => get_string('lobby_difficulty_help', 'mod_playerpuzzle'),
             'difficultyvalue' => $current,
+            // The Demo is fought at the difficulty the button shows, so its own form carries it too.
+            'demodifficulty' => $current,
             'difficultychoicesjson' => json_encode($choices, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
             // What the button and the line under it say before the first press; lobby_settings.js keeps them in
             // step with the choice from then on.

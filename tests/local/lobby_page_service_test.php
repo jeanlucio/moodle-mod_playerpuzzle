@@ -1004,6 +1004,32 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the Demo is given the difficulty the button shows, the default one and the one a phase under way
+     * locks, and that the rendered Demo form carries it with the mark that it is a choice.
+     *
+     * @return void
+     */
+    public function test_the_demo_form_carries_the_difficulty_of_the_button(): void {
+        global $DB, $OUTPUT;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 0]);
+        $context = \context_module::instance($cm->id);
+        $userid = (int) $this->student->id;
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $this->assertSame(constants::DIFFICULTY_NORMAL, $data['demodifficulty']);
+        $html = $OUTPUT->render_from_template('mod_playerpuzzle/view_lobby', $data);
+        $this->assertMatchesRegularExpression('/id="pp-lobby-demo-difficulty" value="normal"/', $html);
+        $this->assertStringContainsString('name="difficultychoice" value="1"', $html);
+
+        // A phase under way locks the button on its difficulty, and the Demo follows what it shows.
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token((int) $instance->id, $userid, 'hard');
+        $DB->set_field('playerpuzzle_attempts', 'moveseq', 3, ['token' => $token]);
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $this->assertSame('hard', $data['demodifficulty']);
+    }
+
+    /**
      * Tests that the minimum of questions is not announced when the activity has no questions to draw: the notice
      * that there are none already says why nothing can be played, and "answer at least 3" next to it contradicts it.
      *

@@ -80,7 +80,12 @@ if ($posted && $mode === hero_page_service::MODE_CAMPAIGN && $hero !== '') {
 // What the choice carries on to the next page. The difficulty and the mobile flag come from the Lobby's own
 // form, and are coerced where they are used, not here.
 $carry = [];
-foreach (['difficulty' => PARAM_ALPHA, 'mobile' => PARAM_INT, 'confirmnewcampaign' => PARAM_BOOL] as $name => $type) {
+$carried = ['difficulty' => PARAM_ALPHA, 'mobile' => PARAM_INT, 'confirmnewcampaign' => PARAM_BOOL];
+if ($mode === hero_page_service::MODE_DEMO) {
+    // The mark that the difficulty was chosen on purpose: a Demo left half played is started over under it.
+    $carried['difficultychoice'] = PARAM_INT;
+}
+foreach ($carried as $name => $type) {
     $value = optional_param($name, null, $type);
     if ($value !== null && $value !== '') {
         $carry[$name] = $value;

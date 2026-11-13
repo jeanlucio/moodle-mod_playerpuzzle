@@ -54,6 +54,7 @@
         "difficultydescription": "The standard fight.",
         "difficultylockedtext": "",
         "difficultylockednote": "",
+        "demodifficulty": "normal",
         "difficultyopennote": "",
         "speechenabled": false,
         "speechlabel": "Speak game announcements aloud",
@@ -288,6 +289,8 @@
                     <form method="post" action="{{demourl}}" class="pp-lobby-menu-form">
                         <input type="hidden" name="sesskey" value="{{sesskey}}">
                         <input type="hidden" name="mode" value="demo">
+                        <input type="hidden" name="difficulty" id="pp-lobby-demo-difficulty" value="{{demodifficulty}}">
+                        <input type="hidden" name="difficultychoice" value="1">
                         <button type="submit" class="pp-lobby-menu-btn">
                             <i class="fa fa-graduation-cap" aria-hidden="true"></i>
                             <span>{{playdemotext}}</span>

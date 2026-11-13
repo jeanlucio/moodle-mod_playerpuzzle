@@ -49,8 +49,8 @@ const saveSoundPreference = (cmid, type, enabled) => {
 };
 
 /**
- * Steps the difficulty button to the next difficulty: the hidden field that goes with the Play form, the text on
- * the button and the line under it that says what the difficulty changes. Every text came with the page, so
+ * Steps the difficulty button to the next difficulty: the hidden field that goes with the Play form and the one of
+ * the Demo, the text on the button and the line under it that says what the difficulty changes. Every text came with the page, so
  * nothing is requested.
  *
  * @param {HTMLElement} button The difficulty button, whose data-choices lists the difficulties as JSON.
@@ -66,6 +66,11 @@ const cycleDifficulty = (button) => {
     const index = choices.findIndex((choice) => choice.value === input.value);
     const next = choices[(index + 1) % choices.length];
     input.value = next.value;
+    // The Demo is fought at the difficulty the button shows, so its form carries the choice as well.
+    const demoInput = document.getElementById('pp-lobby-demo-difficulty');
+    if (demoInput) {
+        demoInput.value = next.value;
+    }
     readout.textContent = next.text;
     if (description) {
         description.textContent = next.description;

@@ -331,8 +331,8 @@ class security {
      * @param string|null $chosendifficulty The difficulty the student picked in the Lobby for the attempt being
      *  resumed, or null when the Lobby offered no choice. Only applied when the attempt's phase is still untouched
      *  (see phase_not_started(), checked under the attempt lock); anything else keeps the difficulty the phase was
-     *  entered at. A Demo left half played under another difficulty is ended instead, and a new one starts. A page
-     *  that merely reloads the game never passes it.
+     *  entered at. A Demo left half played under another difficulty or with another hero is ended instead, and a
+     *  new one starts. A page that merely reloads the game never passes it.
      * @return \stdClass Object with ->attemptid, ->token, ->currentlevel, ->currentphase,
      *  ->difficulty, ->questionstotal, ->coinsearned, ->bosscoinsearned,
      *  ->combatstate, ->rngseed, ->moveseq, ->frozenbasebosshp, ->frozenbossdamage,
@@ -360,14 +360,21 @@ class security {
             self::purge_stale_guest_demos($playerpuzzleid, $userid);
         }
 
-        // A Demo is disposable practice. When the Lobby sends a difficulty chosen on purpose, one left half played under
-        // another is ended, so the choice starts a new fight instead of resuming the old one under the old difficulty.
+        // A Demo is disposable practice. When the Lobby sends a difficulty chosen on purpose, which only the Lobby and
+        // the hero screen after it do, one left half played under another difficulty or with another hero is ended, so
+        // the choice starts a new fight instead of resuming the old one. A page that merely reloads sends no such
+        // mark, and falls back to the first hero without having chosen it, so it never gets here.
         if ($isdemo && !$guestdemo && $chosendifficulty !== null) {
-            $left = 'playerpuzzleid = :ppid AND userid = :uid AND isdemo = 1 AND status = :inprogress AND difficulty <> :wanted';
+            $differs = 'difficulty <> :wanted';
             $leftparams = [
                 'ppid' => $playerpuzzleid, 'uid' => $userid, 'inprogress' => 'inprogress',
                 'wanted' => self::clean_difficulty($chosendifficulty),
             ];
+            if (heroes::is_valid($hero)) {
+                $differs .= ' OR frozenhero IS NULL OR frozenhero <> :wantedhero';
+                $leftparams['wantedhero'] = heroes::sprite($hero, 1);
+            }
+            $left = "playerpuzzleid = :ppid AND userid = :uid AND isdemo = 1 AND status = :inprogress AND ($differs)";
             $DB->set_field_select('playerpuzzle_attempts', 'timefinished', time(), $left, $leftparams);
             $DB->set_field_select('playerpuzzle_attempts', 'status', 'abandoned', $left, $leftparams);
         }

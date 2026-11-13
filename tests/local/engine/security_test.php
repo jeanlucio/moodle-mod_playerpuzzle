@@ -634,6 +634,32 @@ final class security_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that choosing another hero for the Demo starts it over too, since the choice screen would otherwise
+     * promise a hero the resumed fight does not have; the same hero resumes, and so does a reload, which sends no
+     * choice and falls back to the first hero without having picked it.
+     *
+     * @return void
+     */
+    public function test_a_chosen_hero_starts_a_left_demo_over(): void {
+        global $DB;
+
+        $first = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true, 'magef');
+        $this->assertSame('magef1', $first->frozenhero);
+
+        $same = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true, 'magef', 'normal');
+        $this->assertSame($first->attemptid, $same->attemptid, 'the same hero and difficulty resume');
+        $reload = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true, 'warriorf');
+        $this->assertSame($first->attemptid, $reload->attemptid, 'a reload that chose nothing resumes');
+        $this->assertSame('magef1', $reload->frozenhero);
+
+        $other = security::resume_or_create_attempt_token($this->playerpuzzleid, 2, 'normal', 10, true, 'archerf', 'normal');
+        $this->assertTrue($other->isnew);
+        $this->assertSame('archerf1', $other->frozenhero);
+        $this->assertSame('abandoned', $DB->get_field('playerpuzzle_attempts', 'status', ['id' => $first->attemptid]));
+        $this->assertSame('inprogress', $DB->get_field('playerpuzzle_attempts', 'status', ['id' => $other->attemptid]));
+    }
+
+    /**
      * Tests that choosing a difficulty for the Demo never touches a real attempt in progress, nor another
      * user's Demo.
      *

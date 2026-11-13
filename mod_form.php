@@ -131,6 +131,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->addElement('text', 'basebosshp', get_string('basebosshp', 'mod_playerpuzzle'));
         $mform->setType('basebosshp', PARAM_INT);
         $mform->setDefault('basebosshp', 100);
+        $mform->addHelpButton('basebosshp', 'basebosshp', 'mod_playerpuzzle');
 
         $mform->addElement('text', 'bossdamage', get_string('bossdamage', 'mod_playerpuzzle'));
         $mform->setType('bossdamage', PARAM_INT);

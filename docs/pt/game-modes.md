@@ -26,7 +26,7 @@ Campanha.
 
   O dano do oponente escala do mesmo jeito; a recompensa em moedas não (veja [Combate](#combat)). O
   estudante não cresce sozinho: ele acompanha comprando melhorias para o herói (veja
-  [Heróis](#herois)), e o HP dele parte do **HP base do estudante** da atividade.
+  [Heróis](#herois)), e o HP dele parte do campo **Pontos de vida (HP) base do estudante** da atividade.
 * **Avanço:** depois de vencer uma fase, o servidor confere se a luta reportada realmente zerou o
   HP do oponente daquela fase, rotaciona o token, e o estudante segue para a próxima. A mesma
   requisição não pode ser reproduzida para pular várias fases a partir de uma vitória.

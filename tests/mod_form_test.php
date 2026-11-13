@@ -341,6 +341,24 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that both HP fields carry a help button. The opponent's had its help text written but never attached,
+     * so a teacher met a bare number with no hint of what it scales with.
+     *
+     * @return void
+     */
+    public function test_both_hp_fields_have_a_help_button(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $mform = $this->build_form($instance, $cm);
+
+        foreach (['basestudenthp', 'basebosshp'] as $field) {
+            $this->assertNotEmpty($mform->getElement($field)->_helpbutton, $field);
+        }
+    }
+
+    /**
      * Tests that the attempt limit is a pick list like the Campaign limit, with Unlimited first.
      *
      * @return void

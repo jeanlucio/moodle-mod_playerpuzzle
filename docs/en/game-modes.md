@@ -26,7 +26,7 @@ each Campaign.
 
   The opponent's damage scales the same way; the coin reward does not (see [Combat](#combat)). The
   student does not grow by itself: they keep up by buying upgrades for their hero (see
-  [Heroes](#heroes)), and the student's HP starts from the activity's **Base student HP**.
+  [Heroes](#heroes)), and the student's HP starts from the activity's **Base student hit points (HP)**.
 * **Advancing:** after winning a phase, the server checks that the reported fight really cleared
   that phase's opponent HP, rotates the token, and the student continues to the next phase. The same
   request cannot be replayed to skip several phases off one victory.

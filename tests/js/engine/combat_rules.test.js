@@ -508,9 +508,19 @@ test('opponentMoveWeights: none on Easy, the base on Normal, the personality on 
     const full = Object.assign({}, state, {currentHp: 200, bossShieldReady: true});
     assert.deepEqual(combatRules.opponentMoveWeights(full, {difficulty: 'normal'}), [1.5, 1.5, 1.5, 3, 0.5, 0, 1]);
     const plant = {difficulty: 'hard', bossPowers: [combatRules.POWERS.ROOTHEAL]};
-    assert.deepEqual(combatRules.opponentMoveWeights(state, plant), [1.5, 1.5, 1.5, 3, 1.5, 3, 1]);
+    assert.deepEqual(combatRules.opponentMoveWeights(state, plant), [1.5, 1.5, 3, 3, 1.5, 3, 1]);
     const normalPlant = Object.assign({}, plant, {difficulty: 'normal'});
     assert.deepEqual(combatRules.opponentMoveWeights(state, normalPlant), [1.5, 1.5, 1.5, 3, 1.5, 1.5, 1]);
+});
+
+test('opponentMoveWeights: on Hard the Orb is worth as much as the Sword, and a power multiplies that base', () => {
+    const state = Object.assign(freshState(), {currentHp: 100, maxBossHp: 200});
+    assert.deepEqual(combatRules.opponentMoveWeights(state, {difficulty: 'hard'}), [1.5, 1.5, 3, 3, 1.5, 1.5, 1]);
+    const wolf = {difficulty: 'hard', bossPowers: [combatRules.POWERS.MANABOOST]};
+    assert.deepEqual(combatRules.opponentMoveWeights(state, wolf), [1.5, 1.5, 6, 3, 1.5, 1.5, 1]);
+    // Normal keeps the base Orb, with or without the power's personality.
+    assert.equal(combatRules.opponentMoveWeights(state, {difficulty: 'normal'})[2], 1.5);
+    assert.equal(combatRules.opponentMoveWeights(state, Object.assign({}, wolf, {difficulty: 'normal'}))[2], 1.5);
 });
 
 test('opponentKit: one item per level after the first, plus Hard and the final boss, none on Easy', () => {

@@ -129,6 +129,12 @@
         const MOVE_WEIGHTS = [1.5, 1.5, 1.5, 3, 1.5, 3, 1];
         const ARMED_SHIELD_WEIGHT = 0.5;
 
+        // On Hard the opponent values the Orb as much as the Sword. A match of three Orbs fills 60 of the 100 mana a
+        // question needs, a right answer is a critical hit of three times the base damage, and the Hard opponent
+        // always answers right, so chasing Orbs pays about as much as hitting with Swords. A power's PERSONALITY
+        // multiplies this base.
+        const HARD_ORB_WEIGHT = 3;
+
         // On Hard, each power makes the opponent value the pieces that feed it more: power =>
         // {piece type: factor}.
         const PERSONALITY = {
@@ -565,7 +571,8 @@
          * How the opponent values each piece type when it picks a move (see
          * board_rules.js::chooseMove()): none on Easy, so it plays the first Sword match it
          * finds; MOVE_WEIGHTS on Normal, with the Potion's scaled by how hurt it is and less for a
-         * Shield while one is armed; on Hard, those times the PERSONALITY of each of its powers.
+         * Shield while one is armed; on Hard, the Orb at HARD_ORB_WEIGHT and then those times the PERSONALITY of
+         * each of its powers.
          * A config without a difficulty plays as Normal.
          *
          * @param {object} state Combat state: currentHp, maxBossHp and bossShieldReady are read.
@@ -582,6 +589,7 @@
             }
             weights[5] = MOVE_WEIGHTS[5] * (state.maxBossHp - state.currentHp) / state.maxBossHp;
             if (config.difficulty === 'hard') {
+                weights[2] = HARD_ORB_WEIGHT;
                 (config.bossPowers || []).forEach(power => {
                     Object.entries(PERSONALITY[power] || {}).forEach(([type, factor]) => {
                         weights[type] *= factor;

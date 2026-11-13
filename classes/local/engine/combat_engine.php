@@ -122,6 +122,14 @@ class combat_engine {
     /** @var float The Shield's weight while the opponent has one armed. */
     public const ARMED_SHIELD_WEIGHT = 0.5;
 
+    /**
+     * @var float On Hard the opponent values the Orb as much as the Sword. A match of three Orbs fills 60 of the 100
+     *  mana a question needs, a right answer is a critical hit of three times the base damage, and the Hard opponent
+     *  always answers right, so chasing Orbs pays about as much as hitting with Swords. A power's PERSONALITY
+     *  multiplies this base.
+     */
+    public const HARD_ORB_WEIGHT = 3.0;
+
     /** @var array On Hard, each power makes the opponent value the pieces that feed it more: power => [type => factor]. */
     public const PERSONALITY = [
         'rootheal' => [5 => 2],
@@ -587,8 +595,8 @@ class combat_engine {
      * How the opponent values each piece type when it picks a move (see
      * board_engine::choose_move()) — mirrors combat_rules.js::opponentMoveWeights(): none on Easy,
      * so it plays the first Sword match it finds; MOVE_WEIGHTS on Normal, with the Potion's scaled
-     * by how hurt it is and less for a Shield while one is armed; on Hard, those times the
-     * PERSONALITY of each of its powers. A config without a difficulty plays as Normal.
+     * by how hurt it is and less for a Shield while one is armed; on Hard, the Orb at HARD_ORB_WEIGHT and then
+     * those times the PERSONALITY of each of its powers. A config without a difficulty plays as Normal.
      *
      * @param array $state Combat state: currentHp, maxBossHp and bossShieldReady are read.
      * @param array $config The phase's rule config: difficulty and bossPowers are read.
@@ -605,6 +613,7 @@ class combat_engine {
         }
         $weights[5] = self::MOVE_WEIGHTS[5] * ($state['maxBossHp'] - $state['currentHp']) / $state['maxBossHp'];
         if ($difficulty === 'hard') {
+            $weights[2] = self::HARD_ORB_WEIGHT;
             foreach ($config['bossPowers'] ?? [] as $power) {
                 foreach (self::PERSONALITY[$power] ?? [] as $type => $factor) {
                     $weights[$type] *= $factor;

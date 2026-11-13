@@ -841,8 +841,28 @@ final class combat_engine_test extends \advanced_testcase {
         $this->assertEquals([1.5, 1.5, 1.5, 3, 0.5, 0, 1], combat_engine::opponent_move_weights($full, ['difficulty' => 'normal']));
 
         $plant = ['difficulty' => 'hard', 'bossPowers' => [combat_engine::POWER_ROOTHEAL]];
-        $this->assertEquals([1.5, 1.5, 1.5, 3, 1.5, 3, 1], combat_engine::opponent_move_weights($state, $plant));
+        $this->assertEquals([1.5, 1.5, 3, 3, 1.5, 3, 1], combat_engine::opponent_move_weights($state, $plant));
         $this->assertEquals($base, combat_engine::opponent_move_weights($state, array_merge($plant, ['difficulty' => 'normal'])));
+    }
+
+    /**
+     * Tests that on Hard the opponent values the Orb as much as the Sword and a power multiplies that base, while
+     * Normal keeps the base Orb whatever its powers.
+     *
+     * @return void
+     */
+    public function test_opponent_move_weights_value_the_orb_like_the_sword_on_hard(): void {
+        $state = array_merge($this->fresh_state(), ['currentHp' => 100.0, 'maxBossHp' => 200.0]);
+        $wolf = ['difficulty' => 'hard', 'bossPowers' => [combat_engine::POWER_MANABOOST]];
+
+        $hard = combat_engine::opponent_move_weights($state, ['difficulty' => 'hard']);
+        $this->assertEquals([1.5, 1.5, 3, 3, 1.5, 1.5, 1], $hard);
+        $this->assertEquals([1.5, 1.5, 6, 3, 1.5, 1.5, 1], combat_engine::opponent_move_weights($state, $wolf));
+        $this->assertEquals(1.5, combat_engine::opponent_move_weights($state, ['difficulty' => 'normal'])[2]);
+        $this->assertEquals(
+            1.5,
+            combat_engine::opponent_move_weights($state, array_merge($wolf, ['difficulty' => 'normal']))[2]
+        );
     }
 
     /**

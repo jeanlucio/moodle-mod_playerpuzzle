@@ -78,7 +78,10 @@ reach.
 
 The hero grows over a Campaign (HP, attack and armor, all bought in the shop) and the opponents' powers stay the
 same, so from Normal up the opponent's hits also grow with the Campaign's progress, from nothing at the first phase
-to 60% more at the last on Normal and 160% more on Hard; Easy does not grow. On Hard this keeps the fight
+to 60% more at the last on Normal and 160% more on Hard; Easy does not grow. Their armor grows too: every
+opponent, on Normal and Hard, absorbs 25 points more of each hit at the last phase than at the first, on top of the
+armor it already had (the golem and the plant start at 15% and end at 40%, the others go from nothing to 25%), so a
+hero that has put its buys in armor meets a defense that answers it. On Hard this keeps the fight
 demanding to the end: without consumables a prepared hero wins roughly one phase in four at the first try, and the
 Potions, Swords and Shields from the shop are what bring it to about one in two.
 

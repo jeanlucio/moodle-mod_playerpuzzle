@@ -154,11 +154,12 @@ final class save_progress_test extends \advanced_testcase {
             'rngseed' => $seed,
             'movelog' => move_log::encode($events),
             'moveseq' => count($events),
-            'frozenbasebosshp' => 10,
+            // Half the HP a hit of this unit takes, so the single match still finishes the boss when its armor, which
+            // grows over the Campaign up to a quarter of each hit, takes its share.
+            'frozenbasebosshp' => 5,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
-            // A Brutamontes: its profile leaves its own HP and the hits it takes as they are,
-            // so the single match still finishes it.
+            // A Brutamontes: its profile leaves its own HP as it is.
             'frozenopponent' => 'goblin',
         ]);
     }
@@ -474,7 +475,8 @@ final class save_progress_test extends \advanced_testcase {
      * Tests that a defeat the replay cannot verify to the end is scored by the damage its log
      * still vouches for, against the phase-scaled HP — never by the claim. Seed 2's kill move
      * against a 1000 HP boss (frozen) at Level 5, Phase 1: everything scales x3, so the
-     * verified Sword match deals 30 of 3000.
+     * verified Sword match is 30, of which the boss's armor, at the end of this one-level Campaign, absorbs a
+     * quarter: 23 of 3000.
      *
      * @return void
      */
@@ -501,8 +503,8 @@ final class save_progress_test extends \advanced_testcase {
         $this->assertFalse($result['error']);
         $this->assertSame('lost', $result['data']['outcome']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
-        $this->assertSame(2970, (int) $attempt->bosshp_remaining);
-        $this->assertEqualsWithDelta(1.0, (float) $attempt->score, 0.001);
+        $this->assertSame(2977, (int) $attempt->bosshp_remaining);
+        $this->assertEqualsWithDelta(23 / 30, (float) $attempt->score, 0.001);
     }
 
     /**

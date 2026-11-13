@@ -68,6 +68,8 @@ const NORMAL_FINAL_BOSS_HP_FACTOR = 1.15;
 const DIFFICULTY_PLAYER_FACTORS = {easy: 1.0, normal: 1.0, hard: 2.0};
 // How much harder an opponent hits at the Campaign's last phase, by difficulty, see combat::ATTACK_GROWTH.
 const ATTACK_GROWTH = {easy: 0.0, normal: 0.6, hard: 1.6};
+// How many points more of each hit an opponent's armor absorbs at the Campaign's last phase, see combat::ARMOR_GROWTH.
+const ARMOR_GROWTH = {easy: 0.0, normal: 0.25, hard: 0.25};
 const PHASES_PER_LEVEL = 10;
 const DIFFICULTY_COIN_FACTORS = {easy: 0.5, normal: 1.0, hard: 3.0};
 
@@ -87,9 +89,39 @@ function scaleAttack(attack, difficulty, level, phase, maxLevels) {
     if (growth <= 0) {
         return attack;
     }
+    return Math.floor((attack * (1 + (growth * campaignProgress(level, phase, maxLevels))) * 1000) + 0.5) / 1000;
+}
+
+/**
+ * Mirrors combat::scale_armor(): every opponent's armor grows by the same number of points over the Campaign, on
+ * top of its own, on Normal and Hard, an Easy one not at all. Rounded to three decimals the way the PHP does it.
+ *
+ * @param {number} armor The armor the opponent has before the Campaign counts.
+ * @param {string} difficulty The phase's difficulty.
+ * @param {number} level The phase's level.
+ * @param {number} phase The phase within the level.
+ * @param {number} maxLevels The Campaign's level count.
+ * @return {number}
+ */
+function scaleArmor(armor, difficulty, level, phase, maxLevels) {
+    const growth = ARMOR_GROWTH[difficulty] ?? 0.0;
+    if (growth <= 0) {
+        return armor;
+    }
+    return Math.floor(((armor + (growth * campaignProgress(level, phase, maxLevels))) * 1000) + 0.5) / 1000;
+}
+
+/**
+ * Mirrors combat::campaign_progress(): how far into the Campaign a phase is, 0 at the first and 1 at the last.
+ *
+ * @param {number} level The phase's level.
+ * @param {number} phase The phase within the level.
+ * @param {number} maxLevels The Campaign's level count.
+ * @return {number}
+ */
+function campaignProgress(level, phase, maxLevels) {
     const last = (Math.max(1, maxLevels) * PHASES_PER_LEVEL) - 1;
-    const progress = Math.min(1, Math.max(0, (((level - 1) * PHASES_PER_LEVEL) + phase - 1) / last));
-    return Math.floor((attack * (1 + (growth * progress)) * 1000) + 0.5) / 1000;
+    return Math.min(1, Math.max(0, (((level - 1) * PHASES_PER_LEVEL) + phase - 1) / last));
 }
 
 /**
@@ -141,7 +173,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             coinGain: attempt.frozencoingain,
             coinFactor: DIFFICULTY_COIN_FACTORS[attempt.difficulty] ?? 1.0,
             bossAttack: scaleAttack(modifiers.attack, attempt.difficulty, level, phase, playerpuzzle.maxlevels ?? 1),
-            bossArmor: modifiers.armor,
+            bossArmor: scaleArmor(modifiers.armor, attempt.difficulty, level, phase, playerpuzzle.maxlevels ?? 1),
             bossPowers: powers,
             ...(breathEvery ? {bossBreathEvery: breathEvery} : {}),
             // The final boss's key, as classes/local/opponents.php::FINAL_BOSS names it.
@@ -533,4 +565,4 @@ function record(params) {
     return runPhase(Object.assign({events: [], outcomes: [], serverUses: {}}, params));
 }
 
-module.exports = {ROWS, COLS, phaseSetup, scaleAttack, derive, record};
+module.exports = {ROWS, COLS, phaseSetup, scaleAttack, scaleArmor, derive, record};

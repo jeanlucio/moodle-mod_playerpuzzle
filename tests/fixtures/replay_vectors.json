@@ -343,7 +343,7 @@
             {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":93,"playergold":50,"bossgold":20,"bossdefeated":false}
+        "expected": {"damage":82,"playergold":50,"bossgold":20,"bossdefeated":false}
     },
     {
         "name": "level 3 phase 10",
@@ -360,8 +360,9 @@
             {"type":"move","r1":3,"c1":7,"r2":4,"c2":7},
             {"type":"move","r1":0,"c1":2,"r2":0,"c2":3},
             {"type":"question","side":"player","outcome":"answered"},
-            {"type":"move","r1":2,"c1":4,"r2":3,"c2":4},
-            {"type":"move","r1":4,"c1":3,"r2":5,"c2":3},
+            {"type":"move","r1":0,"c1":3,"r2":0,"c2":4},
+            {"type":"move","r1":5,"c1":3,"r2":6,"c2":3},
+            {"type":"move","r1":3,"c1":4,"r2":3,"c2":5},
             {"type":"question","side":"boss","outcome":"answered"}
         ],
         "outcomes": [
@@ -370,7 +371,7 @@
             {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":105,"playergold":45,"bossgold":0,"bossdefeated":false}
+        "expected": {"damage":74,"playergold":45,"bossgold":15,"bossdefeated":false}
     },
     {
         "name": "revive with minquestions",
@@ -1125,7 +1126,7 @@
             {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":21,"playergold":30,"bossgold":0,"bossdefeated":false}
+        "expected": {"damage":18,"playergold":30,"bossgold":0,"bossdefeated":false}
     },
     {
         "name": "armored opponent, Sword consumables",
@@ -3083,7 +3084,7 @@
             {"side":"player","correct":true,"counted":true}
         ],
         "serveruses": {},
-        "expected": {"damage":83,"playergold":15,"bossgold":0,"bossdefeated":false}
+        "expected": {"damage":52,"playergold":15,"bossgold":0,"bossdefeated":false}
     },
     {
         "name": "final boss against a warrior: armor",

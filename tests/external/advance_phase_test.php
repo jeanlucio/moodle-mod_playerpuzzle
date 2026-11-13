@@ -167,11 +167,12 @@ final class advance_phase_test extends \advanced_testcase {
             'rngseed' => $seed,
             'movelog' => move_log::encode($events),
             'moveseq' => count($events),
-            'frozenbasebosshp' => 10,
+            // Half the HP a hit of this unit takes, so the single match still finishes the boss when its armor, which
+            // grows over the Campaign up to a quarter of each hit, takes its share.
+            'frozenbasebosshp' => 5,
             'frozenbossdamage' => 10,
             'frozencoingain' => 10,
-            // A Brutamontes: its profile leaves its own HP and the hits it takes as they are,
-            // so the single match still finishes it.
+            // A Brutamontes: its profile leaves its own HP as it is.
             'frozenopponent' => 'goblin',
         ]);
     }

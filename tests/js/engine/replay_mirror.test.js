@@ -220,6 +220,19 @@ test('scaleAttack grows a Normal and a Hard opponent\'s attack over the Campaign
     assert.equal(ReplayMirror.scaleAttack(1.0, 'easy', 1, 10, 1), 1.0);
 });
 
+test('scaleArmor adds the same points to every opponent over the Campaign on Normal and Hard, and leaves Easy alone', () => {
+    // The same cases combat_test.php pins for combat::scale_armor().
+    assert.equal(ReplayMirror.scaleArmor(0, 'normal', 1, 1, 1), 0);
+    assert.equal(ReplayMirror.scaleArmor(0, 'normal', 1, 5, 1), 0.111);
+    assert.equal(ReplayMirror.scaleArmor(0, 'normal', 1, 10, 1), 0.25);
+    assert.equal(ReplayMirror.scaleArmor(0.15, 'normal', 1, 10, 1), 0.4);
+    assert.equal(ReplayMirror.scaleArmor(0.15, 'hard', 2, 5, 3), 0.271);
+    assert.equal(ReplayMirror.scaleArmor(0, 'hard', 10, 10, 10), 0.25);
+    assert.equal(ReplayMirror.scaleArmor(0, 'normal', 1, 1, 0), 0);
+    assert.equal(ReplayMirror.scaleArmor(0, 'normal', 3, 10, 1), 0.25);
+    assert.equal(ReplayMirror.scaleArmor(0.15, 'easy', 1, 10, 1), 0.15);
+});
+
 test('a phase with no opening question on record is inconclusive', () => {
     assert.equal(deriveRaw({rngseed: 2, frozenbasebosshp: 10}, {}, seed2Win), null);
 });

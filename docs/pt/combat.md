@@ -78,7 +78,10 @@ acima do que um herói com todas as melhorias consegue alcançar.
 
 O herói cresce ao longo da Campanha (HP, ataque e armadura, comprados na loja) e os poderes dos oponentes
 continuam os mesmos, então do Normal para cima os golpes do oponente também crescem com o progresso da Campanha:
-de nada na primeira fase a 60% a mais na última no Normal e 160% a mais no Difícil; o Fácil não cresce. No
+de nada na primeira fase a 60% a mais na última no Normal e 160% a mais no Difícil; o Fácil não cresce. A
+armadura deles também cresce: todo oponente, no Normal e no Difícil, absorve 25 pontos a mais de cada golpe na última
+fase do que na primeira, além da armadura que já tinha (o golem e a planta começam em 15% e terminam em 40%, os
+outros vão de nada a 25%), então o herói que pôs suas compras em armadura encontra uma defesa que responde a ela. No
 Difícil isso mantém a luta exigente até o fim: sem consumíveis um herói preparado vence mais ou menos uma fase em
 quatro de primeira, e as Poções, Espadas e Escudos da loja é que o levam a cerca de uma em duas.
 

@@ -79,6 +79,16 @@ class combat {
      */
     private const ATTACK_GROWTH = ['easy' => 0.0, 'normal' => 0.6, 'hard' => 1.6];
 
+    /**
+     * How much more of each hit an opponent's armor absorbs, at the Campaign's last phase, than at its first, by
+     * difficulty, in points of the hit: every opponent gains the same, on top of the armor its profile and the hero it
+     * fights give it, in a straight line over the Campaign's phases. The hero grows in armor as much as in HP and
+     * attack, up to 55%, while the opponent's stayed where its profile put it (15% for two of them, none for the
+     * rest), so a hero that had put its buys in armor met nothing that answered it. Easy does not grow, like its
+     * attack. Tuned with tests/js/engine/simulate_heroes.js.
+     */
+    private const ARMOR_GROWTH = ['easy' => 0.0, 'normal' => 0.25, 'hard' => 0.25];
+
     /** @var int Phases in a level, which the Campaign's progress is counted in. */
     private const PHASES_PER_LEVEL = 10;
     /**
@@ -201,7 +211,13 @@ class combat {
                 $phase,
                 (int) ($instance->maxlevels ?? 1)
             ),
-            'bossarmor' => $modifiers['armor'] + $counter['armor'],
+            'bossarmor' => self::scale_armor(
+                (float) ($modifiers['armor'] + $counter['armor']),
+                $difficulty,
+                $level,
+                $phase,
+                (int) ($instance->maxlevels ?? 1)
+            ),
             'bosspowers' => array_values(array_unique(
                 array_merge(opponents::powers((string) $attempt->frozenopponent), $counter['powers'])
             )),
@@ -232,10 +248,45 @@ class combat {
         if ($growth <= 0.0) {
             return $attack;
         }
-        $last = max(1, $maxlevels) * self::PHASES_PER_LEVEL - 1;
-        $progress = min(1.0, max(0.0, (($level - 1) * self::PHASES_PER_LEVEL + $phase - 1) / $last));
 
-        return floor($attack * (1 + $growth * $progress) * 1000 + 0.5) / 1000;
+        return floor($attack * (1 + $growth * self::campaign_progress($level, $phase, $maxlevels)) * 1000 + 0.5) / 1000;
+    }
+
+    /**
+     * The share of the opponent's hits absorbed by its armor once the Campaign's progress is counted in: its own
+     * armor plus up to ARMOR_GROWTH of its difficulty, from nothing at the first phase to the full extra at the last,
+     * and an Easy one not at all. Rounded to three decimals with floor(), like the other values the replay mirror in
+     * JavaScript must land on exactly.
+     *
+     * @param float $armor The armor the opponent has before the Campaign counts, from its profile and the hero.
+     * @param string $difficulty The phase's difficulty.
+     * @param int $level The phase's level.
+     * @param int $phase The phase within the level.
+     * @param int $maxlevels The Campaign's level count.
+     * @return float
+     */
+    public static function scale_armor(float $armor, string $difficulty, int $level, int $phase, int $maxlevels): float {
+        $growth = self::ARMOR_GROWTH[$difficulty] ?? 0.0;
+        if ($growth <= 0.0) {
+            return $armor;
+        }
+
+        return floor(($armor + $growth * self::campaign_progress($level, $phase, $maxlevels)) * 1000 + 0.5) / 1000;
+    }
+
+    /**
+     * How far into the Campaign a phase is, from 0 at the first phase to 1 at the last. A Campaign of no levels counts
+     * as one, and the progress never passes the end.
+     *
+     * @param int $level The phase's level.
+     * @param int $phase The phase within the level.
+     * @param int $maxlevels The Campaign's level count.
+     * @return float
+     */
+    private static function campaign_progress(int $level, int $phase, int $maxlevels): float {
+        $last = max(1, $maxlevels) * self::PHASES_PER_LEVEL - 1;
+
+        return min(1.0, max(0.0, (($level - 1) * self::PHASES_PER_LEVEL + $phase - 1) / $last));
     }
 
     /**

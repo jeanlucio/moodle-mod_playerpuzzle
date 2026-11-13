@@ -225,7 +225,9 @@ final class opponent_card_test extends \advanced_testcase {
         $boss = opponent_card::for_player($this->instance, $userid)['opponentcard'];
 
         $this->assertSame(get_string('bossavatar_vampire', 'mod_playerpuzzle'), $boss['name']);
-        $this->assertContains(get_string('opponent_trait_armor', 'mod_playerpuzzle', 15), $this->texts($boss));
+        // The 15% the final boss answers a hero strong in attack with, and the quarter its armor has grown by at the
+        // last phase of this one-level Campaign.
+        $this->assertContains(get_string('opponent_trait_armor', 'mod_playerpuzzle', 40), $this->texts($boss));
         $this->assertContains(get_string('power_drain', 'mod_playerpuzzle', 10), $this->texts($boss));
     }
 

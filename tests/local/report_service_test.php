@@ -194,7 +194,7 @@ final class report_service_test extends \advanced_testcase {
             'bosshp_remaining'  => 0,
             'questions_correct' => 4,
             'questions_total'   => 5,
-            'timefinished'      => time(),
+            'timefinished'      => 1788000000,
         ]);
 
         $rows = report_service::get_student_rows($this->instance, $this->cm, $this->context, 0);
@@ -207,7 +207,11 @@ final class report_service_test extends \advanced_testcase {
         $this->assertSame(format_float(100.0, 1), $rows[0]['avgdamagepercent']);
         $this->assertSame(format_float(4.0, 1), $rows[0]['avgcorrect']);
         $this->assertSame(format_float(5.0, 1), $rows[0]['avgtotal']);
-        $this->assertNotSame('-', $rows[0]['lastmatch']);
+        // The short format of the language: the long one of some packs puts an AM/PM marker after a 24-hour time.
+        $this->assertSame(
+            userdate(1788000000, get_string('strftimedatetimeshort', 'langconfig')),
+            $rows[0]['lastmatch']
+        );
     }
 
     /**
@@ -512,36 +516,98 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
-     * Scores land in the correct fixed bucket at both boundaries.
+     * Creates a student whose Campaign grade is a given share of the maximum grade: a lost attempt that cleared
+     * that many of the Campaign's ten phases (maxlevels is 1).
+     *
+     * @param int $phasescleared Phases won, 0 to 10 (10 is a won Campaign).
+     * @param array $overrides Fields to override on the attempt.
+     * @return \stdClass The enrolled student.
+     */
+    private function make_student_with_progress(int $phasescleared, array $overrides = []): \stdClass {
+        $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        $this->make_attempt($student, array_merge($phasescleared >= 10
+            ? ['status' => 'won', 'currentphase' => 10, 'timefinished' => time()]
+            : ['status' => 'lost', 'currentphase' => $phasescleared + 1, 'timefinished' => time()], $overrides));
+
+        return $student;
+    }
+
+    /**
+     * Students land in the correct fixed bucket at both boundaries, by their grade as a share of the maximum.
      *
      * @return void
      */
-    public function test_get_score_distribution_buckets_boundaries_correctly(): void {
-        $student = $this->getDataGenerator()->create_user();
-        $this->enrol_student($student);
-
-        foreach ([0, 20, 21, 40, 41, 60, 61, 80, 81, 100] as $score) {
-            $this->make_attempt($student, ['status' => 'won', 'score' => $score, 'timefinished' => time()]);
+    public function test_get_score_distribution_buckets_students_by_grade_at_the_boundaries(): void {
+        foreach (range(0, 10) as $cleared) {
+            $this->make_student_with_progress($cleared);
         }
 
         $distribution = report_service::get_score_distribution($this->instance, $this->cm, $this->context, 0);
 
-        $this->assertSame(2, $distribution[0]['count']); // 0, 20.
-        $this->assertSame(2, $distribution[1]['count']); // 21, 40.
-        $this->assertSame(2, $distribution[2]['count']); // 41, 60.
-        $this->assertSame(2, $distribution[3]['count']); // 61, 80.
-        $this->assertSame(2, $distribution[4]['count']); // 81, 100.
+        $this->assertSame([3, 2, 2, 2, 2], array_column($distribution, 'count')); // 0-20, 30-40, 50-60, 70-80, 90-100.
     }
 
     /**
-     * An inprogress attempt's score is never counted in the distribution.
+     * The chart follows the grade, not the damage dealt in the last fight: a lost attempt that took the opponent
+     * to full damage but cleared no phase is a zero grade.
      *
      * @return void
      */
-    public function test_get_score_distribution_ignores_inprogress_attempts(): void {
-        $student = $this->getDataGenerator()->create_user();
-        $this->enrol_student($student);
-        $this->make_attempt($student, ['status' => 'inprogress', 'score' => 99]);
+    public function test_get_score_distribution_ignores_the_damage_score_of_an_attempt(): void {
+        $this->make_student_with_progress(0, ['score' => 100, 'bosshp_remaining' => 0]);
+
+        $distribution = report_service::get_score_distribution($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertSame([1, 0, 0, 0, 0], array_column($distribution, 'count'));
+    }
+
+    /**
+     * A grade is a share of the activity's own maximum grade, whatever that is: 5 out of 10 is the middle bucket.
+     *
+     * @return void
+     */
+    public function test_get_score_distribution_scales_by_the_maximum_grade(): void {
+        global $DB;
+        $DB->set_field('playerpuzzle', 'grade', 10, ['id' => $this->instance->id]);
+        $this->instance->grade = 10;
+        $this->make_student_with_progress(5);
+
+        $distribution = report_service::get_score_distribution($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertSame([0, 0, 1, 0, 0], array_column($distribution, 'count'));
+    }
+
+    /**
+     * A student counts once, by their final grade, however many attempts they made.
+     *
+     * @return void
+     */
+    public function test_get_score_distribution_counts_each_student_once(): void {
+        $student = $this->make_student_with_progress(3, ['timecreated' => 1000]);
+        $this->make_attempt($student, [
+            'status' => 'lost', 'currentphase' => 9, 'timefinished' => time(), 'timecreated' => 2000,
+        ]);
+
+        $distribution = report_service::get_score_distribution($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertSame(1, array_sum(array_column($distribution, 'count')));
+        $this->assertSame(1, $distribution[3]['count']); // 80% of the Campaign.
+    }
+
+    /**
+     * A student with no grade yet is left out: in Single Match, a match still in progress has no outcome.
+     *
+     * @return void
+     */
+    public function test_get_score_distribution_leaves_out_students_without_a_grade(): void {
+        global $DB;
+        $DB->set_field('playerpuzzle', 'gamemode', 'single', ['id' => $this->instance->id]);
+        $this->instance->gamemode = 'single';
+        $inprogress = $this->getDataGenerator()->create_user();
+        $this->enrol_student($inprogress);
+        $this->make_attempt($inprogress, ['status' => 'inprogress']);
+        $this->enrol_student($this->getDataGenerator()->create_user());
 
         $distribution = report_service::get_score_distribution($this->instance, $this->cm, $this->context, 0);
 
@@ -549,19 +615,35 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
-     * A finished Demo attempt's score is never counted in the class-wide
-     * score distribution — it fought a fixed, disposable HP, not a real result.
+     * A finished Demo attempt never counts: it fought a fixed, disposable HP, not a real result.
      *
      * @return void
      */
     public function test_get_score_distribution_ignores_demo_attempts(): void {
-        $student = $this->getDataGenerator()->create_user();
-        $this->enrol_student($student);
-        $this->make_attempt($student, ['status' => 'won', 'score' => 99, 'timefinished' => time(), 'isdemo' => 1]);
+        $this->make_student_with_progress(10, ['isdemo' => 1]);
 
         $distribution = report_service::get_score_distribution($this->instance, $this->cm, $this->context, 0);
 
         $this->assertSame(0, array_sum(array_column($distribution, 'count')));
+    }
+
+    /**
+     * The error rate is also given as text in the user's number format, so a decimal comma is not shown as a dot.
+     *
+     * @return void
+     */
+    public function test_get_most_missed_questions_formats_the_rate_in_the_users_number_format(): void {
+        $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        $attemptid = $this->make_attempt($student, ['status' => 'lost', 'timefinished' => time()]);
+        // One wrong answer out of three: 33,3% of the answers are wrong.
+        $this->log_question($attemptid, 7, 'Q', 0);
+        $this->log_question($attemptid, 7, 'Q', 1);
+        $this->log_question($attemptid, 7, 'Q', 1);
+
+        $rows = report_service::get_most_missed_questions($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertSame(format_float(33.3, 1), $rows[0]['errorratetext']);
     }
 
     /**

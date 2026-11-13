@@ -83,7 +83,7 @@ $templatecontext = [
     'distribution'          => $distribution,
     'completedcount'        => $completion['completed'],
     'completedtotal'        => $completion['total'],
-    'completedpercent'      => $completion['percent'],
+    'completedpercent'      => format_float($completion['percent'], 1),
     'iscampaign'            => $instance->gamemode === constants::GAMEMODE_CAMPAIGN,
 ];
 

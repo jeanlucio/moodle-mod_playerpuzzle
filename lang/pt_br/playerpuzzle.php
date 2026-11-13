@@ -565,6 +565,7 @@ $string['report_nomissedquestions'] = 'Nenhuma questão foi errada ainda.';
 $string['report_nostudents'] = 'Nenhum estudante para mostrar ainda.';
 $string['report_question'] = 'Questão';
 $string['report_scoredistribution'] = 'Distribuição de notas';
+$string['report_scoredistribution_desc'] = 'Quantos estudantes estão em cada faixa da nota, em percentual da nota máxima da atividade. Cada estudante conta uma vez, pela mesma nota do livro de notas.';
 $string['report_student'] = 'Estudante';
 $string['report_studentsshown'] = 'Mostrando {$a->from}–{$a->to} de {$a->total} estudantes';
 $string['report_studenttable'] = 'Estudantes';

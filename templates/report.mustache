@@ -44,7 +44,7 @@
         "pagingbar": "<nav aria-label=\"Page\"><ul class=\"pagination\"><li class=\"page-item active\"><span class=\"page-link\">1</span></li></ul></nav>",
         "pagingsummary": "Showing 1–50 of 120 students",
         "missedquestions": [
-            {"questiontext": "How much is 2 + 2?", "errors": 6, "total": 10, "errorrate": 60.0}
+            {"questiontext": "How much is 2 + 2?", "errors": 6, "total": 10, "errorrate": 60.0, "errorratetext": "60.0"}
         ],
         "missedquestionsempty": false,
         "distribution": [
@@ -56,7 +56,7 @@
         ],
         "completedcount": 5,
         "completedtotal": 10,
-        "completedpercent": 50.0,
+        "completedpercent": "50.0",
         "iscampaign": true
     }
 }}
@@ -87,9 +87,10 @@
     <div class="card mb-4">
         <div class="card-body">
             <h4>{{#str}} report_scoredistribution, mod_playerpuzzle {{/str}}</h4>
+            <p class="mb-3">{{#str}} report_scoredistribution_desc, mod_playerpuzzle {{/str}}</p>
             {{#distribution}}
                 <div class="d-flex align-items-center mb-2">
-                    <span class="pp-report-bucket-label me-2">{{min}}–{{max}}</span>
+                    <span class="pp-report-bucket-label me-2">{{min}}–{{max}}%</span>
                     <div class="progress flex-grow-1">
                         <div class="progress-bar" style="width: {{barpercent}}%">
                             <span class="visually-hidden">{{count}}</span>
@@ -161,7 +162,7 @@
                             {{#missedquestions}}
                                 <tr>
                                     <td>{{questiontext}}</td>
-                                    <td>{{errorrate}}% ({{errors}}/{{total}})</td>
+                                    <td>{{errorratetext}}% ({{errors}}/{{total}})</td>
                                 </tr>
                             {{/missedquestions}}
                         </tbody>

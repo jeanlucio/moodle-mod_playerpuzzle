@@ -91,12 +91,37 @@ class report_service {
         }
         $students = array_replace($names, array_intersect_key($students, $names));
 
-        [$insql, $inparams] = $DB->get_in_or_equal(array_keys($students), SQL_PARAMS_NAMED, 'stu');
-        // Demo attempts are excluded: they are disposable practice fights with fixed HP, and
-        // must never appear in a teacher-facing report as if they were real submissions.
-        // The grade shown here is worked out by the same grade_calculator as the gradebook's, which
-        // reads frozenmaxlevels from the last attempt of each Campaign: without the column, or with the
-        // attempts out of order, a later change of the level count would re-score Campaigns already played.
+        $byuser = self::load_attempts_by_user($instance, array_keys($students));
+
+        $rows = [];
+        foreach ($students as $userid => $student) {
+            $rows[] = self::build_student_row(
+                $instance,
+                $student,
+                $byuser[$userid] ?? [],
+                $canviewfullnames
+            );
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Loads the real (non-Demo) attempts of the given students, grouped by student, oldest first.
+     *
+     * Demo attempts are excluded: they are disposable practice fights with fixed HP, and must never appear in a
+     * teacher-facing report as if they were real submissions. The columns are the ones grade_calculator reads, which
+     * takes frozenmaxlevels from the last attempt of each Campaign: without the column, or with the attempts out of
+     * order, a later change of the level count would re-score Campaigns already played.
+     *
+     * @param stdClass $instance Activity instance record.
+     * @param int[] $userids The students whose attempts to load.
+     * @return array Attempt records keyed by user id, each a list in play order.
+     */
+    private static function load_attempts_by_user(stdClass $instance, array $userids): array {
+        global $DB;
+
+        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'stu');
         $sql = "SELECT a.id, a.userid, a.currentlevel, a.currentphase, a.campaign, a.difficulty, a.status,
                        a.bosshp_remaining, a.questions_correct, a.questions_total, a.timefinished,
                        a.isdemo, a.frozenbasebosshp, a.frozenbossdamage, a.frozenopponent, a.frozenmaxlevels
@@ -115,17 +140,7 @@ class report_service {
             $byuser[(int) $attempt->userid][] = $attempt;
         }
 
-        $rows = [];
-        foreach ($students as $userid => $student) {
-            $rows[] = self::build_student_row(
-                $instance,
-                $student,
-                $byuser[$userid] ?? [],
-                $canviewfullnames
-            );
-        }
-
-        return $rows;
+        return $byuser;
     }
 
     /**
@@ -180,7 +195,7 @@ class report_service {
             'avgcorrect'       => $attemptcount > 0 ? format_float($correctsum / $attemptcount, 1) : '-',
             'avgtotal'         => $attemptcount > 0 ? format_float($totalsum / $attemptcount, 1) : '-',
             'lastmatch'        => $lastfinished > 0
-                ? userdate($lastfinished, get_string('strftimedatetime', 'langconfig'))
+                ? userdate($lastfinished, get_string('strftimedatetimeshort', 'langconfig'))
                 : '-',
         ];
     }
@@ -199,8 +214,8 @@ class report_service {
      * @param context $context Module context.
      * @param int $viewerid Current viewer's user id, for SEPARATEGROUPS scoping.
      * @param int $limit Maximum number of questions to return.
-     * @return array Rows: {questiontext, errors, total, errorrate}, most missed first. A question nobody got wrong is
-     *  not a missed question, so it is left out.
+     * @return array Rows: {questiontext, errors, total, errorrate, errorratetext}, most missed first. A question
+     *  nobody got wrong is not a missed question, so it is left out.
      */
     public static function get_most_missed_questions(
         stdClass $instance,
@@ -247,6 +262,7 @@ class report_service {
                 'errors'       => $errors,
                 'total'        => $total,
                 'errorrate'    => $total > 0 ? round(($errors / $total) * 100, 1) : 0.0,
+                'errorratetext' => $total > 0 ? format_float(($errors / $total) * 100, 1) : format_float(0, 1),
             ];
         }
 
@@ -256,8 +272,10 @@ class report_service {
     }
 
     /**
-     * Buckets every finished attempt's own score (0-100, before scaling by the
-     * instance's Nota Máxima) into 5 fixed ranges.
+     * Buckets the students by their grade, as a percentage of the activity's maximum grade, into 5 fixed ranges.
+     *
+     * Each student counts once, by the same grade the gradebook and the table hold (grade_calculator), so the chart
+     * and the table agree. A student with no grade yet is left out.
      *
      * @param stdClass $instance Activity instance record.
      * @param stdClass $cm Course module record.
@@ -271,8 +289,6 @@ class report_service {
         context $context,
         int $viewerid
     ): array {
-        global $DB;
-
         $buckets = [
             ['min' => 0, 'max' => 20, 'count' => 0],
             ['min' => 21, 'max' => 40, 'count' => 0],
@@ -286,25 +302,24 @@ class report_service {
             return $buckets;
         }
 
-        [$insql, $inparams] = $DB->get_in_or_equal(array_keys($students), SQL_PARAMS_NAMED, 'stu');
-        $scores = $DB->get_fieldset_select(
-            'playerpuzzle_attempts',
-            'score',
-            "playerpuzzleid = :instanceid AND status <> :inprogress AND isdemo = 0 AND userid $insql",
-            array_merge(['instanceid' => (int) $instance->id, 'inprogress' => 'inprogress'], $inparams)
-        );
-
-        foreach ($scores as $score) {
-            $buckets[self::bucket_index((float) $score)]['count']++;
+        $maxgrade = (float) $instance->grade;
+        foreach (self::load_attempts_by_user($instance, array_keys($students)) as $userattempts) {
+            $grade = grade_calculator::calculate_user_grade($instance, $userattempts);
+            if ($grade === null) {
+                continue;
+            }
+            // Rounded so a grade sitting on a boundary is not pushed over it by floating point noise.
+            $percent = $maxgrade > 0 ? round(($grade / $maxgrade) * 100, 5) : 0.0;
+            $buckets[self::bucket_index($percent)]['count']++;
         }
 
         return $buckets;
     }
 
     /**
-     * Resolves which of the 5 fixed score buckets a score falls into.
+     * Resolves which of the 5 fixed score buckets a grade percentage falls into.
      *
-     * @param float $score A finished attempt's own score, 0-100.
+     * @param float $score A grade as a percentage of the maximum grade, 0-100.
      * @return int Bucket index, 0-4.
      */
     private static function bucket_index(float $score): int {

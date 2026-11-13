@@ -78,3 +78,12 @@ test('every call the game makes on its HUD exists in the HUD', () => {
     const missing = [...called].filter(name => !elements.has(name));
     assert.deepEqual(missing, []);
 });
+
+test('the use buttons of a Demo show the uses left in the fight, never an infinity sign', () => {
+    const body = read('hud.js').match(/^ {8}updateConsumableBadges\(\) \{\n([\s\S]*?)^ {8}\}$/m);
+
+    assert.ok(body, 'updateConsumableBadges() was not found in hud.js');
+    // The phase's limit holds in a Demo, so a button that dims after three uses cannot say it has no end.
+    assert.ok(!body[1].includes('∞'), 'a Demo button shows an infinity sign');
+    assert.match(body[1], /combat\.isdemo \? String\(Math\.max\(0, combat\.phaseLimit\(type\) - uses\)\)/);
+});

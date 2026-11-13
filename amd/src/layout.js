@@ -190,11 +190,9 @@ define([], () => {
 
             // Purchase badge scale for hud.js::createPurchaseBadge() — the desktop's default
             // 46x34 badge is bigger than mobile's own 32px-diameter ring, swallowing its
-            // colored arc entirely. 0.72 is the smallest scale that still clears the WCAG
-            // 24x24 real-px floor at mobile's true 1:1 CSS scale (34 * 0.72 ≈ 24.5),
-            // leaving the ring's own icon/arc visible next to it. See
-            // createPurchaseBadge()'s own docblock for the full scale math (desktop vs
-            // mobile stage scaling).
+            // colored arc entirely, so it is drawn smaller to leave the ring's own icon/arc
+            // visible next to it. The drawing is not what a finger has to hit: styles.css grows
+            // each badge's clickable area to 24x24 screen pixels, whatever the stage's scale.
             badgeScale: 0.72
         };
     };

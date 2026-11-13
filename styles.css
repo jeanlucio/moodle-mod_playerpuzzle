@@ -316,6 +316,18 @@ body.path-mod-playerpuzzle .pp-stage .pp-badge-btn[aria-disabled="true"] {
     opacity: 0.4;
 }
 
+/*
+ * The drawn button is small, and a phone scales the stage down to about two thirds, so what a finger can hit is
+ * smaller still. This invisible layer grows the clickable area to at least 24 x 24 screen pixels (WCAG 2.5.8): the
+ * stage scale divides the 24px back into the stage's own units, and an area already larger is left as it is.
+ */
+body.path-mod-playerpuzzle .pp-stage .pp-badge-btn::after {
+    content: "";
+    position: absolute;
+    inset-block: calc(max(0px, (24px / var(--pp-stage-scale, 1)) - var(--h)) / -2);
+    inset-inline: calc(max(0px, (24px / var(--pp-stage-scale, 1)) - var(--w)) / -2);
+}
+
 body.path-mod-playerpuzzle .pp-stage .pp-round-btn {
     display: flex;
     align-items: center;

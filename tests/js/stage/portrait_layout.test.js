@@ -131,3 +131,13 @@ test('the student row of the vertical layout fits its icons, rings and use butto
         assert.ok(items[first].left >= 0 && items[first].right <= L.w, `${first} leaves the stage`);
     });
 });
+
+test('the use buttons keep a clickable area of at least 24 x 24 screen pixels whatever the stage scale', () => {
+    const css = fs.readFileSync('styles.css', 'utf8');
+    const rule = css.match(/\.pp-badge-btn::after \{([^}]*)\}/);
+
+    assert.ok(rule, 'the badge has no layer that grows its clickable area');
+    // Both axes are grown from the stage scale, so a stage shrunk on a phone still reaches the minimum.
+    assert.match(rule[1], /inset-block:[^;]*24px[^;]*--pp-stage-scale[^;]*--h/);
+    assert.match(rule[1], /inset-inline:[^;]*24px[^;]*--pp-stage-scale[^;]*--w/);
+});

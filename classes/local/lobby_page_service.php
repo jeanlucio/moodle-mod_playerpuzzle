@@ -139,7 +139,16 @@ class lobby_page_service {
         // Merged rather than added: a Campaign that has ended renames the Play button.
         $data = array_merge($data, self::build_progress_context($instance, $attempt, $userid));
         // Merged too: the student's hero replaces the default picture.
-        $data = array_merge($data, self::build_play_context($instance, $attempt, $userid, !empty($data['newcampaign'])));
+        $play = self::build_play_context($instance, $attempt, $userid, !empty($data['newcampaign']));
+        $data = array_merge($data, $play);
+        // Until the student has chosen a hero, the picture goes through all of them rather than showing one as if it
+        // were the choice. A Campaign's hero (in $play) or the last one chosen for a match ends that.
+        if (!isset($play['heroimageurl']) && last_hero::get($userid) === '') {
+            $data['herocycle'] = json_encode(array_map(
+                static fn(string $hero): string => heroes::sprite_url(heroes::sprite($hero, 1))->out(false),
+                array_keys(heroes::CATALOG)
+            ));
+        }
         $data += self::build_minquestions_context($instance);
         $data += self::build_noquestions_context($instance, !empty($data['canmanagequestions']));
         // Two notes talk about playing: the visitor's, which promises the Demo, and the minimum of questions the match

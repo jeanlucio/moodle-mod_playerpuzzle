@@ -913,6 +913,69 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that, with no hero chosen yet, the Lobby's picture is given the six heroes to go through, and that the
+     * rendered page carries them for the script that does it.
+     *
+     * @return void
+     */
+    public function test_the_lobby_hero_goes_through_every_hero_until_one_is_chosen(): void {
+        global $OUTPUT;
+
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $urls = json_decode($data['herocycle'], true);
+        $this->assertCount(count(\mod_playerpuzzle\local\heroes::CATALOG), $urls);
+        foreach (array_keys(\mod_playerpuzzle\local\heroes::CATALOG) as $hero) {
+            $this->assertCount(1, array_filter($urls, fn(string $url): bool => str_contains($url, "/heroes/{$hero}1.")));
+        }
+        $this->assertContains($data['heroimageurl'], $urls);
+        $html = $OUTPUT->render_from_template('mod_playerpuzzle/view_lobby', $data);
+        $this->assertStringContainsString('data-heroes="', $html);
+    }
+
+    /**
+     * Tests that the picture stays on a hero once one is chosen: the last one picked for a match, or the Campaign's.
+     *
+     * @return void
+     */
+    public function test_the_lobby_hero_stays_on_the_chosen_hero(): void {
+        global $OUTPUT;
+
+        $userid = (int) $this->student->id;
+
+        // A match: the hero picked last, across activities.
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE]);
+        \mod_playerpuzzle\local\last_hero::set($userid, 'magem');
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, \context_module::instance($cm->id));
+        $this->assertArrayNotHasKey('herocycle', $data);
+        $this->assertStringContainsString('/heroes/magem1.', $data['heroimageurl']);
+        $this->assertStringNotContainsString('data-heroes', $OUTPUT->render_from_template('mod_playerpuzzle/view_lobby', $data));
+    }
+
+    /**
+     * Tests that the Campaign's own hero ends the cycle, whatever was picked for matches before.
+     *
+     * @return void
+     */
+    public function test_the_lobby_hero_stays_on_the_campaign_hero(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        $userid = (int) $this->student->id;
+        game_page_service::choose_campaign_hero($instance, $userid, 'archerf');
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, \context_module::instance($cm->id));
+
+        $this->assertArrayNotHasKey('herocycle', $data);
+        $this->assertStringContainsString('/heroes/archerf1.', $data['heroimageurl']);
+    }
+
+    /**
      * Tests that the minimum of questions is not announced when the activity has no questions to draw: the notice
      * that there are none already says why nothing can be played, and "answer at least 3" next to it contradicts it.
      *

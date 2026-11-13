@@ -26,6 +26,7 @@
         "sesskey": "abc123example",
         "readytext": "Ready for adventure?",
         "heroimageurl": "https://example.com/moodle/theme/image.php/boost/mod_playerpuzzle/1/player",
+        "herocycle": "[\"https://example.com/moodle/mod/playerpuzzle/pix/heroes/warriorf1.webp\"]",
         "frameurl": "https://example.com/moodle/mod/playerpuzzle/pix/lobby_frame.webp",
         "textureurl": "https://example.com/moodle/mod/playerpuzzle/pix/lobby_texture.webp",
         "scrollbannerurl": "https://example.com/moodle/mod/playerpuzzle/pix/scroll_banner.webp",
@@ -119,7 +120,7 @@
     <span class="pp-lobby-ember" aria-hidden="true"></span>
 
     <div class="pp-lobby-rig">
-        <div class="pp-lobby-hero" aria-hidden="true">
+        <div class="pp-lobby-hero" aria-hidden="true" {{#herocycle}}data-heroes="{{herocycle}}"{{/herocycle}}>
             <img src="{{heroimageurl}}" alt="">
         </div>
 

@@ -117,7 +117,7 @@ class combat_engine {
      *  5 Potion, 6 Coin) when it picks a move on Normal and Hard. The Potion's is scaled by how hurt the
      *  opponent is, and a Shield is worth less while one is armed.
      */
-    public const MOVE_WEIGHTS = [1.5, 1.5, 1.5, 3, 1.5, 3, 1];
+    public const MOVE_WEIGHTS = [1.5, 1.5, 1.5, 3.0, 1.5, 3.0, 1.0];
 
     /** @var float The Shield's weight while the opponent has one armed. */
     public const ARMED_SHIELD_WEIGHT = 0.5;
@@ -147,7 +147,7 @@ class combat_engine {
     public const LOOT_PERCENT = 10;
 
     /** @var float The loot's hit, in base damage per whole Coin match's worth of coins taken. */
-    public const LOOT_HIT_MULTIPLIER = 2;
+    public const LOOT_HIT_MULTIPLIER = 2.0;
 
     /** @var string Power: every few of its turns, the opponent lands a strong hit before it moves. */
     public const POWER_BREATH = 'breath';

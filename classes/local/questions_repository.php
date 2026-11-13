@@ -63,7 +63,7 @@ class questions_repository {
      * @param int $userid The teacher/manager creating it, or who triggered the sync/AI run.
      * @param string $source 'manual', 'ai' or 'bank'.
      * @param bool $approved Whether the question is immediately usable in games.
-     * @param int $questiontextformat FORMAT_* constant for questiontext.
+     * @param int|null $questiontextformat FORMAT_* constant for questiontext, FORMAT_PLAIN when null.
      * @param int|null $sourceid When source='bank': the question_bank_entries.id it was
      *  imported from. Null otherwise.
      * @param int $phase Phase of a level the question is meant for in a Campaign, 0 for any phase.
@@ -78,7 +78,7 @@ class questions_repository {
         int $userid,
         string $source = 'manual',
         bool $approved = true,
-        int $questiontextformat = FORMAT_PLAIN,
+        ?int $questiontextformat = null,
         ?int $sourceid = null,
         int $phase = 0
     ): int {
@@ -89,7 +89,7 @@ class questions_repository {
             'playerpuzzleid' => $playerpuzzleid,
             'qtype' => $qtype,
             'questiontext' => $questiontext,
-            'questiontextformat' => $questiontextformat,
+            'questiontextformat' => (int) ($questiontextformat ?? FORMAT_PLAIN),
             'generalfeedback' => null,
             'hint' => $hint !== '' ? $hint : null,
             'source' => $source,

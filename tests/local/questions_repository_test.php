@@ -32,6 +32,35 @@ namespace mod_playerpuzzle\local;
  */
 final class questions_repository_test extends \advanced_testcase {
     /**
+     * Tests that the text format is plain unless one is given: the default is the FORMAT_PLAIN constant, which Moodle
+     * defines as a string, so it is stored as the whole number the column holds.
+     *
+     * @return void
+     */
+    public function test_add_question_stores_plain_text_format_unless_one_is_given(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+
+        $default = questions_repository::add_question(7, 'multichoice', 'Q1', '', $answers, 42);
+        $html = questions_repository::add_question(
+            7,
+            'multichoice',
+            'Q2',
+            '',
+            $answers,
+            42,
+            'manual',
+            true,
+            FORMAT_HTML
+        );
+
+        $stored = fn(int $id): string => (string) $DB->get_field('playerpuzzle_questions', 'questiontextformat', ['id' => $id]);
+        $this->assertSame(FORMAT_PLAIN, $stored($default));
+        $this->assertSame(FORMAT_HTML, $stored($html));
+    }
+
+    /**
      * Tests that a multichoice question is created with its answers in sortorder,
      * and that source/approved default correctly for a manual entry.
      *

@@ -1599,7 +1599,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                                                 `<strong>${ctx.strings.bossansweredcorrect.replace('{$a}', plainText)}</strong>`
                                             );
                                         } else {
-                                            btn.removeClass('btn-outline-primary').addClass('btn-secondary text-white');
+                                            btn.removeClass('btn-outline-primary').addClass('btn-secondary pp-boss-miss');
                                             btn.html(
                                                 `<strong>${ctx.strings.bossansweredwrong.replace('{$a}', plainText)}</strong>`
                                             );

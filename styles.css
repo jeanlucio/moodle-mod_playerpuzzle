@@ -2454,6 +2454,25 @@ body.path-mod-playerpuzzle .pp-question-modal .btn-secondary:not(.pp-modal-actio
     color: var(--pp-ink);
 }
 
+/*
+ * What the opponent got wrong: a dark stone button with parchment text, plain enough not to be taken for the answer
+ * that hurt (brick) and legible on the parchment card.
+ */
+body.path-mod-playerpuzzle .pp-question-modal button.btn-secondary.pp-boss-miss {
+    background: var(--pp-stone);
+    border-color: var(--pp-umber);
+    color: var(--pp-parchment);
+}
+
+/*
+ * The answers are disabled once the question is judged, and Bootstrap dims a disabled button to half its strength,
+ * which took the text of every answer under the contrast it needs. They are results to read, not controls to keep out
+ * of reach, so they keep their full strength.
+ */
+body.path-mod-playerpuzzle .pp-question-modal #playerpuzzle-answers-container .btn:disabled {
+    opacity: 1;
+}
+
 body.path-mod-playerpuzzle .pp-question-modal .alert {
     border: 0;
     border-inline-start: 4px solid var(--pp-bronze);

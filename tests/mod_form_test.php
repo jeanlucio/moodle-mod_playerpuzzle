@@ -341,6 +341,64 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the attempt limit is a pick list like the Campaign limit, with Unlimited first.
+     *
+     * @return void
+     */
+    public function test_attempt_limit_is_a_pick_list_with_unlimited_first(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $element = $this->build_form($instance, $cm)->getElement('maxattempts');
+
+        $this->assertInstanceOf(\HTML_QuickForm_select::class, $element);
+        $this->assertSame(array_map('strval', range(0, 10)), $this->get_select_option_values($element));
+    }
+
+    /**
+     * Tests that a stored attempt limit above the pick list stays in it: saving the form would otherwise turn that
+     * limit into Unlimited without anyone noticing.
+     *
+     * @return void
+     */
+    public function test_attempt_limit_above_the_list_is_kept_as_an_option(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id, 'maxattempts' => 15]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $element = $this->build_form($instance, $cm)->getElement('maxattempts');
+
+        $this->assertSame(
+            array_map('strval', array_merge(range(0, 10), [15])),
+            $this->get_select_option_values($element)
+        );
+    }
+
+    /**
+     * Tests that the three pick lists sit together and the tick boxes after them: the minimum of questions, the two
+     * limits, then Considerar Erros.
+     *
+     * @return void
+     */
+    public function test_pick_lists_come_before_the_grading_tick_box(): void {
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $instance = $generator->create_instance(['course' => $this->course->id]);
+        $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
+
+        $names = array_keys($this->build_form($instance, $cm)->_elementIndex);
+        $order = array_values(array_intersect(
+            $names,
+            ['minquestions', 'maxattempts', 'maxcampaigns', 'considererrors', 'show_ranking', 'hints_enabled']
+        ));
+
+        $this->assertSame(
+            ['minquestions', 'maxattempts', 'maxcampaigns', 'considererrors', 'show_ranking', 'hints_enabled'],
+            $order
+        );
+    }
+
+    /**
      * Tests that the Campaign-only fields (maxlevels, maxattempts, maxcampaigns) are registered
      * to hide when gamemode is Single Match.
      *

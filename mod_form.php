@@ -162,13 +162,17 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setDefault('minquestions', 3);
         $mform->addHelpButton('minquestions', 'minquestions', 'mod_playerpuzzle');
 
-        $mform->addElement('advcheckbox', 'considererrors', get_string('considererrors', 'mod_playerpuzzle'));
-        $mform->setType('considererrors', PARAM_INT);
-        $mform->setDefault('considererrors', 0);
-        $mform->addHelpButton('considererrors', 'considererrors', 'mod_playerpuzzle');
-        $mform->disabledIf('considererrors', 'minquestions', 'eq', 0);
-
-        $mform->addElement('text', 'maxattempts', get_string('maxattempts', 'mod_playerpuzzle'));
+        // Both limits are pick lists with the same range, so the two read alike. A stored value above the range
+        // (set by a restore or a script) stays in the list, or saving the form would silently turn it into Unlimited.
+        $attemptoptions = [0 => get_string('unlimited', 'mod_playerpuzzle')];
+        for ($i = 1; $i <= 10; $i++) {
+            $attemptoptions[$i] = $i;
+        }
+        $storedattempts = (int) ($this->current->maxattempts ?? 0);
+        if ($storedattempts > 10) {
+            $attemptoptions[$storedattempts] = $storedattempts;
+        }
+        $mform->addElement('select', 'maxattempts', get_string('maxattempts', 'mod_playerpuzzle'), $attemptoptions);
         $mform->setType('maxattempts', PARAM_INT);
         $mform->setDefault('maxattempts', 0);
         $mform->addHelpButton('maxattempts', 'maxattempts', 'mod_playerpuzzle');
@@ -183,6 +187,12 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setDefault('maxcampaigns', 0);
         $mform->addHelpButton('maxcampaigns', 'maxcampaigns', 'mod_playerpuzzle');
         $mform->hideIf('maxcampaigns', 'gamemode', 'eq', constants::GAMEMODE_SINGLE);
+
+        $mform->addElement('advcheckbox', 'considererrors', get_string('considererrors', 'mod_playerpuzzle'));
+        $mform->setType('considererrors', PARAM_INT);
+        $mform->setDefault('considererrors', 0);
+        $mform->addHelpButton('considererrors', 'considererrors', 'mod_playerpuzzle');
+        $mform->disabledIf('considererrors', 'minquestions', 'eq', 0);
 
         $mform->addElement('advcheckbox', 'show_ranking', get_string('show_ranking', 'mod_playerpuzzle'));
         $mform->setType('show_ranking', PARAM_INT);

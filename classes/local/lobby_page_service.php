@@ -142,6 +142,12 @@ class lobby_page_service {
         $data = array_merge($data, self::build_play_context($instance, $attempt, $userid, !empty($data['newcampaign'])));
         $data += self::build_minquestions_context($instance);
         $data += self::build_noquestions_context($instance, !empty($data['canmanagequestions']));
+        // Two notes talk about playing: the visitor's, which promises the Demo, and the minimum of questions the match
+        // requires. Both need questions to draw, so with none they would contradict the no-questions notice, which
+        // already says why nothing can be played.
+        if (!empty($data['noquestions'])) {
+            unset($data['guestdemoonlytext'], $data['minquestionstext']);
+        }
         $data += self::build_difficulty_context($attempt);
         $data['howto'] = howtoplay::context($instance, is_guest($context, $userid));
         $data += self::build_sound_context($userid);

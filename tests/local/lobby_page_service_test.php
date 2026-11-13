@@ -891,6 +891,14 @@ final class lobby_page_service_test extends \advanced_testcase {
      */
     public function test_build_page_data_shows_minquestions_notice(): void {
         [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 5]);
+        questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            'Q?',
+            '',
+            [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]],
+            2
+        );
 
         $data = lobby_page_service::build_page_data(
             $cm,
@@ -902,6 +910,27 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $expected = get_string('lobby_minquestions_notice', 'mod_playerpuzzle', 5);
         $this->assertSame($expected, $data['minquestionstext']);
+    }
+
+    /**
+     * Tests that the minimum of questions is not announced when the activity has no questions to draw: the notice
+     * that there are none already says why nothing can be played, and "answer at least 3" next to it contradicts it.
+     *
+     * @return void
+     */
+    public function test_build_page_data_hides_the_minquestions_notice_without_questions(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 3]);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertTrue($data['noquestions']);
+        $this->assertArrayNotHasKey('minquestionstext', $data);
     }
 
     /**
@@ -1384,7 +1413,8 @@ final class lobby_page_service_test extends \advanced_testcase {
      * @return void
      */
     public function test_build_page_data_flags_the_guest_account(): void {
-        [$cm, $instance] = $this->make_cm_and_instance();
+        // No minimum of questions, so the Demo has what it needs even with an empty bank.
+        [$cm, $instance] = $this->make_cm_and_instance(['minquestions' => 0]);
         $context = \context_module::instance($cm->id);
 
         $student = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) $this->student->id, $context);
@@ -1395,6 +1425,29 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertTrue($guest['isguest']);
         $this->assertArrayNotHasKey('showranking', $guest);
         $this->assertSame(get_string('guestdemoonly', 'mod_playerpuzzle'), $guest['guestdemoonlytext']);
+    }
+
+    /**
+     * Tests that a visitor is not promised the Demo when the activity has no questions to draw: the Demo needs them
+     * too, its button is not there, and the no-questions notice says why. The visitor is still a visitor, so Play
+     * stays hidden.
+     *
+     * @return void
+     */
+    public function test_build_page_data_does_not_promise_the_demo_to_a_guest_without_questions(): void {
+        global $OUTPUT;
+
+        [$cm, $instance] = $this->make_cm_and_instance();
+        $context = \context_module::instance($cm->id);
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, (int) guest_user()->id, $context);
+
+        $this->assertTrue($data['isguest']);
+        $this->assertTrue($data['noquestions']);
+        $this->assertArrayNotHasKey('guestdemoonlytext', $data);
+        $html = $OUTPUT->render_from_template('mod_playerpuzzle/view_lobby', $data);
+        $this->assertStringNotContainsString(get_string('guestdemoonly', 'mod_playerpuzzle'), $html);
+        $this->assertStringContainsString(get_string('lobby_noquestions_notice', 'mod_playerpuzzle'), $html);
     }
 
     /**

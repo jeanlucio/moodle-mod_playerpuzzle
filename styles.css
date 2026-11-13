@@ -1595,6 +1595,13 @@ body.path-mod-playerpuzzle .pp-hero-intro {
     color: var(--pp-cream-soft, #f1e6c8);
 }
 
+body.path-mod-playerpuzzle .pp-hero-legend {
+    margin: 0 0 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--pp-cream-soft, #f1e6c8);
+}
+
 body.path-mod-playerpuzzle .pp-hero-choices {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));

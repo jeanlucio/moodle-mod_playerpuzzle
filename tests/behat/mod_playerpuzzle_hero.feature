@@ -23,7 +23,7 @@ Feature: A student chooses a hero
     When I am on the "Dungeon Quiz" "playerpuzzle activity" page
     Then I should see "Choose your hero"
     And I should see "Female mage"
-    And I should see "Specialty: HP"
+    And I should see "Specialty: Health (HP)"
     And I should not see "Play Game"
     When I click on "Female mage" "radio"
     And I press "Choose this hero"

@@ -103,6 +103,9 @@ final class hero_page_service_test extends \advanced_testcase {
         );
         $this->assertStringContainsString('/mod/playerpuzzle/hero.php', $data['formurl']);
         $this->assertSame(get_string('hero_intro_campaign', 'mod_playerpuzzle'), $data['intro']);
+        // The Campaign screen says what each attribute does, HP included, for a student who never met the word.
+        $this->assertSame(get_string('hero_attributes_legend', 'mod_playerpuzzle'), $data['attributeslegend']);
+        $this->assertStringContainsString(get_string('hero_attribute_hp', 'mod_playerpuzzle'), $data['attributeslegend']);
         $this->assertSame(get_string('hero_choose_button', 'mod_playerpuzzle'), $data['submitlabel']);
         $this->assertSame('', $data['error']);
 
@@ -160,6 +163,7 @@ final class hero_page_service_test extends \advanced_testcase {
             $fields['isdemo']]);
         $this->assertSame(['magem'], array_column(array_filter($match['heroes'], fn($h) => $h['checked']), 'key'));
         $this->assertSame(get_string('hero_intro_match', 'mod_playerpuzzle'), $match['intro']);
+        $this->assertSame('', $match['attributeslegend'], 'a Single Match hero is only a look');
         $this->assertSame(get_string('hero_play_button', 'mod_playerpuzzle'), $match['submitlabel']);
         $this->assertStringContainsString('/mod/playerpuzzle/view.php', $match['backurl']);
 

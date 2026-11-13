@@ -129,6 +129,8 @@ class hero_page_service {
             'scrollbannerurl' => (new moodle_url('/mod/playerpuzzle/pix/scroll_banner.webp'))->out(false),
             'title' => get_string('hero_title', 'mod_playerpuzzle'),
             'intro' => get_string($intro, 'mod_playerpuzzle'),
+            // Only a Campaign hero has an attribute that matters; in a Single Match it is a look, so a legend is noise.
+            'attributeslegend' => $campaign ? get_string('hero_attributes_legend', 'mod_playerpuzzle') : '',
             'error' => $error === '' ? '' : get_string($error, 'mod_playerpuzzle'),
             'legend' => get_string('hero_title', 'mod_playerpuzzle'),
             'heroes' => $heroes,

@@ -28,6 +28,7 @@
     * scrollbannerurl - The scroll the heading sits on
     * title - The heading
     * intro - What the choice means
+    * attributeslegend - What each attribute a hero specialises in does, empty when it does not matter
     * error - A message above the heroes, empty when there is none
     * legend - The fieldset's legend
     * heroes - Each hero, with key, name, specialty, imageurl and checked
@@ -45,13 +46,14 @@
         "scrollbannerurl": "/mod/playerpuzzle/pix/scroll_banner.webp",
         "title": "Choose your hero",
         "intro": "Your hero stays with you for the whole Campaign.",
+        "attributeslegend": "Attack: raises the damage you deal. Armor: lowers the damage you take. Health (HP): how much damage you can take.",
         "error": "",
         "legend": "Choose your hero",
         "heroes": [
             {
                 "key": "magef",
                 "name": "Female mage",
-                "specialty": "Specialty: HP",
+                "specialty": "Specialty: Health (HP)",
                 "imageurl": "/mod/playerpuzzle/pix/heroes/magef1.webp",
                 "checked": false
             }
@@ -69,6 +71,9 @@
         <h2 class="pp-lobby-ribbon-title">{{title}}</h2>
     </div>
     <p class="pp-hero-intro">{{intro}}</p>
+    {{#attributeslegend}}
+    <p class="pp-hero-legend">{{attributeslegend}}</p>
+    {{/attributeslegend}}
     {{#error}}
     <div class="alert alert-danger" role="alert">{{error}}</div>
     {{/error}}

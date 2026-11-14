@@ -772,4 +772,149 @@ final class report_service_test extends \advanced_testcase {
         $this->assertCount(1, $rows);
         $this->assertSame('Once wrong', $rows[0]['questiontext']);
     }
+
+    /**
+     * One attempt of a student, as summarise_fights() reads it.
+     *
+     * @param string $difficulty The difficulty it was played on.
+     * @param string $status Its status.
+     * @param int $level The level it sits on.
+     * @param int $phase The phase it sits on.
+     * @param int $campaign The Campaign it belongs to.
+     * @return \stdClass
+     */
+    private function fight_attempt(
+        string $difficulty,
+        string $status,
+        int $level,
+        int $phase,
+        int $campaign = 1
+    ): \stdClass {
+        return (object) [
+            'difficulty' => $difficulty,
+            'status' => $status,
+            'currentlevel' => $level,
+            'currentphase' => $phase,
+            'campaign' => $campaign,
+        ];
+    }
+
+    /**
+     * An attempt that lost on phase 3 won phases 1 and 2 and lost 3; the next one starts where that left off, so it
+     * fights phase 3 again (no longer a first try) and goes on. Each fight counts for the difficulty of its attempt.
+     *
+     * @return void
+     */
+    public function test_summarise_fights_counts_each_phase_on_the_difficulty_it_was_played(): void {
+        $summary = report_service::summarise_fights([
+            11 => [
+                $this->fight_attempt('normal', 'lost', 1, 3),
+                $this->fight_attempt('hard', 'lost', 1, 5),
+            ],
+        ]);
+
+        $this->assertSame(
+            [
+                ['name' => 'Normal', 'students' => 1, 'fights' => 3, 'firsttry' => '67% (2/3)', 'tries' => format_float(1.5, 1)],
+                ['name' => 'Hard', 'students' => 1, 'fights' => 3, 'firsttry' => '50% (1/2)', 'tries' => format_float(1.5, 1)],
+            ],
+            $summary['difficulties']
+        );
+        $this->assertSame([['name' => 'Normal'], ['name' => 'Hard']], $summary['phasecolumns']);
+        $cells = array_column($summary['phases'], 'cells', 'phase');
+        $this->assertSame('100% (1/1)', $cells[1][0]['text']);
+        $this->assertSame('0% (0/1)', $cells[3][0]['text']);
+        $this->assertSame('–', $cells[3][1]['text']);
+        $this->assertSame('100% (1/1)', $cells[4][1]['text']);
+        $this->assertSame('0% (0/1)', $cells[5][1]['text']);
+    }
+
+    /**
+     * The phase an attempt is still sitting on, or one the student left, has no result yet: only the phases before
+     * it count, and the next attempt starts on it.
+     *
+     * @return void
+     */
+    public function test_summarise_fights_leaves_out_a_phase_that_is_not_decided(): void {
+        $summary = report_service::summarise_fights([
+            11 => [$this->fight_attempt('easy', 'inprogress', 1, 4)],
+            12 => [
+                $this->fight_attempt('easy', 'abandoned', 1, 2),
+                $this->fight_attempt('easy', 'won', 1, 3),
+            ],
+        ]);
+
+        // The first student won phases 1-3; the second won phase 1, left phase 2, then won phases 2 and 3.
+        $this->assertSame(2, $summary['difficulties'][0]['students']);
+        $this->assertSame(6, $summary['difficulties'][0]['fights']);
+        $this->assertSame('100% (6/6)', $summary['difficulties'][0]['firsttry']);
+        $this->assertSame(format_float(1.0, 1), $summary['difficulties'][0]['tries']);
+    }
+
+    /**
+     * A phase of a later level counts under the same phase of the level, and a lost phase is only a "first try" once
+     * per Campaign: a new Campaign starts over.
+     *
+     * @return void
+     */
+    public function test_summarise_fights_merges_levels_and_restarts_in_a_new_campaign(): void {
+        $summary = report_service::summarise_fights([
+            11 => [
+                $this->fight_attempt('normal', 'lost', 2, 1),
+                $this->fight_attempt('normal', 'lost', 2, 1),
+                $this->fight_attempt('normal', 'lost', 1, 1, 2),
+            ],
+        ]);
+
+        // Campaign 1: ten phases won, then phase 11 lost twice. Campaign 2: phase 1 lost on the first try.
+        $this->assertSame(13, $summary['difficulties'][0]['fights']);
+        $this->assertSame(format_float(1.3, 1), $summary['difficulties'][0]['tries']);
+        $cells = array_column($summary['phases'], 'cells', 'phase');
+        // Phase 1 of the level: won once (level 1) and lost once (level 2, first try), plus the Campaign 2 loss.
+        $this->assertSame('33% (1/3)', $cells[1][0]['text']);
+    }
+
+    /**
+     * A Single Match activity has no phases, so it has nothing to break down.
+     *
+     * @return void
+     */
+    public function test_get_difficulty_breakdown_is_empty_for_a_single_match_activity(): void {
+        global $DB;
+        $DB->set_field('playerpuzzle', 'gamemode', constants::GAMEMODE_SINGLE, ['id' => $this->instance->id]);
+        $this->instance->gamemode = constants::GAMEMODE_SINGLE;
+        $student = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        $this->make_attempt($student, ['status' => 'lost', 'timefinished' => time()]);
+
+        $breakdown = report_service::get_difficulty_breakdown($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertSame([], $breakdown['difficulties']);
+        $this->assertSame([], $breakdown['phases']);
+    }
+
+    /**
+     * Only the real attempts of the students count: a Demo, a teacher and someone outside the course are left out.
+     *
+     * @return void
+     */
+    public function test_get_difficulty_breakdown_counts_only_real_attempts_of_students(): void {
+        $student = $this->getDataGenerator()->create_user();
+        $teacher = $this->getDataGenerator()->create_user();
+        $outsider = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        $this->getDataGenerator()->enrol_user($teacher->id, $this->course->id, 'editingteacher');
+
+        $this->make_attempt($student, ['status' => 'lost', 'currentphase' => 2, 'difficulty' => 'hard']);
+        $this->make_attempt($student, ['status' => 'won', 'currentphase' => 9, 'isdemo' => 1]);
+        $this->make_attempt($teacher, ['status' => 'won', 'currentphase' => 9]);
+        $this->make_attempt($outsider, ['status' => 'won', 'currentphase' => 9]);
+
+        $breakdown = report_service::get_difficulty_breakdown($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertCount(1, $breakdown['difficulties']);
+        $this->assertSame('Hard', $breakdown['difficulties'][0]['name']);
+        $this->assertSame(2, $breakdown['difficulties'][0]['fights']);
+        $this->assertSame('50% (1/2)', $breakdown['difficulties'][0]['firsttry']);
+    }
 }

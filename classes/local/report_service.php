@@ -394,6 +394,141 @@ class report_service {
     }
 
     /**
+     * How each difficulty has gone for the class, from the phases its students have fought: the figures a teacher
+     * needs to tell a difficulty that is too hard from a class that has not practised yet. Only Campaigns have
+     * phases, so a Single Match activity has none.
+     *
+     * @param stdClass $instance Activity instance record.
+     * @param stdClass $cm Course module record.
+     * @param context $context Module context.
+     * @param int $viewerid Current viewer's user id, for SEPARATEGROUPS scoping.
+     * @return array {difficulties, phasecolumns, phases}, see summarise_fights(); empty lists without fights.
+     */
+    public static function get_difficulty_breakdown(
+        stdClass $instance,
+        stdClass $cm,
+        context $context,
+        int $viewerid
+    ): array {
+        $empty = ['difficulties' => [], 'phasecolumns' => [], 'phases' => []];
+        if ($instance->gamemode !== constants::GAMEMODE_CAMPAIGN) {
+            return $empty;
+        }
+
+        $students = self::get_student_pool($cm, $context, $viewerid);
+        if (empty($students)) {
+            return $empty;
+        }
+
+        return self::summarise_fights(self::load_attempts_by_user($instance, array_keys($students)));
+    }
+
+    /**
+     * Counts the phases fought in the given attempts, by difficulty, and lays them out for the report.
+     *
+     * An attempt row spans phases: it starts where the Campaign stood (Level 1, Phase 1, or the phase the previous
+     * attempt lost) and keeps advancing while it wins, so every phase before the one it sits on was won, and the
+     * phase it sits on was lost, won (the last phase of a won Campaign) or is undecided (still being played, or left
+     * by the student). Only decided fights count. A fight is a "first try" when the student had not lost that phase
+     * before in the same Campaign. The difficulty of a fight is the one its attempt was played on.
+     *
+     * @param array $attemptsbyuser Attempts (campaign, difficulty, status, currentlevel, currentphase) in play order,
+     *  keyed by user id.
+     * @return array {difficulties: rows {name, students, fights, firsttry, tries}, phasecolumns: names, phases: rows
+     *  {phase, cells: texts}}, the difficulties and phases without a decided fight left out of the first list.
+     */
+    public static function summarise_fights(array $attemptsbyuser): array {
+        $levels = [constants::DIFFICULTY_EASY, constants::DIFFICULTY_NORMAL, constants::DIFFICULTY_HARD];
+        $blank = ['users' => [], 'fights' => 0, 'wins' => 0, 'firsttryfights' => 0, 'firsttrywins' => 0];
+        $bydifficulty = array_fill_keys($levels, $blank);
+        $byphase = array_fill_keys($levels, array_fill(1, campaigns::PHASES_PER_LEVEL, [0, 0]));
+
+        foreach ($attemptsbyuser as $userid => $userattempts) {
+            foreach (campaigns::group($userattempts) as $attempts) {
+                $start = 1;
+                $lostat = [];
+                foreach ($attempts as $attempt) {
+                    $end = (((int) $attempt->currentlevel - 1) * campaigns::PHASES_PER_LEVEL) + (int) $attempt->currentphase;
+                    $difficulty = $attempt->difficulty;
+                    if (isset($bydifficulty[$difficulty])) {
+                        $lastwon = $attempt->status === 'won' ? $end : $end - 1;
+                        $fights = [];
+                        for ($ordinal = $start; $ordinal <= $lastwon; $ordinal++) {
+                            $fights[] = [$ordinal, true];
+                        }
+                        if ($attempt->status === 'lost' && $end >= $start) {
+                            $fights[] = [$end, false];
+                        }
+                        foreach ($fights as [$ordinal, $won]) {
+                            $first = !isset($lostat[$ordinal]);
+                            $phase = (($ordinal - 1) % campaigns::PHASES_PER_LEVEL) + 1;
+                            $bydifficulty[$difficulty]['users'][(int) $userid] = true;
+                            $bydifficulty[$difficulty]['fights']++;
+                            $bydifficulty[$difficulty]['wins'] += $won ? 1 : 0;
+                            if ($first) {
+                                $bydifficulty[$difficulty]['firsttryfights']++;
+                                $bydifficulty[$difficulty]['firsttrywins'] += $won ? 1 : 0;
+                                $byphase[$difficulty][$phase][0]++;
+                                $byphase[$difficulty][$phase][1] += $won ? 1 : 0;
+                            }
+                            if (!$won) {
+                                $lostat[$ordinal] = true;
+                            }
+                        }
+                    }
+                    $start = max($start, $end);
+                }
+            }
+        }
+
+        $rows = [];
+        $columns = [];
+        foreach ($levels as $difficulty) {
+            $tally = $bydifficulty[$difficulty];
+            if ($tally['fights'] === 0) {
+                continue;
+            }
+            $name = get_string('difficulty_' . $difficulty, 'mod_playerpuzzle');
+            $columns[$difficulty] = $name;
+            $rows[] = [
+                'name' => $name,
+                'students' => count($tally['users']),
+                'fights' => $tally['fights'],
+                'firsttry' => self::share_text($tally['firsttrywins'], $tally['firsttryfights']),
+                'tries' => $tally['wins'] > 0 ? format_float($tally['fights'] / $tally['wins'], 1) : '–',
+            ];
+        }
+
+        $phases = [];
+        for ($phase = 1; $phase <= campaigns::PHASES_PER_LEVEL; $phase++) {
+            $cells = [];
+            foreach (array_keys($columns) as $difficulty) {
+                [$fought, $won] = $byphase[$difficulty][$phase];
+                $cells[] = ['text' => $fought > 0 ? self::share_text($won, $fought) : '–'];
+            }
+            $phases[] = ['phase' => $phase, 'cells' => $cells];
+        }
+
+        return [
+            'difficulties' => $rows,
+            'phasecolumns' => array_map(static fn(string $name): array => ['name' => $name], array_values($columns)),
+            'phases' => empty($rows) ? [] : $phases,
+        ];
+    }
+
+    /**
+     * A share as the report prints it: the percentage and the counts behind it, so a figure resting on two fights
+     * does not read like one resting on two hundred.
+     *
+     * @param int $part The part.
+     * @param int $whole The whole, above zero.
+     * @return string For example "58% (7/12)".
+     */
+    private static function share_text(int $part, int $whole): string {
+        return round(($part / $whole) * 100) . '% (' . $part . '/' . $whole . ')';
+    }
+
+    /**
      * Returns the students a viewer may see, keyed by user id: enrolled users holding the
      * 'view' capability, minus anyone who can also view the report themselves
      * (teachers/managers previewing the activity are not tracked as players), scoped to the

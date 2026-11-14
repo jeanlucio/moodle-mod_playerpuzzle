@@ -49,6 +49,7 @@ $viewerid = (int) $USER->id;
 $missedquestions = report_service::get_most_missed_questions($instance, $cm, $context, $viewerid);
 $distribution = report_service::get_score_distribution($instance, $cm, $context, $viewerid);
 $completion = report_service::get_completion_rate($instance, $cm, $context, $viewerid);
+$difficulty = report_service::get_difficulty_breakdown($instance, $cm, $context, $viewerid);
 
 // The completion rate already counts the students the viewer may see, which is the table's total.
 $perpage = report_service::PER_PAGE;
@@ -83,6 +84,10 @@ $templatecontext = [
     'distribution'          => $distribution,
     'completedcount'        => $completion['completed'],
     'completedtotal'        => $completion['total'],
+    'hasdifficulty'         => !empty($difficulty['difficulties']),
+    'difficulties'          => $difficulty['difficulties'],
+    'phasecolumns'          => $difficulty['phasecolumns'],
+    'phases'                => $difficulty['phases'],
     'completedpercent'      => format_float($completion['percent'], 1),
     'iscampaign'            => $instance->gamemode === constants::GAMEMODE_CAMPAIGN,
 ];

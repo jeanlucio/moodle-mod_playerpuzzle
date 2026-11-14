@@ -54,6 +54,14 @@
             {"min": 61, "max": 80, "count": 3, "barpercent": 60},
             {"min": 81, "max": 100, "count": 5, "barpercent": 100}
         ],
+        "hasdifficulty": true,
+        "difficulties": [
+            {"name": "Normal", "students": 12, "fights": 80, "firsttry": "58% (30/52)", "tries": "1.5"}
+        ],
+        "phasecolumns": [{"name": "Normal"}],
+        "phases": [
+            {"phase": 1, "cells": [{"text": "90% (9/10)"}]}
+        ],
         "completedcount": 5,
         "completedtotal": 10,
         "completedpercent": "50.0",
@@ -101,6 +109,62 @@
             {{/distribution}}
         </div>
     </div>
+
+    {{#hasdifficulty}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4>{{#str}} report_difficulty, mod_playerpuzzle {{/str}}</h4>
+            <p class="mb-3">{{#str}} report_difficulty_desc, mod_playerpuzzle {{/str}}</p>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{#str}} report_difficultyname, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_students, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_phasesplayed, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_firsttry, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_triesperphase, mod_playerpuzzle {{/str}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#difficulties}}
+                            <tr>
+                                <th scope="row">{{name}}</th>
+                                <td>{{students}}</td>
+                                <td>{{fights}}</td>
+                                <td>{{firsttry}}</td>
+                                <td>{{tries}}</td>
+                            </tr>
+                        {{/difficulties}}
+                    </tbody>
+                </table>
+            </div>
+            <h5 class="mt-4">{{#str}} report_difficultybyphase, mod_playerpuzzle {{/str}}</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{#str}} report_phase, mod_playerpuzzle {{/str}}</th>
+                            {{#phasecolumns}}
+                                <th scope="col">{{name}}</th>
+                            {{/phasecolumns}}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#phases}}
+                            <tr>
+                                <th scope="row">{{phase}}</th>
+                                {{#cells}}
+                                    <td>{{text}}</td>
+                                {{/cells}}
+                            </tr>
+                        {{/phases}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {{/hasdifficulty}}
 
     <div class="card mb-4">
         <div class="card-body">

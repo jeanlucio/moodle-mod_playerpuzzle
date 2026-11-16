@@ -59,6 +59,10 @@
             {"name": "Normal", "students": 12, "fights": 80, "firsttry": "58% (30/52)", "tries": "1.5"}
         ],
         "phasecolumns": [{"name": "Normal"}],
+        "hasheroes": true,
+        "heroes": [
+            {"name": "Female warrior", "specialty": "Attack", "campaigns": 7, "students": 6, "firsttry": "61% (42/69)"}
+        ],
         "phases": [
             {"phase": 1, "cells": [{"text": "90% (9/10)"}]}
         ],
@@ -165,6 +169,39 @@
         </div>
     </div>
     {{/hasdifficulty}}
+
+    {{#hasheroes}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4>{{#str}} report_heroes, mod_playerpuzzle {{/str}}</h4>
+            <p class="mb-3">{{#str}} report_heroes_desc, mod_playerpuzzle {{/str}}</p>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{#str}} report_hero, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_herospecialty, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_campaigns, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_students, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_firsttry, mod_playerpuzzle {{/str}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#heroes}}
+                            <tr>
+                                <th scope="row">{{name}}</th>
+                                <td>{{specialty}}</td>
+                                <td>{{campaigns}}</td>
+                                <td>{{students}}</td>
+                                <td>{{firsttry}}</td>
+                            </tr>
+                        {{/heroes}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {{/hasheroes}}
 
     <div class="card mb-4">
         <div class="card-body">

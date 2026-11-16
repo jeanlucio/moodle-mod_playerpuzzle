@@ -88,6 +88,8 @@ $templatecontext = [
     'difficulties'          => $difficulty['difficulties'],
     'phasecolumns'          => $difficulty['phasecolumns'],
     'phases'                => $difficulty['phases'],
+    'hasheroes'             => !empty($difficulty['heroes']),
+    'heroes'                => $difficulty['heroes'],
     'completedpercent'      => format_float($completion['percent'], 1),
     'iscampaign'            => $instance->gamemode === constants::GAMEMODE_CAMPAIGN,
 ];

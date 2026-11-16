@@ -917,4 +917,71 @@ final class report_service_test extends \advanced_testcase {
         $this->assertSame(2, $breakdown['difficulties'][0]['fights']);
         $this->assertSame('50% (1/2)', $breakdown['difficulties'][0]['firsttry']);
     }
+
+    /**
+     * Each hero shows the Campaigns that started with it, the students who chose it and how its first tries went
+     * on every difficulty, the most chosen first and ties in the order of the catalog; a hero nobody chose is left
+     * out, and one chosen for a Campaign with no fight yet has no share to show.
+     *
+     * @return void
+     */
+    public function test_summarise_fights_counts_the_campaigns_and_first_tries_of_each_hero(): void {
+        $summary = report_service::summarise_fights(
+            [
+                11 => [
+                    $this->fight_attempt('normal', 'lost', 1, 3),
+                    $this->fight_attempt('normal', 'lost', 1, 1, 2),
+                ],
+                12 => [$this->fight_attempt('easy', 'won', 1, 2)],
+            ],
+            [
+                11 => [1 => 'warriorf', 2 => 'magef'],
+                12 => [1 => 'warriorf'],
+                13 => [1 => 'archerf'],
+                14 => [1 => 'notahero'],
+            ]
+        );
+
+        $this->assertSame(
+            [
+                [
+                    'name' => 'Female warrior',
+                    'specialty' => 'Attack',
+                    'campaigns' => 2,
+                    'students' => 2,
+                    'firsttry' => '80% (4/5)',
+                ],
+                [
+                    'name' => 'Female mage',
+                    'specialty' => 'Health (HP)',
+                    'campaigns' => 1,
+                    'students' => 1,
+                    'firsttry' => '0% (0/1)',
+                ],
+                ['name' => 'Female archer', 'specialty' => 'Armor', 'campaigns' => 1, 'students' => 1, 'firsttry' => '–'],
+            ],
+            $summary['heroes']
+        );
+    }
+
+    /**
+     * The heroes come from the Campaign rows of the students the viewer may see: a Demo or a Single Match keeps no
+     * row, and a hero chosen by someone outside the course is not counted.
+     *
+     * @return void
+     */
+    public function test_get_difficulty_breakdown_reads_the_heroes_of_the_students(): void {
+        $student = $this->getDataGenerator()->create_user();
+        $outsider = $this->getDataGenerator()->create_user();
+        $this->enrol_student($student);
+        user_hero::choose((int) $this->instance->id, (int) $student->id, 1, 'archerm');
+        user_hero::choose((int) $this->instance->id, (int) $outsider->id, 1, 'warriorm');
+        $this->make_attempt($student, ['status' => 'lost', 'currentphase' => 2]);
+
+        $breakdown = report_service::get_difficulty_breakdown($this->instance, $this->cm, $this->context, 0);
+
+        $this->assertCount(1, $breakdown['heroes']);
+        $this->assertSame('Male archer', $breakdown['heroes'][0]['name']);
+        $this->assertSame('50% (1/2)', $breakdown['heroes'][0]['firsttry']);
+    }
 }

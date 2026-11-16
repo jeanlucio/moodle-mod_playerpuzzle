@@ -402,7 +402,7 @@ class report_service {
      * @param stdClass $cm Course module record.
      * @param context $context Module context.
      * @param int $viewerid Current viewer's user id, for SEPARATEGROUPS scoping.
-     * @return array {difficulties, phasecolumns, phases}, see summarise_fights(); empty lists without fights.
+     * @return array {difficulties, phasecolumns, phases, heroes}, see summarise_fights(); empty lists without data.
      */
     public static function get_difficulty_breakdown(
         stdClass $instance,
@@ -410,7 +410,7 @@ class report_service {
         context $context,
         int $viewerid
     ): array {
-        $empty = ['difficulties' => [], 'phasecolumns' => [], 'phases' => []];
+        $empty = ['difficulties' => [], 'phasecolumns' => [], 'phases' => [], 'heroes' => []];
         if ($instance->gamemode !== constants::GAMEMODE_CAMPAIGN) {
             return $empty;
         }
@@ -420,7 +420,37 @@ class report_service {
             return $empty;
         }
 
-        return self::summarise_fights(self::load_attempts_by_user($instance, array_keys($students)));
+        return self::summarise_fights(
+            self::load_attempts_by_user($instance, array_keys($students)),
+            self::load_heroes_by_user($instance, array_keys($students))
+        );
+    }
+
+    /**
+     * The hero each of the given students played in each of their Campaigns.
+     *
+     * @param stdClass $instance Activity instance record.
+     * @param int[] $userids The students whose heroes to load.
+     * @return array Hero keys, [user id][Campaign number] => hero.
+     */
+    private static function load_heroes_by_user(stdClass $instance, array $userids): array {
+        global $DB;
+
+        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'stu');
+        $rows = $DB->get_records_select(
+            'playerpuzzle_heroes',
+            "playerpuzzleid = :instanceid AND userid $insql",
+            array_merge(['instanceid' => (int) $instance->id], $inparams),
+            '',
+            'id, userid, campaign, hero'
+        );
+
+        $byuser = [];
+        foreach ($rows as $row) {
+            $byuser[(int) $row->userid][(int) $row->campaign] = $row->hero;
+        }
+
+        return $byuser;
     }
 
     /**
@@ -432,19 +462,35 @@ class report_service {
      * by the student). Only decided fights count. A fight is a "first try" when the student had not lost that phase
      * before in the same Campaign. The difficulty of a fight is the one its attempt was played on.
      *
+     * The same fights are also counted for the hero of their Campaign: how many Campaigns each hero started, and how
+     * its first tries went, whatever the difficulty.
+     *
      * @param array $attemptsbyuser Attempts (campaign, difficulty, status, currentlevel, currentphase) in play order,
      *  keyed by user id.
+     * @param array $herobyuser Hero keys, [user id][Campaign number] => hero, for the heroes table.
      * @return array {difficulties: rows {name, students, fights, firsttry, tries}, phasecolumns: names, phases: rows
-     *  {phase, cells: texts}}, the difficulties and phases without a decided fight left out of the first list.
+     *  {phase, cells: texts}, heroes: rows {name, specialty, campaigns, students, firsttry}}, the difficulties and
+     *  phases without a decided fight left out of the first list, the heroes never chosen out of the last.
      */
-    public static function summarise_fights(array $attemptsbyuser): array {
+    public static function summarise_fights(array $attemptsbyuser, array $herobyuser = []): array {
         $levels = [constants::DIFFICULTY_EASY, constants::DIFFICULTY_NORMAL, constants::DIFFICULTY_HARD];
         $blank = ['users' => [], 'fights' => 0, 'wins' => 0, 'firsttryfights' => 0, 'firsttrywins' => 0];
         $bydifficulty = array_fill_keys($levels, $blank);
         $byphase = array_fill_keys($levels, array_fill(1, campaigns::PHASES_PER_LEVEL, [0, 0]));
+        $byhero = [];
+        foreach ($herobyuser as $userid => $userheroes) {
+            foreach ($userheroes as $hero) {
+                if (isset(heroes::CATALOG[$hero])) {
+                    $byhero[$hero] ??= ['campaigns' => 0, 'users' => [], 'firsttryfights' => 0, 'firsttrywins' => 0];
+                    $byhero[$hero]['campaigns']++;
+                    $byhero[$hero]['users'][(int) $userid] = true;
+                }
+            }
+        }
 
         foreach ($attemptsbyuser as $userid => $userattempts) {
-            foreach (campaigns::group($userattempts) as $attempts) {
+            foreach (campaigns::group($userattempts) as $campaign => $attempts) {
+                $hero = $herobyuser[$userid][$campaign] ?? '';
                 $start = 1;
                 $lostat = [];
                 foreach ($attempts as $attempt) {
@@ -470,6 +516,10 @@ class report_service {
                                 $bydifficulty[$difficulty]['firsttrywins'] += $won ? 1 : 0;
                                 $byphase[$difficulty][$phase][0]++;
                                 $byphase[$difficulty][$phase][1] += $won ? 1 : 0;
+                                if (isset($byhero[$hero])) {
+                                    $byhero[$hero]['firsttryfights']++;
+                                    $byhero[$hero]['firsttrywins'] += $won ? 1 : 0;
+                                }
                             }
                             if (!$won) {
                                 $lostat[$ordinal] = true;
@@ -509,7 +559,27 @@ class report_service {
             $phases[] = ['phase' => $phase, 'cells' => $cells];
         }
 
+        $heroesrows = [];
+        foreach (array_keys(heroes::CATALOG) as $hero) {
+            if (!isset($byhero[$hero])) {
+                continue;
+            }
+            $tally = $byhero[$hero];
+            $heroesrows[] = [
+                'name' => get_string('hero_name_' . $hero, 'mod_playerpuzzle'),
+                'specialty' => get_string('hero_attribute_' . heroes::specialty($hero), 'mod_playerpuzzle'),
+                'campaigns' => $tally['campaigns'],
+                'students' => count($tally['users']),
+                'firsttry' => $tally['firsttryfights'] > 0
+                    ? self::share_text($tally['firsttrywins'], $tally['firsttryfights'])
+                    : '–',
+            ];
+        }
+        // Most chosen first; the sort is stable, so heroes chosen as often keep the catalog order.
+        usort($heroesrows, static fn(array $a, array $b): int => $b['campaigns'] <=> $a['campaigns']);
+
         return [
+            'heroes' => $heroesrows,
             'difficulties' => $rows,
             'phasecolumns' => array_map(static fn(string $name): array => ['name' => $name], array_values($columns)),
             'phases' => empty($rows) ? [] : $phases,

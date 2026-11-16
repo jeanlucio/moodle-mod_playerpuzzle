@@ -45,8 +45,9 @@ each Campaign.
 
 In a Campaign the student chooses one of six heroes on a screen of its own, when pressing Play for the
 first time (the activity opens at the Lobby, where the help and the shop are), and keeps it to the end of
-that Campaign; a new Campaign asks again. In a Single Match or a
-Demo the hero is only how the student looks, and a Single Match opens the choice with the hero last used.
+that Campaign; a new Campaign asks again. In a Single Match or a Demo the hero is chosen when the student
+presses Play, has the same specialty head start, with no upgrades to buy, and a Single Match opens the choice
+with the hero last used.
 
 * **Specialty:** each hero is a specialist in HP (the mages), attack (the warriors) or armor (the
   archers), and starts a little ahead in it, a twentieth of what that attribute can reach.

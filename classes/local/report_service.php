@@ -396,7 +396,7 @@ class report_service {
     /**
      * How each difficulty has gone for the class, from the phases its students have fought: the figures a teacher
      * needs to tell a difficulty that is too hard from a class that has not practised yet. A Campaign is read phase
-     * by phase and a Single Match activity match by match: it has no phases and its hero is only a look.
+     * by phase and a Single Match activity match by match: it has no phases and keeps no hero.
      *
      * @param stdClass $instance Activity instance record.
      * @param stdClass $cm Course module record.

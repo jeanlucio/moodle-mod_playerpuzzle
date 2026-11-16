@@ -31,8 +31,8 @@ use stdClass;
  * The screen where a student picks a hero, always between the Lobby's Play button and the match: in a
  * Campaign it comes on the first Play and on the first Play of each new Campaign, and the choice, which then
  * stays for the whole Campaign, is saved by play.php as the match starts (see choose_for_play()). For a
- * Single Match or a Demo it only picks how the student looks. Every mode goes on to play.php with the
- * choice; the hero last chosen for a Single Match comes marked.
+ * Single Match or a Demo the specialty gives only its head start, with nothing to buy. Every mode goes on to
+ * play.php with the choice; the hero last chosen for a Single Match comes marked.
  */
 class hero_page_service {
     /** @var string The student is choosing the hero of their Campaign. */
@@ -169,8 +169,7 @@ class hero_page_service {
             'scrollbannerurl' => (new moodle_url('/mod/playerpuzzle/pix/scroll_banner.webp'))->out(false),
             'title' => get_string('hero_title', 'mod_playerpuzzle'),
             'intro' => get_string($intro, 'mod_playerpuzzle'),
-            // Only a Campaign hero has an attribute that matters; in a Single Match it is a look, so a legend is noise.
-            'attributeslegend' => $campaign ? get_string('hero_attributes_legend', 'mod_playerpuzzle') : '',
+            'attributeslegend' => get_string('hero_attributes_legend', 'mod_playerpuzzle'),
             'error' => $error === '' ? '' : get_string($error, 'mod_playerpuzzle'),
             'legend' => get_string('hero_title', 'mod_playerpuzzle'),
             'heroes' => $heroes,

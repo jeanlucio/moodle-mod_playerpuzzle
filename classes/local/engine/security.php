@@ -224,9 +224,10 @@ class security {
 
     /**
      * Freezes the student's side of the phase: the hero's HP, attack and armor, and the sprite it fights
-     * with, when the student has a hero in this Campaign, and otherwise the instance's base HP with no
-     * attack bonus and no armor. Only a real Campaign attempt has a hero to read; the sprite of a
-     * Single Match or Demo is a choice made when it starts, and left as it is.
+     * with, when the student has a hero in this Campaign. A Single Match or a Demo has no hero row, only the
+     * hero chosen when it starts, and fights with that hero's specialty head start, the one a Campaign hero
+     * begins with, and nothing bought. Any other attempt fights with the instance's base HP, no attack bonus
+     * and no armor.
      *
      * @param \stdClass $attempt Attempt object to populate (userid, campaign, isdemo).
      * @param \stdClass $playerpuzzle The instance record (id, gamemode, maxlevels, basestudenthp).
@@ -243,9 +244,15 @@ class security {
         }
 
         if ($hero === null) {
-            $attempt->frozenplayerhp = (int) $playerpuzzle->basestudenthp;
-            $attempt->frozenplayerattack = 1.0;
-            $attempt->frozenplayerarmor = 0.0;
+            $matchhero = self::match_hero($attempt, $playerpuzzle);
+            // A level count of 1, not the activity's: the head start is a share of what the attribute can reach, and
+            // a match has no levels to reach it over, so it never grows with a Campaign's length.
+            $side = $matchhero === ''
+                ? ['hp' => (int) $playerpuzzle->basestudenthp, 'attack' => 1.0, 'armor' => 0.0]
+                : heroes::attributes($matchhero, [], 1, (int) $playerpuzzle->basestudenthp);
+            $attempt->frozenplayerhp = $side['hp'];
+            $attempt->frozenplayerattack = $side['attack'];
+            $attempt->frozenplayerarmor = $side['armor'];
             return;
         }
 
@@ -259,6 +266,19 @@ class security {
         $attempt->frozenplayerattack = $side['attack'];
         $attempt->frozenplayerarmor = $side['armor'];
         $attempt->frozenhero = heroes::sprite($hero->hero, (int) $hero->stage);
+    }
+
+    /**
+     * The hero a Single Match or a Demo is fought with, from the sprite frozen when it started.
+     *
+     * @param \stdClass $attempt The attempt (isdemo, frozenhero).
+     * @param \stdClass $playerpuzzle The instance record (gamemode).
+     * @return string A key of heroes::CATALOG, or '' for a real Campaign attempt and for one with no hero.
+     */
+    private static function match_hero(\stdClass $attempt, \stdClass $playerpuzzle): string {
+        $iscampaign = ($playerpuzzle->gamemode ?? '') === constants::GAMEMODE_CAMPAIGN && empty($attempt->isdemo);
+
+        return $iscampaign ? '' : heroes::of_sprite((string) ($attempt->frozenhero ?? ''));
     }
 
     /**

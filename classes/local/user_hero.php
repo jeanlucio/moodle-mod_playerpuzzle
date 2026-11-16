@@ -29,7 +29,7 @@ use stdClass;
 /**
  * One row for each student, activity and Campaign: the student picks the hero when the Campaign starts and
  * keeps it to the end, through defeats and retries. The next Campaign gets a row of its own, starting from
- * nothing (see campaigns). Single Match and Demo heroes are only a look and keep no row.
+ * nothing (see campaigns). Single Match and Demo heroes keep no row: they only have the specialty's head start.
  */
 class user_hero {
     /**

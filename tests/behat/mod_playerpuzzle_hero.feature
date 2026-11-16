@@ -52,7 +52,7 @@ Feature: A student chooses a hero
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
     When I click on "Play Game" "button"
     Then I should see "Choose your hero"
-    And I should see "only changes how you look"
+    And I should see "small head start"
     When I click on "Male warrior" "radio"
     And I press "Play"
     Then "#playerpuzzle-canvas-container" "css_element" should exist

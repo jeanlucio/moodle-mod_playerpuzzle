@@ -188,4 +188,58 @@ final class user_hero_test extends \advanced_testcase {
         $this->assertSame(1.0, $match->frozenplayerattack);
         $this->assertFalse(isset($match->frozenhero));
     }
+
+    /**
+     * Tests that a Single Match and a Demo are fought with the hero's specialty head start and nothing bought,
+     * through the real start of an attempt: the head start of each specialty, the same whatever the length of
+     * the Campaign, and a hero sent to a real Campaign attempt that has no hero row of its own changes nothing.
+     *
+     * @return void
+     */
+    public function test_single_match_and_demo_start_with_the_specialty_head_start(): void {
+        global $DB;
+
+        $userid = (int) $this->student->id;
+        $single = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')->create_instance([
+            'course' => $this->instance->course,
+            'gamemode' => constants::GAMEMODE_SINGLE,
+            'maxlevels' => 5,
+            'basestudenthp' => 100,
+            'minquestions' => 0,
+        ]);
+
+        foreach (['magef' => 'hp', 'warriorm' => 'attack', 'archerf' => 'armor'] as $hero => $specialty) {
+            $expected = heroes::attributes($hero, [], 1, 100);
+            $attempt = security::resume_or_create_attempt_token((int) $single->id, $userid, 'normal', 5, false, $hero);
+            $this->assertSame(
+                [$expected['hp'], $expected['attack'], $expected['armor'], $hero . '1'],
+                [$attempt->frozenplayerhp, $attempt->frozenplayerattack, $attempt->frozenplayerarmor, $attempt->frozenhero]
+            );
+            $stored = $DB->get_record('playerpuzzle_attempts', ['id' => $attempt->attemptid], '*', MUST_EXIST);
+            $this->assertEqualsWithDelta($expected['attack'], (float) $stored->frozenplayerattack, 1e-9);
+            $DB->delete_records('playerpuzzle_attempts', ['id' => $attempt->attemptid]);
+
+            $base = ['hp' => 100, 'attack' => 1.0, 'armor' => 0.0];
+            $this->assertGreaterThan($base[$specialty], $expected[$specialty], 'the specialty starts ahead');
+            $others = array_diff(array_keys($base), [$specialty]);
+            foreach ($others as $attribute) {
+                $this->assertEquals($base[$attribute], $expected[$attribute], 'only the specialty starts ahead');
+            }
+        }
+
+        $this->assertSame(107, heroes::attributes('magef', [], 1, 100)['hp'], 'a twentieth of what HP can reach');
+        $this->assertSame(
+            heroes::attributes('magef', [], 1, 100),
+            ['hp' => 107, 'attack' => 1.0, 'armor' => 0.0]
+        );
+
+        // A Demo of a Campaign activity is practice for the same fight.
+        $demo = security::resume_or_create_attempt_token((int) $this->instance->id, $userid, 'normal', 3, true, 'archerm');
+        $this->assertEquals(heroes::attributes('archerm', [], 1, 100)['armor'], $demo->frozenplayerarmor);
+        $DB->delete_records('playerpuzzle_attempts', ['id' => $demo->attemptid]);
+
+        // A real Campaign attempt reads the Campaign's hero row only: a hero in the request is no head start.
+        $real = security::resume_or_create_attempt_token((int) $this->instance->id, $userid, 'normal', 3, false, 'magef');
+        $this->assertSame([100, 1.0, 0.0], [$real->frozenplayerhp, $real->frozenplayerattack, $real->frozenplayerarmor]);
+    }
 }

@@ -37,6 +37,9 @@ final class campaign_history {
     /** @var string A Campaign that used every attempt it had. */
     private const SPENT = 'spent';
 
+    /** @var string A Campaign the student gave up. */
+    private const GAVEUP = 'gaveup';
+
     /** @var string A Campaign still being played. */
     private const CURRENT = 'current';
 
@@ -55,8 +58,8 @@ final class campaign_history {
             'playerpuzzle_attempts',
             ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'isdemo' => 0],
             'id ASC',
-            'id, campaign, status, currentlevel, currentphase, frozenmaxlevels, questions_correct, questions_total, '
-                . 'timecreated, timefinished'
+            'id, campaign, status, gaveup, currentlevel, currentphase, frozenmaxlevels, questions_correct, '
+                . 'questions_total, timecreated, timefinished'
         );
         $heroes = user_hero::for_student((int) $instance->id, $userid);
 
@@ -118,7 +121,7 @@ final class campaign_history {
     }
 
     /**
-     * How a Campaign stands: won, out of attempts, or still going.
+     * How a Campaign stands: won, given up, out of attempts, or still going.
      *
      * @param stdClass $instance Activity instance (maxattempts).
      * @param stdClass[] $attempts The attempts of one Campaign.
@@ -128,6 +131,9 @@ final class campaign_history {
         foreach ($attempts as $attempt) {
             if ($attempt->status === 'won') {
                 return self::WON;
+            }
+            if (!empty($attempt->gaveup)) {
+                return self::GAVEUP;
             }
         }
 

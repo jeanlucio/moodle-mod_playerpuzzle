@@ -195,6 +195,50 @@ final class campaigns_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that giving a Campaign up ends it on the attempt that carries the mark, whatever attempts are left,
+     * and that the next one starts at Level 1, Phase 1.
+     *
+     * @return void
+     */
+    public function test_next_start_after_giving_up_starts_the_next_campaign(): void {
+        global $DB;
+
+        $this->finish('lost', 1, 1, 6);
+        $this->assertSame(1, $this->next(0)->campaign);
+
+        $DB->set_field('playerpuzzle_attempts', 'gaveup', 1);
+        foreach ([0, 5] as $maxattempts) {
+            $start = $this->next($maxattempts);
+            $this->assertSame(
+                [2, 1, 1, true, campaigns::ENDED_GAVEUP],
+                [$start->campaign, $start->level, $start->phase, $start->startsnew, $start->ended],
+                'with ' . $maxattempts . ' attempts allowed'
+            );
+        }
+
+        // The next Campaign is under way once it has an attempt of its own.
+        $this->finish('lost', 2, 1, 2);
+        $this->assertSame([2, false], [$this->next(0)->campaign, $this->next(0)->startsnew]);
+    }
+
+    /**
+     * Tests that a given up Campaign is finished and graded like any other that ended.
+     *
+     * @return void
+     */
+    public function test_a_given_up_campaign_is_finished(): void {
+        $instance = (object) ['maxattempts' => 0];
+        $attempt = fn(int $campaign, string $status, int $gaveup = 0): \stdClass => (object) [
+            'campaign' => $campaign, 'status' => $status, 'gaveup' => $gaveup,
+        ];
+        $attempts = [$attempt(1, 'lost'), $attempt(2, 'lost'), $attempt(2, 'abandoned', 1), $attempt(3, 'lost')];
+
+        $this->assertFalse(campaigns::is_finished($instance, [$attempts[0]]));
+        $this->assertTrue(campaigns::is_finished($instance, [$attempts[1], $attempts[2]]));
+        $this->assertSame([1, 2], array_keys(campaigns::graded($instance, $attempts)));
+    }
+
+    /**
      * Tests that a Campaign resumes at the start of the last level when the teacher removed the level
      * it had reached.
      *

@@ -138,6 +138,11 @@ class lobby_page_service {
         }
         // Merged rather than added: a Campaign that has ended renames the Play button.
         $data = array_merge($data, self::build_progress_context($instance, $attempt, $userid));
+        if (!is_guest($context, $userid) && campaign_giveup::is_available($instance, $userid)) {
+            $data['cangiveupcampaign'] = true;
+            $data['giveupcampaignurl'] = (new moodle_url('/mod/playerpuzzle/giveupcampaign.php', ['id' => $cm->id]))->out(false);
+            $data['giveupcampaignlabel'] = get_string('lobby_giveupcampaign_button', 'mod_playerpuzzle');
+        }
         // Merged too: the student's hero replaces the default picture.
         $play = self::build_play_context($instance, $attempt, $userid, !empty($data['newcampaign']));
         $data = array_merge($data, $play);
@@ -406,7 +411,11 @@ class lobby_page_service {
             $data = [
                 'campaignended' => true,
                 'progresstext' => get_string(
-                    $start->ended === campaigns::ENDED_WON ? 'lobby_campaign_won' : 'lobby_campaign_outofattempts',
+                    match ($start->ended) {
+                        campaigns::ENDED_WON => 'lobby_campaign_won',
+                        campaigns::ENDED_GAVEUP => 'lobby_campaign_gaveup',
+                        default => 'lobby_campaign_outofattempts',
+                    },
                     'mod_playerpuzzle',
                     $ended
                 ),

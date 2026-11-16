@@ -109,6 +109,7 @@ class provider implements
             'questionresults'   => 'privacy:metadata:questionresults',
             'score'             => 'privacy:metadata:score',
             'status'            => 'privacy:metadata:status',
+            'gaveup'            => 'privacy:metadata:gaveup',
             'timecreated'       => 'privacy:metadata:timecreated',
             'timefinished'      => 'privacy:metadata:timefinished',
             'timephasewon'      => 'privacy:metadata:timephasewon',
@@ -389,7 +390,7 @@ class provider implements
         $sql = "SELECT pa.id, pa.currentlevel, pa.currentphase, pa.campaign, pa.difficulty, pa.bosshp_remaining,
                        pa.questions_correct, pa.questions_total, pa.coins_earned,
                        pa.boss_coins_earned, pa.combatstate, pa.movelog, pa.questionresults, pa.score, pa.status,
-                       pa.timecreated, pa.timefinished, pa.timephasewon, ctx.id AS contextid
+                       pa.gaveup, pa.timecreated, pa.timefinished, pa.timephasewon, ctx.id AS contextid
                   FROM {playerpuzzle_attempts} pa
                   JOIN {playerpuzzle} pp ON pp.id = pa.playerpuzzleid
                   JOIN {modules} m ON m.name = 'playerpuzzle'
@@ -416,6 +417,7 @@ class provider implements
                 'questionresults'  => $record->questionresults,
                 'score'            => $record->score,
                 'status'           => $record->status,
+                'gaveup'           => (int) $record->gaveup,
                 'timecreated'      => transform::datetime($record->timecreated),
                 'timefinished'     => $record->timefinished ? transform::datetime($record->timefinished) : null,
                 'timephasewon'     => $record->timephasewon ? transform::datetime($record->timephasewon) : null,

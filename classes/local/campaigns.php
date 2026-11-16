@@ -27,8 +27,8 @@ namespace mod_playerpuzzle\local;
 use stdClass;
 
 /**
- * A Campaign is one complete game, from Level 1, Phase 1 until it is won or runs out of attempts
- * (defeats and restarts, limited by maxattempts in each Campaign). Once it ends the student may play
+ * A Campaign is one complete game, from Level 1, Phase 1 until it is won, runs out of attempts
+ * (defeats and restarts, limited by maxattempts in each Campaign) or the student gives it up. Once it ends the student may play
  * another, up to maxcampaigns, and every attempt row records which Campaign it belongs to.
  *
  * Only real Campaign-mode attempts have Campaigns: a Demo and every Single Match stay on the first.
@@ -40,13 +40,16 @@ class campaigns {
     /** @var string A Campaign that ended because it ran out of attempts. */
     public const ENDED_ATTEMPTS = 'attempts';
 
+    /** @var string A Campaign that ended because the student gave it up (see campaign_giveup). */
+    public const ENDED_GAVEUP = 'gaveup';
+
     /** @var int Phases in a level. */
     public const PHASES_PER_LEVEL = 10;
 
     /**
      * Where a brand new real attempt starts, from the student's most recently finished one: on the
      * phase that attempt lost, in the same Campaign, or at Level 1, Phase 1 of the next Campaign when
-     * the last one was won or spent its last attempt. Ordered by id as well as timecreated, so two
+     * the last one was won, spent its last attempt or was given up. Ordered by id as well as timecreated, so two
      * attempts finished within the same second still have one well-defined "most recent".
      *
      * @param int $playerpuzzleid Activity instance ID.
@@ -64,7 +67,7 @@ class campaigns {
             'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0',
             ['ppid' => $playerpuzzleid, 'uid' => $userid, 'inprogress' => 'inprogress'],
             'timecreated DESC, id DESC',
-            'id, status, currentlevel, currentphase, campaign',
+            'id, status, currentlevel, currentphase, campaign, gaveup',
             0,
             1
         );
@@ -76,6 +79,9 @@ class campaigns {
         $campaign = (int) $last->campaign;
         if ($last->status === 'won') {
             return self::start($campaign + 1, 1, 1, self::ENDED_WON);
+        }
+        if (!empty($last->gaveup)) {
+            return self::start($campaign + 1, 1, 1, self::ENDED_GAVEUP);
         }
         if ($maxattempts > 0) {
             $finished = $DB->count_records_select(
@@ -197,17 +203,17 @@ class campaigns {
     }
 
     /**
-     * Whether a Campaign has ended: one of its attempts won the last phase, or it has used every
-     * attempt the instance allows in a Campaign.
+     * Whether a Campaign has ended: one of its attempts won the last phase, the student gave it up, or it has
+     * used every attempt the instance allows in a Campaign.
      *
      * @param stdClass $instance Activity instance (maxattempts).
-     * @param stdClass[] $attempts The attempts of that one Campaign.
+     * @param stdClass[] $attempts The attempts of that one Campaign (status, gaveup when read).
      * @return bool
      */
     public static function is_finished(stdClass $instance, array $attempts): bool {
         $finished = 0;
         foreach ($attempts as $attempt) {
-            if ($attempt->status === 'won') {
+            if ($attempt->status === 'won' || !empty($attempt->gaveup)) {
                 return true;
             }
             if ($attempt->status !== 'inprogress') {

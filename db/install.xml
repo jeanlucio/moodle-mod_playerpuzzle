@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/playerpuzzle/db" VERSION="20261107" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
+<XMLDB PATH="mod/playerpuzzle/db" VERSION="20261116" COMMENT="XMLDB file for Moodle mod_playerpuzzle"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -83,6 +83,7 @@
         <FIELD NAME="phaserestarts" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="How many times the current phase was restarted because its claimed victory could not be verified; capped, reset when the attempt advances to a new phase"/>
         <FIELD NAME="score" TYPE="number" LENGTH="10" NOTNULL="true" DEFAULT="0.00000" DECIMALS="5" SEQUENCE="false" COMMENT="Final calculated grade"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="inprogress" SEQUENCE="false" COMMENT="Status: inprogress, won, lost, timeout, abandoned"/>
+        <FIELD NAME="gaveup" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 on the last attempt of a Campaign the student gave up from the Lobby: the Campaign ended there, whatever attempts it still had left"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timefinished" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Unix timestamp when attempt ended; 0 if still in progress"/>
         <FIELD NAME="timephasewon" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Unix timestamp of the last phase this attempt won; 0 if none. Restarts and answers never change it"/>

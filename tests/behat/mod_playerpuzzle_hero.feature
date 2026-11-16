@@ -92,6 +92,49 @@ Feature: A student chooses a hero
     And I press "Play"
     Then "#playerpuzzle-canvas-container" "css_element" should exist
 
+  Scenario: A student gives up a Campaign after a warning, and may start another
+    Given the following "activities" exist:
+      | activity     | course | name         | minquestions |
+      | playerpuzzle | C1     | Dungeon Quiz | 0            |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
+    And the following "mod_playerpuzzle > attempts" exist:
+      | playerpuzzle | user     | rngseed | status | currentphase |
+      | Dungeon Quiz | student1 | 1       | lost   | 3            |
+    And I log in as "student1"
+    And I am on the "Dungeon Quiz" "playerpuzzle activity" page
+    When I click on "Give up the Campaign" "button"
+    Then I should see "The Campaign ends here and is graded on how far you got"
+    And I should not see "last Campaign this activity allows"
+    When I press "Cancel"
+    Then I should see "Give up the Campaign"
+    When I click on "Give up the Campaign" "button"
+    And I press "Give up the Campaign"
+    Then I should see "You gave up Campaign 1"
+    And I should see "Start a new Campaign"
+    And I should not see "Give up the Campaign"
+
+  Scenario: Giving up the last Campaign an activity allows says it ends the play for good
+    Given the following "activities" exist:
+      | activity     | course | name         | minquestions | maxcampaigns |
+      | playerpuzzle | C1     | Dungeon Quiz | 0            | 1            |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
+    And the following "mod_playerpuzzle > attempts" exist:
+      | playerpuzzle | user     | rngseed | status | currentphase |
+      | Dungeon Quiz | student1 | 1       | lost   | 3            |
+    And I log in as "student1"
+    And I am on the "Dungeon Quiz" "playerpuzzle activity" page
+    When I click on "Give up the Campaign" "button"
+    Then I should see "last Campaign this activity allows"
+    And I should see "you will not be able to play again"
+    When I press "Give up the Campaign"
+    Then I should see "You gave up Campaign 1"
+    And I should see "You have played every Campaign available in this activity"
+    And I should not see "Start a new Campaign"
+
   Scenario: Buying a hero upgrade in the Lobby shop spends PuzzleCoin and uses up the stage's buy
     Given the following "activities" exist:
       | activity     | course | name         | minquestions |

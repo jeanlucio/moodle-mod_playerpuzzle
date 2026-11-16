@@ -331,6 +331,15 @@
                         </span>
                     </button>
                     {{/campaignended}}
+                    {{#cangiveupcampaign}}
+                    <form method="post" action="{{giveupcampaignurl}}" class="pp-lobby-menu-form">
+                        <input type="hidden" name="sesskey" value="{{sesskey}}">
+                        <button type="submit" class="pp-lobby-menu-btn">
+                            <i class="fa fa-flag" aria-hidden="true"></i>
+                            <span>{{giveupcampaignlabel}}</span>
+                        </button>
+                    </form>
+                    {{/cangiveupcampaign}}
                     {{/isguest}}
                 </div>
             </div>

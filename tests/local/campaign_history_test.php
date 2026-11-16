@@ -171,6 +171,21 @@ final class campaign_history_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a Campaign the student gave up is listed as such, whatever attempts it still had.
+     *
+     * @return void
+     */
+    public function test_a_given_up_campaign_says_so(): void {
+        $this->attempt('lost', 1, 1, 4);
+        $this->attempt('abandoned', 1, 1, 6, ['gaveup' => 1]);
+
+        $this->assertSame(
+            [get_string('history_status_gaveup', 'mod_playerpuzzle')],
+            array_column($this->rows(), 'statustext')
+        );
+    }
+
+    /**
      * Tests that a Campaign completed when the activity had fewer levels still reads as complete, in its own phases
      * and in points, while one lost on the same phase is measured against the levels the activity has now.
      *

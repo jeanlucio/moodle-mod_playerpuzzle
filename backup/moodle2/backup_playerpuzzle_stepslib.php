@@ -104,6 +104,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'phaserestarts',
             'score',
             'status',
+            'gaveup',
             'timecreated',
             'timefinished',
             'timephasewon',

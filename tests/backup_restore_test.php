@@ -634,6 +634,7 @@ final class backup_restore_test extends \advanced_testcase {
             'questions_total'   => 5,
             'coins_earned'      => 30,
             'status'            => 'won',
+            'gaveup'            => 1,
             'score'             => 91.5,
             'rngseed'           => 123456789,
             'moveseq'           => 3,
@@ -672,6 +673,7 @@ final class backup_restore_test extends \advanced_testcase {
         $this->assertSame('hard', $newattempt->difficulty);
         $this->assertSame(1, (int) $newattempt->isdemo);
         $this->assertSame('won', $newattempt->status);
+        $this->assertSame(1, (int) $newattempt->gaveup);
         $this->assertEqualsWithDelta(91.5, (float) $newattempt->score, 0.001);
         $this->assertSame(123456789, (int) $newattempt->rngseed);
         $this->assertSame(3, (int) $newattempt->moveseq);

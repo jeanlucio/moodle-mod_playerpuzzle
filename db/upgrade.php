@@ -908,5 +908,17 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026111206, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026111600) {
+        // Marks the last attempt of a Campaign the student gave up, so the Campaign ends there; every attempt
+        // already stored belongs to a Campaign that was not given up.
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('gaveup', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'status');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026111600, 'playerpuzzle');
+    }
+
     return true;
 }

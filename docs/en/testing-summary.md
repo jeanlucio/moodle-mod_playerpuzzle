@@ -161,14 +161,14 @@ node --test tests/js/stage/*.test.js
 |--------------|----------:|
 | `mod_playerpuzzle_accessibility.feature` | 4 |
 | `mod_playerpuzzle_gameplay.feature` | 4 |
-| `mod_playerpuzzle_hero.feature` | 6 |
+| `mod_playerpuzzle_hero.feature` | 8 |
 | `mod_playerpuzzle_howtoplay.feature` | 4 |
 | `mod_playerpuzzle_match.feature` | 3 |
 | `mod_playerpuzzle_ranking.feature` | 3 |
 | `mod_playerpuzzle_settings.feature` | 1 |
 | `mod_playerpuzzle_smoke.feature` | 2 |
 | `mod_playerpuzzle_stage.feature` | 5 |
-| **Subtotal** | **23** |
+| **Subtotal** | **25** |
 
 ```bash
 php admin/tool/behat/cli/init.php

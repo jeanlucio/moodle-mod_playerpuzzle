@@ -648,6 +648,42 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the Lobby offers to give the Campaign up only while one is under way, and says how a Campaign
+     * the student gave up ended.
+     *
+     * @return void
+     */
+    public function test_the_lobby_offers_to_give_the_campaign_up_while_it_is_under_way(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0]);
+        $context = \context_module::instance($cm->id);
+        $userid = (int) $this->student->id;
+        $build = fn(): array => lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+
+        $this->assertArrayNotHasKey('cangiveupcampaign', $build(), 'nothing is under way before the first Play');
+
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, $userid, 'magef');
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id, 'userid' => $userid, 'token' => bin2hex(random_bytes(32)),
+            'status' => 'lost', 'campaign' => 1, 'timecreated' => time(), 'timefinished' => time(),
+        ]);
+        $data = $build();
+        $this->assertTrue($data['cangiveupcampaign']);
+        $this->assertStringContainsString('/mod/playerpuzzle/giveupcampaign.php?id=' . $cm->id, $data['giveupcampaignurl']);
+        $html = $this->render_lobby($data);
+        $this->assertMatchesRegularExpression('~<form[^>]*action="[^"]*giveupcampaign\.php[^"]*"~', $html);
+        $this->assertStringContainsString(get_string('lobby_giveupcampaign_button', 'mod_playerpuzzle'), $html);
+
+        $this->assertTrue(\mod_playerpuzzle\local\campaign_giveup::give_up($instance, $cm, $userid));
+        $data = $build();
+        $this->assertArrayNotHasKey('cangiveupcampaign', $data);
+        $this->assertSame(get_string('lobby_campaign_gaveup', 'mod_playerpuzzle', 1), $data['progresstext']);
+        $this->assertTrue($data['newcampaign'], 'the next Campaign is offered, with its warning');
+        $this->assertStringNotContainsString('giveupcampaign.php', $this->render_lobby($data));
+    }
+
+    /**
      * Tests that a Campaign student's hero stands in the Lobby at its current stage, and that Play goes
      * straight on to play.php.
      *

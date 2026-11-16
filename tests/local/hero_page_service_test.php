@@ -80,8 +80,8 @@ final class hero_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests the Campaign's screen: the six heroes at their first look with none marked, a form that saves
-     * the choice on hero.php, and the warning of a new Campaign only when one is being started.
+     * Tests the Campaign's screen: the six heroes at their first look with none marked, a form that goes on to
+     * play.php, a way back to the Lobby, and the warning of a new Campaign only when one is being started.
      *
      * @return void
      */
@@ -101,12 +101,12 @@ final class hero_page_service_test extends \advanced_testcase {
             get_string('hero_specialty', 'mod_playerpuzzle', get_string('hero_attribute_attack', 'mod_playerpuzzle')),
             $data['heroes'][0]['specialty']
         );
-        $this->assertStringContainsString('/mod/playerpuzzle/hero.php', $data['formurl']);
+        $this->assertStringContainsString('/mod/playerpuzzle/play.php', $data['formurl']);
         $this->assertSame(get_string('hero_intro_campaign', 'mod_playerpuzzle'), $data['intro']);
         // The Campaign screen says what each attribute does, HP included, for a student who never met the word.
         $this->assertSame(get_string('hero_attributes_legend', 'mod_playerpuzzle'), $data['attributeslegend']);
         $this->assertStringContainsString(get_string('hero_attribute_hp', 'mod_playerpuzzle'), $data['attributeslegend']);
-        $this->assertSame(get_string('hero_choose_button', 'mod_playerpuzzle'), $data['submitlabel']);
+        $this->assertSame(get_string('hero_play_button', 'mod_playerpuzzle'), $data['submitlabel']);
         $this->assertSame('', $data['error']);
 
         // The screen wears the Lobby's own art.
@@ -114,9 +114,9 @@ final class hero_page_service_test extends \advanced_testcase {
         $this->assertStringContainsString('/pix/lobby_texture.webp', $data['textureurl']);
         $this->assertStringContainsString('/pix/scroll_banner.webp', $data['scrollbannerurl']);
 
-        // The first Campaign sends the student here until they have a hero, so there is no Lobby to go back to.
-        $this->assertSame('', $data['backurl']);
-        $this->assertStringNotContainsString(
+        // The first Campaign starts at the Lobby too, so there is always a way back to it.
+        $this->assertStringContainsString('/mod/playerpuzzle/view.php', $data['backurl']);
+        $this->assertStringContainsString(
             get_string('hero_back', 'mod_playerpuzzle'),
             $OUTPUT->render_from_template('mod_playerpuzzle/hero_select', $data)
         );
@@ -135,6 +135,66 @@ final class hero_page_service_test extends \advanced_testcase {
             'a new Campaign comes marked with the hero of the one that ended'
         );
         $this->assertStringContainsString('/mod/playerpuzzle/view.php', $new['backurl'], 'a new Campaign starts at the Lobby');
+    }
+
+    /**
+     * Tests the choice play.php saves as the match starts: a hero is saved for a Campaign that needs one, a
+     * stranger is refused, a new Campaign needs the Lobby's confirmation, and nothing is saved when there is
+     * no hero to choose.
+     *
+     * @return void
+     */
+    public function test_choose_for_play(): void {
+        global $DB;
+
+        [, $campaign] = $this->make(constants::GAMEMODE_CAMPAIGN);
+        [, $single] = $this->make(constants::GAMEMODE_SINGLE);
+        $userid = (int) $this->student->id;
+
+        $this->assertSame(
+            hero_page_service::CHOICE_NONE,
+            hero_page_service::choose_for_play($single, $userid, 'magef', true),
+            'a Single Match has no Campaign hero'
+        );
+        $this->assertSame(
+            hero_page_service::CHOICE_LOBBY,
+            hero_page_service::choose_for_play($campaign, $userid, '', false),
+            'a request with no hero goes back to the Lobby'
+        );
+        $this->assertSame(
+            hero_page_service::CHOICE_INVALID,
+            hero_page_service::choose_for_play($campaign, $userid, 'dragon', false)
+        );
+        $this->assertFalse($DB->record_exists('playerpuzzle_heroes', ['userid' => $userid]));
+
+        $this->assertSame(
+            hero_page_service::CHOICE_SAVED,
+            hero_page_service::choose_for_play($campaign, $userid, 'magef', false),
+            'the first Campaign needs no confirmation'
+        );
+        $this->assertSame('magef', user_hero::get((int) $campaign->id, $userid, 1)->hero);
+        $this->assertSame(
+            hero_page_service::CHOICE_NONE,
+            hero_page_service::choose_for_play($campaign, $userid, 'archerf', false),
+            'the hero of a Campaign that has one is never swapped'
+        );
+        $this->assertSame('magef', user_hero::get((int) $campaign->id, $userid, 1)->hero);
+
+        // A Campaign that has ended: the next one empties the stock, so it waits for the Lobby's warning.
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $campaign->id, 'userid' => $userid, 'token' => bin2hex(random_bytes(32)),
+            'status' => 'won', 'campaign' => 1, 'timecreated' => time(), 'timefinished' => time(),
+        ]);
+        $this->assertSame(
+            hero_page_service::CHOICE_LOBBY,
+            hero_page_service::choose_for_play($campaign, $userid, 'archerf', false)
+        );
+        $this->assertNull(user_hero::get((int) $campaign->id, $userid, 2));
+        $this->assertSame(
+            hero_page_service::CHOICE_SAVED,
+            hero_page_service::choose_for_play($campaign, $userid, 'archerf', true)
+        );
+        $this->assertSame('archerf', user_hero::get((int) $campaign->id, $userid, 2)->hero);
     }
 
     /**

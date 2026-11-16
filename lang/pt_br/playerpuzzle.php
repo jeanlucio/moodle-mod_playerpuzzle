@@ -197,7 +197,6 @@ $string['hero_attribute_attack'] = 'Ataque';
 $string['hero_attribute_hp'] = 'Vida (HP)';
 $string['hero_attributes_legend'] = 'Ataque: aumenta o dano que você causa. Armadura: reduz o dano que você recebe. Vida (HP): quanto dano você aguenta antes de perder a luta.';
 $string['hero_back'] = 'Voltar ao Lobby';
-$string['hero_choose_button'] = 'Escolher este herói';
 $string['hero_choose_error'] = 'Escolha um dos heróis.';
 $string['hero_intro_campaign'] = 'Seu herói fica com você durante toda a Campanha e cresce com o que você compra na loja. Ele só muda com a próxima Campanha.';
 $string['hero_intro_match'] = 'Escolha o herói desta partida. Ele só muda o seu visual, não a sua força.';

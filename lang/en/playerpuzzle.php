@@ -197,7 +197,6 @@ $string['hero_attribute_attack'] = 'Attack';
 $string['hero_attribute_hp'] = 'Health (HP)';
 $string['hero_attributes_legend'] = 'Attack: raises the damage you deal. Armor: lowers the damage you take. Health (HP): how much damage you can take before losing the fight.';
 $string['hero_back'] = 'Back to the Lobby';
-$string['hero_choose_button'] = 'Choose this hero';
 $string['hero_choose_error'] = 'Choose one of the heroes.';
 $string['hero_intro_campaign'] = 'Your hero stays with you for the whole Campaign and grows with what you buy in the shop. It only changes with the next Campaign.';
 $string['hero_intro_match'] = 'Choose the hero for this match. It only changes how you look, not how strong you are.';

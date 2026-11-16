@@ -15,17 +15,15 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * The hero choice screen: the first screen of a Campaign until the student has a hero, and the step between
- * the Lobby's Play button and the match for a Single Match or a Demo.
+ * The hero choice screen: the step between the Lobby's Play button and the match, for a Campaign that still
+ * needs its hero, a Single Match and a Demo. The form goes on to play.php, which saves a Campaign's choice.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use mod_playerpuzzle\local\game_page_service;
 use mod_playerpuzzle\local\hero_page_service;
-use mod_playerpuzzle\local\heroes;
 
 require_once(__DIR__ . '/../../config.php');
 require_once(__DIR__ . '/lib.php');
@@ -55,34 +53,16 @@ if (!$allowed) {
     redirect($returnurl);
 }
 
-// A visit is a plain page; only a form that carries the sesskey does anything.
-$posted = data_submitted() && confirm_sesskey();
-$hero = optional_param('hero', '', PARAM_ALPHANUM);
-$confirmed = optional_param('confirmnewcampaign', 0, PARAM_BOOL);
-$error = '';
-
-if ($posted && $mode === hero_page_service::MODE_CAMPAIGN && $hero !== '') {
-    if (!heroes::is_valid($hero)) {
-        $error = 'hero_choose_error';
-    } else if (
-        game_page_service::hero_stage($playerpuzzle, $userid) === game_page_service::HERO_NEW
-        && !$confirmed
-    ) {
-        // A new Campaign empties the student's PuzzleCoin and stock, so it is only started from the
-        // Lobby's own button, after its warning.
-        redirect($returnurl);
-    } else {
-        game_page_service::choose_campaign_hero($playerpuzzle, $userid, $hero);
-        redirect($returnurl);
-    }
-}
+// The error play.php sends back when what came was not one of the heroes.
+$error = optional_param('heroerror', 0, PARAM_BOOL) ? 'hero_choose_error' : '';
 
 // What the choice carries on to the next page. The difficulty and the mobile flag come from the Lobby's own
 // form, and are coerced where they are used, not here.
 $carry = [];
 $carried = ['difficulty' => PARAM_ALPHA, 'mobile' => PARAM_INT, 'confirmnewcampaign' => PARAM_BOOL];
-if ($mode === hero_page_service::MODE_DEMO) {
-    // The mark that the difficulty was chosen on purpose: a Demo left half played is started over under it.
+if ($mode !== hero_page_service::MODE_SINGLE) {
+    // The mark that the difficulty was chosen on purpose: a Demo left half played is started over under it, and
+    // a Campaign phase nothing has happened in yet takes it.
     $carried['difficultychoice'] = PARAM_INT;
 }
 foreach ($carried as $name => $type) {

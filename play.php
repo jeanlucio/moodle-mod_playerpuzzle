@@ -55,15 +55,23 @@ $isdemo = optional_param('isdemo', 0, PARAM_BOOL);
 $returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
 \mod_playerpuzzle\local\game_page_service::check_guest_demo_only($isdemo, $returnurl, $context);
 
-// A Campaign attempt needs the student's hero for that Campaign. Without one (the end screen's "Play again"
-// once a Campaign ended, or a stale link) the Lobby is where the choice, and the warning a new Campaign
-// comes with, belong.
-if (
-    !$isdemo
-    && \mod_playerpuzzle\local\game_page_service::hero_stage($playerpuzzle, (int) $USER->id)
-        !== \mod_playerpuzzle\local\game_page_service::HERO_NONE
-) {
-    redirect($returnurl);
+// A Campaign attempt needs the student's hero for that Campaign. The choice screen sends it on with the Play
+// that starts the match, and it is saved here, so the Campaign has it from its first phase. A request without
+// one (the end screen's "Play again" once a Campaign ended, or a stale link) goes back to the Lobby, where the
+// choice, and the warning a new Campaign comes with, begin.
+if (!$isdemo) {
+    $choice = \mod_playerpuzzle\local\hero_page_service::choose_for_play(
+        $playerpuzzle,
+        (int) $USER->id,
+        optional_param('hero', '', PARAM_ALPHANUM),
+        (bool) optional_param('confirmnewcampaign', 0, PARAM_BOOL)
+    );
+    if ($choice === \mod_playerpuzzle\local\hero_page_service::CHOICE_INVALID) {
+        redirect(new moodle_url('/mod/playerpuzzle/hero.php', ['id' => $cm->id, 'heroerror' => 1]));
+    }
+    if ($choice === \mod_playerpuzzle\local\hero_page_service::CHOICE_LOBBY) {
+        redirect($returnurl);
+    }
 }
 
 // The hero a Single Match or a Demo is fought with, from the choice screen; the Campaign's hero is the

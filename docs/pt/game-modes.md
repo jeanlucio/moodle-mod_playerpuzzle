@@ -39,8 +39,9 @@ Campanha.
 
 ## Heróis
 
-Na Campanha o estudante escolhe um de seis heróis numa tela própria, a primeira da atividade, e fica com
-ele até o fim daquela Campanha; uma Campanha nova pergunta de novo. Na Partida Única e na Demo o herói é só
+Na Campanha o estudante escolhe um de seis heróis numa tela própria, ao apertar Jogar pela primeira vez (a
+atividade abre no Lobby, onde estão a ajuda e a loja), e fica com ele até o fim daquela Campanha; uma
+Campanha nova pergunta de novo. Na Partida Única e na Demo o herói é só
 o visual do estudante, e a Partida Única abre a escolha com o último herói usado.
 
 * **Especialidade:** cada herói é especialista em HP (os magos), ataque (os guerreiros) ou armadura (os

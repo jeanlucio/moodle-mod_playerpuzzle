@@ -621,6 +621,33 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the first Campaign opens at the Lobby, not at the hero screen: the Lobby shows, and its Play
+     * button goes on to hero.php naming the Campaign, with no new Campaign warning. Once the student has a hero,
+     * Play goes straight on to play.php.
+     *
+     * @return void
+     */
+    public function test_the_first_campaign_chooses_its_hero_when_play_is_pressed(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0]);
+        $context = \context_module::instance($cm->id);
+        $userid = (int) $this->student->id;
+
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $html = $this->render_lobby($data);
+        $this->assertSame('campaign', $data['playmode']);
+        $this->assertArrayNotHasKey('newcampaign', $data);
+        $this->assertMatchesRegularExpression('~<form[^>]*action="[^"]*hero\.php[^"]*"[^>]*id="pp-lobby-playform"~', $html);
+        $this->assertStringContainsString('name="mode" value="campaign"', $html);
+        $this->assertStringNotContainsString('name="confirmnewcampaign"', $html);
+
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, $userid, 'magef');
+        $data = lobby_page_service::build_page_data($cm, $this->course, $instance, $userid, $context);
+        $html = $this->render_lobby($data);
+        $this->assertArrayNotHasKey('playmode', $data);
+        $this->assertMatchesRegularExpression('~<form[^>]*action="[^"]*play\.php[^"]*"[^>]*id="pp-lobby-playform"~', $html);
+    }
+
+    /**
      * Tests that a Campaign student's hero stands in the Lobby at its current stage, and that Play goes
      * straight on to play.php.
      *

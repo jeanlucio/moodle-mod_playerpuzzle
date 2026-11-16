@@ -65,8 +65,8 @@ class lobby_page_service {
 
         $data = [
             'playurl' => (new moodle_url('/mod/playerpuzzle/play.php', $playparams))->out(false),
-            // A Single Match, a Demo and a new Campaign choose their hero first, on hero.php, which sends
-            // the choice on to play.php or saves it, see hero_page_service.
+            // A Single Match, a Demo and a Campaign that needs its hero choose it first, on hero.php, which sends
+            // the choice on to play.php, see hero_page_service.
             'herourl' => (new moodle_url('/mod/playerpuzzle/hero.php', $playparams))->out(false),
             'playtext' => get_string('playgame', 'mod_playerpuzzle'),
             // The Lobby's on-demand practice fight: reuses play.php's own
@@ -331,9 +331,10 @@ class lobby_page_service {
     }
 
     /**
-     * Where the Play button goes and which hero shows. A Single Match without an attempt to resume and a new
-     * Campaign pick their hero first; everything else plays on, the Campaign with the hero the student
-     * already has, which also stands in the Lobby in the place of the default picture.
+     * Where the Play button goes and which hero shows. A Single Match without an attempt to resume and a Campaign
+     * that still needs its hero, the first or a new one, pick the hero first; everything else plays on, the
+     * Campaign with the hero the student already has, which also stands in the Lobby in the place of the default
+     * picture.
      *
      * @param stdClass $instance Activity instance.
      * @param stdClass|null $attempt The most recent in-progress real attempt, or null.
@@ -343,7 +344,7 @@ class lobby_page_service {
      */
     private static function build_play_context(stdClass $instance, ?stdClass $attempt, int $userid, bool $newcampaign): array {
         $data = [];
-        if ($newcampaign) {
+        if ($newcampaign || game_page_service::hero_stage($instance, $userid) === game_page_service::HERO_FIRST) {
             $data['playmode'] = hero_page_service::MODE_CAMPAIGN;
             $data['playviahero'] = true;
         } else if ($instance->gamemode === constants::GAMEMODE_SINGLE && $attempt === null) {

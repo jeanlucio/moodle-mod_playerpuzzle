@@ -28,10 +28,11 @@ use moodle_url;
 use stdClass;
 
 /**
- * The screen where a student picks a hero. In a Campaign it is the first screen until they have one, and
- * again for each new Campaign, and the choice is saved by hero.php. For a Single Match or a Demo it
- * comes after the Lobby's Play button, only picks how the student looks, and goes on to play.php with
- * the choice; the hero last chosen for a Single Match comes marked.
+ * The screen where a student picks a hero, always between the Lobby's Play button and the match: in a
+ * Campaign it comes on the first Play and on the first Play of each new Campaign, and the choice, which then
+ * stays for the whole Campaign, is saved by play.php as the match starts (see choose_for_play()). For a
+ * Single Match or a Demo it only picks how the student looks. Every mode goes on to play.php with the
+ * choice; the hero last chosen for a Single Match comes marked.
  */
 class hero_page_service {
     /** @var string The student is choosing the hero of their Campaign. */
@@ -45,6 +46,18 @@ class hero_page_service {
 
     /** @var string[] Every mode, in the order the Lobby offers them. */
     public const MODES = [self::MODE_CAMPAIGN, self::MODE_SINGLE, self::MODE_DEMO];
+
+    /** @var string choose_for_play(): the Campaign has no hero to choose, play on. */
+    public const CHOICE_NONE = 'none';
+
+    /** @var string choose_for_play(): the hero was saved, play on. */
+    public const CHOICE_SAVED = 'saved';
+
+    /** @var string choose_for_play(): something came as the hero that is not one of them. */
+    public const CHOICE_INVALID = 'invalid';
+
+    /** @var string choose_for_play(): no hero came, or a new Campaign was not confirmed: back to the Lobby. */
+    public const CHOICE_LOBBY = 'lobby';
 
     /**
      * Whether a student may choose a hero in a mode: a Campaign hero only in a Campaign activity that
@@ -62,6 +75,35 @@ class hero_page_service {
             self::MODE_DEMO => true,
             default => false,
         };
+    }
+
+    /**
+     * Saves the hero a student sent on from the choice screen, when the Campaign they are about to play still
+     * needs one, so the match can start in the same request. A new Campaign empties the student's PuzzleCoin
+     * and stock, so it is only started once the Lobby's warning was confirmed.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid User ID.
+     * @param string $hero The hero key that came with the request, possibly empty or unknown.
+     * @param bool $confirmed Whether the Lobby's new Campaign warning was confirmed.
+     * @return string One of the self::CHOICE_* constants.
+     */
+    public static function choose_for_play(stdClass $instance, int $userid, string $hero, bool $confirmed): string {
+        $stage = game_page_service::hero_stage($instance, $userid);
+        if ($stage === game_page_service::HERO_NONE) {
+            return self::CHOICE_NONE;
+        }
+        // A request with no hero, or one for a new Campaign the Lobby has not warned about, is a stale link or the
+        // end screen's "Play again": the Lobby is where the choice begins.
+        if ($hero === '' || ($stage === game_page_service::HERO_NEW && !$confirmed)) {
+            return self::CHOICE_LOBBY;
+        }
+        if (!heroes::is_valid($hero)) {
+            return self::CHOICE_INVALID;
+        }
+        game_page_service::choose_campaign_hero($instance, $userid, $hero);
+
+        return self::CHOICE_SAVED;
     }
 
     /**
@@ -114,9 +156,7 @@ class hero_page_service {
         }
 
         return [
-            'formurl' => ($campaign
-                ? new moodle_url('/mod/playerpuzzle/hero.php', ['id' => $cm->id])
-                : new moodle_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]))->out(false),
+            'formurl' => (new moodle_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]))->out(false),
             'sesskey' => sesskey(),
             'fields' => array_map(
                 static fn(string $name, $value): array => ['name' => $name, 'value' => (string) $value],
@@ -134,12 +174,9 @@ class hero_page_service {
             'error' => $error === '' ? '' : get_string($error, 'mod_playerpuzzle'),
             'legend' => get_string('hero_title', 'mod_playerpuzzle'),
             'heroes' => $heroes,
-            'submitlabel' => get_string($campaign ? 'hero_choose_button' : 'hero_play_button', 'mod_playerpuzzle'),
-            // The first Campaign has no Lobby to go back to: it sends the student straight here again until they
-            // have a hero. Every other way to this screen starts from the Lobby, where Back leads.
-            'backurl' => $campaign && $stage === game_page_service::HERO_FIRST
-                ? ''
-                : (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
+            'submitlabel' => get_string('hero_play_button', 'mod_playerpuzzle'),
+            // Every way to this screen starts from the Lobby's Play button, so Back leads there.
+            'backurl' => (new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]))->out(false),
             'backlabel' => get_string('hero_back', 'mod_playerpuzzle'),
         ];
     }

@@ -2,7 +2,7 @@
 Feature: A student chooses a hero
   In order to play as someone of my own
   As a student
-  I need to choose a hero before a Campaign, a match or a demo
+  I need to choose a hero when I press Play on a Campaign, a match or a demo
 
   Background:
     Given the following "users" exist:
@@ -15,20 +15,22 @@ Feature: A student chooses a hero
       | user     | course | role    |
       | student1 | C1     | student |
 
-  Scenario: A Campaign starts on the choice screen and goes to the Lobby once a hero is chosen
+  Scenario: A Campaign opens at the Lobby and asks for the hero when Play is pressed, then starts the match
     Given the following "activities" exist:
       | activity     | course | name         | minquestions |
       | playerpuzzle | C1     | Dungeon Quiz | 0            |
     And I log in as "student1"
     When I am on the "Dungeon Quiz" "playerpuzzle activity" page
+    Then I should see "Play Game"
+    And I should not see "Choose your hero"
+    When I click on "Play Game" "button"
     Then I should see "Choose your hero"
     And I should see "Female mage"
     And I should see "Specialty: Health (HP)"
-    And I should not see "Play Game"
+    And I should see "stays with you for the whole Campaign"
     When I click on "Female mage" "radio"
-    And I press "Choose this hero"
-    Then I should see "Play Game"
-    And I should not see "Choose your hero"
+    And I press "Play"
+    Then "#playerpuzzle-canvas-container" "css_element" should exist
 
   Scenario: A Campaign student who already has a hero goes straight to the Lobby
     Given the following "activities" exist:
@@ -70,7 +72,7 @@ Feature: A student chooses a hero
     And I press "Play"
     Then "#playerpuzzle-canvas-container" "css_element" should exist
 
-  Scenario: A new Campaign warns, then asks for a hero, and the Lobby then offers it as under way
+  Scenario: A new Campaign warns, then asks for a hero, and starts the match
     Given the following "activities" exist:
       | activity     | course | name         | minquestions |
       | playerpuzzle | C1     | Dungeon Quiz | 0            |
@@ -87,10 +89,8 @@ Feature: A student chooses a hero
     And I click on "Start a new Campaign" "button" in the "Start a new Campaign" "dialogue"
     Then I should see "Starting a new Campaign empties your PuzzleCoin and consumables"
     When I click on "Male mage" "radio"
-    And I press "Choose this hero"
-    Then I should see "Campaign 2"
-    And I should see "Play Game"
-    And I should not see "Start a new Campaign"
+    And I press "Play"
+    Then "#playerpuzzle-canvas-container" "css_element" should exist
 
   Scenario: Buying a hero upgrade in the Lobby shop spends PuzzleCoin and uses up the stage's buy
     Given the following "activities" exist:

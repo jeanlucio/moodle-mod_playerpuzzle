@@ -60,7 +60,7 @@
 * **Conclusão personalizada:** exija um número de tentativas e/ou vitórias.
 * **Relatório do professor:** progresso por estudante, dano médio ao oponente e taxa de acerto, as
   questões mais erradas, a distribuição das notas, a taxa de conclusão e, na Campanha, como foi cada
-  dificuldade (fases vencidas de primeira, por dificuldade e por fase do nível) e quais heróis os estudantes escolheram, respeitando grupos
+  dificuldade (fases vencidas de primeira, por dificuldade e por fase do nível) e quais heróis os estudantes escolheram (a Partida Única mostra as partidas vencidas por dificuldade), respeitando grupos
   separados. A tabela de estudantes é paginada, 50 por vez, então uma turma de milhares abre tão
   rápido quanto uma pequena.
 * **Backup e restauração,** incluindo duplicar a atividade, levando junto as tentativas, o estoque

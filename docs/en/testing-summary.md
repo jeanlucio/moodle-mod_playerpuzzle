@@ -84,10 +84,10 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `questions_repository_test.php` | 23 |
 | `ranking_service_test.php` | 9 |
 | `replay_credit_test.php` | 8 |
-| `report_service_test.php` | 35 |
+| `report_service_test.php` | 36 |
 | `sound_preferences_test.php` | 8 |
 | `user_stock_test.php` | 10 |
-| **Subtotal** | **278** |
+| **Subtotal** | **279** |
 
 ### Combat Engine Tests (`tests/local/engine/`)
 
@@ -110,7 +110,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `provider_test.php` | 36 |
 | **Subtotal** | **36** |
 
-| **Grand Total** | **739** |
+| **Grand Total** | **740** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite

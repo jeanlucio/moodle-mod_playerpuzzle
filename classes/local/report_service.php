@@ -395,14 +395,15 @@ class report_service {
 
     /**
      * How each difficulty has gone for the class, from the phases its students have fought: the figures a teacher
-     * needs to tell a difficulty that is too hard from a class that has not practised yet. Only Campaigns have
-     * phases, so a Single Match activity has none.
+     * needs to tell a difficulty that is too hard from a class that has not practised yet. A Campaign is read phase
+     * by phase and a Single Match activity match by match: it has no phases and its hero is only a look.
      *
      * @param stdClass $instance Activity instance record.
      * @param stdClass $cm Course module record.
      * @param context $context Module context.
      * @param int $viewerid Current viewer's user id, for SEPARATEGROUPS scoping.
-     * @return array {difficulties, phasecolumns, phases, heroes}, see summarise_fights(); empty lists without data.
+     * @return array {difficulties, phasecolumns, phases, heroes} of a Campaign, see summarise_fights(), or {matches} of
+     *  a Single Match activity, see summarise_matches(); empty lists without data.
      */
     public static function get_difficulty_breakdown(
         stdClass $instance,
@@ -410,20 +411,59 @@ class report_service {
         context $context,
         int $viewerid
     ): array {
-        $empty = ['difficulties' => [], 'phasecolumns' => [], 'phases' => [], 'heroes' => []];
-        if ($instance->gamemode !== constants::GAMEMODE_CAMPAIGN) {
-            return $empty;
-        }
+        $empty = ['difficulties' => [], 'phasecolumns' => [], 'phases' => [], 'heroes' => [], 'matches' => []];
 
         $students = self::get_student_pool($cm, $context, $viewerid);
         if (empty($students)) {
             return $empty;
         }
 
-        return self::summarise_fights(
-            self::load_attempts_by_user($instance, array_keys($students)),
-            self::load_heroes_by_user($instance, array_keys($students))
-        );
+        $attempts = self::load_attempts_by_user($instance, array_keys($students));
+        if ($instance->gamemode !== constants::GAMEMODE_CAMPAIGN) {
+            return array_merge($empty, ['matches' => self::summarise_matches($attempts)]);
+        }
+
+        return self::summarise_fights($attempts, self::load_heroes_by_user($instance, array_keys($students)));
+    }
+
+    /**
+     * Counts the matches of a Single Match activity by difficulty: every match that was won or lost counts once, on
+     * the difficulty it was played on. A match still being played, or left by the student, has no result yet.
+     *
+     * @param array $attemptsbyuser Attempts (difficulty, status) keyed by user id.
+     * @return array Rows {name, students, matches, won} for each difficulty with a decided match, easiest first;
+     *  won is the share as share_text() prints it.
+     */
+    public static function summarise_matches(array $attemptsbyuser): array {
+        $levels = [constants::DIFFICULTY_EASY, constants::DIFFICULTY_NORMAL, constants::DIFFICULTY_HARD];
+        $tally = array_fill_keys($levels, ['users' => [], 'matches' => 0, 'wins' => 0]);
+
+        foreach ($attemptsbyuser as $userid => $userattempts) {
+            foreach ($userattempts as $attempt) {
+                $decided = in_array($attempt->status, ['won', 'lost'], true);
+                if (!$decided || !isset($tally[$attempt->difficulty])) {
+                    continue;
+                }
+                $tally[$attempt->difficulty]['users'][(int) $userid] = true;
+                $tally[$attempt->difficulty]['matches']++;
+                $tally[$attempt->difficulty]['wins'] += $attempt->status === 'won' ? 1 : 0;
+            }
+        }
+
+        $rows = [];
+        foreach ($levels as $difficulty) {
+            if ($tally[$difficulty]['matches'] === 0) {
+                continue;
+            }
+            $rows[] = [
+                'name' => get_string('difficulty_' . $difficulty, 'mod_playerpuzzle'),
+                'students' => count($tally[$difficulty]['users']),
+                'matches' => $tally[$difficulty]['matches'],
+                'won' => self::share_text($tally[$difficulty]['wins'], $tally[$difficulty]['matches']),
+            ];
+        }
+
+        return $rows;
     }
 
     /**
@@ -579,6 +619,7 @@ class report_service {
         usort($heroesrows, static fn(array $a, array $b): int => $b['campaigns'] <=> $a['campaigns']);
 
         return [
+            'matches' => [],
             'heroes' => $heroesrows,
             'difficulties' => $rows,
             'phasecolumns' => array_map(static fn(string $name): array => ['name' => $name], array_values($columns)),

@@ -875,11 +875,12 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
-     * A Single Match activity has no phases, so it has nothing to break down.
+     * A Single Match activity has no phases and no Campaign hero, so it has no phase or hero tables: only its matches,
+     * by difficulty.
      *
      * @return void
      */
-    public function test_get_difficulty_breakdown_is_empty_for_a_single_match_activity(): void {
+    public function test_get_difficulty_breakdown_of_a_single_match_activity_has_only_its_matches(): void {
         global $DB;
         $DB->set_field('playerpuzzle', 'gamemode', constants::GAMEMODE_SINGLE, ['id' => $this->instance->id]);
         $this->instance->gamemode = constants::GAMEMODE_SINGLE;
@@ -891,6 +892,37 @@ final class report_service_test extends \advanced_testcase {
 
         $this->assertSame([], $breakdown['difficulties']);
         $this->assertSame([], $breakdown['phases']);
+        $this->assertSame([], $breakdown['heroes']);
+        $this->assertSame(
+            [['name' => 'Normal', 'students' => 1, 'matches' => 1, 'won' => '0% (0/1)']],
+            $breakdown['matches']
+        );
+    }
+
+    /**
+     * Each match that was won or lost counts once on the difficulty it was played on, a match still going or left by
+     * the student counts for nothing, and a difficulty nobody played has no row.
+     *
+     * @return void
+     */
+    public function test_summarise_matches_counts_decided_matches_by_difficulty(): void {
+        $match = fn(string $difficulty, string $status): \stdClass => (object) [
+            'difficulty' => $difficulty,
+            'status' => $status,
+        ];
+
+        $rows = report_service::summarise_matches([
+            11 => [$match('hard', 'lost'), $match('hard', 'won'), $match('easy', 'won'), $match('hard', 'abandoned')],
+            12 => [$match('hard', 'won'), $match('hard', 'inprogress'), $match('easy', 'timeout')],
+        ]);
+
+        $this->assertSame(
+            [
+                ['name' => 'Easy', 'students' => 1, 'matches' => 1, 'won' => '100% (1/1)'],
+                ['name' => 'Hard', 'students' => 2, 'matches' => 3, 'won' => '67% (2/3)'],
+            ],
+            $rows
+        );
     }
 
     /**

@@ -59,6 +59,10 @@
             {"name": "Normal", "students": 12, "fights": 80, "firsttry": "58% (30/52)", "tries": "1.5"}
         ],
         "phasecolumns": [{"name": "Normal"}],
+        "hasmatches": false,
+        "matches": [
+            {"name": "Normal", "students": 12, "matches": 30, "won": "47% (14/30)"}
+        ],
         "hasheroes": true,
         "heroes": [
             {"name": "Female warrior", "specialty": "Attack", "campaigns": 7, "students": 6, "firsttry": "61% (42/69)"}
@@ -169,6 +173,37 @@
         </div>
     </div>
     {{/hasdifficulty}}
+
+    {{#hasmatches}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4>{{#str}} report_difficulty, mod_playerpuzzle {{/str}}</h4>
+            <p class="mb-3">{{#str}} report_difficulty_single_desc, mod_playerpuzzle {{/str}}</p>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{#str}} report_difficultyname, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_students, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_matches, mod_playerpuzzle {{/str}}</th>
+                            <th scope="col">{{#str}} report_matcheswon, mod_playerpuzzle {{/str}}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#matches}}
+                            <tr>
+                                <th scope="row">{{name}}</th>
+                                <td>{{students}}</td>
+                                <td>{{matches}}</td>
+                                <td>{{won}}</td>
+                            </tr>
+                        {{/matches}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {{/hasmatches}}
 
     {{#hasheroes}}
     <div class="card mb-4">

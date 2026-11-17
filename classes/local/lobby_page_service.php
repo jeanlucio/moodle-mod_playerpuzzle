@@ -143,6 +143,7 @@ class lobby_page_service {
         $data = array_merge($data, self::build_progress_context($instance, $attempt, $userid));
         if (!is_guest($context, $userid)) {
             $data += self::retry_cost_context($instance, $userid);
+            $data += self::cooldown_context($instance, $userid);
             $refusal = $refused === '' ? '' : game_page_service::refusal_text($instance, $userid, $refused);
             if ($refusal !== '') {
                 $data['refusaltext'] = $refusal;
@@ -489,6 +490,30 @@ class lobby_page_service {
         return [
             'retrycosttext' => get_string($short ? 'insufficientretrycost' : 'lobby_retrycost', 'mod_playerpuzzle', $values),
             'retrycostshort' => $short,
+        ];
+    }
+
+    /**
+     * When the cooldown between matches ends, said before the student presses Play and has the start refused. It
+     * is a clock time and not a countdown: the page is not refreshed, so a "12 seconds" would be wrong a moment
+     * later, while a time of day stays true.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @return array The note; empty when no cooldown is running.
+     */
+    private static function cooldown_context(stdClass $instance, int $userid): array {
+        $remaining = game_page_service::cooldown_remaining($instance, $userid);
+        if ($remaining <= 0) {
+            return [];
+        }
+
+        return [
+            'cooldowntext' => get_string(
+                'lobby_cooldown',
+                'mod_playerpuzzle',
+                userdate(time() + $remaining, get_string('strftimedatetimeshort', 'langconfig'))
+            ),
         ];
     }
 

@@ -362,6 +362,7 @@ $string['lobby_campaign_gaveup'] = 'You gave up Campaign {$a}';
 $string['lobby_campaign_outofattempts'] = 'Campaign {$a} is over: no attempts left';
 $string['lobby_campaign_won'] = 'Campaign {$a} complete!';
 $string['lobby_campaignname'] = 'Campaign {$a}';
+$string['lobby_cooldown'] = 'The next match opens at {$a}.';
 $string['lobby_currentprogress'] = 'Current progress: Level {$a->level}, Phase {$a->phase}';
 $string['lobby_difficulty'] = 'Choose your difficulty';
 $string['lobby_difficulty_desc_easy'] = 'The opponent\'s HP and damage are halved, and so are the coins you earn.';

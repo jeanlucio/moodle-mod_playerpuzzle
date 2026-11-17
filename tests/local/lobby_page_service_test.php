@@ -804,6 +804,57 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the Lobby says when the cooldown between matches ends, as a time of day that stays true while the page
+     * is open, and says nothing before the first match, once the cooldown is over, or in a Campaign.
+     *
+     * @return void
+     */
+    public function test_the_lobby_says_when_the_cooldown_ends(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_SINGLE, 'minquestions' => 0,
+        ]);
+        // The generator builds the instance through add_instance(), which derives the seconds from the form's pair.
+        $instance->cooldown_seconds = 600;
+        $userid = (int) $this->student->id;
+        $build = fn(): array => lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            $userid,
+            \context_module::instance($cm->id)
+        );
+        $finish = fn(int $at) => $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id, 'userid' => $userid, 'token' => bin2hex(random_bytes(32)),
+            'status' => 'won', 'timecreated' => $at, 'timefinished' => $at,
+        ]);
+
+        $this->assertArrayNotHasKey('cooldowntext', $build(), 'no match played yet');
+
+        $finishedat = time() - 60;
+        $finish($finishedat);
+        $data = $build();
+        $this->assertSame(
+            get_string(
+                'lobby_cooldown',
+                'mod_playerpuzzle',
+                userdate($finishedat + 600, get_string('strftimedatetimeshort', 'langconfig'))
+            ),
+            $data['cooldowntext']
+        );
+        $this->assertStringContainsString($data['cooldowntext'], $this->render_lobby($data));
+
+        $DB->set_field('playerpuzzle_attempts', 'timefinished', time() - 601, ['playerpuzzleid' => $instance->id]);
+        $this->assertArrayNotHasKey('cooldowntext', $build(), 'the cooldown is over');
+
+        $DB->set_field('playerpuzzle_attempts', 'timefinished', time(), ['playerpuzzleid' => $instance->id]);
+        $DB->set_field('playerpuzzle', 'gamemode', constants::GAMEMODE_CAMPAIGN, ['id' => $instance->id]);
+        $instance->gamemode = constants::GAMEMODE_CAMPAIGN;
+        $this->assertArrayNotHasKey('cooldowntext', $build(), 'a Campaign has no cooldown');
+    }
+
+    /**
      * Tests that the Lobby says what the next Play costs in the PlayerHUD item before it is pressed, and warns when
      * the student holds less than it takes, and says nothing while the next Play is free.
      *

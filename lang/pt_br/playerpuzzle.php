@@ -362,6 +362,7 @@ $string['lobby_campaign_gaveup'] = 'Você desistiu da Campanha {$a}';
 $string['lobby_campaign_outofattempts'] = 'A Campanha {$a} terminou: as tentativas acabaram';
 $string['lobby_campaign_won'] = 'Campanha {$a} concluída!';
 $string['lobby_campaignname'] = 'Campanha {$a}';
+$string['lobby_cooldown'] = 'A próxima partida abre em {$a}.';
 $string['lobby_currentprogress'] = 'Progresso atual: Nível {$a->level}, Fase {$a->phase}';
 $string['lobby_difficulty'] = 'Escolha a dificuldade';
 $string['lobby_difficulty_desc_easy'] = 'O HP e o dano do Oponente caem pela metade, e as moedas que você ganha também.';

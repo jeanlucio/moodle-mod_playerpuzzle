@@ -79,7 +79,8 @@ with the hero last used.
 A single, self-contained round — no levels or phases, always fought at the configured base HP.
 The teacher sets how many matches a student may play (1 to 10, or unlimited) and may add a
 **cooldown** (in minutes, hours or days) between matches. The student chooses the difficulty in the
-Lobby for each match.
+Lobby for each match. While a cooldown is running, the Lobby tells the student the time the next
+match opens, so they learn it before pressing Play.
 
 ## Grading
 

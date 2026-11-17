@@ -78,7 +78,8 @@ abre a escolha com o último herói usado.
 Uma rodada única e autocontida — sem níveis nem fases, sempre lutada no HP base configurado. O
 professor define quantas partidas um estudante pode jogar (de 1 a 10, ou ilimitado) e pode
 acrescentar um **cooldown** (em minutos, horas ou dias) entre as partidas. O estudante escolhe a
-dificuldade no Lobby a cada partida.
+dificuldade no Lobby a cada partida. Enquanto um cooldown está correndo, o Lobby informa ao
+estudante o horário em que a próxima partida abre, para que ele saiba antes de apertar Jogar.
 
 ## Nota
 

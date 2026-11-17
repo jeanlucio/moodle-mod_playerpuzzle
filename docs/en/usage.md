@@ -11,7 +11,7 @@
    category, add questions by hand, or generate them with AI (pending questions need your
    approval before they are drawn). See [Question Engine](#questions).
 4. Optionally set a **Minimum Questions per Match**, whether wrong answers should count against
-   the grade, a **cooldown** between matches (Single Match), and whether hints are allowed.
+   the grade, a **cooldown** between matches or between Campaigns, and whether hints are allowed.
 5. Set the **Grade** (points, or no grade), a pass grade and, for Single Match, the **Grading
    method**. Both formulas scale to the Maximum Grade, never to a fixed `100`.
 6. Optionally connect [PlayerHUD](#playerhud) items — coin transfer, retry cost, victory award —

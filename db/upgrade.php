@@ -920,5 +920,19 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026111600, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026111701) {
+        // The cooldown now also holds back the next Campaign. Until now the form hid it in a Campaign, so a value an
+        // activity kept from a time it was a Single Match was never seen by the teacher, and would start to apply.
+        $DB->set_field_select(
+            'playerpuzzle',
+            'cooldown_seconds',
+            0,
+            'gamemode = :campaign AND cooldown_seconds <> 0',
+            ['campaign' => 'campaign']
+        );
+
+        upgrade_mod_savepoint(true, 2026111701, 'playerpuzzle');
+    }
+
     return true;
 }

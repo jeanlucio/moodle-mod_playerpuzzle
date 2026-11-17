@@ -804,8 +804,8 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the Lobby says when the cooldown between matches ends, as a time of day that stays true while the page
-     * is open, and says nothing before the first match, once the cooldown is over, or in a Campaign.
+     * Tests that the Lobby says when the cooldown ends, as a time of day that stays true while the page is open: the
+     * next match, or in a Campaign the next Campaign. Nothing is said before the first match or once it is over.
      *
      * @return void
      */
@@ -848,10 +848,21 @@ final class lobby_page_service_test extends \advanced_testcase {
         $DB->set_field('playerpuzzle_attempts', 'timefinished', time() - 601, ['playerpuzzleid' => $instance->id]);
         $this->assertArrayNotHasKey('cooldowntext', $build(), 'the cooldown is over');
 
-        $DB->set_field('playerpuzzle_attempts', 'timefinished', time(), ['playerpuzzleid' => $instance->id]);
+        // In a Campaign, the won one ended it, so the next Play starts a new Campaign, which the note names.
+        foreach (['timefinished', 'timemodified'] as $field) {
+            $DB->set_field('playerpuzzle_attempts', $field, $finishedat, ['playerpuzzleid' => $instance->id]);
+        }
         $DB->set_field('playerpuzzle', 'gamemode', constants::GAMEMODE_CAMPAIGN, ['id' => $instance->id]);
         $instance->gamemode = constants::GAMEMODE_CAMPAIGN;
-        $this->assertArrayNotHasKey('cooldowntext', $build(), 'a Campaign has no cooldown');
+        $instance->maxlevels = 1;
+        $this->assertSame(
+            get_string(
+                'lobby_cooldowncampaign',
+                'mod_playerpuzzle',
+                userdate($finishedat + 600, get_string('strftimedatetimeshort', 'langconfig'))
+            ),
+            $build()['cooldowntext']
+        );
     }
 
     /**

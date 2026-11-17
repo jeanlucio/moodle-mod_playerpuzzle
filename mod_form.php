@@ -120,7 +120,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         $mform->setType('cooldown_unit', PARAM_ALPHA);
         $mform->setDefault('cooldown_amount', 0);
         $mform->setDefault('cooldown_unit', 'minutes');
-        $mform->hideIf('cooldowngroup', 'gamemode', 'eq', constants::GAMEMODE_CAMPAIGN);
+        $mform->addHelpButton('cooldowngroup', 'cooldown_label', 'mod_playerpuzzle');
 
         // A Campaign meets every opponent in turn, one per phase, so only a Single Match picks one.
         $mform->addElement('select', 'bossavatar', get_string('bossavatar', 'mod_playerpuzzle'), opponents::options());

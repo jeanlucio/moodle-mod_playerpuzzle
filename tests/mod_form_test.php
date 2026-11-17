@@ -455,9 +455,9 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that the Single Match-only fields (max_single_matches, the cooldown group) are
-     * registered to hide when gamemode is Campaign, and grademethod, which combines Campaigns
-     * as well as matches, is not.
+     * Tests that max_single_matches, the one Single Match-only field, is registered to hide when gamemode is
+     * Campaign, while grademethod, which combines Campaigns as well as matches, and the cooldown, which holds back
+     * the next Campaign as it holds back the next match, are not.
      *
      * @return void
      */
@@ -469,11 +469,11 @@ final class mod_form_test extends \advanced_testcase {
         $mform = $this->build_form($instance, $cm);
 
         $this->assert_hideif_registered($mform, 'max_single_matches', 'gamemode', 'eq', 'campaign');
-        $this->assert_hideif_registered($mform, 'cooldowngroup', 'gamemode', 'eq', 'campaign');
         $refclass = new \ReflectionClass($mform);
         $prop = $refclass->getProperty('_hideifs');
         $prop->setAccessible(true);
         $this->assertNotContains('grademethod', $prop->getValue($mform)['gamemode']['eq']['campaign']);
+        $this->assertNotContains('cooldowngroup', $prop->getValue($mform)['gamemode']['eq']['campaign']);
     }
 
     /**

@@ -10,7 +10,7 @@
    categoria do Banco de Questões, cadastre questões à mão ou gere-as com IA (questões pendentes
    precisam da sua aprovação antes de serem sorteadas). Veja [Motor de Questões](#questions).
 4. Opcionalmente, defina um **Mínimo de perguntas por partida**, se respostas erradas devem contar
-   contra a nota, um **cooldown** entre partidas (Partida Única) e se as dicas são permitidas.
+   contra a nota, um **cooldown** entre partidas ou entre Campanhas e se as dicas são permitidas.
 5. Defina a **Nota** (pontos, ou sem nota), uma nota para aprovação e, na Partida Única, o
    **Método de avaliação**. As duas fórmulas escalam pela Nota Máxima, nunca por um `100` fixo.
 6. Opcionalmente, ligue itens do [PlayerHUD](#playerhud) — transferência de moedas, custo de nova

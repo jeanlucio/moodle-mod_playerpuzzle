@@ -112,6 +112,32 @@ final class campaign_giveup_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that giving up a Campaign some time after its last attempt finished keeps the time that attempt
+     * finished, which the grade reads, and records the give-up on its timemodified, so the cooldown before the next
+     * Campaign counts from the give-up and not from the old defeat.
+     *
+     * @return void
+     */
+    public function test_giving_up_later_records_when_and_starts_the_cooldown(): void {
+        global $DB;
+
+        [$instance, $cm] = $this->make();
+        $instance->cooldown_seconds = 3600;
+        $userid = (int) $this->student->id;
+        game_page_service::choose_campaign_hero($instance, $userid, 'magef');
+        $last = $this->finish($instance, 'lost', 1, 3);
+        $past = time() - DAYSECS;
+        $DB->update_record('playerpuzzle_attempts', (object) ['id' => $last, 'timefinished' => $past, 'timemodified' => $past]);
+
+        $this->assertTrue(campaign_giveup::give_up($instance, $cm, $userid));
+
+        $row = $DB->get_record('playerpuzzle_attempts', ['id' => $last]);
+        $this->assertSame($past, (int) $row->timefinished);
+        $this->assertGreaterThanOrEqual(time() - 5, (int) $row->timemodified);
+        $this->assertGreaterThan(3500, game_page_service::cooldown_remaining($instance, $userid));
+    }
+
+    /**
      * Tests giving up a Campaign whose attempts are all finished: the mark goes on the last one, which keeps its
      * own status, the Campaign counts as ended and the next Play starts a new one.
      *

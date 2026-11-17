@@ -60,6 +60,13 @@ $returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
 // one (the end screen's "Play again" once a Campaign ended, or a stale link) goes back to the Lobby, where the
 // choice, and the warning a new Campaign comes with, begin.
 if (!$isdemo) {
+    // Checked before the hero is saved too: choosing the hero of a new Campaign is what starts it, so a Campaign
+    // refused by the cooldown would otherwise begin anyway. start_game() checks again under its lock.
+    try {
+        \mod_playerpuzzle\local\game_page_service::check_cooldown($playerpuzzle, (int) $USER->id, $returnurl);
+    } catch (\mod_playerpuzzle\exception\start_refused $refused) {
+        redirect(new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id, 'refused' => $refused->errorcode]));
+    }
     $choice = \mod_playerpuzzle\local\hero_page_service::choose_for_play(
         $playerpuzzle,
         (int) $USER->id,

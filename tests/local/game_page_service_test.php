@@ -711,18 +711,54 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a configured cooldown never applies in Campaign mode — an attempt there is
-     * a continuous winning streak, not a short repeatable match to farm.
+     * Tests that in a Campaign the cooldown holds back only the start of a new Campaign: never a retry of the same
+     * one after a defeat, and counted from the last thing that happened to the Campaign before, so a Campaign given up
+     * long after its last attempt finished still waits the whole cooldown.
      *
      * @return void
      */
-    public function test_check_cooldown_never_applies_to_campaign_mode(): void {
-        [, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
-        $instance->cooldown_seconds = 3600;
-        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+    public function test_check_cooldown_holds_back_only_a_new_campaign(): void {
+        global $DB;
 
-        game_page_service::check_cooldown($instance, (int) $this->student->id, $this->returnurl);
-        $this->expectNotToPerformAssertions();
+        [, $instance] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 1, 'maxattempts' => 2,
+        ]);
+        $instance->cooldown_seconds = 3600;
+        $userid = (int) $this->student->id;
+        $lose = fn(int $at): int => (int) $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id, 'userid' => $userid, 'token' => bin2hex(random_bytes(32)),
+            'status' => 'lost', 'campaign' => 1, 'timecreated' => $at, 'timefinished' => $at, 'timemodified' => $at,
+        ]);
+
+        $lose(time() - 10);
+        $this->assertSame(0, game_page_service::cooldown_remaining($instance, $userid), 'a retry of the same Campaign');
+
+        // The second defeat spends the last attempt: the next Play starts Campaign 2.
+        $lastid = $lose(time() - 10);
+        $this->assertGreaterThan(3500, game_page_service::cooldown_remaining($instance, $userid));
+        try {
+            game_page_service::check_cooldown($instance, $userid, $this->returnurl);
+            $this->fail('The cooldown should have held back the new Campaign.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('cooldownactivecampaign', $e->errorcode);
+        }
+        $this->assertNotSame('', game_page_service::refusal_text($instance, $userid, 'cooldownactivecampaign'));
+        $this->assertSame('', game_page_service::refusal_text($instance, $userid, 'cooldownactive'));
+
+        // Long over, unless something happened to the Campaign later, as a give-up does.
+        foreach (['timefinished', 'timemodified'] as $field) {
+            $DB->set_field('playerpuzzle_attempts', $field, time() - 7200, ['playerpuzzleid' => $instance->id]);
+        }
+        $this->assertSame(0, game_page_service::cooldown_remaining($instance, $userid));
+        $DB->set_field('playerpuzzle_attempts', 'timemodified', time() - 10, ['id' => $lastid]);
+        $this->assertGreaterThan(3500, game_page_service::cooldown_remaining($instance, $userid));
+
+        // Once the new Campaign has an attempt, its retries are not held back either.
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id, 'userid' => $userid, 'token' => bin2hex(random_bytes(32)),
+            'status' => 'lost', 'campaign' => 2, 'timecreated' => time(), 'timefinished' => time(), 'timemodified' => time(),
+        ]);
+        $this->assertSame(0, game_page_service::cooldown_remaining($instance, $userid));
     }
 
     /**

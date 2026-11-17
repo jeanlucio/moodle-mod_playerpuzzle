@@ -23,6 +23,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_playerpuzzle\local\game_page_service;
 use mod_playerpuzzle\local\hero_page_service;
 
 require_once(__DIR__ . '/../../config.php');
@@ -51,6 +52,13 @@ $allowed = in_array($mode, hero_page_service::MODES, true)
     && hero_page_service::is_available($playerpuzzle, $userid, $mode);
 if (!$allowed) {
     redirect($returnurl);
+}
+
+// A running cooldown is said before the hero is chosen rather than after, when the choice would be wasted.
+$waits = $mode !== hero_page_service::MODE_DEMO && !$isvisitor
+    && game_page_service::cooldown_remaining($playerpuzzle, $userid) > 0;
+if ($waits) {
+    redirect(new moodle_url($returnurl, ['refused' => game_page_service::cooldown_code($playerpuzzle)]));
 }
 
 // The error play.php sends back when what came was not one of the heroes.

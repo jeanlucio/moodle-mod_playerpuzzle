@@ -494,7 +494,8 @@ class lobby_page_service {
     }
 
     /**
-     * When the cooldown between matches ends, said before the student presses Play and has the start refused. It
+     * When the cooldown ends, said before the student presses Play and has the start refused: the next match, or in
+     * a Campaign the next Campaign (see game_page_service::cooldown_remaining()). It
      * is a clock time and not a countdown: the page is not refreshed, so a "12 seconds" would be wrong a moment
      * later, while a time of day stays true.
      *
@@ -510,7 +511,7 @@ class lobby_page_service {
 
         return [
             'cooldowntext' => get_string(
-                'lobby_cooldown',
+                $instance->gamemode === constants::GAMEMODE_CAMPAIGN ? 'lobby_cooldowncampaign' : 'lobby_cooldown',
                 'mod_playerpuzzle',
                 userdate(time() + $remaining, get_string('strftimedatetimeshort', 'langconfig'))
             ),

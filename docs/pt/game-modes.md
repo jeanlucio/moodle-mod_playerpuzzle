@@ -23,6 +23,13 @@ Campanha.
   confirmação. Ela termina onde está e vale o progresso que alcançou, como quando as tentativas acabam, e
   a próxima pode começar se a atividade permitir. Quando é a última Campanha que a atividade permite, a
   confirmação avisa que o estudante não poderá jogar de novo. O histórico do Lobby a lista como "Desistida".
+* **Cooldown entre Campanhas:** o professor pode definir um **cooldown** (em minutos, horas ou dias) que o
+  estudante espera depois que uma Campanha termina, seja como for (vencida, sem tentativas ou desistida),
+  antes de começar a próxima. Ele conta do momento em que a Campanha terminou, então uma Campanha desistida
+  muito depois da última derrota ainda espera o cooldown inteiro. Tentar de novo a mesma Campanha depois de
+  uma derrota nunca é barrado, e com só uma Campanha permitida ele não tem efeito. Enquanto ele corre, o
+  Lobby informa ao estudante o horário em que a próxima Campanha abre, e o Jogar é recusado antes da escolha
+  do herói.
 * **Retomada:** fechar o navegador no meio da campanha e voltar retoma exatamente o nível e a fase
   em que o estudante estava. Depois de uma derrota, a próxima tentativa retoma nesse mesmo nível e
   fase, em vez de recomeçar do zero.

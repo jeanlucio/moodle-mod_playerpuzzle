@@ -23,6 +23,12 @@ each Campaign.
   ends where it stands and is graded on the progress it reached, as when attempts run out, and the next one
   can start if the activity allows it. When it is the last Campaign the activity allows, the confirmation
   says the student will not be able to play again. The Lobby history lists it as "Gave up".
+* **Cooldown between Campaigns:** the teacher may set a **cooldown** (in minutes, hours or days) that the
+  student waits after a Campaign ends, however it ended (won, out of attempts or given up), before starting
+  the next one. It counts from the moment the Campaign ended, so a Campaign given up long after its last
+  defeat still waits the whole cooldown. Retrying the same Campaign after a defeat is never held back, and
+  with only one Campaign allowed it has no effect. While it runs, the Lobby tells the student the time the
+  next Campaign opens, and Play is refused before the hero choice.
 * **Resuming:** closing the browser mid-campaign and coming back resumes the exact level and
   phase the student was on. After a defeat, the next attempt resumes on that same level and phase
   rather than starting over.

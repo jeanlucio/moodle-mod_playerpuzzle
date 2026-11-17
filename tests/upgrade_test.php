@@ -228,4 +228,28 @@ final class upgrade_test extends \advanced_testcase {
         $this->assertEqualsWithDelta(30.0, $grade($counting), 0.001);
         $this->assertEqualsWithDelta(77.0, $grade($plain), 0.001);
     }
+
+    /**
+     * Tests that the upgrade clears the cooldown a Campaign kept hidden from a time it was a Single Match, since it
+     * now holds back the next Campaign, and leaves a Single Match's own cooldown alone.
+     *
+     * @return void
+     */
+    public function test_upgrade_clears_the_hidden_cooldown_of_campaigns(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $generator = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle');
+        $campaign = $generator->create_instance(['course' => $course->id, 'gamemode' => 'campaign']);
+        $single = $generator->create_instance(['course' => $course->id, 'gamemode' => 'single']);
+        $DB->set_field('playerpuzzle', 'cooldown_seconds', 3600, ['id' => $campaign->id]);
+        $DB->set_field('playerpuzzle', 'cooldown_seconds', 600, ['id' => $single->id]);
+
+        set_config('version', 2026111700, 'mod_playerpuzzle');
+        xmldb_playerpuzzle_upgrade(2026111700);
+
+        $this->assertSame('0', (string) $DB->get_field('playerpuzzle', 'cooldown_seconds', ['id' => $campaign->id]));
+        $this->assertSame('600', (string) $DB->get_field('playerpuzzle', 'cooldown_seconds', ['id' => $single->id]));
+    }
 }

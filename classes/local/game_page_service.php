@@ -421,6 +421,7 @@ class game_page_service {
     /** @var string[] The refusals of a new attempt the Lobby explains in a dialog, by lang string key. */
     public const REFUSALS = [
         'cooldownactive',
+        'cooldownactivecampaign',
         'insufficientretrycost',
         'maxattemptsreached',
         'maxcampaignsreached',
@@ -448,10 +449,11 @@ class game_page_service {
 
             return $short ? get_string($code, 'mod_playerpuzzle', self::retry_cost_values($cost)) : '';
         }
-        if ($code === 'cooldownactive') {
+        if ($code === 'cooldownactive' || $code === 'cooldownactivecampaign') {
             $remaining = self::cooldown_remaining($instance, $userid);
+            $holds = $remaining > 0 && $code === self::cooldown_code($instance);
 
-            return $remaining > 0 ? get_string($code, 'mod_playerpuzzle', format_time($remaining)) : '';
+            return $holds ? get_string($code, 'mod_playerpuzzle', format_time($remaining)) : '';
         }
         $holds = match ($code) {
             'maxattemptsreached', 'maxcampaignsreached' => self::campaign_limit_refusal($instance, $userid) === $code,
@@ -465,31 +467,40 @@ class game_page_service {
     }
 
     /**
-     * Enforces the configured cooldown between matches, Single Match mode only — a
-     * continuous Campaign attempt has no equivalent "rodada curta" to farm, so the
-     * setting is meaningless there and this is a no-op regardless of what is stored
-     * (see the mod_form.php field, hidden the same way for Campaign).
-     *
-     * Anchored on the most recent finished (non-inprogress, non-Demo) attempt's
-     * timefinished — never checked at all while an in-progress attempt exists to resume,
-     * since resuming one never creates a new attempt and so never spends anything the
-     * cooldown would need to protect.
+     * Enforces the configured cooldown: in a Single Match between one match and the next, and in a Campaign
+     * between the end of one Campaign and the start of the next, see cooldown_remaining().
      *
      * @param stdClass $instance Activity instance.
      * @param int $userid Current user ID.
      * @param moodle_url $returnurl URL to send the student back to on failure.
      * @return void
-     * @throws start_refused When the cooldown since the last finished match has not elapsed yet.
+     * @throws start_refused When the cooldown has not elapsed yet.
      */
     public static function check_cooldown(stdClass $instance, int $userid, moodle_url $returnurl): void {
         $remaining = self::cooldown_remaining($instance, $userid);
         if ($remaining > 0) {
-            throw new start_refused('cooldownactive', $returnurl, format_time($remaining));
+            throw new start_refused(self::cooldown_code($instance), $returnurl, format_time($remaining));
         }
     }
 
     /**
-     * How long the student still has to wait before the next match, see check_cooldown().
+     * The refusal a running cooldown gives, which names what the student is waiting for: a match or a Campaign.
+     *
+     * @param stdClass $instance Activity instance (gamemode).
+     * @return string One of self::REFUSALS.
+     */
+    public static function cooldown_code(stdClass $instance): string {
+        return $instance->gamemode === constants::GAMEMODE_CAMPAIGN ? 'cooldownactivecampaign' : 'cooldownactive';
+    }
+
+    /**
+     * How long the student still has to wait before the next Play, see check_cooldown(). Nothing is waited while
+     * an attempt is in progress, since resuming it starts nothing new.
+     *
+     * A Single Match counts from the end of the last finished match. A Campaign counts only when the next Play
+     * would start a new Campaign, from the last thing that happened to the one before: its last attempt finishing,
+     * or the student giving it up later, which campaign_giveup writes on that attempt's timemodified. Retrying the
+     * same Campaign after a defeat is never held back; the attempt limit and the retry cost already rule that.
      *
      * @param stdClass $instance Activity instance.
      * @param int $userid Current user ID.
@@ -498,26 +509,39 @@ class game_page_service {
     public static function cooldown_remaining(stdClass $instance, int $userid): int {
         global $DB;
 
-        if ($instance->gamemode !== constants::GAMEMODE_SINGLE) {
-            return 0;
-        }
-
         $seconds = (int) $instance->cooldown_seconds;
         if ($seconds <= 0 || security::has_inprogress_attempt((int) $instance->id, $userid)) {
             return 0;
         }
 
-        $lastfinished = $DB->get_field_sql(
-            "SELECT MAX(timefinished)
-               FROM {playerpuzzle_attempts}
-              WHERE playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0",
-            ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress']
-        );
-        if (empty($lastfinished)) {
+        $params = ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress'];
+        if ($instance->gamemode === constants::GAMEMODE_CAMPAIGN) {
+            $campaign = self::next_campaign_start($instance, $userid)->campaign;
+            $startsnew = $campaign > 1 && campaigns::attempts_used((int) $instance->id, $userid, $campaign) === 0;
+            if (!$startsnew) {
+                return 0;
+            }
+            $params['campaign'] = $campaign - 1;
+            $last = $DB->get_field_sql(
+                "SELECT MAX(timemodified)
+                   FROM {playerpuzzle_attempts}
+                  WHERE playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0
+                        AND campaign = :campaign",
+                $params
+            );
+        } else {
+            $last = $DB->get_field_sql(
+                "SELECT MAX(timefinished)
+                   FROM {playerpuzzle_attempts}
+                  WHERE playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0",
+                $params
+            );
+        }
+        if (empty($last)) {
             return 0;
         }
 
-        return max(0, (int) $lastfinished + $seconds - time());
+        return max(0, (int) $last + $seconds - time());
     }
 
     /**

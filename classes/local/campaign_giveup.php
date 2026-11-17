@@ -167,7 +167,9 @@ final class campaign_giveup {
         if (!$last) {
             return false;
         }
-        $DB->set_field('playerpuzzle_attempts', 'gaveup', 1, ['id' => reset($last)->id]);
+        // The attempt keeps the time it finished, which the grade reads; timemodified records the give-up, which
+        // the cooldown before the next Campaign counts from.
+        $DB->update_record('playerpuzzle_attempts', (object) ['id' => reset($last)->id, 'gaveup' => 1, 'timemodified' => time()]);
 
         return true;
     }

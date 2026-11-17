@@ -14,12 +14,13 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `lib_completion_info_test.php` | 7 |
 | `lib_crud_test.php` | 10 |
 | `lib_grade_item_update_test.php` | 5 |
+| `lib_grant_potential_test.php` | 5 |
 | `lib_pluginfile_test.php` | 5 |
 | `lib_supports_test.php` | 2 |
 | `lib_update_grades_test.php` | 7 |
 | `mod_form_test.php` | 21 |
 | `uninstall_test.php` | 2 |
-| **Subtotal** | **75** |
+| **Subtotal** | **80** |
 
 ### Completion Tests (`tests/completion/`)
 

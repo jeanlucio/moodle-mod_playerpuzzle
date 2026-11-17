@@ -209,4 +209,39 @@ class hud_service {
         }
         \block_playerhud\local\external_items::grant($blockinstanceid, $itemid, $userid, $qty, 'playerpuzzle', $suppressxp);
     }
+
+    /**
+     * Resolves the XP value of several items at once, keyed by item id. Items that do not belong to
+     * $blockinstanceid (deleted, or configured for another course) or are disabled, so granting them awards
+     * nothing, are absent from the map: a caller treats a missing key as zero.
+     *
+     * @param int $blockinstanceid Block instance ID every item must belong to.
+     * @param int[] $itemids Item IDs to resolve.
+     * @return array Item id => XP value.
+     */
+    public static function get_xp_for_items(int $blockinstanceid, array $itemids): array {
+        global $DB;
+
+        $itemids = array_values(array_unique(array_map('intval', $itemids)));
+        if ($itemids === []) {
+            return [];
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED);
+        $params['blockinstanceid'] = $blockinstanceid;
+        $records = $DB->get_records_select(
+            'block_playerhud_items',
+            "blockinstanceid = :blockinstanceid AND enabled = 1 AND id $insql",
+            $params,
+            '',
+            'id, xp'
+        );
+
+        $map = [];
+        foreach ($records as $record) {
+            $map[(int) $record->id] = (int) $record->xp;
+        }
+
+        return $map;
+    }
 }

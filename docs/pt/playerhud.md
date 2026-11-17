@@ -37,7 +37,10 @@ mudança no `block_playerhud`.
   outra tentativa. Um estudante que só está retomando uma luta nunca é cobrado.
 * **Prêmio de vitória** — opcional; um item fixo concedido a cada vitória, além das moedas. Quando
   o limite de tentativas relevante é ilimitado, o item ainda é concedido, mas sem o XP dele, para
-  evitar farm de XP.
+  evitar farm de XP. Na Campanha ele é concedido a cada fase vencida, então, com limite definido, o
+  painel de economia do PlayerHUD ("Total XP no jogo") conta a atividade como fases × Campanhas × XP
+  do item (a Partida Única conta um prêmio por partida permitida), como o `mod_playerwords` e o
+  `mod_playercross` já fazem.
 
 Se o `block_playerhud` não estiver instalado, ou for mais antigo que a versão que esta integração
 exige (v1.7.1), o formulário avisa e as três opções simplesmente não são oferecidas.

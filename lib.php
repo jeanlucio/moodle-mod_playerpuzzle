@@ -595,3 +595,76 @@ function playerpuzzle_pluginfile(
     send_stored_file($file, null, 0, $forcedownload, $options);
     return true;
 }
+
+/**
+ * Reports the XP a student can earn through this course's win-grant items, for block_playerhud's "Total XP in the game"
+ * estimate in the economy health panel.
+ *
+ * Discovered automatically by block_playerhud through get_plugins_with_function(), see
+ * \block_playerhud\local\analytics::game_xp_totals(), the same callback mod_playerwords and mod_playercross implement.
+ * It mirrors the real grant: a Campaign grants the item on every phase it wins, the last one included, so a Campaign
+ * is worth its phases (ten for each level) in a row of grants, repeated for each Campaign the activity allows; a
+ * Single Match is worth one grant for each match it allows. An activity whose limit is unlimited contributes
+ * nothing, since the real grant then withholds the XP (see save_progress and advance_phase).
+ *
+ * @param int $blockinstanceid PlayerHUD block instance ID to report potential XP for.
+ * @return array Rows shaped like block_playerhud's own item/quest breakdown entries.
+ */
+function playerpuzzle_playerhud_grant_potential(int $blockinstanceid): array {
+    global $DB;
+
+    $courseid = $DB->get_field_sql(
+        "SELECT ctx.instanceid
+           FROM {block_instances} bi
+           JOIN {context} ctx ON bi.parentcontextid = ctx.id
+          WHERE bi.id = :biid AND ctx.contextlevel = :clevel",
+        ['biid' => $blockinstanceid, 'clevel' => CONTEXT_COURSE]
+    );
+    if (!$courseid) {
+        return [];
+    }
+
+    $instances = $DB->get_records_select(
+        'playerpuzzle',
+        "course = :courseid AND hud_win_grant_item > 0
+         AND ((gamemode = :campaign AND maxcampaigns > 0) OR (gamemode = :single AND max_single_matches > 0))",
+        [
+            'courseid' => $courseid,
+            'campaign' => \mod_playerpuzzle\local\constants::GAMEMODE_CAMPAIGN,
+            'single' => \mod_playerpuzzle\local\constants::GAMEMODE_SINGLE,
+        ],
+        '',
+        'id, name, gamemode, maxlevels, maxcampaigns, max_single_matches, hud_win_grant_item, hud_win_grant_qty'
+    );
+
+    $itemids = array_map(static fn(stdClass $instance): int => (int) $instance->hud_win_grant_item, $instances);
+    $xpbyitem = \mod_playerpuzzle\local\hud_service::get_xp_for_items($blockinstanceid, $itemids);
+
+    $rows = [];
+    foreach ($instances as $instance) {
+        $itemxp = $xpbyitem[(int) $instance->hud_win_grant_item] ?? 0;
+        if ($itemxp <= 0) {
+            // A zero-XP item, or one that does not belong to this block instance (stale configuration copied from
+            // another course) adds nothing.
+            continue;
+        }
+
+        $uses = $instance->gamemode === \mod_playerpuzzle\local\constants::GAMEMODE_CAMPAIGN
+            ? max(1, (int) $instance->maxlevels) * \mod_playerpuzzle\local\campaigns::PHASES_PER_LEVEL
+                * (int) $instance->maxcampaigns
+            : (int) $instance->max_single_matches;
+        $each = $itemxp * max(1, (int) $instance->hud_win_grant_qty);
+
+        $rows[] = [
+            'name'       => format_string($instance->name),
+            'xp_each'    => $each,
+            'drop_count' => 0,
+            'total_uses' => $uses,
+            'xp_total'   => $each * $uses,
+            'is_quest'   => false,
+            'infinite'   => false,
+        ];
+    }
+
+    return $rows;
+}

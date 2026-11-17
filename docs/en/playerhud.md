@@ -36,7 +36,10 @@ change to `block_playerhud` itself.
   another try. A student who is only resuming a fight is never charged.
 * **Win grant** — optional; a fixed item awarded on every victory, on top of the coins. When the
   relevant attempt limit is unlimited the item is still granted but without its XP, to prevent XP
-  farming.
+  farming. In a Campaign it is awarded on every phase won, so with a limit set the PlayerHUD
+  economy panel ("Total XP in the game") counts the activity as phases × Campaigns × the item's
+  XP (a Single Match counts one award per match allowed), as `mod_playerwords` and
+  `mod_playercross` already do.
 
 If `block_playerhud` is missing, or older than the version this integration needs (v1.7.1), the
 form says so and the three options are simply not offered.

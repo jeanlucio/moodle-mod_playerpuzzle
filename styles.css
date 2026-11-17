@@ -1396,6 +1396,7 @@ body.path-mod-playerpuzzle .pp-lobby-toggle .form-check-input:checked {
 body.path-mod-playerpuzzle .pp-lobby-transfer .pp-lobby-transfer-btn {
     flex: 0 0 auto;
     width: auto;
+    margin-inline-start: auto;
 }
 
 /* On a narrow screen the button takes the whole row, an easier target for a thumb. */

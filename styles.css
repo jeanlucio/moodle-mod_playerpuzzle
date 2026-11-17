@@ -1287,6 +1287,7 @@ body.path-mod-playerpuzzle .pp-lobby-transfer {
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem 1rem;
+    margin-block-start: 0.75rem;
     background: rgba(0, 0, 0, 0.28);
     border: 1px solid rgba(205, 179, 122, 0.4);
     border-radius: 6px;

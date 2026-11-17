@@ -49,6 +49,24 @@ const saveSoundPreference = (cmid, type, enabled) => {
 };
 
 /**
+ * Persists whether the student shows their name in the class ranking, and keeps the ranking panel's note about being
+ * anonymous in step, so it is right without a reload.
+ *
+ * @param {number} cmid Course module id.
+ * @param {boolean} visible Whether the name is shown.
+ */
+const saveRankingName = (cmid, visible) => {
+    Ajax.call([{
+        methodname: 'mod_playerpuzzle_set_ranking_preference',
+        args: {cmid, visible},
+    }]);
+    const note = document.getElementById('pp-lobby-ranking-anonymous');
+    if (note) {
+        note.hidden = visible;
+    }
+};
+
+/**
  * Steps the difficulty button to the next difficulty: the hidden field that goes with the Play form and the one of
  * the Demo, the text on the button and the line under it that says what the difficulty changes. Every text came with the page, so
  * nothing is requested.
@@ -88,6 +106,9 @@ export const init = (cmid) => {
         const channel = CHANNELS_BY_ID[event.target.id];
         if (channel) {
             saveSoundPreference(cmid, channel, event.target.checked);
+        }
+        if (event.target.id === 'pp-lobby-rankingname') {
+            saveRankingName(cmid, event.target.checked);
         }
     });
 

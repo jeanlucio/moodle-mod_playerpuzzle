@@ -42,7 +42,9 @@
   estudantes podem transferir moedas do PlayerHUD para PuzzleCoin, uma nova tentativa pode custar
   um item do PlayerHUD, e uma vitória pode conceder um. Sem ele, tudo isso acima continua
   funcionando.
-* **Ranking da turma:** um placar opcional, independente da nota, que respeita grupos separados.
+* **Ranking da turma:** um placar opcional, independente da nota, que respeita grupos separados. Mostra os 5
+  primeiros e a linha do próprio estudante, e cada estudante pode escolher, nas configurações do Lobby, aparecer
+  como anônimo para os colegas.
 
 ## 📚 Questões
 

@@ -33,6 +33,7 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use mod_playerpuzzle\local\last_hero;
 use mod_playerpuzzle\local\seen_opponents;
+use mod_playerpuzzle\local\ranking_preferences;
 use mod_playerpuzzle\local\sound_preferences;
 
 /**
@@ -177,6 +178,10 @@ class provider implements
         );
         $collection->add_user_preference(seen_opponents::PREFERENCE, 'privacy:metadata:preference:seenopponents');
         $collection->add_user_preference(last_hero::PREFERENCE, 'privacy:metadata:preference:lasthero');
+        $collection->add_user_preference(
+            ranking_preferences::PREFERENCE,
+            'privacy:metadata:preference:rankinganonymous'
+        );
 
         return $collection;
     }
@@ -208,6 +213,14 @@ class provider implements
                 last_hero::PREFERENCE,
                 get_string('hero_name_' . last_hero::get($userid), 'mod_playerpuzzle'),
                 get_string('privacy:metadata:preference:lasthero', 'mod_playerpuzzle')
+            );
+        }
+        if (ranking_preferences::is_anonymous($userid)) {
+            writer::export_user_preference(
+                'mod_playerpuzzle',
+                ranking_preferences::PREFERENCE,
+                transform::yesno(true),
+                get_string('privacy:metadata:preference:rankinganonymous', 'mod_playerpuzzle')
             );
         }
         foreach (sound_preferences::TYPES as $type) {

@@ -42,7 +42,8 @@
   transfer PlayerHUD coins into PuzzleCoin, a retry can cost a PlayerHUD item, and a victory can
   award one. Without it, everything above still works.
 * **Class ranking:** an optional leaderboard, independent of the grade, that respects separate
-  groups.
+  groups. It lists the top 5 and the student's own row, and each student can choose in the Lobby settings
+  to appear as an anonymous student to the others.
 
 ## 📚 Questions
 

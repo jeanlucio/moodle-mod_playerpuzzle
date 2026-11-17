@@ -50,11 +50,12 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `save_combat_state_test.php` | 14 |
 | `save_generated_questions_test.php` | 4 |
 | `save_progress_test.php` | 31 |
+| `set_ranking_preference_test.php` | 2 |
 | `set_sound_preference_test.php` | 5 |
 | `transfer_hud_coins_test.php` | 9 |
 | `use_stock_test.php` | 16 |
 | `validate_answer_test.php` | 19 |
-| **Subtotal** | **154** |
+| **Subtotal** | **156** |
 
 ### Testes de Formulário (`tests/form/`)
 

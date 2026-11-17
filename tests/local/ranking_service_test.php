@@ -334,6 +334,51 @@ final class ranking_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a student who hides their name is anonymous to the others, in the top rows and out of them, keeps
+     * their place, still reads their own name, and that the teacher's report and the position at the end of a
+     * Campaign are not touched by it.
+     *
+     * @return void
+     */
+    public function test_a_student_can_hide_their_name_from_the_others(): void {
+        [$instance, $cm] = $this->make_instance();
+        $ana = $this->make_student('Ana');
+        $bia = $this->make_student('Bia');
+        $this->make_attempt($instance, $ana, ['currentphase' => 6]);
+        $this->make_attempt($instance, $bia, ['currentphase' => 3]);
+        $anonymous = get_string('ranking_anonymous', 'mod_playerpuzzle');
+
+        $this->assertSame(['Ana Test', 'Bia Test'], array_column(
+            ranking_service::get_ranking($instance, $cm, (int) $bia->id)['rows'],
+            'fullname'
+        ));
+
+        ranking_preferences::set_anonymous((int) $ana->id, true);
+        $seenbybia = ranking_service::get_ranking($instance, $cm, (int) $bia->id);
+        $this->assertSame([$anonymous, 'Bia Test'], array_column($seenbybia['rows'], 'fullname'));
+        $this->assertSame([1, 2], array_column($seenbybia['rows'], 'position'), 'the place is kept');
+
+        $seenbyana = ranking_service::get_ranking($instance, $cm, (int) $ana->id);
+        $this->assertSame(['Ana Test', 'Bia Test'], array_column($seenbyana['rows'], 'fullname'), 'their own name');
+        $this->assertTrue($seenbyana['rows'][0]['iscurrentuser']);
+
+        $this->assertSame(1, ranking_service::get_standing($instance, $cm, (int) $ana->id)['position']);
+
+        // Out of the top rows the student is anonymous too, and a viewer outside them still reads their own name.
+        for ($i = 0; $i < ranking_service::TOP_N; $i++) {
+            $this->make_attempt($instance, $this->make_student('Top' . $i), ['currentphase' => 8]);
+        }
+        ranking_preferences::set_anonymous((int) $bia->id, true);
+        $outside = ranking_service::get_ranking($instance, $cm, (int) $ana->id);
+        $this->assertSame('Ana Test', $outside['outsiderrow']['fullname']);
+        $this->assertNotContains('Bia Test', array_column($outside['rows'], 'fullname'));
+        $this->assertSame(
+            'Bia Test',
+            ranking_service::get_ranking($instance, $cm, (int) $bia->id)['outsiderrow']['fullname']
+        );
+    }
+
+    /**
      * Tests that an activity nobody has played yet gives an empty ranking.
      *
      * @return void

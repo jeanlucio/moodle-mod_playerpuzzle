@@ -732,6 +732,41 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the Settings panel offers the choice to show the name in the ranking only when the ranking is on,
+     * with the box checked until the student chooses otherwise, and that the ranking panel then says so.
+     *
+     * @return void
+     */
+    public function test_the_settings_offer_to_hide_the_name_in_the_ranking(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'show_ranking' => 1]);
+        [$offcm, $off] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'show_ranking' => 0]);
+        $userid = (int) $this->student->id;
+        $build = fn($cm, $instance): array => lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            $userid,
+            \context_module::instance($cm->id)
+        );
+
+        $data = $build($cm, $instance);
+        $this->assertTrue($data['rankingnamevisible']);
+        $html = $this->render_lobby($data);
+        $this->assertMatchesRegularExpression('~<input[^>]*id="pp-lobby-rankingname"[^>]*checked~', $html);
+        $this->assertStringContainsString(get_string('lobby_rankingname_label', 'mod_playerpuzzle'), $html);
+        $this->assertMatchesRegularExpression('~id="pp-lobby-ranking-anonymous"[^>]*hidden~', $html);
+
+        \mod_playerpuzzle\local\ranking_preferences::set_anonymous($userid, true);
+        $data = $build($cm, $instance);
+        $this->assertFalse($data['rankingnamevisible']);
+        $html = $this->render_lobby($data);
+        $this->assertDoesNotMatchRegularExpression('~<input[^>]*id="pp-lobby-rankingname"[^>]*checked~', $html);
+        $this->assertDoesNotMatchRegularExpression('~id="pp-lobby-ranking-anonymous"[^>]*hidden~', $html);
+
+        $this->assertStringNotContainsString('pp-lobby-rankingname', $this->render_lobby($build($offcm, $off)));
+    }
+
+    /**
      * Tests that a Campaign student's hero stands in the Lobby at its current stage, and that Play goes
      * straight on to play.php.
      *

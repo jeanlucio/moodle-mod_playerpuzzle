@@ -31,6 +31,7 @@ use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use mod_playerpuzzle\local\last_hero;
+use mod_playerpuzzle\local\ranking_preferences;
 use mod_playerpuzzle\local\seen_opponents;
 use mod_playerpuzzle\local\sound_preferences;
 
@@ -143,6 +144,27 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $prefs = (array) writer::with_context(\context_system::instance())->get_user_preferences('mod_playerpuzzle');
         $this->assertCount(1, $prefs);
         $this->assertSame(get_string('hero_name_archerf', 'mod_playerpuzzle'), $prefs[last_hero::PREFERENCE]->value);
+    }
+
+    /**
+     * Tests that the choice to hide the name in the ranking is declared and exported, and that a user who never
+     * made it exports nothing.
+     *
+     * @return void
+     */
+    public function test_ranking_name_preference_is_declared_and_exported(): void {
+        $collection = provider::get_metadata(new collection('mod_playerpuzzle'));
+        $keys = array_map(fn($item) => $item->get_name(), $collection->get_collection());
+        $this->assertContains(ranking_preferences::PREFERENCE, $keys);
+
+        $user = $this->getDataGenerator()->create_user();
+        provider::export_user_preferences((int) $user->id);
+        $this->assertFalse(writer::with_context(\context_system::instance())->has_any_data());
+
+        ranking_preferences::set_anonymous((int) $user->id, true);
+        provider::export_user_preferences((int) $user->id);
+        $prefs = (array) writer::with_context(\context_system::instance())->get_user_preferences('mod_playerpuzzle');
+        $this->assertSame(get_string('yes'), $prefs[ranking_preferences::PREFERENCE]->value);
     }
 
     /**

@@ -424,6 +424,20 @@
                     <label class="form-check-label" for="pp-lobby-sfx">{{sfxlabel}}</label>
                 </div>
 
+                {{#showranking}}
+                <div class="form-check pp-lobby-toggle">
+                    <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="pp-lobby-rankingname"
+                        aria-describedby="pp-lobby-rankingname-hint"
+                        {{#rankingnamevisible}}checked{{/rankingnamevisible}}
+                    >
+                    <label class="form-check-label" for="pp-lobby-rankingname">{{rankingnamelabel}}</label>
+                    <p id="pp-lobby-rankingname-hint" class="pp-lobby-hint">{{rankingnamehint}}</p>
+                </div>
+                {{/showranking}}
+
                 <button type="button" class="pp-lobby-menu-btn pp-lobby-back" data-action="close-panel">{{backlabel}}</button>
             </section>
 
@@ -464,6 +478,7 @@
             <section id="pp-lobby-ranking" class="pp-lobby-view" aria-labelledby="pp-lobby-ranking-title" hidden>
                 <h3 id="pp-lobby-ranking-title" class="pp-lobby-view-title" tabindex="-1">{{rankingtitle}}</h3>
                 <p class="pp-lobby-note">{{rankingnote}}</p>
+                <p id="pp-lobby-ranking-anonymous" class="pp-lobby-note" {{#rankingnamevisible}}hidden{{/rankingnamevisible}}>{{rankinganonymousnote}}</p>
                 {{#rankingisempty}}
                 <p class="pp-lobby-ranking-empty">{{rankingempty}}</p>
                 {{/rankingisempty}}

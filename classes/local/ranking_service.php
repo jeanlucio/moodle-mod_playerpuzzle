@@ -37,6 +37,7 @@ use stdClass;
  * included, so the total only ever grows; ties broken by fewer attempts. Single Match adds up
  * every finished match's own score, ties broken by fewer matches, then less time played.
  *
+ * A student may choose to appear as an anonymous student to the others (see ranking_preferences).
  * Who appears follows the teacher report exactly (report_service::get_student_pool()):
  * enrolled students only, never staff, and only the viewer's own groups under SEPARATEGROUPS.
  * Demo matches never count. Every phase won and every match won is one the server-side replay
@@ -64,18 +65,30 @@ class ranking_service {
         $entries = self::score_students($instance, report_service::get_student_pool($cm, $context, $viewerid));
 
         $canviewfullnames = has_capability('moodle/site:viewfullnames', $context);
+        // Only the top rows and the viewer's own are shown, so only they are worth formatting, and only their
+        // students' choice to hide the name is worth reading.
+        $shown = [];
+        foreach ($entries as $index => $entry) {
+            if ($index < self::TOP_N || (int) $entry['user']->id === $viewerid) {
+                $shown[$index] = $entry;
+            }
+        }
+        $anonymous = ranking_preferences::anonymous_among(
+            array_map(static fn(array $entry): int => (int) $entry['user']->id, $shown)
+        );
+
         $rows = [];
         $outsiderrow = null;
-        foreach ($entries as $index => $entry) {
+        foreach ($shown as $index => $entry) {
             $position = $index + 1;
             $iscurrentuser = (int) $entry['user']->id === $viewerid;
-            // Only the top rows and the viewer's own are shown, so only they are worth formatting.
-            if ($position > self::TOP_N && !$iscurrentuser) {
-                continue;
-            }
+            // A student who hides their name is anonymous to the others, and still reads their own.
+            $hidden = isset($anonymous[(int) $entry['user']->id]) && !$iscurrentuser;
             $row = [
                 'position' => $position,
-                'fullname' => fullname($entry['user'], $canviewfullnames),
+                'fullname' => $hidden
+                    ? get_string('ranking_anonymous', 'mod_playerpuzzle')
+                    : fullname($entry['user'], $canviewfullnames),
                 'points' => format_float($entry['points'], 1, true, true),
                 'iscurrentuser' => $iscurrentuser,
             ];

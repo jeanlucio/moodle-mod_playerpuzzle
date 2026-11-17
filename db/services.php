@@ -129,6 +129,14 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:managequestions',
     ],
+    'mod_playerpuzzle_set_ranking_preference' => [
+        'classname'    => 'mod_playerpuzzle\external\set_ranking_preference',
+        'methodname'   => 'execute',
+        'description'  => 'Saves whether the current user shows their name in the class ranking.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
     'mod_playerpuzzle_set_sound_preference' => [
         'classname'    => 'mod_playerpuzzle\external\set_sound_preference',
         'methodname'   => 'execute',

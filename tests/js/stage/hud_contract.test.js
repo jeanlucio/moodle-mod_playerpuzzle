@@ -87,3 +87,32 @@ test('the use buttons of a Demo show the uses left in the fight, never an infini
     assert.ok(!body[1].includes('∞'), 'a Demo button shows an infinity sign');
     assert.match(body[1], /combat\.isdemo \? String\(Math\.max\(0, combat\.phaseLimit\(type\) - uses\)\)/);
 });
+
+test('every layout constant the status labels read is defined by both layouts', () => {
+    const used = new Set([...read('hud.js').matchAll(/\bL\.(statusLabel\w+)/g)].map(match => match[1]));
+    const layout = read('layout.js');
+
+    assert.ok(used.size >= 6, `found only ${[...used].join(', ')}`);
+    used.forEach(name => {
+        const definitions = [...layout.matchAll(new RegExp(`\\b${name}:`, 'g'))].length;
+        assert.equal(definitions, 2, `${name} is defined ${definitions} time(s) in layout.js, not once for each layout`);
+    });
+});
+
+test('the texts the status effects use are strings the game loads, and each exists in both languages', () => {
+    const used = new Set([...read('hud.js').matchAll(/\bstrings\.(stage_status_\w+)/g)].map(match => match[1]));
+    const boot = read('game_boot.js');
+    const langs = ['en', 'pt_br'].map(lang => fs.readFileSync(path.join('lang', lang, 'playerpuzzle.php'), 'utf8'));
+
+    assert.ok(used.size >= 8, `found only ${[...used].join(', ')}`);
+    used.forEach(name => {
+        assert.ok(boot.includes(`'${name}'`), `${name} is not loaded by game_boot.js`);
+        langs.forEach(lang => assert.ok(lang.includes(`$string['${name}']`), `${name} is missing from a lang file`));
+    });
+});
+
+test('the old status badges on the HP bars are gone', () => {
+    const hud = read('hud.js');
+    assert.ok(!hud.includes('updateStatusBadges'), 'updateStatusBadges() is still in hud.js');
+    assert.ok(hud.includes('updateStatusEffects'), 'updateStatusEffects() is missing from hud.js');
+});

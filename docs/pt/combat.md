@@ -34,6 +34,13 @@ muda é só quem ganha o efeito (quem estiver no turno atual).
 | 🧪 Poção | Cura o HP do próprio lado em um quarto do dano base por peça, então uma combinação de 3 cura três quartos do que uma combinação de 3 Espadas causa — o dano sempre pesa mais que a cura |
 | 🪙 Moeda | Soma ao contador de ouro próprio da partida — veja a fórmula por combinação e a compensação líquida em [Integração com o PlayerHUD](#playerhud) |
 
+**Efeitos de status nos lutadores.** Enquanto um Feitiço está sobre um lado, uma névoa roxa com bolhas
+subindo envolve aquele lutador e uma etiqueta ao lado mostra as rodadas que faltam ("Feitiço 3"); enquanto
+um bloqueio está armado, uma bolha dourada envolve o lutador e uma etiqueta diz "Escudo". As etiquetas ficam
+do lado que encara o outro lutador e são tão grandes quanto o espaço permite, para serem lidas no celular.
+Os dois efeitos são anunciados para leitores de tela quando começam e quando acabam, e a animação para
+para quem pede movimento reduzido.
+
 ## O Desafio de Pergunta
 
 Quando a barra de Orbe de Interrogação de qualquer um dos lados chega a 100%, a partida pausa e

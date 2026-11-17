@@ -34,6 +34,13 @@ who benefits changes (whoever's turn it currently is).
 | 🧪 Potion | Heals that side's own HP by a quarter of the base damage per piece, so a 3-piece match heals three quarters of what a 3-piece Sword match deals — damage always outweighs healing |
 | 🪙 Coin | Adds to that side's own gold count for the match — see the combo formula and net compensation in [PlayerHUD integration](#playerhud) |
 
+**Status effects on the fighters.** While a Hex is on a side, a purple haze with bubbles rising from it
+surrounds that fighter and a label beside it shows the rounds left ("Hex 3"); while a block is armed, a
+golden bubble surrounds the fighter and a label says "Shield". The labels sit on the side that faces the
+other fighter and are as large as the room allows, so they read on a phone. Both effects are announced to
+screen readers when they start and when they end, and the animation stops for players who ask for reduced
+motion.
+
 ## The Question Challenge
 
 When either side's Question Orb bar reaches 100%, the match pauses and opens the

@@ -213,10 +213,16 @@ define([
             this.scaleY = 1;
             this.alpha = 1;
             this.tint = null;
+            // What stands where the character stands and moves with it: the auras of its status effects.
+            this.followers = [];
         }
 
         render() {
-            this.element.style.transform = `translateX(${this.x - this.homeX}px) scaleY(${this.scaleY})`;
+            const shift = `translateX(${this.x - this.homeX}px)`;
+            this.element.style.transform = `${shift} scaleY(${this.scaleY})`;
+            this.followers.forEach(follower => {
+                follower.style.transform = shift;
+            });
             this.element.style.opacity = String(this.alpha);
             this.element.style.filter = this.tint === null ? '' : tintFilter(this.stage.root, this.tint);
         }
@@ -252,7 +258,8 @@ define([
             this.strings = strings;
             this.layers = scene.stage.layers;
             this.rings = {};
-            this.statusBadges = {};
+            this.statusEffects = {};
+            this.auras = {};
             this.playerLog = [];
             this.bossLog = [];
             this.shownHp = {};
@@ -512,6 +519,8 @@ define([
             };
             this.playerSprite = add(L.playerX, L.playerY, 'player', L.playerScale);
             this.bossSprite = add(L.bossX, L.bossY, 'boss', L.bossScale);
+            this.createAura('player', this.playerSprite, L.playerX, L.playerY, L.playerScale);
+            this.createAura('boss', this.bossSprite, L.bossX, L.bossY, L.bossScale);
             this.characters = {
                 player: {sprite: this.playerSprite, homeX: L.playerX, size: L.playerScale, forward: 1, motion: null},
                 boss: {sprite: this.bossSprite, homeX: L.bossX, size: L.bossScale, forward: -1, motion: null},
@@ -528,6 +537,31 @@ define([
                     onUpdate: () => sprite.render(),
                 });
             });
+        }
+
+        /**
+         * The glows a character wears while a status effect is on it, both off until the effect starts: a purple haze
+         * with bubbles rising from it behind the picture for the Hex, and a golden bubble over it for a block that is
+         * armed. They follow the character when it lunges or recoils.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {CharacterSprite} sprite The character.
+         * @param {number} x The middle of its box.
+         * @param {number} y The middle of its box.
+         * @param {number} size The side of its box.
+         */
+        createAura(side, sprite, x, y, size) {
+            const hex = make('div', 'pp-el pp-aura pp-aura-hex', this.layers.back, centered(x, y, size));
+            for (let i = 0; i < 3; i++) {
+                make('span', 'pp-aura-bubble', hex);
+            }
+            // Behind the picture, so the haze frames the character instead of tinting it.
+            sprite.element.before(hex);
+            const shield = make('div', 'pp-el pp-aura pp-aura-shield', this.layers.back, centered(x, y, size));
+            hex.hidden = true;
+            shield.hidden = true;
+            sprite.followers.push(hex, shield);
+            this.auras[side] = {hex, shield};
         }
 
         /**
@@ -1234,50 +1268,88 @@ define([
         }
 
         /**
-         * The status badges on an HP bar's lower corner, one for each effect that is active (poison rounds pending,
-         * a block armed), packed from the corner inward.
+         * A label for a status effect, beside a character: the effect's icon and what it says, ready to be filled in
+         * and placed. Drawn for the eye only, since the live region announces the effects (see updateStatusEffects()).
          *
-         * @param {string} prefix 'player' or 'boss'.
-         * @param {number} cornerX The bar's right edge.
-         * @param {number} cornerY The bar's bottom edge.
-         * @param {number} poisonRounds Poison rounds left against this side.
-         * @param {boolean} shieldReady Whether a block is armed.
+         * @param {string} side 'player' or 'boss'.
+         * @param {string} iconKey The image key of the effect's icon.
+         * @param {string} className The effect's own class.
+         * @return {{root: HTMLElement, text: HTMLElement}}
          */
-        updateStatusBadges(prefix, cornerX, cornerY, poisonRounds, shieldReady) {
-            const badgeR = 15;
-            const gap = 34;
-            if (!this.statusBadges[prefix]) {
-                const makeBadge = key => {
-                    const root = make('div', 'pp-el pp-status-badge', this.layers.middle);
-                    this.image(root, key, centered(badgeR, badgeR, badgeR * 1.3), 'pp-status-icon');
-                    const count = make('div', 'pp-status-count', root);
-                    count.style.left = `${(2 * badgeR) - 12}px`;
-                    count.style.top = `${(2 * badgeR) - 12}px`;
-                    return {root, count};
-                };
-                this.statusBadges[prefix] = {poison: makeBadge('item1'), shield: makeBadge('item4')};
-            }
-            const badges = this.statusBadges[prefix];
-            const active = [];
-            if (poisonRounds > 0) {
-                active.push({badge: badges.poison, count: String(poisonRounds)});
-            }
-            if (shieldReady) {
-                active.push({badge: badges.shield, count: '✓'});
-            }
-            [badges.poison, badges.shield].forEach(badge => {
-                badge.root.hidden = !active.some(entry => entry.badge === badge);
-            });
-            active.forEach((entry, i) => {
-                Stage.place(entry.badge.root, {
-                    x: cornerX - (2 * badgeR) - (i * gap), y: cornerY - badgeR, w: 2 * badgeR, h: 2 * badgeR,
-                });
-                entry.badge.count.textContent = entry.count;
-            });
+        createStatusLabel(side, iconKey, className) {
+            const root = make('div', `pp-el pp-status-label pp-status-label-${side} ${className}`, this.layers.front);
+            root.style.fontSize = `${this.L.statusLabelFont}px`;
+            root.setAttribute('aria-hidden', 'true');
+            const icon = document.createElement('img');
+            icon.className = 'pp-status-label-icon';
+            icon.src = this.scene.imageUrl(iconKey);
+            icon.alt = '';
+            icon.draggable = false;
+            const text = document.createElement('span');
+            text.className = 'pp-status-label-text';
+            root.append(icon, text);
+            root.hidden = true;
+            return {root, text};
         }
 
         /**
-         * Refreshes the opponent's HP bar, rings, status badges and chips.
+         * Shows what is on a fighter: the Hex (rounds left) and a block that is armed. Each effect has an aura around
+         * the character and a label beside it, the labels stacked from the top on the side that faces the other fighter,
+         * and the live region says when an effect starts or ends, since the picture is the only sign of it.
+         *
+         * @param {string} side 'player' or 'boss'.
+         * @param {number} poisonRounds Hex rounds left against this side.
+         * @param {boolean} shieldReady Whether a block is armed.
+         */
+        updateStatusEffects(side, poisonRounds, shieldReady) {
+            const L = this.L;
+            const hexOn = poisonRounds > 0;
+            if (!this.statusEffects[side]) {
+                this.statusEffects[side] = {
+                    hex: this.createStatusLabel(side, 'item1', 'pp-status-hex'),
+                    shield: this.createStatusLabel(side, 'item4', 'pp-status-shield'),
+                    wasHex: false,
+                    wasShield: false,
+                };
+            }
+            const state = this.statusEffects[side];
+            this.auras[side].hex.hidden = !hexOn;
+            this.auras[side].shield.hidden = !shieldReady;
+
+            const x = side === 'player' ? L.statusLabelPlayerX : L.statusLabelBossRight - L.statusLabelW;
+            let row = 0;
+            [[state.hex, hexOn], [state.shield, shieldReady]].forEach(([label, on]) => {
+                label.root.hidden = !on;
+                if (on) {
+                    Stage.place(label.root, {
+                        x, y: L.statusLabelY + (row * L.statusLabelGap), w: L.statusLabelW, h: L.statusLabelH,
+                    });
+                    row++;
+                }
+            });
+            state.hex.text.textContent = this.strings.stage_status_hex.replace('{$a}', poisonRounds);
+            state.shield.text.textContent = this.strings.stage_status_shield;
+
+            const who = side === 'player'
+                ? this.strings.stage_status_you
+                : (this.gameConfig.opponentname || this.strings.stage_status_opponent);
+            if (hexOn && !state.wasHex) {
+                Accessibility.announce(this.strings.stage_status_hex_on
+                    .replace('{$a->who}', who).replace('{$a->rounds}', poisonRounds));
+            } else if (!hexOn && state.wasHex) {
+                Accessibility.announce(this.strings.stage_status_hex_off.replace('{$a}', who));
+            }
+            if (shieldReady && !state.wasShield) {
+                Accessibility.announce(this.strings.stage_status_shield_on.replace('{$a}', who));
+            } else if (!shieldReady && state.wasShield) {
+                Accessibility.announce(this.strings.stage_status_shield_off.replace('{$a}', who));
+            }
+            state.wasHex = hexOn;
+            state.wasShield = shieldReady;
+        }
+
+        /**
+         * Refreshes the opponent's HP bar, rings, status effects and chips.
          *
          * @param {number} currentHp HP now.
          * @param {number} maxHp Full HP.
@@ -1310,11 +1382,11 @@ define([
                 shieldReady ? 1 : (shieldMeter / 100), shieldReady ? 0xffcc00 : 0x3388ff
             );
             this.updateRing('bossOrb', L.bossOrbX, L.bossRingY, 'item2', mana / 100, 0x0088ff);
-            this.updateStatusBadges('boss', L.bossUiX + L.hpBarW, L.bossHpY + L.hpBarH, poisonRounds, shieldReady);
+            this.updateStatusEffects('boss', poisonRounds, shieldReady);
         }
 
         /**
-         * Refreshes the student's HP bar, rings, status badges and chips; the arguments are those of updateBossBar().
+         * Refreshes the student's HP bar, rings, status effects and chips; the arguments are those of updateBossBar().
          *
          * @param {number} currentHp HP now.
          * @param {number} maxHp Full HP.
@@ -1341,7 +1413,7 @@ define([
                 shieldReady ? 1 : (shieldMeter / 100), shieldReady ? 0xffcc00 : 0x3388ff
             );
             this.updateRing('playerOrb', L.playerOrbX, L.playerRingY, 'item2', mana / 100, 0x0088ff);
-            this.updateStatusBadges('player', L.playerUiX + L.hpBarW, L.playerHpY + L.hpBarH, poisonRounds, shieldReady);
+            this.updateStatusEffects('player', poisonRounds, shieldReady);
         }
 
         /**

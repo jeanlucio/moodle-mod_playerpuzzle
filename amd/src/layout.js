@@ -46,6 +46,12 @@ define([], () => {
             bossX: 1090, bossY: 150,
             playerX: 190, playerY: 150,
 
+            // The status labels beside the characters (Hex, Shield), on the side that faces the other fighter, in rows
+            // from statusLabelY. The font is sized so that it still reads at about 12 px once the stage is scaled down to
+            // a phone held sideways.
+            statusLabelW: 210, statusLabelH: 38, statusLabelGap: 44, statusLabelY: 88,
+            statusLabelPlayerX: 290, statusLabelBossRight: 990, statusLabelFont: 22,
+
             // Board + side panels band. panelY is the side panels' true top edge — they
             // stay flush against it, no overlap. panelW is derived from the board's own
             // size (not independent), so both panels always sit flush against its edges,
@@ -148,6 +154,12 @@ define([], () => {
             // the band's own centre lands its feet just above the band's bottom edge.
             playerX: 88, playerY: 158, playerScale: 150,
             bossX: 452, bossY: 158, bossScale: 150,
+
+            // The status labels beside the characters (Hex, Shield), in the free middle of the band, on the side that
+            // faces the other fighter. The font is sized so that it still reads at about 11 px once the stage is
+            // scaled down to a phone held upright.
+            statusLabelW: 126, statusLabelH: 28, statusLabelGap: 33, statusLabelY: 108,
+            statusLabelPlayerX: 150, statusLabelBossRight: 420, statusLabelFont: 16,
 
             // Opponent HUD: HP bar (Status badges hang off its own corner), then one row
             // with Coin/Star and the Grimoire/Shield/Orb rings — no Potion and no purchase

@@ -243,26 +243,127 @@ body.path-mod-playerpuzzle .pp-stage .pp-ring svg {
     height: 100%;
 }
 
-body.path-mod-playerpuzzle .pp-stage .pp-status-badge {
-    background-color: rgba(26, 20, 16, 0.85);
+/**
+ * The status effects on a fighter. Around the character: a purple haze with bubbles rising from it for the Hex, behind
+ * the picture, and a golden bubble over it for a block that is armed, in the colours the Grimoire and Shield rings
+ * already use. Beside it: a label with the effect's icon and what it says, as big as the room allows. Only transform and
+ * opacity move, which a phone draws without repainting the character.
+ */
+body.path-mod-playerpuzzle .pp-stage .pp-aura {
+    box-sizing: border-box;
     border-radius: 50%;
-    box-shadow: 0 0 0 0.5px #6a4a2a, inset 0 0 0 0.5px #6a4a2a;
+    pointer-events: none;
 }
 
-body.path-mod-playerpuzzle .pp-stage .pp-status-count {
+body.path-mod-playerpuzzle .pp-stage .pp-aura-hex {
+    background: radial-gradient(ellipse at 50% 62%, rgba(153, 51, 204, 0.78) 0%, rgba(153, 51, 204, 0) 72%);
+    animation: pp-aura-pulse 2s ease-in-out infinite;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-aura-shield {
+    border: 3px solid rgba(255, 204, 0, 0.95);
+    background: radial-gradient(circle, rgba(255, 204, 0, 0) 55%, rgba(255, 204, 0, 0.38) 100%);
+    animation: pp-aura-pulse 1.6s ease-in-out infinite;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-aura-bubble {
     position: absolute;
+    bottom: 22%;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: rgba(200, 120, 240, 0.95);
+    opacity: 0;
+    animation: pp-aura-rise 2.4s ease-in infinite;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-aura-bubble:nth-child(1) {
+    left: 34%;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-aura-bubble:nth-child(2) {
+    left: 52%;
+    animation-delay: 0.8s;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-aura-bubble:nth-child(3) {
+    left: 66%;
+    animation-delay: 1.6s;
+}
+
+@keyframes pp-aura-pulse {
+    0%,
+    100% {
+        opacity: 0.65;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+}
+
+@keyframes pp-aura-rise {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    20% {
+        opacity: 0.9;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-70px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.path-mod-playerpuzzle .pp-stage .pp-aura-hex,
+    body.path-mod-playerpuzzle .pp-stage .pp-aura-shield {
+        animation: none;
+        opacity: 0.9;
+    }
+
+    body.path-mod-playerpuzzle .pp-stage .pp-aura-bubble {
+        display: none;
+    }
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-status-label {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    font-size: 9px;
+    gap: 0.3em;
+    box-sizing: border-box;
+    padding: 0 0.55em;
+    border-radius: 999px;
+    background: rgba(26, 20, 16, 0.9);
     font-weight: 700;
     line-height: 1;
     color: var(--bs-white, #fff);
-    background-color: #2a1a10;
-    border-radius: 50%;
-    box-shadow: 0 0 0 0.5px #fff, inset 0 0 0 0.5px #fff;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Beside the opponent the label reads from the side that faces the student: its contents sit against the right edge. */
+body.path-mod-playerpuzzle .pp-stage .pp-status-label-boss {
+    justify-content: flex-end;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-status-hex {
+    box-shadow: 0 0 0 2px #9933cc;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-status-shield {
+    box-shadow: 0 0 0 2px #ffcc00;
+}
+
+body.path-mod-playerpuzzle .pp-stage .pp-status-label-icon {
+    flex: none;
+    width: 1.45em;
+    height: 1.45em;
 }
 
 body.path-mod-playerpuzzle .pp-stage .pp-character {

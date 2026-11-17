@@ -14,6 +14,11 @@ each Campaign.
   student's PuzzleCoin and consumables back to zero, so the Lobby asks them to confirm it first. Once a Campaign
   has ended the Lobby no longer shows the balance or the shop, and the next Campaign's hero choice comes marked
   with the hero of the one that ended.
+* **Attempts and the end of a Campaign:** with limited attempts the Lobby says which attempt the student is
+  on ("Attempt 2 of 3") and warns before the last one, and so does the give-up dialog of the match. When the
+  last attempt is lost the end screen says "Campaign over" instead of offering to play again, with why, the
+  phases won, the grade earned (when the activity is graded and the grade is not hidden) and the position
+  in the class ranking (when it is on).
 * **Giving up a Campaign:** a Campaign under way can be given up from the Lobby, after a confirmation. It
   ends where it stands and is graded on the progress it reached, as when attempts run out, and the next one
   can start if the activity allows it. When it is the last Campaign the activity allows, the confirmation

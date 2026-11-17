@@ -195,6 +195,27 @@ final class campaigns_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the attempts spent in a Campaign are the ones that ended, whatever the outcome, in that Campaign
+     * only, and never a Demo or one still open.
+     *
+     * @return void
+     */
+    public function test_attempts_used_counts_the_ended_attempts_of_one_campaign(): void {
+        $ppid = (int) $this->instance->id;
+        $userid = (int) $this->student->id;
+        $this->assertSame(0, campaigns::attempts_used($ppid, $userid, 1));
+
+        $this->finish('lost', 1, 1, 3);
+        $this->finish('timeout', 1, 1, 3);
+        $this->finish('lost', 1, 1, 3, 1);
+        $this->finish('inprogress', 1, 1, 3);
+        $this->finish('lost', 2, 1, 3);
+
+        $this->assertSame(2, campaigns::attempts_used($ppid, $userid, 1));
+        $this->assertSame(1, campaigns::attempts_used($ppid, $userid, 2));
+    }
+
+    /**
      * Tests that giving a Campaign up ends it on the attempt that carries the mark, whatever attempts are left,
      * and that the next one starts at Level 1, Phase 1.
      *

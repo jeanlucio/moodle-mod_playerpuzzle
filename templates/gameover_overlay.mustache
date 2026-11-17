@@ -44,7 +44,7 @@
 <div id="playerpuzzle-gameover" class="d-flex flex-column justify-content-center align-items-center">
     <div class="pp-gameover-card pp-themed d-flex flex-column align-items-center">
         <h1 class="display-4 pp-bold {{colorclass}} mb-3">{{msg}}</h1>
-        <p class="lead mb-4">
+        <p id="pp-gameover-coins" class="lead mb-4">
             {{coinscollected}} <strong class="pp-accent">{{playergold}}</strong><br>
             {{maxmultiplier}} <strong class="pp-accent">x{{playermultiplier}}</strong>
         </p>
@@ -59,7 +59,7 @@
         </div>
         {{/unseentitle}}
         {{#difficultylabel}}
-        <div class="mb-3 text-center">
+        <div id="pp-retry-wrap" class="mb-3 text-center">
             <label class="d-block mb-1" for="pp-retry-difficulty">{{difficultylabel}}</label>
             <select class="form-control d-inline-block w-auto" id="pp-retry-difficulty" disabled>
                 {{#difficultychoices}}
@@ -68,6 +68,7 @@
             </select>
         </div>
         {{/difficultylabel}}
+        <div id="pp-campaign-end" class="pp-gameover-campaign mb-3" hidden></div>
         <p id="pp-save-status" class="text-light small">{{savingprogress}}</p>
         <div class="pp-gameover-buttons">
             <button id="btn-pp-review" hidden class="btn btn-outline-light btn-lg shadow">

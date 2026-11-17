@@ -130,7 +130,11 @@ $templatedata = [
     'opponenthelp' => [
         'closelabel' => get_string('close', 'mod_playerpuzzle'),
     ] + \mod_playerpuzzle\local\opponent_card::for_fight($jsconfig),
-    'giveup' => \mod_playerpuzzle\local\game_page_service::giveup_dialog(!empty($jsconfig['isdemo'])),
+    'giveup' => \mod_playerpuzzle\local\game_page_service::giveup_dialog(
+        !empty($jsconfig['isdemo']),
+        empty($jsconfig['isdemo'])
+            && (\mod_playerpuzzle\local\game_page_service::attempt_position($playerpuzzle, (int) $USER->id)['last'] ?? false)
+    ),
     'howtoplay' => \mod_playerpuzzle\local\howtoplay::context($playerpuzzle, is_guest($context, (int) $USER->id)),
 ];
 

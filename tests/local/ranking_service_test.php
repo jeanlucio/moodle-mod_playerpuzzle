@@ -308,6 +308,32 @@ final class ranking_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests the position and points of one student, the way the ranking shows them, and that staff and a student
+     * who has not played have none.
+     *
+     * @return void
+     */
+    public function test_a_student_standing_matches_the_ranking(): void {
+        [$instance, $cm] = $this->make_instance();
+        $ana = $this->make_student('Ana');
+        $bia = $this->make_student('Bia');
+        $cris = $this->make_student('Cris');
+        $this->make_attempt($instance, $ana, ['currentphase' => 6]);
+        $this->make_attempt($instance, $bia, ['currentphase' => 3]);
+        $teacher = $this->getDataGenerator()->create_and_enrol($this->course, 'editingteacher');
+        $this->make_attempt($instance, $teacher, ['currentphase' => 9]);
+
+        $standing = ranking_service::get_standing($instance, $cm, (int) $bia->id);
+        $ranking = ranking_service::get_ranking($instance, $cm, (int) $bia->id);
+
+        $this->assertSame(2, $standing['position']);
+        $this->assertSame($this->standings($ranking)['Bia Test'], $standing['points']);
+        $this->assertSame(1, ranking_service::get_standing($instance, $cm, (int) $ana->id)['position']);
+        $this->assertNull(ranking_service::get_standing($instance, $cm, (int) $cris->id), 'has not played');
+        $this->assertNull(ranking_service::get_standing($instance, $cm, (int) $teacher->id), 'staff is not ranked');
+    }
+
+    /**
      * Tests that an activity nobody has played yet gives an empty ranking.
      *
      * @return void

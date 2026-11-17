@@ -684,6 +684,54 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the Lobby counts the attempts of a limited Campaign and warns on the last one, before Play is
+     * pressed, and says nothing when the attempts are unlimited.
+     *
+     * @return void
+     */
+    public function test_the_lobby_counts_the_attempts_and_warns_on_the_last(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0, 'maxattempts' => 2,
+        ]);
+        [$unlimitedcm, $unlimited] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0, 'maxattempts' => 0,
+        ]);
+        $userid = (int) $this->student->id;
+        $build = fn($cm, $instance): array => lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            $userid,
+            \context_module::instance($cm->id)
+        );
+
+        $data = $build($cm, $instance);
+        $this->assertSame(
+            get_string('lobby_attempt_of', 'mod_playerpuzzle', (object) ['current' => 1, 'max' => 2]),
+            $data['attempttext']
+        );
+        $this->assertArrayNotHasKey('attemptlasttext', $data);
+
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id, 'userid' => $userid, 'token' => bin2hex(random_bytes(32)),
+            'status' => 'lost', 'campaign' => 1, 'currentphase' => 4, 'timecreated' => time(), 'timefinished' => time(),
+        ]);
+        $data = $build($cm, $instance);
+        $this->assertSame(
+            get_string('lobby_attempt_of', 'mod_playerpuzzle', (object) ['current' => 2, 'max' => 2]),
+            $data['attempttext']
+        );
+        $this->assertSame(get_string('lobby_attempt_last', 'mod_playerpuzzle'), $data['attemptlasttext']);
+        $html = $this->render_lobby($data);
+        $this->assertStringContainsString(get_string('lobby_attempt_last', 'mod_playerpuzzle'), $html);
+
+        $data = $build($unlimitedcm, $unlimited);
+        $this->assertArrayNotHasKey('attempttext', $data);
+    }
+
+    /**
      * Tests that a Campaign student's hero stands in the Lobby at its current stage, and that Play goes
      * straight on to play.php.
      *

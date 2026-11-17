@@ -1436,6 +1436,99 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
+     * Reports a defeat on a Campaign attempt.
+     *
+     * @param array $overrides Instance field overrides.
+     * @return array The response of the web service.
+     */
+    private function lose_a_campaign_attempt(array $overrides): array {
+        $instance = $this->make_instance($overrides + ['gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxlevels' => 2]);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 4);
+
+        return $this->call_save_progress([
+            'cmid'                 => $instance->cmid,
+            'token'                => $token,
+            'victory'              => 0,
+            'damage'               => 100,
+            'coinsearnedsofar'     => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+    }
+
+    /**
+     * Tests that the defeat that spends a Campaign's last attempt says the Campaign is over, with why, the phases
+     * won, the grade and the ranking position, while one with attempts left says nothing of the kind.
+     *
+     * @return void
+     */
+    public function test_the_last_defeat_of_a_campaign_reports_how_it_went(): void {
+        $result = $this->lose_a_campaign_attempt(['maxattempts' => 1, 'show_ranking' => 1, 'grade' => 100]);
+
+        $this->assertFalse($result['error']);
+        $this->assertTrue($result['data']['campaignended']);
+        $lines = $result['data']['campaignlines'];
+        $this->assertSame(get_string('campaignover_text', 'mod_playerpuzzle'), $lines[0]);
+        $this->assertSame(
+            get_string('campaignend_phases', 'mod_playerpuzzle', (object) ['won' => 3, 'total' => 20]),
+            $lines[1]
+        );
+        $this->assertSame(
+            get_string('campaignend_grade', 'mod_playerpuzzle', (object) ['grade' => '15.00', 'max' => '100.00']),
+            $lines[2]
+        );
+        $this->assertSame(
+            get_string('campaignend_ranking', 'mod_playerpuzzle', (object) ['position' => 1, 'points' => '15']),
+            $lines[3]
+        );
+        $this->assertCount(4, $lines);
+    }
+
+    /**
+     * Tests that a defeat with attempts left, and a Campaign with unlimited attempts, are not the end of it.
+     *
+     * @return void
+     */
+    public function test_a_defeat_with_attempts_left_is_not_the_end_of_the_campaign(): void {
+        foreach ([3, 0] as $maxattempts) {
+            $result = $this->lose_a_campaign_attempt(['maxattempts' => $maxattempts]);
+
+            $this->assertFalse($result['error']);
+            $this->assertFalse($result['data']['campaignended'], 'with ' . $maxattempts . ' attempts allowed');
+            $this->assertSame([], $result['data']['campaignlines']);
+        }
+    }
+
+    /**
+     * Tests that an ungraded activity with no ranking tells only why and how far, and that a hidden grade is not
+     * given away.
+     *
+     * @return void
+     */
+    public function test_the_end_of_a_campaign_leaves_out_what_the_student_cannot_see(): void {
+        $result = $this->lose_a_campaign_attempt(['maxattempts' => 1, 'show_ranking' => 0, 'grade' => 0]);
+        $this->assertCount(2, $result['data']['campaignlines']);
+
+        $instance = $this->make_instance([
+            'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxattempts' => 1, 'grade' => 100, 'show_ranking' => 0,
+        ]);
+        $gradeitem = \grade_item::fetch([
+            'itemtype' => 'mod', 'itemmodule' => 'playerpuzzle', 'iteminstance' => $instance->id, 'itemnumber' => 0,
+            'courseid' => $this->course->id,
+        ]);
+        $gradeitem->set_hidden(1, false);
+        $this->setUser($this->student);
+        $token = security::generate_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1, 4);
+        $result = $this->call_save_progress([
+            'cmid' => $instance->cmid, 'token' => $token, 'victory' => 0, 'damage' => 100, 'coinsearnedsofar' => 0,
+            'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertCount(2, $result['data']['campaignlines'], 'the hidden grade is not shown');
+        $this->assertStringNotContainsString('100', implode(' ', $result['data']['campaignlines']));
+    }
+
+    /**
      * A Demo on a Campaign instance is a one-shot fight, so its victory is never held back.
      *
      * @return void

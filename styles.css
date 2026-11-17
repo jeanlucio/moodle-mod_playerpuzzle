@@ -2349,6 +2349,12 @@ body.path-mod-playerpuzzle .pp-gameover-unseen ul {
     padding-inline-start: 1.25rem;
 }
 
+/* How the Campaign went, on the end screen of its last match. */
+body.path-mod-playerpuzzle .pp-gameover-campaign {
+    max-width: 32rem;
+    text-align: center;
+}
+
 body.path-mod-playerpuzzle .pp-themed .pp-victory {
     color: var(--pp-gold-hi);
     text-shadow: 0 0 18px rgba(224, 168, 62, 0.45);

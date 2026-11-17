@@ -135,6 +135,33 @@ Feature: A student chooses a hero
     And I should see "You have played every Campaign available in this activity"
     And I should not see "Start a new Campaign"
 
+  Scenario: The Lobby counts the attempts of a limited Campaign
+    Given the following "activities" exist:
+      | activity     | course | name         | minquestions | maxattempts |
+      | playerpuzzle | C1     | Dungeon Quiz | 0            | 2           |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
+    And I log in as "student1"
+    When I am on the "Dungeon Quiz" "playerpuzzle activity" page
+    Then I should see "Attempt 1 of 2"
+    And I should not see "This is your last attempt"
+
+  Scenario: The Lobby warns before the last attempt of a Campaign
+    Given the following "activities" exist:
+      | activity     | course | name         | minquestions | maxattempts |
+      | playerpuzzle | C1     | Dungeon Quiz | 0            | 2           |
+    And the following "mod_playerpuzzle > heroes" exist:
+      | playerpuzzle | user     | hero  |
+      | Dungeon Quiz | student1 | magef |
+    And the following "mod_playerpuzzle > attempts" exist:
+      | playerpuzzle | user     | rngseed | status | currentphase |
+      | Dungeon Quiz | student1 | 1       | lost   | 3            |
+    And I log in as "student1"
+    When I am on the "Dungeon Quiz" "playerpuzzle activity" page
+    Then I should see "Attempt 2 of 2"
+    And I should see "This is your last attempt: if you lose, the Campaign ends."
+
   Scenario: Buying a hero upgrade in the Lobby shop spends PuzzleCoin and uses up the stage's buy
     Given the following "activities" exist:
       | activity     | course | name         | minquestions |

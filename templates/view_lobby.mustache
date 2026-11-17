@@ -230,6 +230,9 @@
                 {{/noquestions}}
                 {{^noquestions}}
                 {{^isguest}}
+                {{#attempttext}}
+                <p class="pp-lobby-note" role="status">{{attempttext}}{{#attemptlasttext}} {{attemptlasttext}}{{/attemptlasttext}}</p>
+                {{/attempttext}}
                 {{#newcampaigntext}}
                 <p class="pp-lobby-note" role="status">{{newcampaigntext}}</p>
                 {{/newcampaigntext}}

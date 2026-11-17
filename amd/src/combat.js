@@ -1944,6 +1944,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         .text(successMsg);
                 }
                 $('#btn-pp-restart, #btn-pp-exit, #pp-retry-difficulty').prop('disabled', false);
+                if (res.campaignended) {
+                    this.showCampaignEnd(res);
+                }
                 if (res.questionlog && res.questionlog.length > 0) {
                     $('#btn-pp-review').prop('hidden', false)
                         .off('click').on('click', () => this.showDebrief(res.questionlog));
@@ -1961,6 +1964,40 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;
             });
+        }
+
+        /**
+         * The end screen of the match that ended the Campaign: it says so, with how it went (why, the phases won,
+         * the grade and the ranking position, as the server worked them out), and no longer offers to play
+         * again, since the Lobby is where another Campaign is started from. A Campaign won keeps its own title.
+         *
+         * @param {object} res The save_progress response (outcome, campaignlines).
+         * @return {Promise<void>}
+         */
+        async showCampaignEnd(res) {
+            const box = document.getElementById('pp-campaign-end');
+            if (!box) {
+                return;
+            }
+            if (res.outcome !== 'won') {
+                $('#playerpuzzle-gameover h1').text(this.strings.campaignover);
+                // A lost match banks nothing, so the coins and the multiplier have no news left, and the room goes to
+                // how the Campaign went.
+                const coins = document.getElementById('pp-gameover-coins');
+                if (coins) {
+                    coins.hidden = true;
+                }
+            }
+            const lines = res.campaignlines.map(text => ({text}));
+            const {html, js} = await Templates.renderForPromise('mod_playerpuzzle/campaignend_lines', {lines});
+            Templates.replaceNodeContents(box, html, js);
+            box.hidden = false;
+            document.getElementById('btn-pp-restart').hidden = true;
+            const retry = document.getElementById('pp-retry-wrap');
+            if (retry) {
+                retry.hidden = true;
+            }
+            Accessibility.announce(`${this.strings.campaignover} ${res.campaignlines.join(' ')}`);
         }
 
         /**

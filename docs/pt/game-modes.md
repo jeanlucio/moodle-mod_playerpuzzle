@@ -14,6 +14,11 @@ Campanha.
   nova começa com a PuzzleCoin e os consumíveis do estudante zerados, por isso o Lobby pede
   confirmação antes. Depois que uma Campanha termina, o Lobby deixa de mostrar o saldo e a loja, e a escolha do
   herói da próxima Campanha vem marcada com o herói da que acabou.
+* **Tentativas e o fim da Campanha:** com tentativas limitadas o Lobby diz em qual tentativa o estudante está
+  ("Tentativa 2 de 3") e avisa antes da última, e o diálogo de desistir da partida também. Quando a última
+  tentativa é perdida, a tela final diz "Campanha encerrada" em vez de oferecer jogar de novo, com o motivo,
+  as fases vencidas, a nota alcançada (quando a atividade tem nota e ela não está oculta) e a posição no
+  ranking da turma (quando ele está ligado).
 * **Desistir da Campanha:** uma Campanha em andamento pode ser abandonada pelo Lobby, depois de uma
   confirmação. Ela termina onde está e vale o progresso que alcançou, como quando as tentativas acabam, e
   a próxima pode começar se a atividade permitir. Quando é a última Campanha que a atividade permite, a

@@ -258,6 +258,29 @@ class game_page_service {
     }
 
     /**
+     * The attempt the student is on in the Campaign they are playing, when the activity limits them: the one
+     * open, or the next one to start. A Campaign that has ended, with nothing under way, has none.
+     *
+     * @param stdClass $instance Activity instance (id, gamemode, maxlevels, maxattempts).
+     * @param int $userid User ID.
+     * @return array|null ['current' => int, 'max' => int, 'last' => bool], or null for a Single Match, for
+     *  unlimited attempts and for a Campaign that is waiting for its next one to be chosen.
+     */
+    public static function attempt_position(stdClass $instance, int $userid): ?array {
+        $max = (int) $instance->maxattempts;
+        if ($instance->gamemode !== constants::GAMEMODE_CAMPAIGN || $max <= 0) {
+            return null;
+        }
+        $start = self::next_campaign_start($instance, $userid);
+        if ($start->startsnew && user_hero::get((int) $instance->id, $userid, $start->campaign) === null) {
+            return null;
+        }
+        $current = campaigns::attempts_used((int) $instance->id, $userid, $start->campaign) + 1;
+
+        return ['current' => $current, 'max' => $max, 'last' => $current >= $max];
+    }
+
+    /**
      * Refuses a match that cannot be won: when the activity requires answering a minimum of questions
      * before a victory counts and has no approved question to draw, the boss is revived every time its HP
      * reaches zero and the server refuses the victory, so the student could only lose, spending an attempt
@@ -717,12 +740,15 @@ class game_page_service {
      * attempt spent and the phase's coins lost; a Demo grants and costs nothing, so it says only that it ends.
      *
      * @param bool $isdemo Whether the match is a Demo.
+     * @param bool $lastattempt Whether it is the last attempt of the Campaign, which giving up then ends.
      * @return array Template data for mod_playerpuzzle/giveup_dialog.
      */
-    public static function giveup_dialog(bool $isdemo): array {
+    public static function giveup_dialog(bool $isdemo, bool $lastattempt = false): array {
+        $text = $isdemo ? 'giveup_demo' : ($lastattempt ? 'giveup_text_last' : 'giveup_text');
+
         return [
             'title' => get_string('giveup_title', 'mod_playerpuzzle'),
-            'text' => get_string($isdemo ? 'giveup_demo' : 'giveup_text', 'mod_playerpuzzle'),
+            'text' => get_string($text, 'mod_playerpuzzle'),
             'confirmlabel' => get_string('giveup_confirm', 'mod_playerpuzzle'),
             'cancellabel' => get_string('giveup_cancel', 'mod_playerpuzzle'),
         ];

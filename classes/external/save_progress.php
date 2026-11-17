@@ -32,6 +32,7 @@ use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
 use mod_playerpuzzle\local\attempt_questions;
+use mod_playerpuzzle\local\campaign_end;
 use mod_playerpuzzle\local\coin_ledger;
 use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\engine\combat;
@@ -240,6 +241,8 @@ class save_progress extends external_api {
                 'outcome'     => 'restarted',
                 'message'     => get_string('victoryunverifiedrestart', 'mod_playerpuzzle'),
                 'coinsbanked' => 0,
+                'campaignended' => false,
+                'campaignlines' => [],
                 'questionlog' => [],
             ];
         }
@@ -309,6 +312,11 @@ class save_progress extends external_api {
             }
         }
 
+        // A Campaign whose last attempt this was does not go on from the end screen: it says so, and how it went.
+        $campaignend = $isdemo
+            ? ['ended' => false, 'lines' => []]
+            : campaign_end::summary($playerpuzzle, $cm, (int) $USER->id, $isvictory);
+
         // A claimed victory the replay found to be a defeat, or could not verify with no
         // restart left, is reported as such — the client then shows a defeat, not a win.
         $message = ($claimedvictory && !$isvictory && !$isdemo)
@@ -320,6 +328,8 @@ class save_progress extends external_api {
             'outcome'     => $finalstatus,
             'message'     => $message,
             'coinsbanked' => $coinsbanked,
+            'campaignended' => $campaignend['ended'],
+            'campaignlines' => $campaignend['lines'],
             'questionlog' => attempt_questions::get_phase_log(
                 (int) $attempt->id,
                 (int) $attempt->currentlevel,
@@ -342,6 +352,11 @@ class save_progress extends external_api {
             ),
             'message'     => new external_value(PARAM_TEXT, 'Feedback message for the player'),
             'coinsbanked' => new external_value(PARAM_INT, 'PuzzleCoin banked this session'),
+            'campaignended' => new external_value(PARAM_BOOL, 'Whether this match ended the Campaign'),
+            'campaignlines' => new external_multiple_structure(
+                new external_value(PARAM_TEXT, 'One line of the Campaign result'),
+                'How the Campaign that just ended went: why, the phases won, the grade and the ranking position'
+            ),
             'questionlog' => new external_multiple_structure(
                 new external_single_structure([
                     'questiontext'  => new external_value(PARAM_RAW, 'Question text'),

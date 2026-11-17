@@ -393,7 +393,7 @@ class lobby_page_service {
         }
 
         if ($attempt !== null) {
-            return self::campaign_name_context((int) $attempt->campaign) + [
+            return self::campaign_name_context((int) $attempt->campaign) + self::attempt_context($instance, $userid) + [
                 'progresstext' => get_string('lobby_currentprogress', 'mod_playerpuzzle', (object) [
                     'level' => $attempt->currentlevel,
                     'phase' => $attempt->currentphase,
@@ -434,7 +434,7 @@ class lobby_page_service {
             ];
         }
 
-        $data = self::campaign_name_context($start->campaign);
+        $data = self::campaign_name_context($start->campaign) + self::attempt_context($instance, $userid);
         if ($start->level === 1 && $start->phase === 1) {
             return $data;
         }
@@ -445,6 +445,27 @@ class lobby_page_service {
                 'phase' => $start->phase,
             ]),
         ];
+    }
+
+    /**
+     * Which attempt of the Campaign the student is on, when the activity limits them, and a warning when it is
+     * the last: losing it ends the Campaign, which the student should know before pressing Play.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @return array The attempt note, and the warning on the last attempt; empty for unlimited attempts.
+     */
+    private static function attempt_context(stdClass $instance, int $userid): array {
+        $position = game_page_service::attempt_position($instance, $userid);
+        if ($position === null) {
+            return [];
+        }
+        $data = ['attempttext' => get_string('lobby_attempt_of', 'mod_playerpuzzle', (object) $position)];
+        if ($position['last']) {
+            $data['attemptlasttext'] = get_string('lobby_attempt_last', 'mod_playerpuzzle');
+        }
+
+        return $data;
     }
 
     /**

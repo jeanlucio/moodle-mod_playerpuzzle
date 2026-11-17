@@ -1653,6 +1653,42 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests which attempt of the Campaign the student is on: counted from the ones spent, the last one told apart,
+     * and nothing for unlimited attempts, a Single Match or a Campaign that has ended and waits for the next.
+     *
+     * @return void
+     */
+    public function test_attempt_position(): void {
+        [, $campaign] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxattempts' => 3, 'maxcampaigns' => 2,
+        ]);
+        [, $unlimited] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN, 'maxattempts' => 0]);
+        [, $single] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'maxattempts' => 3]);
+        $userid = (int) $this->student->id;
+
+        $this->assertSame(['current' => 1, 'max' => 3, 'last' => false], game_page_service::attempt_position($campaign, $userid));
+        $this->assertNull(game_page_service::attempt_position($unlimited, $userid));
+        $this->assertNull(game_page_service::attempt_position($single, $userid));
+
+        $this->make_finished_attempt($campaign->id, $userid);
+        $this->make_finished_attempt($campaign->id, $userid);
+        $this->assertSame(['current' => 3, 'max' => 3, 'last' => true], game_page_service::attempt_position($campaign, $userid));
+
+        $this->make_finished_attempt($campaign->id, $userid);
+        $this->assertNull(
+            game_page_service::attempt_position($campaign, $userid),
+            'the Campaign ended, the next waits for its hero'
+        );
+
+        game_page_service::choose_campaign_hero($campaign, $userid, 'magef');
+        $this->assertSame(
+            ['current' => 1, 'max' => 3, 'last' => false],
+            game_page_service::attempt_position($campaign, $userid),
+            'the next Campaign counts its own attempts'
+        );
+    }
+
+    /**
      * Tests the give up confirmation: a real match says what it costs, a Demo says only that it ends, and the
      * game's layout carries the dialog with both buttons.
      *
@@ -1667,6 +1703,12 @@ final class game_page_service_test extends \advanced_testcase {
         $this->assertSame(get_string('giveup_text', 'mod_playerpuzzle'), $real['text']);
         $this->assertSame(get_string('giveup_demo', 'mod_playerpuzzle'), $demo['text']);
         $this->assertSame($real['title'], $demo['title']);
+        $this->assertSame(
+            get_string('giveup_text_last', 'mod_playerpuzzle'),
+            game_page_service::giveup_dialog(false, true)['text'],
+            'the last attempt of a Campaign says that giving up ends it'
+        );
+        $this->assertSame($demo['text'], game_page_service::giveup_dialog(true, true)['text'], 'a Demo ends nothing');
 
         $html = $OUTPUT->render_from_template('mod_playerpuzzle/game_layout', [
             'loadingtext' => 'Loading',

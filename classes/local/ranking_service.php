@@ -95,6 +95,27 @@ class ranking_service {
     }
 
     /**
+     * Where one student stands in the ranking, for the end of a Campaign.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param stdClass $cm Course module record.
+     * @param int $userid The student.
+     * @return array|null ['position' => int, 'points' => string], the points formatted as the ranking shows
+     *  them, or null when the student is not ranked (staff, or a student who has not played yet).
+     */
+    public static function get_standing(stdClass $instance, stdClass $cm, int $userid): ?array {
+        $context = context_module::instance($cm->id);
+        $entries = self::score_students($instance, report_service::get_student_pool($cm, $context, $userid));
+        foreach ($entries as $index => $entry) {
+            if ((int) $entry['user']->id === $userid) {
+                return ['position' => $index + 1, 'points' => format_float($entry['points'], 1, true, true)];
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Scores and orders every student who has played, best first.
      *
      * @param stdClass $instance Activity instance.

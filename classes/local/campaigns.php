@@ -84,12 +84,7 @@ class campaigns {
             return self::start($campaign + 1, 1, 1, self::ENDED_GAVEUP);
         }
         if ($maxattempts > 0) {
-            $finished = $DB->count_records_select(
-                'playerpuzzle_attempts',
-                'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0 AND campaign = :campaign',
-                ['ppid' => $playerpuzzleid, 'uid' => $userid, 'inprogress' => 'inprogress', 'campaign' => $campaign]
-            );
-            if ($finished >= $maxattempts) {
+            if (self::attempts_used($playerpuzzleid, $userid, $campaign) >= $maxattempts) {
                 return self::start($campaign + 1, 1, 1, self::ENDED_ATTEMPTS);
             }
         }
@@ -104,6 +99,25 @@ class campaigns {
         }
 
         return self::start($campaign, $level, $phase, '');
+    }
+
+    /**
+     * How many attempts of a Campaign the student has spent: the ones that ended, whatever the outcome. One still
+     * open is not counted.
+     *
+     * @param int $playerpuzzleid Activity instance ID.
+     * @param int $userid User ID.
+     * @param int $campaign Campaign number.
+     * @return int
+     */
+    public static function attempts_used(int $playerpuzzleid, int $userid, int $campaign): int {
+        global $DB;
+
+        return $DB->count_records_select(
+            'playerpuzzle_attempts',
+            'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0 AND campaign = :campaign',
+            ['ppid' => $playerpuzzleid, 'uid' => $userid, 'inprogress' => 'inprogress', 'campaign' => $campaign]
+        );
     }
 
     /**

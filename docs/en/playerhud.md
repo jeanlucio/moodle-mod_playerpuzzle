@@ -25,7 +25,8 @@ sibling `mod_playerwords`/`mod_playercross` activities use — so the integratio
 change to `block_playerhud` itself.
 
 * **Item representing coins** — lets a student *transfer* units of this item into PuzzleCoin from
-  the Lobby, choosing how many (1:1). Typically PlayerHUD's own PlayerCoin, but any item works.
+  the shop, choosing how many (1:1); the exchange sits beside the PuzzleCoin balance, with the PlayerHUD
+  balance and a line naming the item it takes. Typically PlayerHUD's own PlayerCoin, but any item works.
   This is the only way PlayerHUD coins reach PuzzleCoin: victories are no longer credited to
   PlayerHUD automatically.
 * **Retry cost** — optional; an item (and quantity) charged from the student's 2nd attempt of each

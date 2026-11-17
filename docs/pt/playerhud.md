@@ -26,7 +26,8 @@ atividades irmãs `mod_playerwords`/`mod_playercross` usam — então a integra�
 mudança no `block_playerhud`.
 
 * **Item que representa moedas** — permite que um estudante *transfira* unidades desse item para
-  PuzzleCoin a partir do Lobby, escolhendo quantas (1:1). Normalmente a PlayerCoin do próprio
+  PuzzleCoin a partir da loja, escolhendo quantas (1:1); a troca fica ao lado do saldo de PuzzleCoin, com o
+  saldo do PlayerHUD e uma linha que diz qual item ela leva. Normalmente a PlayerCoin do próprio
   PlayerHUD, mas qualquer item serve. É a única forma de as moedas do PlayerHUD chegarem ao
   PuzzleCoin: as vitórias não são mais creditadas automaticamente no PlayerHUD.
 * **Custo de nova tentativa** — opcional; um item (e quantidade) cobrado a partir da 2ª tentativa de

@@ -359,31 +359,6 @@
                 <h3 id="pp-lobby-shop-title" class="pp-lobby-view-title" tabindex="-1">{{shoptitle}}</h3>
                 {{> mod_playerpuzzle/shop_panel }}
 
-                {{#hastransfer}}
-                <div class="pp-lobby-transfer" data-cmid="{{cmid}}">
-                    <h4 class="pp-lobby-transfer-title">{{transfertitle}}</h4>
-                    <span class="pp-lobby-chip" data-role="hudcoinchip" aria-label="{{hudcoinstext}}">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9" fill="#8ea7c9" stroke="#3f5670" stroke-width="1.5"/>
-                            <circle cx="12" cy="12" r="5.4" fill="none" stroke="#3f5670" stroke-width="1.2"/>
-                        </svg>
-                        <span data-role="hudcoinvalue" aria-hidden="true">{{hudcoinvalue}}</span>
-                    </span>
-                    <label for="pp-lobby-transfer-amount" class="pp-lobby-transfer-label">{{transferamountlabel}}</label>
-                    <input
-                        type="number"
-                        id="pp-lobby-transfer-amount"
-                        class="pp-lobby-transfer-input"
-                        min="1"
-                        step="1"
-                        value="1"
-                    >
-                    <button type="button" class="pp-lobby-menu-btn pp-lobby-transfer-btn">
-                        {{transferbuttonlabel}}
-                    </button>
-                </div>
-                {{/hastransfer}}
-
                 <button type="button" class="pp-lobby-menu-btn pp-lobby-back" data-action="close-panel">{{backlabel}}</button>
             </section>
             {{/campaignended}}

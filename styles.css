@@ -1280,25 +1280,31 @@ body.path-mod-playerpuzzle .pp-lobby-shop-price {
     font-variant-numeric: tabular-nums;
 }
 
-body.path-mod-playerpuzzle .pp-lobby-transfer {
-    width: 100%;
+/* The balance row of the shop: the PuzzleCoin balance on the left and, when the activity exchanges PlayerHUD coins, the
+   exchange on the right, wrapping under it on a narrow screen. */
+body.path-mod-playerpuzzle .pp-shop-panel .pp-lobby-stats {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    background: rgba(0, 0, 0, 0.28);
-    border: 1px solid rgba(205, 179, 122, 0.4);
-    border-radius: 6px;
-    padding: 0.6rem 0.75rem;
+    justify-content: space-between;
+    gap: 0.75rem;
 }
 
-body.path-mod-playerpuzzle .pp-lobby-transfer-title {
+body.path-mod-playerpuzzle .pp-lobby-transfer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-inline-start: auto;
+}
+
+/* Which item is exchanged and at what rate, under the balance row. */
+body.path-mod-playerpuzzle .pp-lobby-transfer-rate {
     flex: 1 1 100%;
-    margin: 0 0 0.15rem;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    margin: 0;
+    font-size: 0.75rem;
+    text-align: end;
     color: var(--pp-tan, #cdb37a);
 }
 

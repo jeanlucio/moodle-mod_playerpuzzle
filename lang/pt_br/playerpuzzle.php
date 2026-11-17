@@ -396,6 +396,7 @@ $string['lobby_speech_label'] = 'Narrar os anúncios do jogo em voz alta';
 $string['lobby_stockowned'] = 'Possui: {$a}';
 $string['lobby_transfer_amount_label'] = 'Quantidade';
 $string['lobby_transfer_button'] = 'Transferir';
+$string['lobby_transfer_rate'] = 'Troca de 1 para 1: {$a} (PlayerHUD) → PuzzleCoin';
 $string['lobby_transfer_title'] = 'Transferir do PlayerHUD';
 $string['manafull'] = 'Medidor de mana cheio. Um desafio de pergunta foi aberto.';
 $string['managequestions'] = 'Gerenciar perguntas';

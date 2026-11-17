@@ -336,11 +336,18 @@ class lobby_page_service {
             ? hud_service::get_block_instance_id($courseid)
             : null;
         $coinitemid = (int) $instance->hud_coin_item;
-        $data['hastransfer'] = $blockinstanceid !== null && $coinitemid > 0;
+        // Plain text: the template and the lang string escape it once. An item deleted from PlayerHUD has no name left
+        // and nothing to exchange, so the widget is left out.
+        $coinitemname = $blockinstanceid !== null && $coinitemid > 0
+            ? hud_service::get_item_name_plain($blockinstanceid, $coinitemid)
+            : '';
+        $data['hastransfer'] = $coinitemname !== '';
 
         if ($data['hastransfer']) {
             $hudbalance = hud_service::get_upgrade_level($blockinstanceid, $userid, $coinitemid);
             $data['hudcoinvalue'] = $hudbalance;
+            $data['hudcoinname'] = $coinitemname;
+            $data['transferratetext'] = get_string('lobby_transfer_rate', 'mod_playerpuzzle', $coinitemname);
             $data['hudcoinstext'] = get_string('lobby_hudcoinbalance', 'mod_playerpuzzle', $hudbalance);
             $data['transfertitle'] = get_string('lobby_transfer_title', 'mod_playerpuzzle');
             $data['transferbuttonlabel'] = get_string('lobby_transfer_button', 'mod_playerpuzzle');

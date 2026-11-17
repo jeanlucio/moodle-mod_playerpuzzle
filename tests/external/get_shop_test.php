@@ -63,6 +63,41 @@ final class get_shop_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the shop the screen between phases draws carries the PlayerHUD exchange too, with the item it takes
+     * and the rate, since it is the same panel as the Lobby's.
+     *
+     * @return void
+     */
+    public function test_the_shop_carries_the_playerhud_exchange(): void {
+        global $DB;
+
+        if (!\mod_playerpuzzle\local\hud_service::is_installed()) {
+            $this->markTestSkipped('block_playerhud not installed.');
+        }
+        $biid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => \context_course::instance($this->course->id)->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'course-view-*', 'defaultregion' => 'side-pre',
+            'defaultweight' => 0, 'configdata' => '', 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $biid, 'name' => 'Gold Coin', 'description' => '', 'image' => '', 'xp' => 0,
+            'enabled' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $instance = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')
+            ->create_instance(['course' => $this->course->id, 'hud_coin_item' => $itemid, 'minquestions' => 0]);
+        $this->setUser($this->student);
+
+        $result = $this->call($instance);
+
+        $this->assertFalse($result['error']);
+        $this->assertStringContainsString('pp-lobby-transfer-btn', $result['data']['html']);
+        $this->assertStringContainsString(
+            get_string('lobby_transfer_rate', 'mod_playerpuzzle', 'Gold Coin'),
+            $result['data']['html']
+        );
+    }
+
+    /**
      * Tests that a Campaign student with a hero gets the whole shop: their balance, the five consumables and
      * the hero's upgrades, rendered.
      *

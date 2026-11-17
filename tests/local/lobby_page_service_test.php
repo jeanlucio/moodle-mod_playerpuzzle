@@ -316,6 +316,42 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertTrue($data['hastransfer']);
         $this->assertSame(15, $data['hudcoinvalue']);
         $this->assertSame(get_string('lobby_hudcoinbalance', 'mod_playerpuzzle', 15), $data['hudcoinstext']);
+
+        // It says which item is exchanged and at what rate, in the balance row of the shop, beside the PuzzleCoin.
+        $this->assertSame('PlayerCoin', $data['hudcoinname']);
+        $this->assertSame(get_string('lobby_transfer_rate', 'mod_playerpuzzle', 'PlayerCoin'), $data['transferratetext']);
+        $html = $this->render_lobby($data);
+        $this->assertMatchesRegularExpression(
+            '~pp-lobby-stats.*?data-role="coinchip".*?class="pp-lobby-transfer".*?PlayerCoin~s',
+            $html
+        );
+        $this->assertSame(1, substr_count($html, 'class="pp-lobby-transfer"'));
+        $this->assertStringContainsString(get_string('lobby_transfer_rate', 'mod_playerpuzzle', 'PlayerCoin'), $html);
+    }
+
+    /**
+     * Tests that the transfer is left out when its item was deleted from PlayerHUD, since there is nothing to exchange.
+     *
+     * @return void
+     */
+    public function test_build_page_data_no_transfer_when_the_coin_item_was_deleted(): void {
+        global $DB;
+
+        $this->skip_if_no_playerhud();
+        [, $coinitemid] = $this->make_hud_item('PlayerCoin');
+        [$cm, $instance] = $this->make_cm_and_instance(['hud_coin_item' => $coinitemid]);
+        $DB->delete_records('block_playerhud_items', ['id' => $coinitemid]);
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertFalse($data['hastransfer']);
+        $this->assertArrayNotHasKey('hudcoinname', $data);
     }
 
     /**

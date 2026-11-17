@@ -29,8 +29,10 @@ mudança no `block_playerhud`.
   PuzzleCoin a partir do Lobby, escolhendo quantas (1:1). Normalmente a PlayerCoin do próprio
   PlayerHUD, mas qualquer item serve. É a única forma de as moedas do PlayerHUD chegarem ao
   PuzzleCoin: as vitórias não são mais creditadas automaticamente no PlayerHUD.
-* **Custo de nova tentativa** — opcional; um item (e quantidade) cobrado a partir da 2ª tentativa,
-  sem nunca ampliar o limite de tentativas configurado. É pensado para ser conquistado com conteúdo
+* **Custo de nova tentativa** — opcional; um item (e quantidade) cobrado a partir da 2ª tentativa de
+  cada Campanha (a primeira tentativa de toda Campanha é grátis; na Partida Única, a partir da 2ª
+  partida), sem nunca ampliar o limite de tentativas configurado. O Lobby mostra o custo e o saldo do
+  estudante antes do Jogar, e um início recusado por falta do item abre um diálogo que diz o que falta. É pensado para ser conquistado com conteúdo
   de reforço fora do jogo, para que o estudante que mais sofre não seja o que menos pode pagar por
   outra tentativa. Um estudante que só está retomando uma luta nunca é cobrado.
 * **Prêmio de vitória** — opcional; um item fixo concedido a cada vitória, além das moedas. Quando

@@ -115,6 +115,21 @@ class hud_service {
     }
 
     /**
+     * Returns the plain-text name of an item, for a template or a lang string that escapes it once, or empty string
+     * if it does not belong to $blockinstanceid.
+     *
+     * @param int $blockinstanceid Block instance ID the item must belong to.
+     * @param int $itemid PlayerHUD item ID.
+     * @return string
+     */
+    public static function get_item_name_plain(int $blockinstanceid, int $itemid): string {
+        if (!self::is_installed()) {
+            return '';
+        }
+        return \block_playerhud\local\external_items::get_name_plain($blockinstanceid, $itemid);
+    }
+
+    /**
      * Returns the formatted display name of an item, or empty string if it does not belong to
      * $blockinstanceid.
      *

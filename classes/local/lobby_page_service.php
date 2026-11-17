@@ -44,6 +44,8 @@ class lobby_page_service {
      * @param int $userid Current user ID.
      * @param context_module $context Module context, used for the Manage Questions capability
      *  check.
+     * @param string $refused The code of a refused start that sent the student back here, see
+     *  game_page_service::refusal_text(); empty on a plain visit.
      * @return array Template context for mod_playerpuzzle/view_lobby.
      */
     public static function build_page_data(
@@ -51,7 +53,8 @@ class lobby_page_service {
         stdClass $course,
         stdClass $instance,
         int $userid,
-        context_module $context
+        context_module $context,
+        string $refused = ''
     ): array {
         global $DB;
         // Carried through to play.php's own game config purely as a CSS sizing hint for the
@@ -138,6 +141,14 @@ class lobby_page_service {
         }
         // Merged rather than added: a Campaign that has ended renames the Play button.
         $data = array_merge($data, self::build_progress_context($instance, $attempt, $userid));
+        if (!is_guest($context, $userid)) {
+            $data += self::retry_cost_context($instance, $userid);
+            $refusal = $refused === '' ? '' : game_page_service::refusal_text($instance, $userid, $refused);
+            if ($refusal !== '') {
+                $data['refusaltext'] = $refusal;
+                $data['refusaltitle'] = get_string('refusal_title', 'mod_playerpuzzle');
+            }
+        }
         if (!is_guest($context, $userid) && campaign_giveup::is_available($instance, $userid)) {
             $data['cangiveupcampaign'] = true;
             $data['giveupcampaignurl'] = (new moodle_url('/mod/playerpuzzle/giveupcampaign.php', ['id' => $cm->id]))->out(false);
@@ -448,6 +459,29 @@ class lobby_page_service {
                 'level' => $start->level,
                 'phase' => $start->phase,
             ]),
+        ];
+    }
+
+    /**
+     * What the next Play costs in the PlayerHUD item, when it costs anything, said before the student presses it. When
+     * they hold less than it takes the note says what is missing, which is what the refusal would say.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @return array The note, and whether it is the warning; empty when the next Play is free.
+     */
+    private static function retry_cost_context(stdClass $instance, int $userid): array {
+        $cost = game_page_service::retry_cost($instance, $userid);
+        // An item deleted from PlayerHUD has no name left, and the gate waives its cost.
+        if ($cost === null || $cost['item'] === '') {
+            return [];
+        }
+        $values = (object) ['qty' => $cost['qty'], 'have' => $cost['have'], 'item' => $cost['item']];
+        $short = $cost['have'] < $cost['qty'];
+
+        return [
+            'retrycosttext' => get_string($short ? 'insufficientretrycost' : 'lobby_retrycost', 'mod_playerpuzzle', $values),
+            'retrycostshort' => $short,
         ];
     }
 

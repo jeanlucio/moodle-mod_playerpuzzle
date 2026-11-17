@@ -26,6 +26,7 @@ namespace mod_playerpuzzle\local;
 
 use context;
 use context_module;
+use mod_playerpuzzle\exception\start_refused;
 use mod_playerpuzzle\local\engine\combat;
 use mod_playerpuzzle\local\engine\replay;
 use mod_playerpuzzle\local\engine\security;
@@ -77,7 +78,7 @@ class game_page_service {
         if ($instance->gamemode !== constants::GAMEMODE_SINGLE) {
             $refusal = self::campaign_limit_refusal($instance, $userid);
             if ($refusal !== null) {
-                throw new moodle_exception($refusal, 'mod_playerpuzzle', $returnurl);
+                throw new start_refused($refusal, $returnurl);
             }
             return;
         }
@@ -95,7 +96,7 @@ class game_page_service {
             ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress']
         );
         if ($finishedattempts >= $limit) {
-            throw new moodle_exception('maxsinglematchesreached', 'mod_playerpuzzle', $returnurl);
+            throw new start_refused('maxsinglematchesreached', $returnurl);
         }
     }
 
@@ -293,7 +294,7 @@ class game_page_service {
      */
     public static function check_has_questions(stdClass $instance, moodle_url $returnurl): void {
         if (self::lacks_questions($instance)) {
-            throw new moodle_exception('noapprovedquestions', 'mod_playerpuzzle', $returnurl);
+            throw new start_refused('noapprovedquestions', $returnurl);
         }
     }
 
@@ -328,9 +329,9 @@ class game_page_service {
     }
 
     /**
-     * Charges the configured retry-cost item, from the 2nd attempt onwards, before a new
-     * attempt is created — never for the very first attempt, and never for a play.php POST
-     * that will only resume an already in-progress one (a plain reload, or the client's own
+     * Charges the configured retry-cost item before a new attempt is created, from the 2nd attempt of a Campaign (or
+     * of a Single Match activity) onwards: never for the first attempt of a Campaign, a new one included, and never
+     * for a play.php POST that will only resume an already in-progress attempt (a plain reload, or the client's own
      * "Continue"/"Play again" form submit hitting the same phase again is not "a new try").
      *
      * Retries stay free whenever there is nothing configured to charge against: no item set,
@@ -342,43 +343,125 @@ class game_page_service {
      * @param int $userid Current user ID.
      * @param moodle_url $returnurl URL to send the student back to on failure.
      * @return void
-     * @throws moodle_exception When the item is configured and available, but the student
-     *  does not hold enough of it.
+     * @throws start_refused When the item is configured and available, but the student does not hold enough of it.
      */
     public static function check_retry_cost(stdClass $instance, int $userid, moodle_url $returnurl): void {
+        $cost = self::retry_cost($instance, $userid);
+        if ($cost === null) {
+            return;
+        }
+
+        $consumed = hud_service::consume_item($cost['blockinstanceid'], $userid, $cost['itemid'], $cost['qty']);
+        if ($consumed === false) {
+            throw new start_refused('insufficientretrycost', $returnurl, self::retry_cost_values($cost));
+        }
+    }
+
+    /**
+     * What the student's next Play would cost them in the PlayerHUD item, when it costs anything.
+     *
+     * @param stdClass $instance Activity instance (id, course, gamemode, maxlevels, maxattempts, hud_retry_cost_item,
+     *  hud_retry_cost_qty).
+     * @param int $userid Current user ID.
+     * @return array|null ['blockinstanceid', 'itemid', 'qty', 'have', 'item' (the plain name)], or null when the next
+     *  Play is free: no item configured, no PlayerHUD block, an attempt to resume, or the first attempt of the Campaign.
+     */
+    public static function retry_cost(stdClass $instance, int $userid): ?array {
+        $itemid = (int) $instance->hud_retry_cost_item;
+        if ($itemid <= 0 || security::has_inprogress_attempt((int) $instance->id, $userid)) {
+            return null;
+        }
+        $blockinstanceid = hud_service::get_block_instance_id((int) $instance->course);
+        if ($blockinstanceid === null || self::attempts_this_campaign($instance, $userid) === 0) {
+            return null;
+        }
+
+        return [
+            'blockinstanceid' => $blockinstanceid,
+            'itemid' => $itemid,
+            'qty' => max(1, (int) $instance->hud_retry_cost_qty),
+            'have' => hud_service::get_upgrade_level($blockinstanceid, $userid, $itemid),
+            'item' => hud_service::get_item_name_plain($blockinstanceid, $itemid),
+        ];
+    }
+
+    /**
+     * The values the retry cost messages show.
+     *
+     * @param array $cost What retry_cost() returned.
+     * @return stdClass ->qty, ->have and ->item.
+     */
+    private static function retry_cost_values(array $cost): stdClass {
+        return (object) ['qty' => $cost['qty'], 'have' => $cost['have'], 'item' => $cost['item']];
+    }
+
+    /**
+     * The attempts the student has already finished in the game they are about to play on: in the Campaign the next
+     * attempt belongs to, so a new Campaign starts from none, or in the whole activity for a Single Match. A Demo
+     * never counts.
+     *
+     * @param stdClass $instance Activity instance (id, gamemode, maxlevels, maxattempts).
+     * @param int $userid Current user ID.
+     * @return int
+     */
+    private static function attempts_this_campaign(stdClass $instance, int $userid): int {
         global $DB;
 
-        $itemid = (int) $instance->hud_retry_cost_item;
-        if ($itemid <= 0) {
-            return;
-        }
-        if (security::has_inprogress_attempt((int) $instance->id, $userid)) {
-            return;
+        if ($instance->gamemode === constants::GAMEMODE_CAMPAIGN) {
+            return campaigns::attempts_used((int) $instance->id, $userid, self::next_campaign_start($instance, $userid)->campaign);
         }
 
-        // Demo attempts never count as a real "finished attempt" here — a student who has
-        // only ever played the Demo still gets a free first real try.
-        $finishedattempts = $DB->count_records_select(
+        return $DB->count_records_select(
             'playerpuzzle_attempts',
             'playerpuzzleid = :ppid AND userid = :uid AND status <> :inprogress AND isdemo = 0',
             ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress']
         );
-        if ($finishedattempts === 0) {
-            return;
+    }
+
+    /** @var string[] The refusals of a new attempt the Lobby explains in a dialog, by lang string key. */
+    public const REFUSALS = [
+        'cooldownactive',
+        'insufficientretrycost',
+        'maxattemptsreached',
+        'maxcampaignsreached',
+        'maxsinglematchesreached',
+        'noapprovedquestions',
+    ];
+
+    /**
+     * What the Lobby's dialog says about a refused start, worked out from where the student stands now and not from
+     * what came in the request, so a stale or made-up code says nothing.
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @param string $code One of self::REFUSALS.
+     * @return string The text, or '' when the code is unknown or the reason no longer holds.
+     */
+    public static function refusal_text(stdClass $instance, int $userid, string $code): string {
+        if (!in_array($code, self::REFUSALS, true)) {
+            return '';
         }
 
-        $blockinstanceid = hud_service::get_block_instance_id((int) $instance->course);
-        if ($blockinstanceid === null) {
-            return;
-        }
+        if ($code === 'insufficientretrycost') {
+            $cost = self::retry_cost($instance, $userid);
+            $short = $cost !== null && $cost['item'] !== '' && $cost['have'] < $cost['qty'];
 
-        $qty = max(1, (int) $instance->hud_retry_cost_qty);
-        $consumed = hud_service::consume_item($blockinstanceid, $userid, $itemid, $qty);
-        // Null means the item is gone from PlayerHUD (deleted, or the block was replaced): the cost
-        // can never be paid, so it is waived. Only a genuine shortfall blocks the retry.
-        if ($consumed === false) {
-            throw new moodle_exception('insufficientretrycost', 'mod_playerpuzzle', $returnurl);
+            return $short ? get_string($code, 'mod_playerpuzzle', self::retry_cost_values($cost)) : '';
         }
+        if ($code === 'cooldownactive') {
+            $remaining = self::cooldown_remaining($instance, $userid);
+
+            return $remaining > 0 ? get_string($code, 'mod_playerpuzzle', format_time($remaining)) : '';
+        }
+        $holds = match ($code) {
+            'maxattemptsreached', 'maxcampaignsreached' => self::campaign_limit_refusal($instance, $userid) === $code,
+            'noapprovedquestions' => self::lacks_questions($instance),
+            default => (int) $instance->max_single_matches > 0
+                && $instance->gamemode === constants::GAMEMODE_SINGLE
+                && self::attempts_this_campaign($instance, $userid) >= (int) $instance->max_single_matches,
+        };
+
+        return $holds ? get_string($code, 'mod_playerpuzzle') : '';
     }
 
     /**
@@ -396,22 +479,32 @@ class game_page_service {
      * @param int $userid Current user ID.
      * @param moodle_url $returnurl URL to send the student back to on failure.
      * @return void
-     * @throws moodle_exception When the cooldown since the last finished match has not
-     *  elapsed yet.
+     * @throws start_refused When the cooldown since the last finished match has not elapsed yet.
      */
     public static function check_cooldown(stdClass $instance, int $userid, moodle_url $returnurl): void {
+        $remaining = self::cooldown_remaining($instance, $userid);
+        if ($remaining > 0) {
+            throw new start_refused('cooldownactive', $returnurl, format_time($remaining));
+        }
+    }
+
+    /**
+     * How long the student still has to wait before the next match, see check_cooldown().
+     *
+     * @param stdClass $instance Activity instance.
+     * @param int $userid Current user ID.
+     * @return int Seconds, 0 when the student may start now or the activity has no cooldown.
+     */
+    public static function cooldown_remaining(stdClass $instance, int $userid): int {
         global $DB;
 
         if ($instance->gamemode !== constants::GAMEMODE_SINGLE) {
-            return;
+            return 0;
         }
 
         $seconds = (int) $instance->cooldown_seconds;
-        if ($seconds <= 0) {
-            return;
-        }
-        if (security::has_inprogress_attempt((int) $instance->id, $userid)) {
-            return;
+        if ($seconds <= 0 || security::has_inprogress_attempt((int) $instance->id, $userid)) {
+            return 0;
         }
 
         $lastfinished = $DB->get_field_sql(
@@ -421,13 +514,10 @@ class game_page_service {
             ['ppid' => $instance->id, 'uid' => $userid, 'inprogress' => 'inprogress']
         );
         if (empty($lastfinished)) {
-            return;
+            return 0;
         }
 
-        $until = (int) $lastfinished + $seconds;
-        if ($until > time()) {
-            throw new moodle_exception('cooldownactive', 'mod_playerpuzzle', $returnurl, format_time($until - time()));
-        }
+        return max(0, (int) $lastfinished + $seconds - time());
     }
 
     /**

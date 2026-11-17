@@ -109,18 +109,23 @@ $PAGE->blocks->show_only_fake_blocks();
 
 // For a real attempt this also runs the gates that decide whether a new one may begin (attempt limit,
 // cooldown, retry cost), under the lock that stops two simultaneous requests from both passing them.
-$jsconfig = \mod_playerpuzzle\local\game_page_service::start_game(
-    $cm,
-    $playerpuzzle,
-    $context,
-    (int) $USER->id,
-    $ismobile,
-    $difficulty,
-    $isdemo,
-    $returnurl,
-    $hero,
-    $chosendifficulty
-);
+try {
+    $jsconfig = \mod_playerpuzzle\local\game_page_service::start_game(
+        $cm,
+        $playerpuzzle,
+        $context,
+        (int) $USER->id,
+        $ismobile,
+        $difficulty,
+        $isdemo,
+        $returnurl,
+        $hero,
+        $chosendifficulty
+    );
+} catch (\mod_playerpuzzle\exception\start_refused $refused) {
+    // The activity's rules do not let this attempt begin: the Lobby says why in a dialog, not an error page.
+    redirect(new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id, 'refused' => $refused->errorcode]));
+}
 
 $PAGE->requires->js_call_amd('mod_playerpuzzle/game_boot', 'init', []);
 

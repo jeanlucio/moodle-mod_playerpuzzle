@@ -127,6 +127,9 @@
 
         <div class="pp-lobby-panel">
             <div id="pp-lobby-main" class="pp-lobby-view pp-lobby-main">
+                {{#refusaltext}}
+                <p id="pp-lobby-refusal" class="pp-lobby-note" role="alert" data-title="{{refusaltitle}}">{{refusaltext}}</p>
+                {{/refusaltext}}
                 <div class="pp-lobby-ribbon">
                     <h2 class="pp-lobby-ribbon-title">
                         {{#progresstext}}{{progresstext}}{{/progresstext}}
@@ -233,6 +236,9 @@
                 {{#attempttext}}
                 <p class="pp-lobby-note" role="status">{{attempttext}}{{#attemptlasttext}} {{attemptlasttext}}{{/attemptlasttext}}</p>
                 {{/attempttext}}
+                {{#retrycosttext}}
+                <p class="pp-lobby-note" role="status">{{#retrycostshort}}<strong>{{retrycosttext}}</strong>{{/retrycostshort}}{{^retrycostshort}}{{retrycosttext}}{{/retrycostshort}}</p>
+                {{/retrycosttext}}
                 {{#newcampaigntext}}
                 <p class="pp-lobby-note" role="status">{{newcampaigntext}}</p>
                 {{/newcampaigntext}}

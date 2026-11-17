@@ -767,6 +767,75 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the Lobby says what the next Play costs in the PlayerHUD item before it is pressed, and warns when
+     * the student holds less than it takes, and says nothing while the next Play is free.
+     *
+     * @return void
+     */
+    public function test_the_lobby_says_what_a_new_attempt_costs(): void {
+        global $DB;
+
+        if (!\mod_playerpuzzle\local\hud_service::is_installed()) {
+            $this->markTestSkipped('block_playerhud not installed.');
+        }
+        $biid = $DB->insert_record('block_instances', (object) [
+            'blockname' => 'playerhud', 'parentcontextid' => \context_course::instance($this->course->id)->id,
+            'showinsubcontexts' => 0, 'pagetypepattern' => 'course-view-*', 'defaultregion' => 'side-pre',
+            'defaultweight' => 0, 'configdata' => '', 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        $itemid = $DB->insert_record('block_playerhud_items', (object) [
+            'blockinstanceid' => $biid, 'name' => 'Retry Token', 'description' => '', 'image' => '', 'xp' => 0,
+            'enabled' => 1, 'timecreated' => time(), 'timemodified' => time(),
+        ]);
+        [$cm, $instance] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_CAMPAIGN, 'minquestions' => 0, 'hud_retry_cost_item' => $itemid,
+            'hud_retry_cost_qty' => 2,
+        ]);
+        $userid = (int) $this->student->id;
+        $build = fn(string $refused = ''): array => lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            $userid,
+            \context_module::instance($cm->id),
+            $refused
+        );
+
+        $this->assertArrayNotHasKey('retrycosttext', $build(), 'the first attempt of a Campaign is free');
+
+        \mod_playerpuzzle\local\game_page_service::choose_campaign_hero($instance, $userid, 'magef');
+        $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => $instance->id, 'userid' => $userid, 'token' => bin2hex(random_bytes(32)),
+            'status' => 'lost', 'campaign' => 1, 'currentphase' => 4, 'timecreated' => time(), 'timefinished' => time(),
+        ]);
+        $data = $build();
+        $this->assertTrue($data['retrycostshort']);
+        $this->assertSame(
+            get_string('insufficientretrycost', 'mod_playerpuzzle', (object) ['qty' => 2, 'have' => 0, 'item' => 'Retry Token']),
+            $data['retrycosttext']
+        );
+        $this->assertStringContainsString('<strong>', $this->render_lobby($data));
+
+        \block_playerhud\local\external_items::grant($biid, $itemid, $userid, 3, 'test', true);
+        $data = $build();
+        $this->assertFalse($data['retrycostshort']);
+        $this->assertSame(
+            get_string('lobby_retrycost', 'mod_playerpuzzle', (object) ['qty' => 2, 'have' => 3, 'item' => 'Retry Token']),
+            $data['retrycosttext']
+        );
+
+        // A refused start sends the student back with its code; the Lobby words it from where they stand now.
+        $this->assertArrayNotHasKey('refusaltext', $build('insufficientretrycost'), 'they can pay, so nothing is said');
+        \block_playerhud\local\external_items::consume($biid, $itemid, $userid, 3, 'test');
+        $data = $build('insufficientretrycost');
+        $this->assertSame($data['retrycosttext'], $data['refusaltext']);
+        $this->assertSame(get_string('refusal_title', 'mod_playerpuzzle'), $data['refusaltitle']);
+        $this->assertMatchesRegularExpression('~<p id="pp-lobby-refusal"[^>]*role="alert"~', $this->render_lobby($data));
+        $this->assertArrayNotHasKey('refusaltext', $build('dragon'), 'an unknown code says nothing');
+        $this->assertArrayNotHasKey('refusaltext', $build(''));
+    }
+
+    /**
      * Tests that a Campaign student's hero stands in the Lobby at its current stage, and that Play goes
      * straight on to play.php.
      *

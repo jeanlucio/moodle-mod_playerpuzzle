@@ -28,8 +28,10 @@ change to `block_playerhud` itself.
   the Lobby, choosing how many (1:1). Typically PlayerHUD's own PlayerCoin, but any item works.
   This is the only way PlayerHUD coins reach PuzzleCoin: victories are no longer credited to
   PlayerHUD automatically.
-* **Retry cost** — optional; an item (and quantity) charged from the student's 2nd attempt, never
-  raising the configured attempt limit. It is meant to be earned through reinforcement content
+* **Retry cost** — optional; an item (and quantity) charged from the student's 2nd attempt of each
+  Campaign (the first attempt of every Campaign is free; in a Single Match, from the 2nd match), never
+  raising the configured attempt limit. The Lobby shows the cost and the student's balance before Play,
+  and a start refused for lack of the item opens a dialog that says what is missing. It is meant to be earned through reinforcement content
   outside the game, so that the student who struggles most is not the one least able to afford
   another try. A student who is only resuming a fight is never charged.
 * **Win grant** — optional; a fixed item awarded on every victory, on top of the coins. When the

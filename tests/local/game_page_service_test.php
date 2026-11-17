@@ -512,8 +512,117 @@ final class game_page_service_test extends \advanced_testcase {
         $this->make_finished_attempt($instance->id, (int) $this->student->id);
         $this->grant_hud_item($biid, $itemid, (int) $this->student->id, 1);
 
-        $this->expectException(\moodle_exception::class);
-        game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+        try {
+            game_page_service::check_retry_cost($instance, (int) $this->student->id, $this->returnurl);
+            $this->fail('The retry should have been refused.');
+        } catch (\mod_playerpuzzle\exception\start_refused $refused) {
+            $this->assertSame('insufficientretrycost', $refused->errorcode);
+            $this->assertStringContainsString('3', $refused->getMessage());
+            $this->assertStringContainsString('Retry Token', $refused->getMessage());
+        }
+        $this->assertSame(1, hud_service::get_upgrade_level($biid, $this->student->id, $itemid), 'nothing is taken');
+    }
+
+    /**
+     * Tests that the retry cost counts the attempts of the Campaign about to be played: the first attempt of a new
+     * Campaign is free, after one that was won or given up, and the second of it is charged; a Single Match keeps
+     * counting the whole activity.
+     *
+     * @return void
+     */
+    public function test_retry_cost_counts_the_attempts_of_the_campaign(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        [, $campaign] = $this->make_cm_and_instance(['hud_retry_cost_item' => $itemid, 'hud_retry_cost_qty' => 2]);
+        [, $single] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_SINGLE, 'hud_retry_cost_item' => $itemid, 'hud_retry_cost_qty' => 2,
+        ]);
+        $userid = (int) $this->student->id;
+
+        $this->assertNull(game_page_service::retry_cost($campaign, $userid), 'the very first attempt');
+
+        $this->make_finished_attempt($campaign->id, $userid, 'lost');
+        $cost = game_page_service::retry_cost($campaign, $userid);
+        $this->assertSame([2, 0], [$cost['qty'], $cost['have']]);
+        $this->assertSame('Retry Token', $cost['item']);
+
+        $this->make_finished_attempt($campaign->id, $userid, 'won');
+        $this->assertNull(game_page_service::retry_cost($campaign, $userid), 'the first attempt of the next Campaign is free');
+        game_page_service::check_retry_cost($campaign, $userid, $this->returnurl);
+
+        $this->make_finished_attempt($campaign->id, $userid, 'lost', 2);
+        $this->grant_hud_item($biid, $itemid, $userid, 5);
+        $this->assertSame(5, game_page_service::retry_cost($campaign, $userid)['have']);
+        game_page_service::check_retry_cost($campaign, $userid, $this->returnurl);
+        $this->assertSame(3, hud_service::get_upgrade_level($biid, $userid, $itemid), 'the second attempt of Campaign 2 costs');
+
+        $this->make_finished_attempt($single->id, $userid, 'won');
+        $this->assertNotNull(game_page_service::retry_cost($single, $userid), 'a Single Match counts the activity');
+    }
+
+    /**
+     * Tests the text of the dialog a refused start opens: worked out from where the student stands, so a reason that
+     * no longer holds and a code that is not one of the refusals say nothing.
+     *
+     * @return void
+     */
+    public function test_refusal_text(): void {
+        [$biid, $itemid] = $this->make_hud_item();
+        [, $campaign] = $this->make_cm_and_instance([
+            'hud_retry_cost_item' => $itemid, 'hud_retry_cost_qty' => 2, 'maxattempts' => 1, 'maxcampaigns' => 1,
+            'minquestions' => 0,
+        ]);
+        [, $single] = $this->make_cm_and_instance([
+            'gamemode' => constants::GAMEMODE_SINGLE, 'max_single_matches' => 1, 'minquestions' => 3,
+        ]);
+        $single->cooldown_seconds = 600;
+        $userid = (int) $this->student->id;
+        $text = fn($instance, string $code): string => game_page_service::refusal_text($instance, $userid, $code);
+
+        $this->assertSame('', $text($campaign, 'insufficientretrycost'), 'nothing to pay yet');
+        $this->assertSame('', $text($campaign, 'maxcampaignsreached'));
+        $this->assertSame('', $text($campaign, 'dragon'), 'not a refusal');
+        $this->assertSame('', $text($campaign, "<script>alert('x')</script>"));
+
+        $this->make_finished_attempt($campaign->id, $userid, 'lost');
+        $this->assertSame(
+            get_string('maxattemptsreached', 'mod_playerpuzzle'),
+            $text($campaign, 'maxattemptsreached') . '',
+            'the one attempt of the Campaign is spent'
+        );
+        $this->assertSame('', $text($campaign, 'maxcampaignsreached'), 'it names the reason that holds');
+
+        $other = $this->make_cm_and_instance(['hud_retry_cost_item' => $itemid, 'hud_retry_cost_qty' => 2, 'minquestions' => 0])[1];
+        $this->make_finished_attempt($other->id, $userid, 'lost');
+        $short = $text($other, 'insufficientretrycost');
+        $this->assertStringContainsString('Retry Token', $short);
+        $this->grant_hud_item($biid, $itemid, $userid, 2);
+        $this->assertSame('', $text($other, 'insufficientretrycost'), 'the student can pay now');
+
+        $this->assertSame(get_string('noapprovedquestions', 'mod_playerpuzzle'), $text($single, 'noapprovedquestions'));
+        $this->make_finished_attempt($single->id, $userid, 'lost');
+        $this->assertSame(get_string('maxsinglematchesreached', 'mod_playerpuzzle'), $text($single, 'maxsinglematchesreached'));
+        $this->assertStringContainsString('10', $text($single, 'cooldownactive'));
+        $this->assertGreaterThan(0, game_page_service::cooldown_remaining($single, $userid));
+    }
+
+    /**
+     * Tests that the gates refuse a start with the exception play.php turns into a dialog, so the Lobby is where the
+     * student lands and not an error page.
+     *
+     * @return void
+     */
+    public function test_start_game_refuses_with_the_exception_the_lobby_explains(): void {
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_SINGLE, 'max_single_matches' => 1]);
+        $this->make_finished_attempt($instance->id, (int) $this->student->id);
+
+        try {
+            $this->start_game($cm, $instance);
+            $this->fail('The start should have been refused.');
+        } catch (\mod_playerpuzzle\exception\start_refused $refused) {
+            $this->assertSame('maxsinglematchesreached', $refused->errorcode);
+            $this->assertInstanceOf(\moodle_exception::class, $refused);
+            $this->assertContains($refused->errorcode, game_page_service::REFUSALS);
+        }
     }
 
     /**

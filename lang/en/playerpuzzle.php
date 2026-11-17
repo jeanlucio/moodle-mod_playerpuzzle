@@ -153,6 +153,7 @@ $string['error_aigenerate'] = 'Could not generate questions right now. Please tr
 $string['error_aitopicrequired'] = 'Enter a topic before generating questions.';
 $string['error_atleastone'] = 'Enter a whole number of 1 or more.';
 $string['error_atleasttwooptions'] = 'Enter at least two options.';
+$string['error_atmost'] = 'Enter a whole number of {$a} or less.';
 $string['error_categorynotreusable'] = 'You may not import questions from this category.';
 $string['error_completionattempts'] = 'Required attempts must be at least 1.';
 $string['error_completionattemptsunreachable'] = 'The attempt limits allow at most {$a} finished attempts, so students could never complete this rule. Lower the required attempts or raise the limits.';

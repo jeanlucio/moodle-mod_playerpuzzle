@@ -654,6 +654,28 @@ final class mod_form_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that HP, damage and coin gain have a ceiling that is accepted exactly and refused one above, so a
+     * typo cannot save a fight no one can win or a shop no one can empty.
+     *
+     * @return void
+     */
+    public function test_validation_rejects_values_above_the_ceilings(): void {
+        [$form, $data] = $this->make_form_and_data();
+        $ceilings = [
+            'basestudenthp' => constants::MAX_HP,
+            'basebosshp' => constants::MAX_HP,
+            'bossdamage' => constants::MAX_DAMAGE,
+            'coingain' => constants::MAX_COINGAIN,
+        ];
+
+        foreach ($ceilings as $field => $ceiling) {
+            $this->assertArrayNotHasKey($field, $form->validation(array_merge($data, [$field => $ceiling]), []), $field);
+            $errors = $form->validation(array_merge($data, [$field => $ceiling + 1]), []);
+            $this->assertSame(get_string('error_atmost', 'mod_playerpuzzle', $ceiling), $errors[$field], $field);
+        }
+    }
+
+    /**
      * Tests that a scale is rejected as the grade type, while points and no grade are not.
      * Both grade formulas work on a percentage of the maximum grade, so on a scale every
      * student would get the lowest item.

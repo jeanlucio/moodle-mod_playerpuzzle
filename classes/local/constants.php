@@ -61,4 +61,13 @@ final class constants {
 
     /** @var string Difficulty: doubles the boss HP/damage and triples the coin reward. */
     public const DIFFICULTY_HARD = 'hard';
+
+    /** @var int Highest base HP the form accepts for the student and the opponent: 100 times the default. */
+    public const MAX_HP = 10000;
+
+    /** @var int Highest base damage the form accepts: 100 times the default. */
+    public const MAX_DAMAGE = 1000;
+
+    /** @var int Highest coin gain per 3-coin combination the form accepts: 100 times the default. */
+    public const MAX_COINGAIN = 1000;
 }

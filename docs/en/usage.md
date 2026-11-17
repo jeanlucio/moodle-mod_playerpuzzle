@@ -4,7 +4,9 @@
 
 1. Add a PlayerPuzzle activity to a course.
 2. Choose a **Game Mode** — Campaign or Single Match — see [Game Modes](#game-modes) — and the
-   opponent, its HP and damage, and how many levels a Campaign has.
+   opponent, its HP and damage, and how many levels a Campaign has. The form caps the base HP at
+   10,000, the base damage at 1,000 and the coin gain at 1,000, which is 100 times the defaults and
+   only there to catch a typo.
 3. Open **Manage questions** (in the activity's navigation bar, under **More** when it does not fit) to fill the activity's question bank: import a Question Bank
    category, add questions by hand, or generate them with AI (pending questions need your
    approval before they are drawn). See [Question Engine](#questions).

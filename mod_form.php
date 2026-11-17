@@ -388,7 +388,8 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
      * Rejects combat values the game cannot play with. The fields are PARAM_INT, which
      * accepts zero and negatives: a zero or negative HP makes the client and the server
      * replay disagree (or ends the match at once), and a negative boss damage heals the
-     * student. The attempt limit of the mode that is not selected is hidden in the form, so
+     * student. HP, damage and coin gain also have a ceiling, since a value far above the
+     * defaults is nearly always a typo. The attempt limit of the mode that is not selected is hidden in the form, so
      * it is not checked.
      *
      * @param array $data Submitted form data.
@@ -400,6 +401,19 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
         foreach (['basestudenthp', 'basebosshp', 'bossdamage'] as $field) {
             if (isset($data[$field]) && (int) $data[$field] < 1) {
                 $errors[$field] = get_string('error_atleastone', 'mod_playerpuzzle');
+            }
+        }
+
+        // A typo such as an extra zero would otherwise save a fight no one can win, or a shop no one can empty.
+        $ceilings = [
+            'basestudenthp' => constants::MAX_HP,
+            'basebosshp' => constants::MAX_HP,
+            'bossdamage' => constants::MAX_DAMAGE,
+            'coingain' => constants::MAX_COINGAIN,
+        ];
+        foreach ($ceilings as $field => $ceiling) {
+            if (!isset($errors[$field]) && isset($data[$field]) && (int) $data[$field] > $ceiling) {
+                $errors[$field] = get_string('error_atmost', 'mod_playerpuzzle', $ceiling);
             }
         }
 

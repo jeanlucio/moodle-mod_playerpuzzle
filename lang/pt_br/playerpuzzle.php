@@ -153,6 +153,7 @@ $string['error_aigenerate'] = 'Não foi possível gerar perguntas agora. Tente n
 $string['error_aitopicrequired'] = 'Digite um tema antes de gerar perguntas.';
 $string['error_atleastone'] = 'Digite um número inteiro igual ou maior que 1.';
 $string['error_atleasttwooptions'] = 'Digite pelo menos duas opções.';
+$string['error_atmost'] = 'Digite um número inteiro igual ou menor que {$a}.';
 $string['error_categorynotreusable'] = 'Você não pode importar questões desta categoria.';
 $string['error_completionattempts'] = 'As tentativas exigidas devem ser no mínimo 1.';
 $string['error_completionattemptsunreachable'] = 'Os limites de tentativas permitem no máximo {$a} tentativas finalizadas, então os estudantes nunca conseguiriam cumprir esta regra. Reduza as tentativas exigidas ou aumente os limites.';

@@ -4,7 +4,8 @@
 
 1. Adicione uma atividade PlayerPuzzle a um curso.
 2. Escolha um **Modo de Jogo** — Campanha ou Partida Única — veja [Modos de Jogo](#game-modes) — e
-   o oponente, o HP e o dano dele, e quantos níveis tem uma Campanha.
+   o oponente, o HP e o dano dele, e quantos níveis tem uma Campanha. O formulário limita o HP base a 10.000, o dano base a 1.000 e
+   o ganho de moedas a 1.000, que é 100 vezes o padrão e existe só para pegar um erro de digitação.
 3. Abra **Gerenciar questões** (na barra de navegação da atividade, em **Mais** quando não couber) para montar o banco de questões da atividade: importe uma
    categoria do Banco de Questões, cadastre questões à mão ou gere-as com IA (questões pendentes
    precisam da sua aprovação antes de serem sorteadas). Veja [Motor de Questões](#questions).

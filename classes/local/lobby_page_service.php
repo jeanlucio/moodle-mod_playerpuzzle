@@ -346,8 +346,8 @@ class lobby_page_service {
         if ($data['hastransfer']) {
             $hudbalance = hud_service::get_upgrade_level($blockinstanceid, $userid, $coinitemid);
             $data['hudcoinvalue'] = $hudbalance;
-            $data['hudcoinname'] = $coinitemname;
-            $data['transferratetext'] = get_string('lobby_transfer_rate', 'mod_playerpuzzle', $coinitemname);
+            $data['hudcoinlabel'] = get_string('lobby_transfer_item', 'mod_playerpuzzle', $coinitemname);
+            $data['transfertotext'] = get_string('lobby_transfer_to', 'mod_playerpuzzle');
             $data['hudcoinstext'] = get_string('lobby_hudcoinbalance', 'mod_playerpuzzle', $hudbalance);
             $data['transfertitle'] = get_string('lobby_transfer_title', 'mod_playerpuzzle');
             $data['transferbuttonlabel'] = get_string('lobby_transfer_button', 'mod_playerpuzzle');

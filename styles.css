@@ -1280,31 +1280,37 @@ body.path-mod-playerpuzzle .pp-lobby-shop-price {
     font-variant-numeric: tabular-nums;
 }
 
-/* The balance row of the shop: the PuzzleCoin balance on the left and, when the activity exchanges PlayerHUD coins, the
-   exchange on the right, wrapping under it on a narrow screen. */
-body.path-mod-playerpuzzle .pp-shop-panel .pp-lobby-stats {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-}
-
+/* The exchange of PlayerHUD coins for PuzzleCoin, a row of its own under the balance and written as a sentence: the
+   item and its balance, then how many to transfer. It wraps into short lines on a narrow screen. */
 body.path-mod-playerpuzzle .pp-lobby-transfer {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-inline-start: auto;
+    gap: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(205, 179, 122, 0.4);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
 }
 
-/* Which item is exchanged and at what rate, under the balance row. */
-body.path-mod-playerpuzzle .pp-lobby-transfer-rate {
-    flex: 1 1 100%;
-    margin: 0;
-    font-size: 0.75rem;
-    text-align: end;
+body.path-mod-playerpuzzle .pp-lobby-transfer-from,
+body.path-mod-playerpuzzle .pp-lobby-transfer-do {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-transfer-from {
+    flex: 1 1 auto;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-transfer-item {
+    font-weight: 600;
+}
+
+body.path-mod-playerpuzzle .pp-lobby-transfer-to {
+    font-size: 0.85rem;
     color: var(--pp-tan, #cdb37a);
 }
 
@@ -1389,6 +1395,13 @@ body.path-mod-playerpuzzle .pp-lobby-toggle .form-check-input:checked {
 body.path-mod-playerpuzzle .pp-lobby-transfer .pp-lobby-transfer-btn {
     flex: 0 0 auto;
     width: auto;
+}
+
+/* On a narrow screen the button takes the whole row, an easier target for a thumb. */
+@media (max-width: 575.98px) {
+    body.path-mod-playerpuzzle .pp-lobby-transfer .pp-lobby-transfer-btn {
+        flex: 1 1 100%;
+    }
 }
 
 body.path-mod-playerpuzzle .pp-lobby-ranking-table {

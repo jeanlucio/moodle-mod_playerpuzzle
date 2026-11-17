@@ -318,15 +318,16 @@ final class lobby_page_service_test extends \advanced_testcase {
         $this->assertSame(get_string('lobby_hudcoinbalance', 'mod_playerpuzzle', 15), $data['hudcoinstext']);
 
         // It says which item is exchanged and at what rate, in the balance row of the shop, beside the PuzzleCoin.
-        $this->assertSame('PlayerCoin', $data['hudcoinname']);
-        $this->assertSame(get_string('lobby_transfer_rate', 'mod_playerpuzzle', 'PlayerCoin'), $data['transferratetext']);
+        $this->assertSame('PlayerCoin (PlayerHUD)', $data['hudcoinlabel']);
+        $this->assertSame(get_string('lobby_transfer_to', 'mod_playerpuzzle'), $data['transfertotext']);
         $html = $this->render_lobby($data);
         $this->assertMatchesRegularExpression(
-            '~pp-lobby-stats.*?data-role="coinchip".*?class="pp-lobby-transfer".*?PlayerCoin~s',
+            '~data-role="coinchip".*?class="pp-lobby-transfer".*?PlayerCoin \(PlayerHUD\).*?<input[^>]*pp-lobby-transfer-input~s',
             $html
         );
         $this->assertSame(1, substr_count($html, 'class="pp-lobby-transfer"'));
-        $this->assertStringContainsString(get_string('lobby_transfer_rate', 'mod_playerpuzzle', 'PlayerCoin'), $html);
+        $this->assertStringContainsString('PlayerCoin (PlayerHUD)', $html);
+        $this->assertStringContainsString(get_string('lobby_transfer_to', 'mod_playerpuzzle'), $html);
     }
 
     /**
@@ -351,7 +352,7 @@ final class lobby_page_service_test extends \advanced_testcase {
         );
 
         $this->assertFalse($data['hastransfer']);
-        $this->assertArrayNotHasKey('hudcoinname', $data);
+        $this->assertArrayNotHasKey('hudcoinlabel', $data);
     }
 
     /**

@@ -25,7 +25,7 @@
     * coinstext - The balance as read to a screen reader
     * coinvalue - The balance
     * hastransfer - Whether PlayerHUD coins can be exchanged for PuzzleCoin; then hudcoinvalue (the PlayerHUD balance),
-      hudcoinname (the item, named in transferratetext), hudcoinstext, transfertitle, transferamountlabel, transferbuttonlabel and transferratetext
+      hudcoinlabel (the item and PlayerHUD), hudcoinstext, transfertitle, transferamountlabel, transfertotext and transferbuttonlabel
     * shopitems - The consumables, each with type, icon, label, ownedtext, limittext, price, buylabel and arialabel
     * hasupgrades - Whether the hero's upgrades are shown, with the variables of mod_playerpuzzle/shop_upgrades
     * opponentcard - The opponent of the next phase, with the variables of mod_playerpuzzle/opponent_card
@@ -61,8 +61,10 @@
             </svg>
             <span data-role="coinvalue" aria-hidden="true">{{coinvalue}}</span>
         </span>
-        {{#hastransfer}}
-        <div class="pp-lobby-transfer" role="group" aria-label="{{transfertitle}}" aria-describedby="pp-lobby-transfer-rate">
+    </div>
+    {{#hastransfer}}
+    <div class="pp-lobby-transfer" role="group" aria-label="{{transfertitle}}">
+        <span class="pp-lobby-transfer-from">
             <span class="pp-lobby-chip" data-role="hudcoinchip" aria-label="{{hudcoinstext}}">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="12" cy="12" r="9" fill="#8ea7c9" stroke="#3f5670" stroke-width="1.5"/>
@@ -70,6 +72,9 @@
                 </svg>
                 <span data-role="hudcoinvalue" aria-hidden="true">{{hudcoinvalue}}</span>
             </span>
+            <span class="pp-lobby-transfer-item">{{hudcoinlabel}}</span>
+        </span>
+        <span class="pp-lobby-transfer-do">
             <label for="pp-lobby-transfer-amount" class="pp-lobby-transfer-label">{{transferamountlabel}}</label>
             <input
                 type="number"
@@ -79,11 +84,11 @@
                 step="1"
                 value="1"
             >
-            <button type="button" class="pp-lobby-menu-btn pp-lobby-transfer-btn">{{transferbuttonlabel}}</button>
-        </div>
-        <p id="pp-lobby-transfer-rate" class="pp-lobby-transfer-rate">{{transferratetext}}</p>
-        {{/hastransfer}}
+            <span class="pp-lobby-transfer-to">{{transfertotext}}</span>
+        </span>
+        <button type="button" class="pp-lobby-menu-btn pp-lobby-transfer-btn">{{transferbuttonlabel}}</button>
     </div>
+    {{/hastransfer}}
     {{#phasenote}}
     <p class="pp-shop-note" role="status"><i class="fa fa-circle-info" aria-hidden="true"></i>{{phasenote}}</p>
     {{/phasenote}}

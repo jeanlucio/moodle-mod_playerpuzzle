@@ -64,7 +64,7 @@ final class get_shop_test extends \advanced_testcase {
 
     /**
      * Tests that the shop the screen between phases draws carries the PlayerHUD exchange too, with the item it takes
-     * and the rate, since it is the same panel as the Lobby's.
+     * and where it goes, since it is the same panel as the Lobby's.
      *
      * @return void
      */
@@ -91,10 +91,8 @@ final class get_shop_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertStringContainsString('pp-lobby-transfer-btn', $result['data']['html']);
-        $this->assertStringContainsString(
-            get_string('lobby_transfer_rate', 'mod_playerpuzzle', 'Gold Coin'),
-            $result['data']['html']
-        );
+        $this->assertStringContainsString('Gold Coin (PlayerHUD)', $result['data']['html']);
+        $this->assertStringContainsString(get_string('lobby_transfer_to', 'mod_playerpuzzle'), $result['data']['html']);
     }
 
     /**

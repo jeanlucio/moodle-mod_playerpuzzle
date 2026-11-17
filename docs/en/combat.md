@@ -71,7 +71,7 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 | Hard | ×2 | ×3 | 100% | 100% |
 
 The factor in the first column is on the opponent: on Easy its HP and its hits are halved while the student's own
-hits, Potions and poison keep their full value, so an Easy match is shorter and not only safer. On Hard everything
+hits, Potions and hex keep their full value, so an Easy match is shorter and not only safer. On Hard everything
 doubles for both sides, so the match lasts as long as a Normal one and the student has half the time to survive.
 On Normal the final boss also has 15% more HP, which puts it a little above what a hero with every upgrade can
 reach.

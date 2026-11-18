@@ -213,10 +213,10 @@ test('scaleAttack grows a Normal and a Hard opponent\'s attack over the Campaign
     assert.equal(ReplayMirror.scaleAttack(1.0, 'normal', 1, 1, 0), 1.0);
     assert.equal(ReplayMirror.scaleAttack(1.0, 'normal', 3, 10, 1), 1.6);
     assert.equal(ReplayMirror.scaleAttack(1.0, 'hard', 1, 1, 1), 1.0);
-    assert.equal(ReplayMirror.scaleAttack(1.0, 'hard', 1, 5, 1), 1.711);
-    assert.equal(ReplayMirror.scaleAttack(1.0, 'hard', 1, 10, 1), 2.6);
-    assert.equal(ReplayMirror.scaleAttack(1.15, 'hard', 2, 5, 3), 2.038);
-    assert.equal(ReplayMirror.scaleAttack(1.15, 'hard', 1, 10, 1), 2.99);
+    assert.equal(ReplayMirror.scaleAttack(1.0, 'hard', 1, 5, 1), 1.444);
+    assert.equal(ReplayMirror.scaleAttack(1.0, 'hard', 1, 10, 1), 2.0);
+    assert.equal(ReplayMirror.scaleAttack(1.15, 'hard', 2, 5, 3), 1.705);
+    assert.equal(ReplayMirror.scaleAttack(1.15, 'hard', 1, 10, 1), 2.3);
     assert.equal(ReplayMirror.scaleAttack(1.0, 'easy', 1, 10, 1), 1.0);
 });
 

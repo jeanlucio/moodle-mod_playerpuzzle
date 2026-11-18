@@ -73,11 +73,12 @@ class combat {
      * grows in a straight line over the Campaign's phases. The hero grows in three ways (HP, attack, armor) and the
      * opponent only in HP, so without this the Normal went from about 55% of phases won at the first try to
      * about 90% by the end, and the Hard from about 25% to about 70%, with the coins the Hard pays left over
-     * because the hero had nothing more to buy. Easy is meant to stay easy and does not grow. The Hard's extra is
-     * the one that keeps its first-try rate flat, near 25-30% without consumables, so that it is the consumables
-     * that bring a prepared student to about 40-55%. Tuned with tests/js/engine/simulate_heroes.js.
+     * because the hero had nothing more to buy. Easy is meant to stay easy and does not grow. The Hard grows to
+     * twice its first hit: with the armor growth and the Orb-chasing opponent added later, a growth of 160% made a
+     * Hard Campaign close to impossible even for a hero that kept growing and bought consumables. Tuned with
+     * tests/js/engine/simulate_heroes.js.
      */
-    private const ATTACK_GROWTH = ['easy' => 0.0, 'normal' => 0.6, 'hard' => 1.6];
+    private const ATTACK_GROWTH = ['easy' => 0.0, 'normal' => 0.6, 'hard' => 1.0];
 
     /**
      * How much more of each hit an opponent's armor absorbs, at the Campaign's last phase, than at its first, by

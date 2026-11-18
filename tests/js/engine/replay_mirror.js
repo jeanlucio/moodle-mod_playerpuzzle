@@ -67,7 +67,7 @@ const DIFFICULTY_HP_FACTORS = {easy: 0.5, normal: 1.0, hard: 2.0};
 const NORMAL_FINAL_BOSS_HP_FACTOR = 1.15;
 const DIFFICULTY_PLAYER_FACTORS = {easy: 1.0, normal: 1.0, hard: 2.0};
 // How much harder an opponent hits at the Campaign's last phase, by difficulty, see combat::ATTACK_GROWTH.
-const ATTACK_GROWTH = {easy: 0.0, normal: 0.6, hard: 1.6};
+const ATTACK_GROWTH = {easy: 0.0, normal: 0.6, hard: 1.0};
 // How many points more of each hit an opponent's armor absorbs at the Campaign's last phase, see combat::ARMOR_GROWTH.
 const ARMOR_GROWTH = {easy: 0.0, normal: 0.25, hard: 0.25};
 const PHASES_PER_LEVEL = 10;

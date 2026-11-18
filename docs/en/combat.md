@@ -78,6 +78,7 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 | Growth of its hit over the Campaign | none | up to +60% | up to +100% |
 | Opponent armor | its own only | its own +25 points over the Campaign | its own +25 points |
 | Student's hit | ×1 | ×1 | ×2 |
+| Critical hit (a right answer) | 3× the hit of whoever answered, times their Star multiplier | the same | the same |
 | Coins per 3-coin match | ×0.5 | ×1 | ×3 |
 | Opponent answers right (Multiple Choice / True-False) | 33% / 50% | 66% / 75% | 100% / 100% |
 | How the opponent plays | the first Sword match it finds | weighs the pieces (Sword and Potion count most) | as on Normal, but it chases Orbs (weight 3) and follows the personality of its powers |
@@ -88,17 +89,20 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 The hero is the same on every difficulty: its HP, attack and armor come only from what is bought in the shop. As
 an example, an activity with a base HP of 250 on both sides, a base damage of 10 and 2 levels:
 
-| Phase | | Opponent HP | Its hit | Its armor | Student's hit |
-|---|---|:---:|:---:|:---:|:---:|
-| Level 1, Phase 1 (slime) | Easy | 125 | 5 | 0% | 10 |
-| | Normal | 250 | 10 | 0% | 10 |
-| | Hard | 500 | 20 | 0% | 20 |
-| Level 1, Phase 6 (ghost) | Easy | 188 | 8 | 0% | 15 |
-| | Normal | 375 | 17 | 7% | 15 |
-| | Hard | 750 | 38 | 7% | 30 |
-| Level 2, Phase 10 (vampire, final boss) | Easy | 360 | 12 | 15% | 24 |
-| | Normal | 828 | 38 | 40% | 24 |
-| | Hard | 1440 | 96 | 40% | 48 |
+| Phase | | Opponent HP | Its hit | Its critical | Its armor | Student's hit | Student's critical |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Level 1, Phase 1 (slime) | Easy | 125 | 5 | 15 | 0% | 10 | 30 |
+| | Normal | 250 | 10 | 30 | 0% | 10 | 30 |
+| | Hard | 500 | 20 | 60 | 0% | 20 | 60 |
+| Level 1, Phase 6 (ghost) | Easy | 188 | 8 | 24 | 0% | 15 | 45 |
+| | Normal | 375 | 17 | 52 | 7% | 15 | 45 |
+| | Hard | 750 | 38 | 114 | 7% | 30 | 90 |
+| Level 2, Phase 10 (vampire, final boss) | Easy | 360 | 12 | 36 | 15% | 24 | 72 |
+| | Normal | 828 | 38 | 115 | 40% | 24 | 72 |
+| | Hard | 1440 | 96 | 288 | 40% | 48 | 144 |
+
+The criticals are shown with a Star multiplier of ×1, before the other side's armor; the student's hits are before
+the hero's attack and the opponent's armor.
 
 On Normal and Hard the student needs the same number of hits to bring the opponent down, since their own hit
 doubles too; on Easy, half as many. On Hard the opponent's hit is 2.2 to 2.5 times the Normal one while the

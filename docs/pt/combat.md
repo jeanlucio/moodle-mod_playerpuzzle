@@ -78,6 +78,7 @@ O estudante escolhe Fácil, Normal ou Difícil. A escolha muda a luta, nunca a n
 | Crescimento do golpe na Campanha | nenhum | até +60% | até +100% |
 | Armadura do oponente | só a dele | a dele +25 pontos ao longo da Campanha | a dele +25 pontos |
 | Golpe do estudante | ×1 | ×1 | ×2 |
+| Golpe crítico (uma resposta certa) | 3× o golpe de quem respondeu, vezes o seu multiplicador de Estrela | o mesmo | o mesmo |
 | Moedas por combinação de 3 | ×0,5 | ×1 | ×3 |
 | Oponente acerta a pergunta (Múltipla Escolha / Verdadeiro-Falso) | 33% / 50% | 66% / 75% | 100% / 100% |
 | Como o oponente joga | a primeira combinação de Espadas que achar | pesa as peças (Espada e Poção valem mais) | como no Normal, mas caça Orbes (peso 3) e segue a personalidade dos seus poderes |
@@ -88,17 +89,20 @@ O estudante escolhe Fácil, Normal ou Difícil. A escolha muda a luta, nunca a n
 O herói é o mesmo em toda dificuldade: o HP, o ataque e a armadura dele vêm só do que é comprado na loja. Como
 exemplo, uma atividade com HP base de 250 dos dois lados, dano base de 10 e 2 níveis:
 
-| Fase | | HP do oponente | Golpe dele | Armadura dele | Golpe do estudante |
-|---|---|:---:|:---:|:---:|:---:|
-| Nível 1, Fase 1 (slime) | Fácil | 125 | 5 | 0% | 10 |
-| | Normal | 250 | 10 | 0% | 10 |
-| | Difícil | 500 | 20 | 0% | 20 |
-| Nível 1, Fase 6 (fantasma) | Fácil | 188 | 8 | 0% | 15 |
-| | Normal | 375 | 17 | 7% | 15 |
-| | Difícil | 750 | 38 | 7% | 30 |
-| Nível 2, Fase 10 (vampiro, chefe final) | Fácil | 360 | 12 | 15% | 24 |
-| | Normal | 828 | 38 | 40% | 24 |
-| | Difícil | 1440 | 96 | 40% | 48 |
+| Fase | | HP do oponente | Golpe dele | Crítico dele | Armadura dele | Golpe do estudante | Crítico do estudante |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Nível 1, Fase 1 (slime) | Fácil | 125 | 5 | 15 | 0% | 10 | 30 |
+| | Normal | 250 | 10 | 30 | 0% | 10 | 30 |
+| | Difícil | 500 | 20 | 60 | 0% | 20 | 60 |
+| Nível 1, Fase 6 (fantasma) | Fácil | 188 | 8 | 24 | 0% | 15 | 45 |
+| | Normal | 375 | 17 | 52 | 7% | 15 | 45 |
+| | Difícil | 750 | 38 | 114 | 7% | 30 | 90 |
+| Nível 2, Fase 10 (vampiro, chefe final) | Fácil | 360 | 12 | 36 | 15% | 24 | 72 |
+| | Normal | 828 | 38 | 115 | 40% | 24 | 72 |
+| | Difícil | 1440 | 96 | 288 | 40% | 48 | 144 |
+
+Os críticos aparecem com multiplicador de Estrela ×1, antes da armadura do outro lado; os golpes do estudante, antes
+do ataque do herói e da armadura do oponente.
 
 No Normal e no Difícil o estudante precisa do mesmo número de golpes para derrubar o oponente, já que o golpe dele
 também dobra; no Fácil, metade. No Difícil o golpe do oponente é de 2,2 a 2,5 vezes o do Normal e o HP do

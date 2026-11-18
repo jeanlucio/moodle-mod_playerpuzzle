@@ -23,6 +23,12 @@ copy of the rules and derives the real damage, HP, coins and result.
 * A victory the server cannot confirm restarts the phase, and the attempt still counts. If no
   restart is left, it counts as a defeat. A fight the replay cannot follow (`replay_inconclusive`)
   credits only what the log can still verify.
+* Each phase records the version of the combat rules it started under (the **engine version**, kept apart from
+  the plugin's version), and is only replayed under the same rules. When an update changes the rules, a phase
+  under way starts again on the new ones the next time the student resumes it: the Campaign's progress, the
+  attempts, the hero and the stock are kept, and the restart costs no attempt. An update that does not touch the
+  rules (a text, the layout, a report) leaves every fight where it was. An automated test fails when the rule
+  files change and the engine version does not.
 * Whether each question was answered correctly always comes from the server's own judgement,
   never from the client's log.
 * Coins are tracked in a server-side ledger, with a plausibility ceiling tied to the damage dealt.

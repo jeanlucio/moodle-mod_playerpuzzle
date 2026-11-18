@@ -505,7 +505,7 @@ final class draw_question_test extends \advanced_testcase {
         $attemptid = (int) $DB->get_field('playerpuzzle_attempts', 'id', ['token' => $token]);
         $DB->update_record('playerpuzzle_attempts', (object) [
             'id' => $attemptid,
-            'engineversion' => (int) get_config('mod_playerpuzzle', 'version') - 1,
+            'engineversion' => \mod_playerpuzzle\local\engine\engine_version::CURRENT - 1,
             'currentphase' => 2,
             'questions_total' => 8,
             'coins_earned' => 30,
@@ -520,7 +520,7 @@ final class draw_question_test extends \advanced_testcase {
 
         $resumed = security::resume_or_create_attempt_token((int) $instance->id, (int) $this->student->id, 'normal', 1);
         $row = $DB->get_record('playerpuzzle_attempts', ['id' => $attemptid], '*', MUST_EXIST);
-        $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), (int) $row->engineversion);
+        $this->assertSame(\mod_playerpuzzle\local\engine\engine_version::CURRENT, (int) $row->engineversion);
         $this->assertSame(0, (int) $row->moveseq);
         $this->assertNull($row->movelog);
         $this->assertSame(0, (int) $row->coins_earned);

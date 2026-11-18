@@ -91,8 +91,7 @@ class replay {
             return null;
         }
 
-        $currentversion = (int) get_config('mod_playerpuzzle', 'version');
-        if ((int) $attempt->engineversion !== $currentversion) {
+        if ((int) $attempt->engineversion !== engine_version::CURRENT) {
             // The rules may have changed since this phase started (a balancing edit, a bug
             // fix to board_rules.js/combat_rules.js) — replaying it against today's engine
             // could disagree with what the client legitimately experienced under yesterday's.
@@ -134,7 +133,7 @@ class replay {
      *  log never accounts for.
      */
     public static function snapshot(\stdClass $attempt, \stdClass $playerpuzzle): ?array {
-        if ((int) $attempt->engineversion !== (int) get_config('mod_playerpuzzle', 'version')) {
+        if ((int) $attempt->engineversion !== engine_version::CURRENT) {
             // Same reason as derive(): today's engine may not rebuild what yesterday's played.
             return null;
         }

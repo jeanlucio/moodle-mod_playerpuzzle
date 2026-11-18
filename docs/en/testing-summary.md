@@ -119,13 +119,14 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `combat_engine_test.php` | 57 |
 | `combat_test.php` | 21 |
 | `combat_vectors_test.php` | 25 |
+| `engine_version_test.php` | 2 |
 | `golden_vectors_test.php` | 5 |
 | `prng_test.php` | 5 |
 | `question_fetcher_test.php` | 27 |
 | `replay_test.php` | 34 |
 | `replay_vectors_test.php` | 40 |
 | `security_test.php` | 58 |
-| **Subtotal** | **300** |
+| **Subtotal** | **302** |
 
 ### Privacy Tests (`tests/privacy/`)
 
@@ -134,7 +135,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `provider_test.php` | 41 |
 | **Subtotal** | **41** |
 
-| **Grand Total** | **1153** |
+| **Grand Total** | **1155** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite

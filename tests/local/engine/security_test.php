@@ -109,7 +109,7 @@ final class security_test extends \advanced_testcase {
         $this->assertLessThanOrEqual(2147483647, (int) $attempt->rngseed);
         $this->assertSame(0, (int) $attempt->moveseq);
         $this->assertNull($attempt->movelog);
-        $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), (int) $attempt->engineversion);
+        $this->assertSame(\mod_playerpuzzle\local\engine\engine_version::CURRENT, (int) $attempt->engineversion);
         $this->assertSame(321, (int) $attempt->frozenbasebosshp);
         $this->assertSame(12, (int) $attempt->frozenbossdamage);
         $this->assertSame(34, (int) $attempt->frozencoingain);
@@ -177,7 +177,7 @@ final class security_test extends \advanced_testcase {
         $this->assertSame(0, $attempt->moveseq);
         $this->assertNull($attempt->movelog);
         $this->assertNull($attempt->questionresults);
-        $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), $attempt->engineversion);
+        $this->assertSame(\mod_playerpuzzle\local\engine\engine_version::CURRENT, $attempt->engineversion);
         $this->assertSame(55, $attempt->frozenbasebosshp);
         $this->assertSame(6, $attempt->frozenbossdamage);
         $this->assertSame(7, $attempt->frozencoingain);

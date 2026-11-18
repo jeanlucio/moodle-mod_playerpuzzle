@@ -52,7 +52,7 @@ final class generator_test extends \advanced_testcase {
 
         $this->assertSame(2, (int) $plain->rngseed);
         $this->assertSame('inprogress', $plain->status);
-        $this->assertSame((int) get_config('mod_playerpuzzle', 'version'), (int) $plain->engineversion);
+        $this->assertSame(\mod_playerpuzzle\local\engine\engine_version::CURRENT, (int) $plain->engineversion);
         $this->assertSame(10, (int) $plain->frozenbasebosshp);
 
         $other = $this->getDataGenerator()->create_user();

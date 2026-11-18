@@ -163,7 +163,7 @@ class security {
         $attempt->moveseq = 0;
         $attempt->movelog = null;
         $attempt->questionresults = null;
-        $attempt->engineversion = (int) get_config('mod_playerpuzzle', 'version');
+        $attempt->engineversion = engine_version::CURRENT;
         $attempt->frozenbasebosshp = (int) $playerpuzzle->basebosshp;
         $attempt->frozenbossdamage = (int) $playerpuzzle->bossdamage;
         $attempt->frozencoingain = (int) $playerpuzzle->coingain;
@@ -424,12 +424,12 @@ class security {
             // other's (a reverted token breaks every call from the new page; a stale movelog
             // drops recorded events).
             //
-            // A phase started under another engine version (the plugin was upgraded meanwhile)
+            // A phase started under other combat rules (an update changed them meanwhile, see engine_version)
             // can no longer be replayed: draw_question would refuse every question, since it
             // checks one is due through the replay, and a victory could not be verified. It is
             // started again on today's engine instead, read fresh under the lock and written
             // whole. Not counted as a restart: the student did nothing to cause it.
-            $stale = !$isdemo && (int) $attempt->engineversion !== (int) get_config('mod_playerpuzzle', 'version');
+            $stale = !$isdemo && (int) $attempt->engineversion !== engine_version::CURRENT;
             $rotate = function () use ($DB, $attempt, $stale, $playerpuzzleid): bool {
                 if ($stale) {
                     $fresh = $DB->get_record('playerpuzzle_attempts', ['id' => $attempt->id], '*', MUST_EXIST);

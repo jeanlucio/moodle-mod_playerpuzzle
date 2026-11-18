@@ -75,7 +75,7 @@ final class replay_credit_test extends \advanced_testcase {
         return (object) [
             'id' => 1,
             'isdemo' => 0,
-            'engineversion' => (int) get_config('mod_playerpuzzle', 'version'),
+            'engineversion' => \mod_playerpuzzle\local\engine\engine_version::CURRENT,
             'rngseed' => 1,
             'movelog' => null,
             'questionresults' => null,
@@ -101,7 +101,7 @@ final class replay_credit_test extends \advanced_testcase {
         return (object) [
             'id' => 2,
             'isdemo' => 0,
-            'engineversion' => (int) get_config('mod_playerpuzzle', 'version'),
+            'engineversion' => \mod_playerpuzzle\local\engine\engine_version::CURRENT,
             'rngseed' => 2,
             'movelog' => move_log::encode([self::OPENING, ['type' => 'move', 'r1' => 3, 'c1' => 1, 'r2' => 3, 'c2' => 2]]),
             'questionresults' => null,

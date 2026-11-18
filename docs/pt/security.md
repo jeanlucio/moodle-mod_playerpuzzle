@@ -26,6 +26,12 @@ resultado reais.
 * Uma vitória que o servidor não consegue confirmar reinicia a fase, e a tentativa continua
   contando. Se não restar nenhum reinício, conta como derrota. Uma luta que a reprodução não
   consegue seguir (`replay_inconclusive`) credita só o que o registro ainda consegue verificar.
+* Cada fase grava a versão das regras de combate com que começou (a **versão do motor**, separada da versão do
+  plugin), e só é reproduzida com as mesmas regras. Quando uma atualização muda as regras, uma fase em andamento
+  recomeça com as regras novas na próxima vez que o estudante a retoma: o progresso da Campanha, as tentativas, o
+  herói e o estoque são mantidos, e o recomeço não gasta tentativa. Uma atualização que não mexe nas regras (um
+  texto, o layout, um relatório) deixa toda luta onde estava. Um teste automático falha quando os arquivos de
+  regras mudam e a versão do motor não.
 * Se cada pergunta foi respondida corretamente vem sempre do julgamento do próprio servidor, nunca
   do registro do cliente.
 * As moedas são controladas por um livro-razão no servidor, com um teto de plausibilidade ligado ao

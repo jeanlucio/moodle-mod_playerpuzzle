@@ -101,7 +101,7 @@ final class replay_vectors_test extends \advanced_testcase {
         $attempt = (object) array_merge($fields, [
             'id' => $attemptid,
             'isdemo' => 0,
-            'engineversion' => (int) get_config('mod_playerpuzzle', 'version'),
+            'engineversion' => \mod_playerpuzzle\local\engine\engine_version::CURRENT,
             'movelog' => move_log::encode($vector['events']),
             'questionresults' => $vector['outcomes'] === [] ? null : json_encode($vector['outcomes']),
         ]);

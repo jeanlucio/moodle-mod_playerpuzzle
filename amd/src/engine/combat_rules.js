@@ -129,11 +129,10 @@
         const MOVE_WEIGHTS = [1.5, 1.5, 1.5, 3, 1.5, 3, 1];
         const ARMED_SHIELD_WEIGHT = 0.5;
 
-        // On Hard the opponent values the Orb as much as the Sword. A match of three Orbs fills 60 of the 100 mana a
-        // question needs, a right answer is a critical hit of three times the base damage, and the Hard opponent
-        // always answers right, so chasing Orbs pays about as much as hitting with Swords. A power's PERSONALITY
-        // multiplies this base.
-        const HARD_ORB_WEIGHT = 3;
+        // How much the Hard opponent values the Orb, which a power's PERSONALITY then multiplies. The Hard opponent
+        // always answers right, so every Orb it chases is a critical hit to come; valued like a Sword (3), that made
+        // a Hard Campaign close to impossible, so it is valued like the other pieces.
+        const HARD_ORB_WEIGHT = 1.5;
 
         // On Hard, each power makes the opponent value the pieces that feed it more: power =>
         // {piece type: factor}.

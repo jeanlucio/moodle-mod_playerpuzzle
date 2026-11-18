@@ -123,12 +123,11 @@ class combat_engine {
     public const ARMED_SHIELD_WEIGHT = 0.5;
 
     /**
-     * @var float On Hard the opponent values the Orb as much as the Sword. A match of three Orbs fills 60 of the 100
-     *  mana a question needs, a right answer is a critical hit of three times the base damage, and the Hard opponent
-     *  always answers right, so chasing Orbs pays about as much as hitting with Swords. A power's PERSONALITY
-     *  multiplies this base.
+     * @var float How much the Hard opponent values the Orb, which a power's PERSONALITY then multiplies. The Hard
+     *  opponent always answers right, so every Orb it chases is a critical hit to come; valued like a Sword (3), that
+     *  made a Hard Campaign close to impossible, so it is valued like the other pieces.
      */
-    public const HARD_ORB_WEIGHT = 3.0;
+    public const HARD_ORB_WEIGHT = 1.5;
 
     /** @var array On Hard, each power makes the opponent value the pieces that feed it more: power => [type => factor]. */
     public const PERSONALITY = [

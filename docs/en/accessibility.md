@@ -20,7 +20,8 @@ an afterthought bolt-on layer:
   live region below stays the one channel.
 * At the start of the student's turn, the available moves are announced through an
   `aria-live="polite"` region, which also carries the other turn-by-turn events — damage dealt and
-  taken, energy bar full, a question answered, the opponent reviving, a phase advanced.
+  taken, energy bar full, a question answered, the opponent reviving, a phase advanced, and a Hex or
+  Shield starting and ending on either fighter (the aura and label the sighted player sees).
 * Number keys `1`–`9` execute the correspondingly-announced move, and `Space` re-reads the list of
   available moves.
 * The question challenge is a native HTML `<dialog>`: focus is trapped and centred by the browser,

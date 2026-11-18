@@ -44,7 +44,9 @@
   funcionando.
 * **Ranking da turma:** um placar opcional, independente da nota, que respeita grupos separados. Mostra os 5
   primeiros e a linha do próprio estudante, e cada estudante pode escolher, nas configurações do Lobby, aparecer
-  como anônimo para os colegas.
+  como anônimo para os colegas. Os pontos somam tudo o que foi jogado, contando só vitórias que o servidor
+  verificou: na Campanha cada Campanha vale até 100 pontos pelo quanto avançou (vezes a taxa de acerto quando os
+  erros contam), incluindo a que está em andamento; na Partida Única cada partida vencida vale até 100.
 
 ## 📚 Questões
 
@@ -60,13 +62,19 @@
   sem nota), com nota para aprovação e uma variante opcional "considerar erros". Veja
   [Modos de Jogo](#game-modes).
 * **Conclusão personalizada:** exija um número de tentativas e/ou vitórias.
+* **Limites e ritmo:** tentativas por Campanha, quantas Campanhas ou partidas um estudante pode jogar e um
+  cooldown opcional entre partidas ou entre Campanhas. O Lobby diz antes o que o próximo Jogar exige (a
+  tentativa em que está, o custo de nova tentativa, quando o cooldown termina), e um início que as regras
+  recusam é explicado numa caixa de diálogo, e não numa página de erro. Uma Campanha em andamento pode ser
+  abandonada pelo Lobby.
 * **Relatório do professor:** progresso por estudante, dano médio ao oponente e taxa de acerto, as
   questões mais erradas, a distribuição das notas, a taxa de conclusão e, na Campanha, como foi cada
   dificuldade (fases vencidas de primeira, por dificuldade e por fase do nível) e quais heróis os estudantes escolheram (a Partida Única mostra as partidas vencidas por dificuldade), respeitando grupos
   separados. A tabela de estudantes é paginada, 50 por vez, então uma turma de milhares abre tão
   rápido quanto uma pequena.
-* **Backup e restauração,** incluindo duplicar a atividade, levando junto as tentativas, o estoque
-  do loadout e os logs.
+* **Backup e restauração,** com o banco de questões e, quando os dados de usuário são incluídos, com as
+  tentativas, os heróis, o estoque do loadout e os registros de questões. Duplicar a atividade copia as
+  configurações e o banco de questões, sem dados de nenhum estudante.
 
 ## 🛡️ Integridade
 

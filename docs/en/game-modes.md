@@ -86,7 +86,7 @@ A single, self-contained round — no levels or phases, always fought at the con
 The teacher sets how many matches a student may play (1 to 10, or unlimited) and may add a
 **cooldown** (in minutes, hours or days) between matches. The student chooses the difficulty in the
 Lobby for each match. While a cooldown is running, the Lobby tells the student the time the next
-match opens, so they learn it before pressing Play.
+match opens, so they learn it before pressing Play, and Play is refused before the hero choice.
 
 ## Grading
 
@@ -110,8 +110,8 @@ teacher's **Grading method** combines the matches the same way (in the average o
 matches, an unplayed match counts as zero).
 
 **Consider errors** — available once the activity requires a minimum number of questions. In
-Campaign, the progress rate is averaged with the share of questions answered correctly; in Single
-Match, a win is weighted by that match's own accuracy.
+Campaign, the progress rate is multiplied by the share of questions answered correctly across the
+whole Campaign; in Single Match, a win is weighted by that match's own accuracy.
 
 The grade is sent to the gradebook after every phase or match, so it is never stuck waiting for the
 end of a campaign, and recomputed for everyone when a grading setting changes.

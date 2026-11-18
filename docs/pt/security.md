@@ -47,7 +47,10 @@ jornada rotaciona o token exatamente como terminar uma faz, então a garantia se
 numa sessão que atravessa vários carregamentos de página, não só dentro de uma única partida. As
 operações econômicas (consumir um token, avançar de fase, comprar ou transferir moedas) também
 rodam sob uma trava atômica por tentativa ou por estudante, então duas requisições paralelas não
-conseguem ambas ter sucesso.
+conseguem ambas ter sucesso. Começar uma tentativa confere os limites de tentativas e de Campanhas,
+o cooldown e o custo de nova tentativa sob uma trava por estudante e atividade, com o custo cobrado
+por último, então dois Jogar ao mesmo tempo nunca passam os dois, e um início recusado nunca cobra
+nada.
 
 ## JSON Cego
 

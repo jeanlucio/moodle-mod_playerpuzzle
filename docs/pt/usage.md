@@ -11,17 +11,21 @@
    precisam da sua aprovação antes de serem sorteadas). Veja [Motor de Questões](#questions).
 4. Opcionalmente, defina um **Mínimo de perguntas por partida**, se respostas erradas devem contar
    contra a nota, um **cooldown** entre partidas ou entre Campanhas e se as dicas são permitidas.
-5. Defina a **Nota** (pontos, ou sem nota), uma nota para aprovação e, na Partida Única, o
-   **Método de avaliação**. As duas fórmulas escalam pela Nota Máxima, nunca por um `100` fixo.
+5. Defina a **Nota** (pontos, ou sem nota), uma nota para aprovação e o **Método de avaliação**, que
+   combina as Campanhas ou partidas de um estudante. As duas fórmulas escalam pela Nota Máxima, nunca
+   por um `100` fixo.
 6. Opcionalmente, ligue itens do [PlayerHUD](#playerhud) — transferência de moedas, custo de nova
    tentativa, prêmio de vitória — se o `block_playerhud` estiver instalado no curso.
 7. Decida se o **Ranking** da turma é exibido, e use a página de **Relatório** da atividade para
-   acompanhar o progresso, as questões mais erradas e a distribuição das notas.
+   acompanhar o progresso, as questões mais erradas, a distribuição das notas, os resultados por
+   dificuldade e os heróis escolhidos.
 
 ## Para Estudantes
 
 1. Abra a atividade para chegar ao **Lobby**: seu progresso (Campanha), a dificuldade e o aviso de
-   mínimo de questões. A dificuldade é um botão: aperte para passar por Fácil, Normal e Difícil (uma
+   mínimo de questões e, quando a atividade os tem, a tentativa em que você está, quanto a próxima
+   tentativa custa no PlayerHUD e quando um cooldown termina. Se o Jogar for recusado, uma caixa de
+   diálogo diz o motivo. A dificuldade é um botão: aperte para passar por Fácil, Normal e Difícil (uma
    linha embaixo diz o que cada uma muda). Com uma fase em andamento (uma jogada, uma
    resposta ou um item usado), ela fica travada até a tela de fase vencida dela; antes disso, você ainda pode mudá-la. Numa Campanha, o botão da Campanha abre seu **Histórico de Campanhas**:
    uma linha para cada Campanha, com o herói, as fases vencidas, as tentativas usadas e os pontos.
@@ -30,8 +34,11 @@
    ficha do oponente.
 3. Abra a **Loja**, que mostra seu saldo de PuzzleCoin, para comprar consumíveis antes da partida e —
    quando o professor ligou o PlayerHUD — para transferir moedas para cá. **Configurações** guarda música (desligada até você ligar), efeitos
-   sonoros e narração falada (também desligada), e **Ranking** mostra a classificação da turma.
-4. Selecione **Jogar** para começar (ou retomar) uma partida.
+   sonoros e narração falada (também desligada) e, quando o ranking está ligado, se o seu nome aparece
+   nele; **Ranking** mostra a classificação da turma.
+4. Selecione **Jogar** para começar (ou retomar) uma partida. Na Campanha, o primeiro Jogar pede que
+   você escolha o seu herói, e uma Campanha em andamento pode ser abandonada pelo Lobby, depois de uma
+   confirmação.
 5. Combine peças para atacar o oponente, encha a barra do Orbe de Mana para disparar um
    [Desafio de Pergunta](#questions), e responda certo para um acerto crítico. Com mouse ou toque, aperte uma
    peça e depois uma vizinha, ou arraste uma. **Pelo teclado**, entre no tabuleiro com Tab, ande entre as casas

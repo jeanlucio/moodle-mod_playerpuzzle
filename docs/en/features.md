@@ -43,7 +43,10 @@
   award one. Without it, everything above still works.
 * **Class ranking:** an optional leaderboard, independent of the grade, that respects separate
   groups. It lists the top 5 and the student's own row, and each student can choose in the Lobby settings
-  to appear as an anonymous student to the others.
+  to appear as an anonymous student to the others. Points add up everything played, counting only victories
+  the server verified: in a Campaign each Campaign is worth up to 100 points for how far it got (times the
+  question accuracy when errors count), the one under way included; in a Single Match each match won is
+  worth up to 100.
 
 ## 📚 Questions
 
@@ -58,12 +61,17 @@
 * **Gradebook:** a real grade item, scaled by the configured Maximum Grade (points, or no grade),
   with a pass grade and an optional "consider errors" variant. See [Game Modes](#game-modes).
 * **Custom completion:** require a number of attempts and/or wins.
+* **Limits and pacing:** attempts per Campaign, how many Campaigns or matches a student may play, and an
+  optional cooldown between matches or between Campaigns. The Lobby says beforehand what the next Play takes
+  (the attempt it is, the retry cost, when the cooldown ends), and a start the rules refuse is explained in a
+  dialog instead of an error page. A Campaign under way can be given up from the Lobby.
 * **Teacher report:** per-student progress, average opponent damage and accuracy, the most missed
   questions, the score distribution, the completion rate and, for a Campaign, how each difficulty has gone
   (phases won on the first try, by difficulty and by phase of the level) and which heroes the students chose (a Single Match activity shows its matches won by difficulty), respecting separate groups. The student
   table is paged, 50 students at a time, so a class of thousands opens as fast as a small one.
-* **Backup and restore,** including duplicating the activity, with attempts, the loadout stock and
-  logs carried across.
+* **Backup and restore,** with the question bank, and with the attempts, heroes, loadout stock and
+  question logs when user data is included. Duplicating the activity copies its settings and question bank,
+  without any student's data.
 
 ## 🛡️ Integrity
 

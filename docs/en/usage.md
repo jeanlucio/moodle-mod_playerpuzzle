@@ -12,17 +12,19 @@
    approval before they are drawn). See [Question Engine](#questions).
 4. Optionally set a **Minimum Questions per Match**, whether wrong answers should count against
    the grade, a **cooldown** between matches or between Campaigns, and whether hints are allowed.
-5. Set the **Grade** (points, or no grade), a pass grade and, for Single Match, the **Grading
-   method**. Both formulas scale to the Maximum Grade, never to a fixed `100`.
+5. Set the **Grade** (points, or no grade), a pass grade and the **Grading method**, which combines
+   a student's Campaigns or matches. Both formulas scale to the Maximum Grade, never to a fixed `100`.
 6. Optionally connect [PlayerHUD](#playerhud) items — coin transfer, retry cost, victory award —
    if `block_playerhud` is installed in the course.
 7. Decide whether the class **Ranking** is shown, and use the activity's **Report** page to follow
-   progress, the most missed questions and the score distribution.
+   progress, the most missed questions, the score distribution, the results by difficulty and the
+   heroes chosen.
 
 ## For Students
 
 1. Open the activity to reach the **Lobby**: your progress (Campaign), the difficulty and the
-   minimum-questions notice. The difficulty is a button: press it to step through Easy, Normal and
+   minimum-questions notice, and, when the activity has them, the attempt you are on, what the next attempt
+   costs in PlayerHUD and when a cooldown ends. If Play is refused, a dialog says why. The difficulty is a button: press it to step through Easy, Normal and
    Hard (a line under it says what each changes). Once a phase is under way (a move, an
    answer or an item used) it is locked until its "Phase won" screen; before that, you can still change it. In a Campaign, the Campaign button opens your **Campaign history**:
    a line for each Campaign with its hero, the phases won, the attempts used and its points.
@@ -31,8 +33,10 @@
    opponent's card.
 3. Open the **Shop**, which shows your PuzzleCoin balance, to buy consumables before the match, and —
    when the teacher connected PlayerHUD — to transfer coins in. **Settings** holds music (off until you turn it on), sound effects and spoken
-   narration (also off), and **Ranking** shows the class standings.
-4. Select **Play Game** to start (or resume) a match.
+   narration (also off) and, when the ranking is on, whether your name shows in it; **Ranking** shows the
+   class standings.
+4. Select **Play Game** to start (or resume) a match. In a Campaign the first Play asks you to choose
+   your hero, and a Campaign under way can be given up from the Lobby, after a confirmation.
 5. Match pieces to attack the opponent, fill the Mana Orb bar to trigger a
    [Question Challenge](#questions), and answer correctly for a critical hit. With a mouse or touch, press a
    piece and then a neighbour, or drag one. **With the keyboard**, Tab into the board, move between squares

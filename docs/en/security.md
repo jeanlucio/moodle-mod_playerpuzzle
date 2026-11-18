@@ -42,7 +42,9 @@ re-trigger the same reward twice — resuming a campaign mid-run rotates the tok
 finishing one does, so the guarantee holds across a session that spans multiple page loads, not
 just within a single match. Economic operations (using up a token, advancing a phase, buying or
 transferring coins) also run under an atomic lock per attempt or per student, so two parallel
-requests cannot both succeed.
+requests cannot both succeed. Starting an attempt checks the attempt and Campaign limits, the
+cooldown and the retry cost under one lock per student and activity, with the retry cost charged
+last, so two Plays at once never both pass, and a refused start never charges anything.
 
 ## Blind JSON
 

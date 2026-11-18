@@ -86,7 +86,8 @@ Uma rodada única e autocontida — sem níveis nem fases, sempre lutada no HP b
 professor define quantas partidas um estudante pode jogar (de 1 a 10, ou ilimitado) e pode
 acrescentar um **cooldown** (em minutos, horas ou dias) entre as partidas. O estudante escolhe a
 dificuldade no Lobby a cada partida. Enquanto um cooldown está correndo, o Lobby informa ao
-estudante o horário em que a próxima partida abre, para que ele saiba antes de apertar Jogar.
+estudante o horário em que a próxima partida abre, para que ele saiba antes de apertar Jogar, e o
+Jogar é recusado antes da escolha do herói.
 
 ## Nota
 
@@ -111,8 +112,8 @@ avaliação** do professor combina as partidas do mesmo jeito (na média sobre t
 exigidas, uma partida não jogada conta como zero).
 
 **Considerar erros** — disponível quando a atividade exige um mínimo de questões. Na Campanha, a
-taxa de progresso é calculada em média com a parcela de perguntas respondidas corretamente; na
-Partida Única, uma vitória é ponderada pela taxa de acerto daquela partida.
+taxa de progresso é multiplicada pela parcela de perguntas respondidas corretamente em toda a
+Campanha; na Partida Única, uma vitória é ponderada pela taxa de acerto daquela partida.
 
 A nota é enviada ao livro de notas após cada fase ou partida, então nunca fica esperando o fim de
 uma campanha, e é recalculada para todos quando uma configuração de avaliação muda.

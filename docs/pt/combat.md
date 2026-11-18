@@ -28,7 +28,7 @@ muda é só quem ganha o efeito (quem estiver no turno atual).
 |------|--------|
 | ⭐ Estrela | Soma +0,1 a um multiplicador de dano, acumulando entre turnos; consumido no acerto crítico daquele lado e resetado a 1 quando esse lado erra uma pergunta |
 | 📖 Grimório | Enche um medidor de feitiço próprio de 0–100 (+10 por peça); ao chegar em 100, arma 3 rodadas de dano contra o **oponente** (uma por turno dele) e reseta, preservando o excedente |
-| ❓ Orbe de Interrogação | Enche uma barra de energia de 100 pontos própria de cada lado; ao chegar em 100, pausa o combate e abre o [Desafio de Pergunta](#questions) — o estudante responde de verdade, o oponente "responde" escolhendo uma opção ao acaso, validada do mesmo jeito no servidor |
+| ❓ Orbe de Interrogação | Enche uma barra de energia de 100 pontos própria de cada lado; ao chegar em 100, pausa o combate e abre o [Desafio de Pergunta](#questions) — o estudante responde de verdade; se a "resposta" do oponente está certa é decidido no servidor, com uma chance definida pela dificuldade (veja abaixo) |
 | ⚔️ Espadas | Dano direto no **oponente** — sem precisar de pergunta. Escala com nível/fase, e uma combinação de 4 ou 5 peças causa 1,5x/2x o dano de uma combinação de 3 |
 | 🛡️ Escudo | Enche um medidor próprio de 0–100 (+10 por peça); ao chegar em 100, nega por completo o **próximo** golpe recebido por esse lado, não importa o valor, e reseta |
 | 🧪 Poção | Cura o HP do próprio lado em um quarto do dano base por peça, então uma combinação de 3 cura três quartos do que uma combinação de 3 Espadas causa — o dano sempre pesa mais que a cura |

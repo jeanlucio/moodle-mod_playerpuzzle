@@ -9,25 +9,29 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | Test file | Cases |
 |-----------|------:|
 | `access_test.php` | 1 |
-| `backup_restore_test.php` | 14 |
+| `backup_restore_test.php` | 23 |
 | `generator_test.php` | 2 |
+| `install_xml_test.php` | 1 |
 | `lib_completion_info_test.php` | 7 |
-| `lib_crud_test.php` | 10 |
+| `lib_crud_test.php` | 12 |
 | `lib_grade_item_update_test.php` | 5 |
 | `lib_grant_potential_test.php` | 5 |
 | `lib_pluginfile_test.php` | 5 |
+| `lib_reset_userdata_test.php` | 4 |
+| `lib_settings_navigation_test.php` | 1 |
 | `lib_supports_test.php` | 2 |
 | `lib_update_grades_test.php` | 7 |
-| `mod_form_test.php` | 21 |
+| `mod_form_test.php` | 32 |
 | `uninstall_test.php` | 2 |
-| **Subtotal** | **80** |
+| `upgrade_test.php` | 5 |
+| **Subtotal** | **114** |
 
 ### Completion Tests (`tests/completion/`)
 
 | Test file | Cases |
 |-----------|------:|
-| `custom_completion_test.php` | 11 |
-| **Subtotal** | **11** |
+| `custom_completion_test.php` | 12 |
+| **Subtotal** | **12** |
 
 ### Event Tests (`tests/event/`)
 
@@ -42,83 +46,101 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 
 | Test file | Cases |
 |-----------|------:|
-| `advance_phase_test.php` | 28 |
+| `advance_phase_test.php` | 32 |
 | `buy_stock_test.php` | 12 |
-| `draw_question_test.php` | 9 |
+| `buy_upgrade_test.php` | 7 |
+| `core_libraries_test.php` | 2 |
+| `draw_question_test.php` | 15 |
 | `generate_questions_test.php` | 2 |
 | `get_phase_questionlog_test.php` | 5 |
+| `get_shop_test.php` | 4 |
 | `save_combat_state_test.php` | 14 |
 | `save_generated_questions_test.php` | 4 |
-| `save_progress_test.php` | 31 |
+| `save_progress_test.php` | 43 |
 | `set_ranking_preference_test.php` | 2 |
 | `set_sound_preference_test.php` | 5 |
-| `transfer_hud_coins_test.php` | 9 |
-| `use_stock_test.php` | 16 |
-| `validate_answer_test.php` | 19 |
-| **Subtotal** | **156** |
+| `transfer_hud_coins_test.php` | 10 |
+| `use_stock_test.php` | 19 |
+| `validate_answer_test.php` | 20 |
+| **Subtotal** | **196** |
 
 ### Form Tests (`tests/form/`)
 
 | Test file | Cases |
 |-----------|------:|
-| `import_form_test.php` | 3 |
-| `question_form_test.php` | 11 |
-| **Subtotal** | **14** |
+| `import_form_test.php` | 4 |
+| `question_form_test.php` | 12 |
+| **Subtotal** | **16** |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
 | Test file | Cases |
 |-----------|------:|
-| `ai_question_generator_test.php` | 19 |
-| `attempt_consumables_test.php` | 7 |
-| `attempt_questions_test.php` | 1 |
+| `ai_question_generator_test.php` | 22 |
+| `attempt_consumables_test.php` | 8 |
+| `attempt_questions_test.php` | 2 |
+| `campaign_giveup_test.php` | 6 |
+| `campaign_history_test.php` | 9 |
+| `campaigns_test.php` | 14 |
 | `coin_ledger_test.php` | 4 |
 | `combat_state_test.php` | 5 |
-| `game_page_service_test.php` | 37 |
-| `grade_calculator_test.php` | 29 |
-| `hud_service_test.php` | 15 |
-| `instance_list_service_test.php` | 3 |
-| `lobby_page_service_test.php` | 26 |
-| `move_log_test.php` | 20 |
-| `question_bank_sync_test.php` | 13 |
+| `game_page_service_test.php` | 63 |
+| `grade_calculator_test.php` | 41 |
+| `hero_page_service_test.php` | 5 |
+| `hero_shop_test.php` | 5 |
+| `heroes_test.php` | 9 |
+| `howtoplay_test.php` | 5 |
+| `hud_service_test.php` | 16 |
+| `instance_list_service_test.php` | 4 |
+| `last_hero_test.php` | 2 |
+| `lobby_page_service_test.php` | 59 |
+| `move_log_test.php` | 21 |
+| `opponent_card_test.php` | 11 |
+| `opponents_test.php` | 9 |
+| `question_bank_sync_test.php` | 24 |
 | `question_editor_files_test.php` | 3 |
-| `question_list_service_test.php` | 3 |
-| `questions_repository_test.php` | 23 |
-| `ranking_service_test.php` | 9 |
+| `question_list_service_test.php` | 6 |
+| `questions_repository_test.php` | 30 |
+| `ranking_service_test.php` | 12 |
 | `replay_credit_test.php` | 8 |
 | `report_service_test.php` | 36 |
+| `seen_opponents_test.php` | 2 |
 | `sound_preferences_test.php` | 8 |
+| `text_test.php` | 1 |
+| `user_hero_test.php` | 7 |
 | `user_stock_test.php` | 10 |
-| **Subtotal** | **279** |
+| **Subtotal** | **467** |
 
 ### Combat Engine Tests (`tests/local/engine/`)
 
 | Test file | Cases |
 |-----------|------:|
-| `board_engine_test.php` | 25 |
-| `combat_engine_test.php` | 29 |
-| `combat_test.php` | 9 |
+| `board_engine_test.php` | 28 |
+| `combat_engine_test.php` | 57 |
+| `combat_test.php` | 21 |
+| `combat_vectors_test.php` | 25 |
 | `golden_vectors_test.php` | 5 |
 | `prng_test.php` | 5 |
-| `question_fetcher_test.php` | 20 |
-| `replay_test.php` | 28 |
-| `security_test.php` | 43 |
-| **Subtotal** | **164** |
+| `question_fetcher_test.php` | 27 |
+| `replay_test.php` | 34 |
+| `replay_vectors_test.php` | 40 |
+| `security_test.php` | 58 |
+| **Subtotal** | **300** |
 
 ### Privacy Tests (`tests/privacy/`)
 
 | Test file | Cases |
 |-----------|------:|
-| `provider_test.php` | 36 |
-| **Subtotal** | **36** |
+| `provider_test.php` | 41 |
+| **Subtotal** | **41** |
 
-| **Grand Total** | **740** |
+| **Grand Total** | **1153** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
 ```
 
-**Coverage** (`moodle-coverage`, PHPUnit + Xdebug): **87.8%** of the plugin's lines (4511/5135).
+**Coverage** (`moodle-coverage`, PHPUnit + Xdebug): **92.5%** of the plugin's lines (7080/7650).
 
 [Full test-by-test breakdown and coverage table →]({{ '/testing.html' | relative_url }})
 
@@ -129,13 +151,15 @@ The deterministic match-3/combat/PRNG math, run headless via Node's own test run
 
 | Test file | Cases |
 |-----------|------:|
-| `board_rules.test.js` | 25 |
-| `combat_rules.test.js` | 29 |
+| `board_rules.test.js` | 28 |
+| `combat_rules.test.js` | 57 |
 | `prng.test.js` | 5 |
-| **Subtotal** | **59** |
+| `replay_mirror.test.js` | 18 |
+| `vectors.test.js` | 3 |
+| **Subtotal** | **111** |
 
 ```bash
-node --test tests/js/engine/board_rules.test.js tests/js/engine/combat_rules.test.js tests/js/engine/prng.test.js
+node --test tests/js/engine/*.test.js
 ```
 
 ## JavaScript — Stage Tests (`tests/js/stage/`)
@@ -148,11 +172,15 @@ contract between the game and its HUD, run headless with `node --test`. The twee
 |-----------|------:|
 | `assets.test.js` | 8 |
 | `clock.test.js` | 14 |
-| `emoji.test.js` | 5 |
-| `hud_contract.test.js` | 5 |
+| `emoji.test.js` | 6 |
+| `hero_grid.test.js` | 1 |
+| `hud_contract.test.js` | 6 |
+| `modal_contrast.test.js` | 4 |
+| `no_globals.test.js` | 1 |
+| `portrait_layout.test.js` | 3 |
 | `status_effects.test.js` | 7 |
 | `tween.test.js` | 20 |
-| **Subtotal** | **59** |
+| **Subtotal** | **70** |
 
 ```bash
 node --test tests/js/stage/*.test.js
@@ -171,7 +199,7 @@ node --test tests/js/stage/*.test.js
 | `mod_playerpuzzle_settings.feature` | 1 |
 | `mod_playerpuzzle_smoke.feature` | 2 |
 | `mod_playerpuzzle_stage.feature` | 5 |
-| **Subtotal** | **27** |
+| **Subtotal** | **36** |
 
 ```bash
 php admin/tool/behat/cli/init.php

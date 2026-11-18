@@ -1,6 +1,6 @@
 # 🔎 Third-party Service Disclosure
 
-PlayerPuzzle works without any external service. Gameplay never makes a network request, and the
+PlayerPuzzle works without any external service. Gameplay talks only to the Moodle site itself, and the
 questions a student sees come from Moodle's own Question Bank (see
 [Question Engine](#questions)) or from the activity's own question bank.
 

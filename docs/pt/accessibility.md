@@ -20,7 +20,9 @@ camada de última hora:
   região viva abaixo continua sendo o único canal.
 * No início do turno do estudante, as jogadas disponíveis são anunciadas por uma região
   `aria-live="polite"`, que também carrega os demais eventos do turno — dano causado e recebido,
-  barra de energia cheia, uma pergunta respondida, o oponente revivendo, uma fase avançada.
+  barra de energia cheia, uma pergunta respondida, o oponente revivendo, uma fase avançada, e um
+  Feitiço ou Escudo começando e terminando em qualquer um dos lutadores (a aura e a etiqueta que quem
+  enxerga vê).
 * As teclas numéricas `1`–`9` executam a jogada anunciada correspondente, e `Espaço` relê a lista
   de jogadas disponíveis.
 * O desafio de pergunta é um `<dialog>` HTML nativo: o foco é preso e centralizado pelo próprio

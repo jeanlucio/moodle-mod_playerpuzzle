@@ -1,6 +1,6 @@
 # 🔎 Divulgação de Serviço de Terceiros
 
-O PlayerPuzzle funciona sem nenhum serviço externo. A jogabilidade nunca faz requisição de rede, e
+O PlayerPuzzle funciona sem nenhum serviço externo. A jogabilidade só conversa com o próprio site Moodle, e
 as questões que o estudante vê vêm do próprio Banco de Questões do Moodle (veja
 [Motor de Questões](#questions)) ou do banco de questões da própria atividade.
 

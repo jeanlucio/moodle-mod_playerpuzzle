@@ -71,13 +71,40 @@ match can never be won without actually engaging with the questions.
 
 The student chooses Easy, Normal or Hard. The choice changes the fight, never the grade:
 
-| | Opponent HP and damage | Coins earned | Opponent answers a Multiple Choice correctly | Opponent answers a True/False correctly |
-|---|:---:|:---:|:---:|:---:|
-| Easy | ×0.5 | ×0.5 | 33% | 50% |
-| Normal | ×1 | ×1 | 66% | 75% |
-| Hard | ×2 | ×3 | 100% | 100% |
+| | Easy | Normal | Hard |
+|---|:---:|:---:|:---:|
+| Opponent HP | ×0.5 | ×1 (final boss +15%) | ×2 |
+| Opponent's base hit | ×0.5 | ×1 | ×2 |
+| Growth of its hit over the Campaign | none | up to +60% | up to +100% |
+| Opponent armor | its own only | its own +25 points over the Campaign | its own +25 points |
+| Student's hit | ×1 | ×1 | ×2 |
+| Coins per 3-coin match | ×0.5 | ×1 | ×3 |
+| Opponent answers right (Multiple Choice / True-False) | 33% / 50% | 66% / 75% | 100% / 100% |
+| How the opponent plays | the first Sword match it finds | weighs the pieces (Sword and Potion count most) | as on Normal, but it chases Orbs (weight 3) and follows the personality of its powers |
+| Opponent's items (Potion, Sword) | none | 1 per level after the first, +1 on the final boss | 1 more than on Normal |
+| Opponent's powers | yes | yes | yes |
+| Grade | the same | the same | the same |
 
-The factor in the first column is on the opponent: on Easy its HP and its hits are halved while the student's own
+The hero is the same on every difficulty: its HP, attack and armor come only from what is bought in the shop. As
+an example, an activity with a base HP of 250 on both sides, a base damage of 10 and 2 levels:
+
+| Phase | | Opponent HP | Its hit | Its armor | Student's hit |
+|---|---|:---:|:---:|:---:|:---:|
+| Level 1, Phase 1 (slime) | Easy | 125 | 5 | 0% | 10 |
+| | Normal | 250 | 10 | 0% | 10 |
+| | Hard | 500 | 20 | 0% | 20 |
+| Level 1, Phase 6 (ghost) | Easy | 188 | 8 | 0% | 15 |
+| | Normal | 375 | 17 | 7% | 15 |
+| | Hard | 750 | 38 | 7% | 30 |
+| Level 2, Phase 10 (vampire, final boss) | Easy | 360 | 12 | 15% | 24 |
+| | Normal | 828 | 38 | 40% | 24 |
+| | Hard | 1440 | 96 | 40% | 48 |
+
+On Normal and Hard the student needs the same number of hits to bring the opponent down, since their own hit
+doubles too; on Easy, half as many. On Hard the opponent's hit is 2.2 to 2.5 times the Normal one while the
+student's HP does not double, so the student survives fewer than half as many hits.
+
+On Easy the halving is on the opponent only: its HP and its hits are halved while the student's own
 hits, Potions and hex keep their full value, so an Easy match is shorter and not only safer. On Hard everything
 doubles for both sides, so the match lasts as long as a Normal one and the student has half the time to survive.
 On Normal the final boss also has 15% more HP, which puts it a little above what a hero with every upgrade can

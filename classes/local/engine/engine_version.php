@@ -34,10 +34,11 @@ namespace mod_playerpuzzle\local\engine;
  *
  * Raise it, to the date of the change, whenever the outcome of a logged fight could change: the board and combat
  * rules on either side (amd/src/engine/, classes/local/engine/), the opponents' values and powers
- * (classes/local/opponents.php) or the replay itself. engine_version_test.php fails when those files change and this
- * does not.
+ * (classes/local/opponents.php), how the move log is read (classes/local/move_log.php), the items' per-phase limits
+ * (classes/local/attempt_consumables.php) or the replay itself. engine_version_test.php fails when those files change
+ * and this does not; a new file the replay comes to depend on must join its list.
  */
 final class engine_version {
     /** @var int The current rules, as the date they last changed (YYYYMMDDXX). */
-    public const CURRENT = 2026111801;
+    public const CURRENT = 2026111802;
 }

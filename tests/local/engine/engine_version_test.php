@@ -34,7 +34,9 @@ final class engine_version_test extends \advanced_testcase {
         'classes/local/engine/combat.php',
         'classes/local/engine/combat_engine.php',
         'classes/local/engine/prng.php',
+        'classes/local/attempt_consumables.php',
         'classes/local/engine/replay.php',
+        'classes/local/move_log.php',
         'classes/local/opponents.php',
     ];
 

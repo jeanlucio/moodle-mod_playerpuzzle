@@ -118,7 +118,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 |-------------------|------:|
 | `board_engine_test.php` | 28 |
 | `combat_engine_test.php` | 57 |
-| `combat_test.php` | 21 |
+| `combat_test.php` | 22 |
 | `combat_vectors_test.php` | 25 |
 | `engine_version_test.php` | 2 |
 | `golden_vectors_test.php` | 5 |
@@ -127,7 +127,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `replay_test.php` | 34 |
 | `replay_vectors_test.php` | 40 |
 | `security_test.php` | 58 |
-| **Subtotal** | **302** |
+| **Subtotal** | **303** |
 
 ### Testes de Privacidade (`tests/privacy/`)
 
@@ -136,7 +136,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 41 |
 | **Subtotal** | **41** |
 
-| **Total Geral** | **1155** |
+| **Total Geral** | **1156** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite

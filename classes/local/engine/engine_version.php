@@ -40,5 +40,5 @@ namespace mod_playerpuzzle\local\engine;
  */
 final class engine_version {
     /** @var int The current rules, as the date they last changed (YYYYMMDDXX). */
-    public const CURRENT = 2026111802;
+    public const CURRENT = 2026111803;
 }

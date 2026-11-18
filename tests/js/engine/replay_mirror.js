@@ -66,6 +66,8 @@ const DIFFICULTY_HP_FACTORS = {easy: 0.5, normal: 1.0, hard: 2.0};
 // What a Normal final boss has on top of its HP, see combat::NORMAL_FINAL_BOSS_HP_FACTOR.
 const NORMAL_FINAL_BOSS_HP_FACTOR = 1.15;
 const DIFFICULTY_PLAYER_FACTORS = {easy: 1.0, normal: 1.0, hard: 2.0};
+// Mirrors combat::DIFFICULTY_STUDENT_HP_FACTORS: the student's max HP in a fight, by difficulty.
+const DIFFICULTY_STUDENT_HP_FACTORS = {easy: 1.0, normal: 1.0, hard: 1.5};
 // How much harder an opponent hits at the Campaign's last phase, by difficulty, see combat::ATTACK_GROWTH.
 const ATTACK_GROWTH = {easy: 0.0, normal: 0.6, hard: 1.0};
 // How many points more of each hit an opponent's armor absorbs at the Campaign's last phase, see combat::ARMOR_GROWTH.
@@ -130,6 +132,20 @@ function campaignProgress(level, phase, maxLevels) {
 const NO_MODIFIERS = {hp: 1, attack: 1, armor: 0};
 
 /**
+ * The student's max HP in the phase, as combat::phase_student() gives it: the HP the phase froze, or the instance's
+ * base HP for an attempt without it, scaled by the difficulty except in a Demo.
+ *
+ * @param {object} attempt The attempt: isdemo, difficulty and frozenplayerhp are read.
+ * @param {object} playerpuzzle The instance: basestudenthp is read.
+ * @return {number}
+ */
+function studentMaxHp(attempt, playerpuzzle) {
+    const hp = attempt.frozenplayerhp || playerpuzzle.basestudenthp;
+    const factor = attempt.isdemo ? 1.0 : DIFFICULTY_STUDENT_HP_FACTORS[attempt.difficulty] ?? 1.0;
+    return Math.floor((hp * factor) + 0.5);
+}
+
+/**
  * Builds the phase's combat config the way replay::simulate() does from an attempt row, via
  * combat::phase_opponent(). The opponent's profile and power tables live only on the server
  * (opponents::modifiers() and opponents::powers()), so they are passed in.
@@ -154,7 +170,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
         : 1.0;
     const scaledBossHp = Math.round(scaleBoss(attempt.frozenbasebosshp, level, phase) * hpFactor);
     // The student's side as the phase froze it (combat::phase_student()): an attempt without it falls
-    // back to the instance's base HP, with no attack bonus and no armor.
+    // back to the instance's base HP, with no attack bonus and no armor; the HP is then scaled by the difficulty.
     const frozenHp = attempt.frozenplayerhp || 0;
     const attack = frozenHp > 0 ? attempt.frozenplayerattack : 1;
     const armor = frozenHp > 0 ? attempt.frozenplayerarmor : 0;
@@ -181,7 +197,7 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             difficulty: attempt.difficulty || 'normal',
         },
         maxBossHp: Math.floor((scaledBossHp * modifiers.hp * finalBossFactor) + 0.5),
-        maxPlayerHp: frozenHp > 0 ? frozenHp : playerpuzzle.basestudenthp,
+        maxPlayerHp: studentMaxHp(attempt, playerpuzzle),
     };
 }
 

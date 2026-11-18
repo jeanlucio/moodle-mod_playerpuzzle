@@ -49,7 +49,8 @@ class combat {
 
     /**
      * Multiplier per student-chosen difficulty on the opponent's own amounts: its hits, its Potions and the poison it
-     * inflicts. Applied on top of the level/phase scaling, never to the student's own HP, and never to the grade
+     * inflicts. Applied on top of the level/phase scaling, never to the student's own HP (see
+     * DIFFICULTY_STUDENT_HP_FACTORS), and never to the grade
      * directly — a win on any difficulty still clears 100% of that difficulty's own boss HP,
      * so Easy is a safety net for weaker students rather than a grade penalty.
      */
@@ -59,6 +60,15 @@ class combat {
      * Multiplier per difficulty on the opponent's max HP: Easy halves it and Hard doubles it, as on its hits.
      */
     private const DIFFICULTY_HP_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 2.0];
+
+    /**
+     * Multiplier per difficulty on the student's max HP in a fight. Hard doubles the opponent's hits, and with the
+     * student's HP left alone a single critical hit could take more than all of it; half as much again keeps each hit
+     * at a third more of the student's HP than on Normal, so Hard stays harder through what is its own (an opponent
+     * that always answers right and grows stronger) instead of through one-hit defeats. It applies to the fight, not
+     * to the hero, so the shop shows the hero's own HP. Tuned with tests/js/engine/simulate_heroes.js.
+     */
+    private const DIFFICULTY_STUDENT_HP_FACTORS = ['easy' => 1.0, 'normal' => 1.0, 'hard' => 1.5];
 
     /**
      * What a Normal final boss has on top of the HP the level, the phase and its own profile give: 15% more, so it
@@ -295,28 +305,27 @@ class combat {
      * the hits they land and the share of each hit they take that their armor absorbs. Read by the
      * server replay and by the page that starts the live client, so both fight with the same numbers.
      * A row from before these were frozen has no HP stored; it falls back to the instance's base HP,
-     * with no attack bonus and no armor.
+     * with no attack bonus and no armor. The HP is then scaled by the phase's difficulty
+     * (DIFFICULTY_STUDENT_HP_FACTORS), except in a Demo, which ignores the difficulty.
      *
-     * @param \stdClass $attempt The attempt row (currentlevel, currentphase, frozenplayerhp,
-     *  frozenplayerattack, frozenplayerarmor).
+     * @param \stdClass $attempt The attempt row (isdemo, difficulty, frozenplayerhp, frozenplayerattack,
+     *  frozenplayerarmor).
      * @param \stdClass $instance The instance record (basestudenthp).
      * @return array ['maxhp' => int, 'attack' => float, 'armor' => float]
      */
     public static function phase_student(\stdClass $attempt, \stdClass $instance): array {
         $frozenhp = (int) ($attempt->frozenplayerhp ?? 0);
-        if ($frozenhp > 0) {
-            return [
-                'maxhp' => $frozenhp,
-                'attack' => (float) $attempt->frozenplayerattack,
-                'armor' => (float) $attempt->frozenplayerarmor,
-            ];
+        $side = $frozenhp > 0
+            ? ['maxhp' => $frozenhp, 'attack' => (float) $attempt->frozenplayerattack,
+                'armor' => (float) $attempt->frozenplayerarmor]
+            : ['maxhp' => (int) $instance->basestudenthp, 'attack' => 1.0, 'armor' => 0.0];
+        if (empty($attempt->isdemo)) {
+            // Halves round up with floor(), as the replay mirror in JavaScript does.
+            $factor = self::difficulty_student_hp_factor((string) ($attempt->difficulty ?? ''));
+            $side['maxhp'] = (int) floor($side['maxhp'] * $factor + 0.5);
         }
 
-        return [
-            'maxhp' => (int) $instance->basestudenthp,
-            'attack' => 1.0,
-            'armor' => 0.0,
-        ];
+        return $side;
     }
 
     /**
@@ -338,6 +347,16 @@ class combat {
      */
     public static function difficulty_hp_factor(string $difficulty): float {
         return self::DIFFICULTY_HP_FACTORS[$difficulty] ?? 1.0;
+    }
+
+    /**
+     * Returns the multiplier on the student's max HP in a fight for a difficulty. Unknown values fall back to 1.0.
+     *
+     * @param string $difficulty One of the constants::DIFFICULTY_* values.
+     * @return float
+     */
+    public static function difficulty_student_hp_factor(string $difficulty): float {
+        return self::DIFFICULTY_STUDENT_HP_FACTORS[$difficulty] ?? 1.0;
     }
 
     /**

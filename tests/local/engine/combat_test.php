@@ -407,6 +407,27 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
+     * Tests that phase_student() gives the student half as much HP again on Hard, rounding a half up, and leaves it
+     * alone on Easy, on Normal and in a Demo on Hard.
+     *
+     * @return void
+     */
+    public function test_phase_student_scales_the_hp_by_the_difficulty(): void {
+        $instance = (object) ['basestudenthp' => 100];
+        $hp = fn(array $overrides) => combat::phase_student($this->make_attempt(array_merge([
+            'frozenplayerhp' => 179, 'frozenplayerattack' => '1.225', 'frozenplayerarmor' => '0.138',
+        ], $overrides)), $instance)['maxhp'];
+
+        $this->assertSame(269, $hp(['difficulty' => 'hard']), '268.5 rounds up');
+        $this->assertSame(179, $hp(['difficulty' => 'normal']));
+        $this->assertSame(179, $hp(['difficulty' => 'easy']));
+        $this->assertSame(179, $hp(['difficulty' => 'hard', 'isdemo' => 1]), 'a Demo ignores the difficulty');
+        $this->assertSame(150, $hp(['difficulty' => 'hard', 'frozenplayerhp' => 0]), 'the instance\'s HP, scaled too');
+        $this->assertSame(1.5, combat::difficulty_student_hp_factor('hard'));
+        $this->assertSame(1.0, combat::difficulty_student_hp_factor('unknown'));
+    }
+
+    /**
      * Tests that phase_opponent() gives the final boss the second power its student's hero calls for, on top of
      * its drain and its extra HP, and gives every other opponent nothing of the kind.
      *

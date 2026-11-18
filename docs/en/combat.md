@@ -78,6 +78,7 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 | Growth of its hit over the Campaign | none | up to +60% | up to +100% |
 | Opponent armor | its own only | its own +25 points over the Campaign | its own +25 points |
 | Student's hit | ×1 | ×1 | ×2 |
+| Student's HP in the fight | ×1 | ×1 | ×1.5 |
 | Critical hit (a right answer) | 3× the hit of whoever answered, times their Star multiplier | the same | the same |
 | Coins per 3-coin match | ×0.5 | ×1 | ×3 |
 | Opponent answers right (Multiple Choice / True-False) | 33% / 50% | 66% / 75% | 100% / 100% |
@@ -86,8 +87,10 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 | Opponent's powers | yes | yes | yes |
 | Grade | the same | the same | the same |
 
-The hero is the same on every difficulty: its HP, attack and armor come only from what is bought in the shop. As
-an example, an activity with a base HP of 250 on both sides, a base damage of 10 and 2 levels:
+The hero is the same on every difficulty: its HP, attack and armor come only from what is bought in the shop, and
+the shop shows those values. On Hard it fights with 1.5× that HP. As an example, an activity with a base HP of 250
+on both sides, a base damage of 10 and 2 levels, where the student starts the fight with 250 HP on Easy and Normal
+and 375 on Hard, before any upgrade:
 
 | Phase | | Opponent HP | Its hit | Its critical | Its armor | Student's hit | Student's critical |
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -106,11 +109,13 @@ the hero's attack and the opponent's armor.
 
 On Normal and Hard the student needs the same number of hits to bring the opponent down, since their own hit
 doubles too; on Easy, half as many. On Hard the opponent's hit is 2.2 to 2.5 times the Normal one while the
-student's HP does not double, so the student survives fewer than half as many hits.
+student's HP only grows 1.5×, so the student survives 60% to 70% of the hits they would on Normal.
 
 On Easy the halving is on the opponent only: its HP and its hits are halved while the student's own
-hits, Potions and hex keep their full value, so an Easy match is shorter and not only safer. On Hard everything
-doubles for both sides, so the match lasts as long as a Normal one and the student has half the time to survive.
+hits, Potions and hex keep their full value, so an Easy match is shorter and not only safer. On Hard HP and hits
+double for both sides, except the student's HP, which grows 1.5×: the match lasts as long as a Normal one and each
+of the opponent's hits weighs more of the student's HP, but a critical hit early in the Campaign does not bring down
+a hero at full HP.
 On Normal the final boss also has 15% more HP, which puts it a little above what a hero with every upgrade can
 reach.
 
@@ -121,6 +126,22 @@ opponent, on Normal and Hard, absorbs 25 points more of each hit at the last pha
 armor it already had (the golem and the plant start at 15% and end at 40%, the others go from nothing to 25%), so a
 hero that has put its buys in armor meets a defense that answers it. On Hard this keeps the fight
 demanding to the end, and the Potions, Swords and Shields from the shop weigh far more there than on Normal.
+
+The activity's values change the difficulty too, as much as the student's choice. The opponent's base HP over the
+base damage decides how long a fight lasts, and long fights favour the opponent, above all on Hard, where it answers
+every question right and gathers Stars for more turns. The student's base HP over the base damage decides how many
+hits they can take. In simulated matches of a 3-level Campaign on Hard, with a student who answers 90% of the
+questions right and a base damage of 10:
+
+| Opponent's base HP | Student's base HP | Tries per phase |
+|:---:|:---:|:---:|
+| 100 | 100 (the default) | 2.7 to 3.3 |
+| 100 | 250 | 1.1 to 1.2 |
+| 250 | 250 | 3.2 to 3.3 |
+
+Raising only the student's HP makes the game much easier; raising both makes the fight 2.5 times longer, and on Hard
+that makes it a little harder than with both at 100. On Normal the same three rows come to 2.1 to 2.3, 1.1 and 1.5
+to 1.8.
 
 In Campaign the choice is made for each phase: in the Lobby for the first one, and on the
 "Phase won" screen for the next.

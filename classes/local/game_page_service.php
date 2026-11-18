@@ -689,8 +689,8 @@ class game_page_service {
         // The opponent's HP, the phase's base damage and the profile's attack and armor come from
         // the same calculation the server replay uses (combat::phase_opponent()), from the config
         // frozen when the phase started, so a teacher editing the activity mid-phase never changes
-        // what a resumed client fights. A Demo fights at a fixed HP with no profile. Student HP is
-        // never touched by difficulty, and a Demo uses the fixed one too.
+        // what a resumed client fights. A Demo fights at a fixed HP with no profile, and the student
+        // at the fixed one too; elsewhere the student's HP is scaled by the difficulty in phase_student().
         $opponentside = combat::phase_opponent($attemptinfo, $instance);
         $bosshp = $opponentside['maxbosshp'];
         $bossdamage = $opponentside['basedamage'];

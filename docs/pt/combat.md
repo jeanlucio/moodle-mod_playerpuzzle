@@ -78,6 +78,7 @@ O estudante escolhe Fácil, Normal ou Difícil. A escolha muda a luta, nunca a n
 | Crescimento do golpe na Campanha | nenhum | até +60% | até +100% |
 | Armadura do oponente | só a dele | a dele +25 pontos ao longo da Campanha | a dele +25 pontos |
 | Golpe do estudante | ×1 | ×1 | ×2 |
+| HP do estudante na luta | ×1 | ×1 | ×1,5 |
 | Golpe crítico (uma resposta certa) | 3× o golpe de quem respondeu, vezes o seu multiplicador de Estrela | o mesmo | o mesmo |
 | Moedas por combinação de 3 | ×0,5 | ×1 | ×3 |
 | Oponente acerta a pergunta (Múltipla Escolha / Verdadeiro-Falso) | 33% / 50% | 66% / 75% | 100% / 100% |
@@ -86,8 +87,10 @@ O estudante escolhe Fácil, Normal ou Difícil. A escolha muda a luta, nunca a n
 | Poderes do oponente | sim | sim | sim |
 | Nota | a mesma | a mesma | a mesma |
 
-O herói é o mesmo em toda dificuldade: o HP, o ataque e a armadura dele vêm só do que é comprado na loja. Como
-exemplo, uma atividade com HP base de 250 dos dois lados, dano base de 10 e 2 níveis:
+O herói é o mesmo em toda dificuldade: o HP, o ataque e a armadura dele vêm só do que é comprado na loja, e a loja
+mostra esses valores. No Difícil ele luta com 1,5× esse HP. Como exemplo, uma atividade com HP base de 250 dos dois
+lados, dano base de 10 e 2 níveis, em que o estudante começa a luta com 250 HP no Fácil e no Normal e 375 no Difícil,
+antes das melhorias:
 
 | Fase | | HP do oponente | Golpe dele | Crítico dele | Armadura dele | Golpe do estudante | Crítico do estudante |
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|
@@ -106,12 +109,13 @@ do ataque do herói e da armadura do oponente.
 
 No Normal e no Difícil o estudante precisa do mesmo número de golpes para derrubar o oponente, já que o golpe dele
 também dobra; no Fácil, metade. No Difícil o golpe do oponente é de 2,2 a 2,5 vezes o do Normal e o HP do
-estudante não dobra, então ele aguenta menos da metade dos golpes.
+estudante sobe só 1,5×, então ele aguenta de 60% a 70% dos golpes que aguentaria no Normal.
 
 No Fácil a redução é só do oponente: o HP e os golpes dele caem pela metade enquanto os golpes, as
 Poções e o feitiço do próprio estudante mantêm o valor cheio, então uma partida fácil é mais curta, e não só mais
-segura. No Difícil tudo dobra para os dois lados, então a partida dura o mesmo que no Normal e o estudante tem
-metade do tempo para sobreviver. No Normal o chefão final também tem 15% a mais de HP, o que o põe um pouco
+segura. No Difícil o HP e o golpe dobram para os dois lados, menos o HP do estudante, que sobe 1,5×: a partida dura o mesmo
+que no Normal e cada golpe do oponente pesa mais do HP do estudante, mas um crítico no começo da Campanha não derruba
+um herói de HP cheio. No Normal o chefão final também tem 15% a mais de HP, o que o põe um pouco
 acima do que um herói com todas as melhorias consegue alcançar.
 
 O herói cresce ao longo da Campanha (HP, ataque e armadura, comprados na loja) e os poderes dos oponentes
@@ -122,6 +126,22 @@ fase do que na primeira, além da armadura que já tinha (o golem e a planta com
 outros vão de nada a 25%), então o herói que pôs suas compras em armadura encontra uma defesa que responde a ela. No
 Difícil isso mantém a luta exigente até o fim, e as Poções, Espadas e Escudos da loja pesam muito mais lá do que no
 Normal.
+
+Os valores da atividade também mudam a dificuldade, tanto quanto a escolha do estudante. O HP base do oponente
+dividido pelo dano base decide quanto a luta dura, e lutas longas favorecem o oponente, sobretudo no Difícil, em que
+ele acerta toda pergunta e junta Estrelas por mais turnos. O HP base do estudante dividido pelo dano base decide
+quantos golpes ele aguenta. Em partidas simuladas de uma Campanha de 3 níveis no Difícil, com um estudante que acerta
+90% das perguntas e o dano base em 10:
+
+| HP base do oponente | HP base do estudante | Tentativas por fase |
+|:---:|:---:|:---:|
+| 100 | 100 (o padrão) | 2,7 a 3,3 |
+| 100 | 250 | 1,1 a 1,2 |
+| 250 | 250 | 3,2 a 3,3 |
+
+Subir só o HP do estudante deixa o jogo bem mais fácil; subir os dois deixa a luta 2,5 vezes mais longa, e no
+Difícil isso a deixa um pouco mais dura que com os dois em 100. No Normal as mesmas três linhas ficam em 2,1 a 2,3,
+1,1 e 1,5 a 1,8.
 
 Na Campanha a escolha é feita a cada fase: no Lobby para a primeira, e na tela "Fase vencida"
 para a seguinte.

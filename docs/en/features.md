@@ -2,24 +2,31 @@
 
 ## ⚔️ Gameplay
 
-* **Match-3 turn-based combat:** an 8×8 board where the student swaps pieces to attack a
+* **Match-3 turn-based combat:** an 8×8 board where the student swaps pieces to attack an
   opponent. Seven piece types, each with its own effect — see [How Combat Works](#combat).
 * **Symmetric opponent AI:** every piece resolves exactly the same way on the opponent's turn as on the
   student's — the opponent deals damage, stacks a critical-hit multiplier, hexes, shields itself,
   heals and banks its own gold.
 * **Question challenges:** filling the Mana Orb meter opens a question; a correct answer is a
-  critical hit, a wrong one costs HP. See [Question Engine](#questions).
+  critical hit, a wrong one resets the Star multiplier. See [Question Engine](#questions).
+* **Heroes:** in a Campaign the student picks one of six heroes, each a specialist in HP, attack or
+  armor, and grows it with upgrades bought in the shop through four stages. See [Heroes](#heroes).
+* **Eleven opponents with powers:** a Campaign meets ten opponents, one per phase of every level, each
+  with a power of its own (regenerating, an armed Shield, a stronger hex...), and a final boss that answers
+  the specialty of the student's hero. See [Opponents](#opponents).
 * **Two game modes:** **Campaign** (up to 10 levels × 10 phases, where winning never costs an
   attempt) and **Single Match** (a self-contained, repeatable round). See
   [Game Modes](#game-modes).
 * **Three difficulties,** chosen by the student, that never change the grade: Easy, Normal and
-  Hard scale the opponent, the coin reward and how often the opponent answers correctly.
+  Hard scale the opponent, the coin reward and how often the opponent answers correctly, and Hard also
+  gives the student more HP for its longer fights.
 * **Opening question:** every phase starts with a question that decides who moves first; right answer,
   the student, otherwise the opponent. It counts as an answered question.
 * **Minimum questions per match:** the opponent stays on its last HP if it falls before the student has
   answered the required number of questions, and each Orb combo then asks the next one.
 * **Resume anywhere:** the board and the fight are saved while playing, so closing the tab or
-  reloading picks the fight up where it was.
+  reloading picks the fight up where it was. The flag button also offers to leave and continue later,
+  at no cost, or to give up the match.
 * **Demo match:** a guided practice fight (100 HP on both sides), always available from the Lobby, that
   never counts for grade, coins or attempts. A one-time balloon explains each piece the first time the
   student matches it, and the closing screen lists the pieces that never came up.
@@ -28,8 +35,9 @@
 
 ## 🏛️ Lobby and economy
 
-* **Lobby as a home screen:** progress, difficulty, the minimum-questions notice and **Play**, with
-  buttons for the **Shop**, the **Ranking**, **How to play** and **Settings**.
+* **Lobby as a home screen:** progress, the Campaign history, difficulty, the attempt count, the
+  minimum-questions notice and **Play**, with buttons for **Settings**, the **Ranking**, the **Demo**,
+  **How to play**, the **Shop** and giving up the Campaign.
 * **How to play:** a help the student can open in the Lobby and, with the **?** button, during the fight: the
   goal, the seven pieces, the questions, the difficulty, the shop, the game mode, how to move the pieces (mouse,
   touch or keyboard) and what each button of the game does. What the activity does not have (the questions of an
@@ -68,7 +76,7 @@
   (the attempt it is, the retry cost, when the cooldown ends), and a start the rules refuse is explained in a
   dialog instead of an error page. A Campaign under way can be given up from the Lobby.
 * **Teacher report:** per-student progress, average opponent damage and accuracy, the most missed
-  questions, the score distribution (left out, with the grade column, for an activity with no grade), the
+  questions, the grade distribution (left out, with the grade column, for an activity with no grade), the
   completion rate and, for a Campaign, how each difficulty has gone
   (phases won on the first try, by difficulty and by phase of the level) and which heroes the students chose (a Single Match activity shows its matches won by difficulty), respecting separate groups. The student
   table is paged, 50 students at a time, so a class of thousands opens as fast as a small one.

@@ -11,7 +11,8 @@ the *Manage questions* page. It is available only to users who hold the
 `mod/playerpuzzle:managequestions` capability, and only when an AI source is available.
 
 * **What is sent:** a prompt made of the topic the teacher typed, the number of questions
-  requested (at most 10), the name of the interface language, and fixed formatting instructions.
+  requested (at most 10), the question type chosen, the name of the interface language, and fixed
+  formatting instructions.
   No student data and no course content is included.
 * **Where it goes:** through the companion
   [local_aihub](https://github.com/jeanlucio/moodle-local_aihub) plugin when it is installed and

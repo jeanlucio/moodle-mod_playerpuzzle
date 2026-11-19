@@ -4,7 +4,7 @@
 
 1. Adicione uma atividade PlayerPuzzle a um curso.
 2. Escolha um **Modo de Jogo** — Campanha ou Partida Única — veja [Modos de Jogo](#game-modes) — e
-   o oponente, o HP e o dano dele, e quantos níveis tem uma Campanha. O formulário limita o HP base a 10.000, o dano base a 1.000 e
+   o oponente de uma Partida Única, o HP e o dano, e quantos níveis tem uma Campanha. O formulário limita o HP base a 10.000, o dano base a 1.000 e
    o ganho de moedas a 1.000, que é 100 vezes o padrão e existe só para pegar um erro de digitação.
 3. Abra **Gerenciar questões** (na barra de navegação da atividade, em **Mais** quando não couber) para montar o banco de questões da atividade: importe uma
    categoria do Banco de Questões, cadastre questões à mão ou gere-as com IA (questões pendentes
@@ -44,6 +44,7 @@
    peça e depois uma vizinha, ou arraste uma. **Pelo teclado**, entre no tabuleiro com Tab, ande entre as casas
    com as setas, aperte **Enter** para selecionar a peça e **Enter** numa casa vizinha para trocar as duas
    (Enter na mesma peça desfaz a seleção), ou aperte **1** a **9** para fazer a jogada que o jogo anunciou, e
-   **Espaço** para ouvir a lista de novo. Veja [Acessibilidade](#accessibility).
+   **Espaço** para ouvir a lista de novo. Veja [Acessibilidade](#accessibility). O botão de bandeira no alto
+   permite sair e continuar depois, sem custo, ou desistir da partida.
 6. Depois de uma fase ou partida, revise as perguntas que respondeu. No modo Campanha, vencer uma
    fase nunca consome uma nova tentativa — só perder consome.

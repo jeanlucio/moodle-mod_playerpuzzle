@@ -1,27 +1,33 @@
 # Each entry needs an image at docs/assets/img/screenshots/<file>, plus an
 # English and a Portuguese caption. The screenshots.md pages (en/pt) loop over
 # this list, so adding a new screenshot never touches the gallery markup.
-- file: lobby.png
-  caption_en: "The Lobby, the activity's home screen: the progress to resume, the PuzzleCoin balance, the difficulty, the minimum-questions notice and Play (or the practice Demo), with buttons for the Shop, the Ranking and Settings"
-  caption_pt: "O Lobby, a tela inicial da atividade: o progresso a retomar, o saldo de PuzzleCoin, a dificuldade, o aviso de mínimo de questões e Jogar (ou a Demo de prática), com botões para a Loja, o Ranking e as Configurações"
-- file: shop.png
-  caption_en: "The Loadout Shop: the student spends PuzzleCoin on Potions, Shields, Quick Magic, Swords and Question Hints before the match, and sees how many of each they own"
-  caption_pt: "A Loja de Loadout: o estudante gasta PuzzleCoin em Poções, Escudos, Magias Rápidas, Espadas e Dicas antes da partida, e vê quantos de cada ele tem"
-- file: ranking.png
-  caption_en: "The class ranking, with the student's own row highlighted — on its own 100-point scale, independent of the grade"
-  caption_pt: "O ranking da turma, com a linha do próprio estudante destacada — numa escala própria de 100 pontos, independente da nota"
-- file: gameplay.jpg
-  caption_en: "Combat in progress: the 8×8 Match-3 board, both sides' HP, meters and counters, the consumables in the side panels, the history of moves and the progress indicator (Level 3, Phase 4)"
-  caption_pt: "Combate em andamento: o tabuleiro Match-3 8×8, o HP, os medidores e contadores dos dois lados, os consumíveis nos painéis laterais, o histórico de jogadas e o indicador de progresso (Nível 3, Fase 4)"
+- file: lobby.jpg
+  caption_en: "The Lobby, the activity's home screen: the Campaign progress to resume, the history of the Campaign, the difficulty, the attempt count and Play, with the Settings, the Ranking, the practice Demo, How to play, the Shop with the PuzzleCoin balance, and giving up the Campaign"
+  caption_pt: "O Lobby, a tela inicial da atividade: o progresso da Campanha a retomar, o histórico da Campanha, a dificuldade, a contagem de tentativas e Jogar, com as Configurações, o Ranking, a Demo de prática, Como jogar, a Loja com o saldo de PuzzleCoin e a desistência da Campanha"
+- file: hero.jpg
+  caption_en: "Choosing the hero at the start of a Campaign: six heroes, each with a specialty (Attack, Health or Armor), which stays with the student for the whole Campaign"
+  caption_pt: "A escolha do herói no início de uma Campanha: seis heróis, cada um com uma especialidade (Ataque, Vida ou Armadura), que acompanha o estudante a Campanha inteira"
+- file: shop.jpg
+  caption_en: "The Shop: the next opponent, the hero's upgrades (Health, Attack and Armor) and what its next stage asks for, and the consumables (Potion, Shield, Quick Magic, Sword and Question Hint), each with how many the student owns and the limit per phase"
+  caption_pt: "A Loja: o próximo oponente, as melhorias do herói (Vida, Ataque e Armadura) e o que o próximo estágio pede, e os consumíveis (Poção, Escudo, Magia Rápida, Espada e Dica da Questão), cada um com quantos o estudante tem e o limite por fase"
+- file: ranking.jpg
+  caption_en: "The class ranking, with the student's own row highlighted: each complete Campaign is worth 100 points, independent of the grade"
+  caption_pt: "O ranking da turma, com a linha do próprio estudante destacada: cada Campanha completa vale 100 pontos, independente da nota"
 - file: question-dialog.jpg
-  caption_en: "The question challenge as a native HTML dialog — centered, focus-managed, with Skip, a Hint from the loadout and Attack"
-  caption_pt: "O desafio de pergunta como um diálogo HTML nativo — centralizado, com gerenciamento de foco, com Pular, uma Dica do loadout e Atacar"
+  caption_en: "The question that decides who moves first, in a native HTML dialog: Skip, a Hint from the student's stock and Attack"
+  caption_pt: "A pergunta que decide quem joga primeiro, num diálogo HTML nativo: Pular, uma Dica do estoque do estudante e Atacar"
+- file: gameplay.jpg
+  caption_en: "A fight in progress at Level 3, Phase 4: the 8×8 Match-3 board, both sides' HP, items, meters and Stars, and each side's history of moves, with the opponent's powers"
+  caption_pt: "Uma luta em andamento no Nível 3, Fase 4: o tabuleiro Match-3 8×8, o HP, os itens, os medidores e as Estrelas dos dois lados, e o histórico de jogadas de cada lado, com os poderes do oponente"
 - file: settings-form.png
-  caption_en: "Teacher-facing activity settings: game mode, opponent, HP and damage, coin gain, minimum questions, attempts, ranking and hints"
-  caption_pt: "Configurações da atividade para o professor: modo de jogo, oponente, HP e dano, ganho de moeda, mínimo de questões, tentativas, ranking e dicas"
+  caption_en: "The activity settings for the teacher: game mode, HP, number of levels, cooldown, damage, coin gain, minimum questions, attempts and Campaigns, the ranking and more"
+  caption_pt: "As configurações da atividade para o professor: modo de jogo, HP, número de níveis, cooldown, dano, ganho de moedas, mínimo de questões, tentativas e Campanhas, o ranking e mais"
 - file: manage-questions.png
-  caption_en: "Manage questions: import from the Question Bank, add by hand or generate with AI, with each question's source, status and how often it was drawn"
-  caption_pt: "Gerenciar questões: importar do Banco de Questões, adicionar à mão ou gerar com IA, com a origem, o status e a frequência de sorteio de cada questão"
+  caption_en: "Manage questions: add by hand, generate with AI or import from the Question Bank, filter by level, phase and status, see each question's answers, origin, placement and how often it was drawn, and approve the AI's pending ones"
+  caption_pt: "Gerenciar questões: adicionar à mão, gerar com IA ou importar do Banco de Questões, filtrar por nível, fase e status, ver as respostas, a origem, a posição e quantas vezes cada questão foi sorteada, e aprovar as pendentes da IA"
 - file: report.png
-  caption_en: "The teacher report: completion rate, score distribution, per-student progress and the most missed questions"
-  caption_pt: "O relatório do professor: taxa de conclusão, distribuição das notas, progresso por estudante e as questões mais erradas"
+  caption_en: "The teacher report, first part: completion rate, grade distribution and results by difficulty, overall and by phase of the level"
+  caption_pt: "O relatório do professor, primeira parte: taxa de conclusão, distribuição das notas e resultados por dificuldade, no geral e por fase do nível"
+- file: report-students.png
+  caption_en: "The teacher report, second part: the heroes chosen, each student's grade and progress, and the most missed questions"
+  caption_pt: "O relatório do professor, segunda parte: os heróis escolhidos, a nota e o progresso de cada estudante e as questões mais erradas"

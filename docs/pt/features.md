@@ -9,18 +9,25 @@
   estudante — o oponente causa dano, acumula multiplicador de crítico, enfeitiça, se protege, se cura e
   acumula a própria moeda.
 * **Desafios de pergunta:** encher a barra do Orbe de Mana abre uma pergunta; acertar é um ataque
-  crítico, errar custa HP. Veja [Motor de Questões](#questions).
+  crítico, errar zera o multiplicador de Estrelas. Veja [Motor de Questões](#questions).
+* **Heróis:** na Campanha o estudante escolhe um de seis heróis, cada um especialista em HP, ataque ou
+  armadura, e o faz crescer com melhorias compradas na loja, em quatro estágios. Veja [Heróis](#herois).
+* **Onze oponentes com poderes:** a Campanha enfrenta dez oponentes, um por fase de cada nível, cada um com um
+  poder próprio (regenerar, um Escudo armado, um feitiço mais forte...), e um chefão final que responde à
+  especialidade do herói do estudante. Veja [Oponentes](#opponents).
 * **Dois modos de jogo:** **Campanha** (até 10 níveis × 10 fases, onde vencer nunca gasta uma
   tentativa) e **Partida Única** (uma rodada autocontida e repetível). Veja
   [Modos de Jogo](#game-modes).
 * **Três dificuldades,** escolhidas pelo estudante, que nunca mudam a nota: Fácil, Normal e Difícil
-  escalam o oponente, a recompensa em moedas e a frequência com que o oponente acerta a pergunta.
+  escalam o oponente, a recompensa em moedas e a frequência com que o oponente acerta a pergunta, e o Difícil
+  também dá ao estudante mais HP para as lutas mais longas.
 * **Pergunta inicial:** toda fase começa com uma pergunta que decide quem joga primeiro; acertou, o
   estudante, senão o oponente. Ela conta como uma pergunta respondida.
 * **Mínimo de questões por partida:** o oponente fica com 1 HP se cair antes de o estudante
   ter respondido o número exigido de perguntas, e cada combo de Orbe faz a próxima.
 * **Retome de onde parou:** o tabuleiro e a luta são salvos durante o jogo, então fechar a aba ou
-  recarregar a página retoma a luta de onde estava.
+  recarregar a página retoma a luta de onde estava. O botão de bandeira também oferece sair e continuar
+  depois, sem custo, ou desistir da partida.
 * **Partida Demo:** uma luta de prática guiada (100 de HP dos dois lados), sempre disponível no Lobby,
   que nunca conta para nota, moedas ou tentativas. Um balão explica cada peça na primeira vez em que o
   estudante a combina, e a tela final lista as peças que não apareceram.
@@ -28,8 +35,9 @@
 
 ## 🏛️ Lobby e economia
 
-* **Lobby como tela inicial:** progresso, dificuldade, o aviso de mínimo de questões e **Jogar**,
-  com botões para a **Loja**, o **Ranking**, o **Como jogar** e as **Configurações**.
+* **Lobby como tela inicial:** progresso, o histórico da Campanha, dificuldade, a contagem de tentativas, o
+  aviso de mínimo de questões e **Jogar**, com botões para as **Configurações**, o **Ranking**, a **Demo**, o
+  **Como jogar**, a **Loja** e a desistência da Campanha.
 * **Como jogar:** uma ajuda que o estudante abre no Lobby e, pelo botão **?**, durante a luta: o objetivo, as
   sete peças, as perguntas, a dificuldade, a loja, o modo de jogo, como mexer nas peças (mouse, toque ou
   teclado) e o que cada botão do jogo faz. O que a atividade não tem (as perguntas de um banco vazio, o texto

@@ -4,7 +4,7 @@
 
 1. Add a PlayerPuzzle activity to a course.
 2. Choose a **Game Mode** — Campaign or Single Match — see [Game Modes](#game-modes) — and the
-   opponent, its HP and damage, and how many levels a Campaign has. The form caps the base HP at
+   opponent of a Single Match, the HP and damage, and how many levels a Campaign has. The form caps the base HP at
    10,000, the base damage at 1,000 and the coin gain at 1,000, which is 100 times the defaults and
    only there to catch a typo.
 3. Open **Manage questions** (in the activity's navigation bar, under **More** when it does not fit) to fill the activity's question bank: import a Question Bank
@@ -17,7 +17,7 @@
 6. Optionally connect [PlayerHUD](#playerhud) items — coin transfer, retry cost, victory award —
    if `block_playerhud` is installed in the course.
 7. Decide whether the class **Ranking** is shown, and use the activity's **Report** page to follow
-   progress, the most missed questions, the score distribution, the results by difficulty and the
+   progress, the most missed questions, the grade distribution, the results by difficulty and the
    heroes chosen.
 
 ## For Students
@@ -42,6 +42,7 @@
    piece and then a neighbour, or drag one. **With the keyboard**, Tab into the board, move between squares
    with the arrow keys, press **Enter** to select a piece and **Enter** on a neighbouring square to swap
    the two (Enter on the same piece drops the selection), or press **1** to **9** to play the move the game
-   announced, and **Space** to hear the list again. See [Accessibility](#accessibility).
+   announced, and **Space** to hear the list again. See [Accessibility](#accessibility). The flag button at
+   the top lets you leave and continue later, at no cost, or give up the match.
 6. After a phase or match, review the questions you answered. In Campaign mode, winning a phase
    never costs a new attempt — only losing does.

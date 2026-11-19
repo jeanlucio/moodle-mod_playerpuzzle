@@ -29,8 +29,8 @@ ou no tráfego de rede revela a resposta com antecedência. Esse é o primeiro d
 ## Gerenciando Questões
 
 Os professores (quem tem a capability *Gerenciar o banco de questões do PlayerPuzzle*) ganham uma
-página **Gerenciar questões** na atividade. Ela lista cada questão com seu tipo, sua origem, sua
-fase, seu status e quantas vezes foi sorteada, e oferece:
+página **Gerenciar questões** na atividade. Ela lista cada questão com as respostas, o tipo e a origem,
+o nível e a fase a que se destina, o status e quantas vezes foi sorteada, e oferece:
 
 * **Importar do Banco de Questões** — um botão ao lado de *Adicionar questão* abre o painel de
   importação; escolha uma categoria e importe suas questões aprovadas de

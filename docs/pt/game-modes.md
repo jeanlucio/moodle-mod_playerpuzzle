@@ -54,6 +54,7 @@ Campanha.
   adiante na Campanha está a fase, da força de sempre na primeira fase até 60% a mais na última no Normal e
   100% a mais no Difícil, para a Campanha acompanhar um herói que continua crescendo. O Fácil não muda.
 
+<span id="herois"></span>
 ## Heróis
 
 Na Campanha o estudante escolhe um de seis heróis numa tela própria, ao apertar Jogar pela primeira vez (a
@@ -84,10 +85,41 @@ abre a escolha com o último herói usado.
   naquela fase se perdem. Na Demo, a partida só termina. Uma fase deixada em andamento também pode ser abandonada
   pelo Lobby, no link abaixo da dificuldade travada, com o mesmo custo de desistir dentro do jogo.
 
+<span id="opponents"></span>
+## Oponentes
+
+A Campanha enfrenta os mesmos dez oponentes em todo nível, um por fase, do mais fácil ao mais difícil; a última
+fase do último nível é lutada contra o chefão final. A Partida Única enfrenta o oponente que o professor escolhe
+nas configurações da atividade. Cada um tem um cenário próprio, e a maioria se destaca de um jeito: bate 15%
+mais forte, tem uma armadura que absorve 15% de cada golpe que recebe ou tem 15% a mais de HP. Cada um tem também
+um **poder**, que o jogo explica na primeira vez que o estudante o encontra e
+que o cartão do oponente mostra de novo a qualquer momento:
+
+| Fase | Oponente | Destaque | Poder |
+|:---:|---|---|---|
+| 1 | Slime | — | Recupera 1% do HP máximo no começo de cada turno dele |
+| 2 | Goblin | golpes mais fortes | Emboscada: as Espadas dele causam o dobro de dano no primeiro turno dele |
+| 3 | Golem de gelo | armadura | Começa a luta com o Escudo armado |
+| 4 | Múmia | golpes mais fortes | Maldição: começa com o Grimório 20% cheio, e o feitiço dele dura 4 rodadas em vez de 3 |
+| 5 | Planta carnívora | armadura | Enraizar: as Poções que ele combina curam 50% a mais |
+| 6 | Fantasma | — | Intangível: a cada 10 turnos dele, o Escudo se arma sozinho |
+| 7 | Esqueleto pirata | golpes mais fortes | Saque: a cada 4 turnos dele, leva 10% das moedas da partida do estudante e bate mais forte quanto mais levou |
+| 8 | Lobo | golpes mais fortes | A pergunta dele chega mais cedo: cada Orbe de Mana dá 24% de mana em vez de 20% |
+| 9 | Aranha gigante | mais HP | O feitiço dele chega mais cedo: cada Grimório enche 15% do medidor em vez de 10% |
+| 10 | Dragão | golpes mais fortes | Sopro de fogo: a cada 10 turnos dele, antes de jogar, um golpe de 1,5 vez o dano base que o Escudo bloqueia |
+| Chefão final | Vampiro | 20% a mais de HP | Dreno: cada golpe dele o cura em 30% do dano que causa |
+
+O chefão final também responde ao herói do estudante com um segundo poder emprestado de outro oponente: contra um
+especialista em ataque ele ganha 15% de armadura, como a do golem, contra um especialista em armadura o Grimório
+rápido da aranha (o feitiço atravessa a armadura) e contra um especialista em HP o sopro do dragão, a cada 12
+turnos dele. No Normal e no Difícil os oponentes também trazem Poções e Espadas próprias, mais delas quanto
+mais adiante na Campanha (veja [Dificuldade](#combat)).
+
 ## Partida Única
 
-Uma rodada única e autocontida — sem níveis nem fases, sempre lutada no HP base configurado. O
-professor define quantas partidas um estudante pode jogar (de 1 a 10, ou ilimitado) e pode
+Uma rodada única e autocontida — sem níveis nem fases, sempre lutada no HP base configurado,
+ajustado pela dificuldade que o estudante escolheu. O professor define quantas partidas um estudante
+pode jogar (de 1 a 10, ou ilimitado) e pode
 acrescentar um **cooldown** (em minutos, horas ou dias) entre as partidas. O estudante escolhe a
 dificuldade no Lobby a cada partida. Enquanto um cooldown está correndo, o Lobby informa ao
 estudante o horário em que a próxima partida abre, para que ele saiba antes de apertar Jogar, e o

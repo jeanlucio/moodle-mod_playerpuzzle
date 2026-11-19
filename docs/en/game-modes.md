@@ -53,6 +53,7 @@ each Campaign.
   Campaign the phase is, from their usual strength at the first phase to 60% more at the last on Normal and 100%
   more on Hard, so the Campaign keeps pace with a hero that keeps growing. Easy does not change.
 
+<span id="heroes"></span>
 ## Heroes
 
 In a Campaign the student chooses one of six heroes on a screen of its own, when pressing Play for the
@@ -84,9 +85,39 @@ with the hero last used.
   earned in that phase are lost. A Demo just ends. A phase left under way can also be abandoned from the Lobby,
   through the link under the locked difficulty, with the same cost as giving up inside the game.
 
+<span id="opponents"></span>
+## Opponents
+
+A Campaign meets the same ten opponents on every level, one per phase, from the easiest to the hardest; the last
+phase of the last level is fought against the final boss instead. A Single Match fights the opponent the teacher
+picks in the activity settings. Each has a stage of its own, and most stand out in one way: they hit 15%
+harder, their armor absorbs 15% of every hit they take, or they have 15% more HP. Each also has a **power**, which the game explains the first time the student meets it and which the
+opponent's card shows again at any time:
+
+| Phase | Opponent | Stands out | Power |
+|:---:|---|---|---|
+| 1 | Slime | — | Regenerates 1% of its max HP as each of its turns begins |
+| 2 | Goblin | hits harder | Ambush: its Swords deal double damage on its first turn |
+| 3 | Ice golem | armor | Starts the fight with its Shield armed |
+| 4 | Mummy | hits harder | Curse: starts with its Grimoire 20% full, and its hex lasts 4 rounds instead of 3 |
+| 5 | Carnivorous plant | armor | Root: the Potions it matches heal 50% more |
+| 6 | Ghost | — | Intangible: every 10 of its turns its Shield arms by itself |
+| 7 | Pirate skeleton | hits harder | Loot: every 4 of its turns it takes 10% of the student's coins from the match, and hits harder the more it took |
+| 8 | Wolf | hits harder | Its question comes sooner: each Mana Orb gives it 24% mana instead of 20% |
+| 9 | Giant spider | more HP | Its hex comes sooner: each Grimoire fills 15% of its meter instead of 10% |
+| 10 | Dragon | hits harder | Fire breath: every 10 of its turns, before it moves, a hit of 1.5 times the base damage that a Shield blocks |
+| Final boss | Vampire | 20% more HP | Drain: each of its hits heals it by 30% of the damage it deals |
+
+The final boss also answers the student's hero with a second power borrowed from another opponent: against an
+attack specialist it gets 15% armor, like the golem's, against an armor specialist the spider's fast Grimoire
+(the hex goes through armor), and against an HP specialist the dragon's breath, every 12 of its turns. On
+Normal and Hard the opponents also bring Potions and Swords of their own, more of them further into the
+Campaign (see [Difficulty](#combat)).
+
 ## Single Match
 
-A single, self-contained round — no levels or phases, always fought at the configured base HP.
+A single, self-contained round — no levels or phases, always fought at the configured base HP, scaled
+by the difficulty the student chose.
 The teacher sets how many matches a student may play (1 to 10, or unlimited) and may add a
 **cooldown** (in minutes, hours or days) between matches. The student chooses the difficulty in the
 Lobby for each match. While a cooldown is running, the Lobby tells the student the time the next

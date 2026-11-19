@@ -24,7 +24,7 @@ the student combines pieces on an 8×8 board to attack an opponent controlled by
 questions to land critical hits. The questions come from the activity's own bank — imported from
 the course's Moodle Question Bank, written by hand, or generated with AI and approved by the
 teacher. The teacher chooses between a self-contained **Single Match** or a **Campaign** of up to
-10 levels (10 phases each). Winning earns **PuzzleCoin**, spent in a loadout shop before the next
+10 levels (10 phases each), where the student picks a hero that grows with upgrades bought in the shop and meets opponents with powers of their own. Winning earns **PuzzleCoin**, spent in a loadout shop before the next
 match, and the optional companion [block_playerhud](#playerhud) can feed coins in, charge for a
 retry or award an item.
 

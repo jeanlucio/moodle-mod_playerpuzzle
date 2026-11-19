@@ -24,7 +24,7 @@ Moodle: o estudante combina peças num tabuleiro 8×8 para atacar um oponente co
 simples, respondendo questões para desferir ataques críticos. As questões vêm do banco da própria
 atividade — importadas do Banco de Questões do Moodle do curso, escritas à mão, ou geradas por IA
 e aprovadas pelo professor. O professor escolhe entre uma **Partida Única** autocontida ou uma
-**Campanha** de até 10 níveis (10 fases cada). Vencer rende **PuzzleCoin**, gasto numa loja de
+**Campanha** de até 10 níveis (10 fases cada), em que o estudante escolhe um herói que cresce com melhorias compradas na loja e enfrenta oponentes com poderes próprios. Vencer rende **PuzzleCoin**, gasto numa loja de
 loadout antes da próxima partida, e o [block_playerhud](#playerhud) companheiro, opcional, pode
 alimentar moedas, cobrar por uma nova tentativa ou conceder um item.
 

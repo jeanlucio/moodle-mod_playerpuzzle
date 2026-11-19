@@ -11,8 +11,8 @@ página *Gerenciar questões*. Ele só está disponível a quem tem a capability
 `mod/playerpuzzle:managequestions`, e só quando há uma fonte de IA disponível.
 
 * **O que é enviado:** um prompt composto pelo tema digitado pelo professor, pela quantidade de
-  questões pedida (no máximo 10), pelo nome do idioma da interface e por instruções fixas de
-  formato. Nenhum dado de estudante nem conteúdo do curso é incluído.
+  questões pedida (no máximo 10), pelo tipo de questão escolhido, pelo nome do idioma da interface e
+  por instruções fixas de formato. Nenhum dado de estudante nem conteúdo do curso é incluído.
 * **Para onde vai:** pelo plugin companheiro
   [local_aihub](https://github.com/jeanlucio/moodle-local_aihub) quando ele está instalado e tem
   uma chave configurada (traga sua própria chave), e senão pelo subsistema `core_ai` do próprio

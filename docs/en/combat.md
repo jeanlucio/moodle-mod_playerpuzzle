@@ -27,8 +27,8 @@ who benefits changes (whoever's turn it currently is).
 | Piece | Effect |
 |-------|--------|
 | ⭐ Star | Adds +0.1 to a damage multiplier, stacking across turns; consumed on that side's critical hit and reset to 1 when that side answers a question wrong |
-| 📖 Spellbook | Fills a 0–100 hex meter of its own (+10 per piece); on reaching 100, arms 3 damage rounds against the **opponent** (one per their own turn) and resets, carrying over any overshoot |
-| ❓ Question Orb | Fills a 100-point energy bar of its own for each side; reaching 100 pauses combat and opens the [Question Challenge](#questions) — the student answers for real; whether the opponent's "answer" is right is decided on the server, with a chance set by the difficulty (see below) |
+| 📖 Grimoire | Fills a 0–100 hex meter of its own (+10 per piece); on reaching 100, arms 3 damage rounds against the **opponent** (one per their own turn) and resets, carrying over any overshoot |
+| ❓ Mana Orb | Fills a 100-point energy bar of its own for each side; reaching 100 pauses combat and opens the [Question Challenge](#questions) — the student answers for real; whether the opponent's "answer" is right is decided on the server, with a chance set by the difficulty (see below) |
 | ⚔️ Swords | Direct damage to the **opponent** — no question needed. Scales with level/phase, and a 4- or 5-piece match deals 1.5x/2x the damage of a 3-piece match |
 | 🛡️ Shield | Fills a 0–100 meter of its own (+10 per piece); on reaching 100, negates the **next** hit that side takes in full, no matter how large, then resets |
 | 🧪 Potion | Heals that side's own HP by a quarter of the base damage per piece, so a 3-piece match heals three quarters of what a 3-piece Sword match deals — damage always outweighs healing |
@@ -43,7 +43,7 @@ motion.
 
 ## The Question Challenge
 
-When either side's Question Orb bar reaches 100%, the match pauses and opens the
+When either side's Mana Orb bar reaches 100%, the match pauses and opens the
 [question dialog](#questions):
 
 * **Correct answer** — a critical hit: triple base damage, multiplied by whatever Star bonus that
@@ -177,7 +177,7 @@ own record of the moves rather than from whatever the browser says.
 ## Server-Side Truth
 
 Every number that governs combat — the opponent's and student's maximum HP, and the base damage
-figure Sword/Star/Spellbook/Potion all scale from — is computed once on the server for the
+figure Sword/Star/Grimoire/Potion all scale from — is computed once on the server for the
 current level and phase (see [Game Modes](#game-modes) for how these scale) and handed to the
 client as configuration; the client never recalculates any of it. The server also re-plays the
 moves the student made to work out the real outcome — see [Security & Anti-Cheat](#security).

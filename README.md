@@ -24,7 +24,7 @@ pieces on an 8×8 board to attack an opponent controlled by a simple AI, answeri
 critical hits. The questions come from the activity's own bank — imported from the course's Moodle
 Question Bank, written by hand, or generated with AI and approved by the teacher. The teacher
 chooses between a self-contained **Single Match** or a **Campaign** of up to 10 levels (10 phases
-each). Winning earns **PuzzleCoin**, spent in a loadout shop before the next match; the optional
+each), where the student picks a hero that grows with upgrades bought in the shop and meets opponents with powers of their own. Winning earns **PuzzleCoin**, spent in a loadout shop before the next match; the optional
 companion `block_playerhud` can feed coins in, charge for a retry or award an item.
 
 📚 **[Full documentation](https://jeanlucio.github.io/moodle-mod_playerpuzzle/)** — features
@@ -37,7 +37,7 @@ coverage, and third-party service disclosure.
 PlayerPuzzle works without any external service. The only feature that reaches one is the
 **optional** AI question generator on the *Manage questions* page, available to teachers who hold
 the `mod/playerpuzzle:managequestions` capability. When a teacher uses it, the plugin sends a
-prompt made of the topic they typed, the number of questions requested, the interface language and
+prompt made of the topic they typed, the number of questions requested, the question type chosen, the interface language and
 fixed formatting instructions. No student data and no course content is included. The request goes
 through the companion [local_aihub](https://github.com/jeanlucio/moodle-local_aihub) plugin when it
 is installed and has a key configured, otherwise through Moodle's own `core_ai` subsystem, so the
@@ -105,7 +105,7 @@ combina peças num tabuleiro 8×8 para atacar um oponente controlado por uma IA 
 questões para desferir ataques críticos. As questões vêm do banco da própria atividade —
 importadas do Banco de Questões do Moodle do curso, escritas à mão, ou geradas por IA e aprovadas
 pelo professor. O professor escolhe entre uma **Partida Única** autocontida ou uma **Campanha** de
-até 10 níveis (10 fases cada). Vencer rende **PuzzleCoin**, gasto numa loja de loadout antes da
+até 10 níveis (10 fases cada), em que o estudante escolhe um herói que cresce com melhorias compradas na loja e enfrenta oponentes com poderes próprios. Vencer rende **PuzzleCoin**, gasto numa loja de loadout antes da
 próxima partida; o `block_playerhud` companheiro, opcional, pode alimentar moedas, cobrar por uma
 nova tentativa ou conceder um item.
 
@@ -119,7 +119,7 @@ com cobertura, e a divulgação de serviço de terceiros.
 O PlayerPuzzle funciona sem nenhum serviço externo. O único recurso que chega a um é o gerador
 de questões por IA, **opcional**, na página *Gerenciar questões*, disponível a quem tem a
 capability `mod/playerpuzzle:managequestions`. Quando o professor o usa, o plugin envia um prompt
-composto pelo tema digitado, pela quantidade de questões pedida, pelo idioma da interface e por
+composto pelo tema digitado, pela quantidade de questões pedida, pelo tipo de questão escolhido, pelo idioma da interface e por
 instruções fixas de formato. Nenhum dado de estudante nem conteúdo do curso é incluído. O pedido
 passa pelo plugin companheiro [local_aihub](https://github.com/jeanlucio/moodle-local_aihub)
 quando ele está instalado e tem uma chave configurada, e senão pelo subsistema `core_ai` do próprio

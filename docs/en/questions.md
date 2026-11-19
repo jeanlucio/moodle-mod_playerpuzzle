@@ -27,8 +27,8 @@ This is the first of the plugin's [three anti-cheat pillars](#security).
 ## Managing Questions
 
 Teachers (users with the *Manage the PlayerPuzzle question bank* capability) get a **Manage
-questions** page in the activity. It lists every question with its type, source, phase, status
-and how many times it has been drawn, and offers:
+questions** page in the activity. It lists every question with its answers, type and source, the level
+and phase it is meant for, its status and how many times it has been drawn, and offers:
 
 * **Import from the Question Bank** — a button beside *Add question* opens the import panel; pick a category and import its approved, single-answer
   Multiple Choice and True/False questions. Importing again refreshes the copies; a question that

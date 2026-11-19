@@ -59,8 +59,8 @@ class report_service {
      * @param int $page Zero-based page of the name-ordered list; ignored when $perpage is 0.
      * @param int $perpage Rows per page, 0 for every student. Only the students of the page have their attempts
      *  loaded and scored, so a large class costs what one page costs.
-     * @return array Rows ordered by name: {userid, fullname, hasgrade, grade, attemptsused,
-     *  avgdamagepercent, avgcorrect, avgtotal, lastmatch}.
+     * @return array Rows ordered by name: {userid, fullname, hasgrade, grade, attemptsused, hasattempts,
+     *  avgdamagepercent, avgcorrect, avgtotal, lastmatch}. The averages are '-' without a finished attempt.
      */
     public static function get_student_rows(
         stdClass $instance,
@@ -190,6 +190,7 @@ class report_service {
             'hasgrade'         => $grade !== null,
             'grade'            => $grade !== null ? format_float($grade, 2) : '-',
             'attemptsused'     => $attemptcount,
+            'hasattempts'      => $attemptcount > 0,
             'avgdamagepercent' => $attemptcount > 0
                 ? format_float(array_sum($damagepercents) / $attemptcount, 1)
                 : '-',

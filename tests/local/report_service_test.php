@@ -203,6 +203,7 @@ final class report_service_test extends \advanced_testcase {
         $this->assertTrue($rows[0]['hasgrade']);
         $this->assertSame(format_float(100.0, 2), $rows[0]['grade']);
         $this->assertSame(1, $rows[0]['attemptsused']);
+        $this->assertTrue($rows[0]['hasattempts']);
         // Boss HP fully depleted (bosshp_remaining = 0) means 100% damage dealt.
         $this->assertSame(format_float(100.0, 1), $rows[0]['avgdamagepercent']);
         $this->assertSame(format_float(4.0, 1), $rows[0]['avgcorrect']);
@@ -288,6 +289,7 @@ final class report_service_test extends \advanced_testcase {
         $rows = report_service::get_student_rows($this->instance, $this->cm, $this->context, 0);
 
         $this->assertSame(0, $rows[0]['attemptsused']);
+        $this->assertFalse($rows[0]['hasattempts']);
         $this->assertSame('-', $rows[0]['avgdamagepercent']);
     }
 

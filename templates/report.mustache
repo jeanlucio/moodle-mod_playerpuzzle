@@ -33,6 +33,7 @@
                 "hasgrade": true,
                 "grade": "82.50",
                 "attemptsused": 3,
+                "hasattempts": true,
                 "avgdamagepercent": "76.4",
                 "avgcorrect": "4.3",
                 "avgtotal": "5.0",
@@ -278,8 +279,14 @@
                                     <td>{{grade}}</td>
                                     {{/activityhasgrade}}
                                     <td>{{attemptsused}}</td>
+                                    {{#hasattempts}}
                                     <td>{{avgdamagepercent}}%</td>
                                     <td>{{avgcorrect}} / {{avgtotal}}</td>
+                                    {{/hasattempts}}
+                                    {{^hasattempts}}
+                                    <td>-</td>
+                                    <td>-</td>
+                                    {{/hasattempts}}
                                     <td>{{lastmatch}}</td>
                                 </tr>
                             {{/studentrows}}

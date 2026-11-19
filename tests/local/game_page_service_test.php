@@ -1021,7 +1021,7 @@ final class game_page_service_test extends \advanced_testcase {
         $this->assertSame(20, $hard['bossdamage']);
         $this->assertSame(150, $hard['studenthp']);
         $this->assertSame('hard', $hard['difficulty']);
-        $this->assertSame(3.0, $hard['coinfactor']);
+        $this->assertSame(2.0, $hard['coinfactor']);
     }
 
     /**

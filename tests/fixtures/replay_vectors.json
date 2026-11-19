@@ -319,7 +319,7 @@
             {"side":"player","correct":true,"counted":true}
         ],
         "serveruses": {},
-        "expected": {"damage":240,"playergold":135,"bossgold":53,"bossdefeated":true}
+        "expected": {"damage":240,"playergold":90,"bossgold":35,"bossdefeated":true}
     },
     {
         "name": "level 2 phase 5",
@@ -995,7 +995,7 @@
             {"side":"boss","correct":false,"counted":false}
         ],
         "serveruses": {"shield":1,"sword":1},
-        "expected": {"damage":180,"playergold":450,"bossgold":240,"bossdefeated":true}
+        "expected": {"damage":180,"playergold":300,"bossgold":160,"bossdefeated":true}
     },
     {
         "name": "easy, level 4",
@@ -1311,7 +1311,7 @@
             {"side":"boss","correct":true,"counted":false}
         ],
         "serveruses": {},
-        "expected": {"damage":0,"playergold":60,"bossgold":0,"bossdefeated":false}
+        "expected": {"damage":0,"playergold":40,"bossgold":0,"bossdefeated":false}
     },
     {
         "name": "brute opponent, minquestions",

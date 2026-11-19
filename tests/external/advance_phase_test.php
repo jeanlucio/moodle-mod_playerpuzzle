@@ -416,7 +416,7 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that a verified win on Hard advances and banks the Hard coin factor (x3): the
+     * Tests that a verified win on Hard advances and banks the Hard coin factor (x2): the
      * boss and its combo damage both double, so the same one-move win still finishes it.
      *
      * @return void
@@ -435,7 +435,7 @@ final class advance_phase_test extends \advanced_testcase {
         $this->assertFalse($result['error']);
         $this->assertSame('advanced', $result['data']['outcome']);
         $this->assertSame(2, $result['data']['currentphase']);
-        $this->assertSame(45, $result['data']['coinsbanked']);
+        $this->assertSame(30, $result['data']['coinsbanked']);
     }
 
     /**

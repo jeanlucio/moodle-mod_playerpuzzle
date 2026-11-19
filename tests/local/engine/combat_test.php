@@ -85,7 +85,7 @@ final class combat_test extends \basic_testcase {
 
         $this->assertSame(0.5, combat::difficulty_coin_factor('easy'));
         $this->assertSame(1.0, combat::difficulty_coin_factor('normal'));
-        $this->assertSame(3.0, combat::difficulty_coin_factor('hard'));
+        $this->assertSame(2.0, combat::difficulty_coin_factor('hard'));
         $this->assertSame(1.0, combat::difficulty_coin_factor('bogus'));
     }
 

@@ -80,7 +80,7 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 | Student's hit | ×1 | ×1 | ×2 |
 | Student's HP in the fight | ×1 | ×1 | ×1.5 |
 | Critical hit (a right answer) | 3× the hit of whoever answered, times their Star multiplier | the same | the same |
-| Coins per 3-coin match | ×0.5 | ×1 | ×3 |
+| Coins per 3-coin match | ×0.5 | ×1 | ×2 |
 | Opponent answers right (Multiple Choice / True-False) | 33% / 50% | 66% / 75% | 100% / 100% |
 | How the opponent plays | the first Sword match it finds | weighs the pieces (Sword and Potion count most) | as on Normal, and it also values more the pieces that feed its powers (the wolf, the Orb) |
 | Opponent's items (Potion, Sword) | none | 1 per level after the first, +1 on the final boss | 1 more than on Normal |

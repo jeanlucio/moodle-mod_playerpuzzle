@@ -111,9 +111,11 @@ class combat {
 
     /**
      * Coin reward multiplier per difficulty. Easy earns less, Hard earns more; applied
-     * server-side when coins are banked, so the client cannot inflate it.
+     * server-side when coins are banked, so the client cannot inflate it. Hard pays double, not more: the coins buy
+     * the hero's upgrades, and at triple a student bought every one of them early, so over a long Campaign the hero
+     * outgrew the opponent and Hard ended easier than Normal. Tuned with tests/js/engine/simulate_heroes.js.
      */
-    private const DIFFICULTY_COIN_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 3.0];
+    private const DIFFICULTY_COIN_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 2.0];
 
     /**
      * Probability the boss's guess lands on the correct answer, by difficulty and question

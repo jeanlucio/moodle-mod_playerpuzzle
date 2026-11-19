@@ -1784,12 +1784,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             answersContainer.append(
                 `<div class="alert alert-${correct ? 'success' : 'warning'} mt-2 mb-0"><strong>${message}</strong></div>`
             );
-            // The line goes to the history of whoever starts.
-            if (correct) {
-                this.scene.ui.pushHistoryLog('player', strings.historylogopening_player);
-            } else {
-                this.scene.ui.pushHistoryLog('boss', strings.historylogopening_boss);
-            }
         }
 
         /**
@@ -1802,6 +1796,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         startFight(first) {
             const me = this.scene;
             this.pendingQuestion = null;
+            // Who starts goes to the history of the side that starts, however the opening question went: right,
+            // wrong, skipped or with no question to ask.
+            if (first === 'player') {
+                me.ui.pushHistoryLog('player', this.strings.historylogopening_player);
+            } else {
+                me.ui.pushHistoryLog('boss', this.strings.historylogopening_boss);
+            }
             const notice = this.openingPowerNotice();
             if (first === 'player') {
                 me.input.enabled = true;

@@ -78,8 +78,11 @@ abre a escolha com o último herói usado.
   pede (a especialidade cheia e a fase do marco vencida) e os consumíveis. Durante a luta, o botão **?** no
   alto do palco abre o mesmo cartão, com uma tabela que põe o seu herói e o oponente lado a lado (HP, ataque e
   armadura), para reler os poderes depois do primeiro encontro, quando o aviso do jogo já não aparece.
-* **Desistir:** o botão de bandeira no alto do palco pede confirmação e então encerra a partida como
-  derrota: uma tentativa é gasta e as moedas ganhas naquela fase se perdem. Na Demo, a partida só termina.
+* **Sair ou desistir:** o botão de bandeira no alto do palco oferece três escolhas, cada uma explicada: continuar
+  jogando; sair e continuar depois, sem custo (a partida fica salva como está, e Jogar no Lobby continua a fase na
+  mesma dificuldade); ou desistir, que encerra a partida como derrota: uma tentativa é gasta e as moedas ganhas
+  naquela fase se perdem. Na Demo, a partida só termina. Uma fase deixada em andamento também pode ser abandonada
+  pelo Lobby, no link abaixo da dificuldade travada, com o mesmo custo de desistir dentro do jogo.
 
 ## Partida Única
 

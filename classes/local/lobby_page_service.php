@@ -178,7 +178,7 @@ class lobby_page_service {
         if (!empty($data['isguest'])) {
             unset($data['minquestionstext']);
         }
-        $data += self::build_difficulty_context($attempt, self::last_difficulty($instance, $userid));
+        $data += self::build_difficulty_context($attempt, self::last_difficulty($instance, $userid), (int) $cm->id);
         $data['howto'] = howtoplay::context($instance, is_guest($context, $userid));
         $data += self::build_sound_context($userid);
         $data += self::build_ranking_context($instance, $cm, $userid, $context);
@@ -564,9 +564,10 @@ class lobby_page_service {
      *
      * @param stdClass|null $attempt The most recent in-progress attempt, or null.
      * @param string|null $last The difficulty of the student's most recent real attempt, or null.
+     * @param int $cmid Course module ID, for the link that abandons a phase under way.
      * @return array
      */
-    private static function build_difficulty_context(?stdClass $attempt, ?string $last = null): array {
+    private static function build_difficulty_context(?stdClass $attempt, ?string $last = null, int $cmid = 0): array {
         $options = playerpuzzle_get_difficulty_options();
         $current = $attempt !== null ? $attempt->difficulty : $last;
         if (!array_key_exists((string) $current, $options)) {
@@ -578,6 +579,9 @@ class lobby_page_service {
                 // The same button as the open choice, only locked, so the row looks alike either way.
                 'difficultylockedtext' => get_string('lobby_difficulty_selected', 'mod_playerpuzzle', $options[$current]),
                 'difficultylockednote' => get_string('lobby_difficulty_locked_note', 'mod_playerpuzzle'),
+                // A phase under way can be abandoned from here, as a defeat, like giving up inside the game.
+                'abandonmatchurl' => (new moodle_url('/mod/playerpuzzle/abandonmatch.php', ['id' => $cmid]))->out(false),
+                'abandonmatchlabel' => get_string('lobby_abandonmatch', 'mod_playerpuzzle'),
                 'demodifficulty' => $current,
             ];
         }

@@ -78,8 +78,11 @@ with the hero last used.
   the top of the stage opens the same card, with a table that puts your hero and the opponent side by side
   (HP, attack and armor), so the powers can be read again after the first meeting, when the game's notice no
   longer shows.
-* **Giving up:** the flag button at the top of the stage asks for confirmation and then ends the match as a
-  defeat: one attempt is spent and the coins earned in that phase are lost. A Demo just ends.
+* **Leaving or giving up:** the flag button at the top of the stage offers three choices, each explained: keep
+  playing; leave and continue later, at no cost (the match is saved as it is, and Play in the Lobby continues the
+  phase on the same difficulty); or give up, which ends the match as a defeat: one attempt is spent and the coins
+  earned in that phase are lost. A Demo just ends. A phase left under way can also be abandoned from the Lobby,
+  through the link under the locked difficulty, with the same cost as giving up inside the game.
 
 ## Single Match
 

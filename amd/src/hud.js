@@ -1545,6 +1545,10 @@ define([
             document.getElementById('pp-giveup-cancel')?.addEventListener('click', () => {
                 document.getElementById('playerpuzzle-giveup').close();
             });
+            document.getElementById('pp-giveup-exit')?.addEventListener('click', () => {
+                document.getElementById('playerpuzzle-giveup').close();
+                me.combat.leaveMatch();
+            });
             document.getElementById('pp-giveup-confirm')?.addEventListener('click', () => {
                 document.getElementById('playerpuzzle-giveup').close();
                 me.combat.giveUp();

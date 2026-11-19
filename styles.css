@@ -1442,6 +1442,14 @@ body.path-mod-playerpuzzle .pp-lobby-note {
     margin: 0;
 }
 
+body.path-mod-playerpuzzle .pp-lobby-note-link {
+    display: inline-block;
+    margin-inline-start: 0.25rem;
+    font-weight: 600;
+    color: var(--pp-gold-hi, #f4cf7a);
+    text-decoration: underline;
+}
+
 body.path-mod-playerpuzzle .pp-lobby-play {
     width: 100%;
     font-weight: 800;
@@ -2234,11 +2242,17 @@ body.path-mod-playerpuzzle .pp-giveup-title {
     margin-block-end: 0.5rem;
 }
 
-body.path-mod-playerpuzzle .pp-giveup-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+body.path-mod-playerpuzzle .pp-giveup-option {
     margin-block-start: 1rem;
+}
+
+body.path-mod-playerpuzzle .pp-giveup-option .btn {
+    width: 100%;
+}
+
+body.path-mod-playerpuzzle .pp-giveup-option-text {
+    margin-block: 0.35rem 0;
+    font-size: 0.9rem;
 }
 
 body.path-mod-playerpuzzle .pp-opponent-stats {

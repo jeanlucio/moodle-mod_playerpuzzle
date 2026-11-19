@@ -1753,6 +1753,9 @@ final class lobby_page_service_test extends \advanced_testcase {
             get_string('lobby_difficulty_selected', 'mod_playerpuzzle', get_string('difficulty_hard', 'mod_playerpuzzle')),
             $data['difficultylockedtext']
         );
+        // The note offers to abandon the phase under way, through its own confirmation page.
+        $this->assertStringContainsString('/mod/playerpuzzle/abandonmatch.php?id=' . $cm->id, $data['abandonmatchurl']);
+        $this->assertSame(get_string('lobby_abandonmatch', 'mod_playerpuzzle'), $data['abandonmatchlabel']);
     }
 
     /**

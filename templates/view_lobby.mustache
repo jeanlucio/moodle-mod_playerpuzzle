@@ -54,6 +54,8 @@
         "difficultydescription": "The standard fight.",
         "difficultylockedtext": "",
         "difficultylockednote": "",
+        "abandonmatchurl": "",
+        "abandonmatchlabel": "Abandon this match",
         "demodifficulty": "normal",
         "difficultyopennote": "",
         "speechenabled": false,
@@ -217,7 +219,10 @@
                 <p class="pp-lobby-note">{{guestdemoonlytext}}</p>
                 {{/guestdemoonlytext}}
                 {{#difficultylockednote}}
-                <p class="pp-lobby-note">{{difficultylockednote}}</p>
+                <p class="pp-lobby-note">
+                    {{difficultylockednote}}
+                    {{#abandonmatchurl}}<a href="{{abandonmatchurl}}" class="pp-lobby-note-link">{{abandonmatchlabel}}</a>{{/abandonmatchurl}}
+                </p>
                 {{/difficultylockednote}}
                 {{#difficultyopennote}}
                 <p class="pp-lobby-note">{{difficultyopennote}}</p>

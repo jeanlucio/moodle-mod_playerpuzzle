@@ -47,7 +47,7 @@ Feature: PlayerPuzzle game controls and questions work through the keyboard and 
     And I click on "Play Game" "button"
     And I wait until the PlayerPuzzle board is ready
     When I click on ".pp-round-giveup" "css_element"
-    Then I should see "Give up the match?" in the "#playerpuzzle-giveup" "css_element"
+    Then I should see "Leave the match?" in the "#playerpuzzle-giveup" "css_element"
     And I click on "Keep playing" "button" in the "#playerpuzzle-giveup" "css_element"
     And "#playerpuzzle-giveup[open]" "css_element" should not exist
     And "#playerpuzzle-gameover" "css_element" should not exist

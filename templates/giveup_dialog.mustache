@@ -17,28 +17,42 @@
 {{!
     @template mod_playerpuzzle/giveup_dialog
 
-    The confirmation that comes before giving up a match, a native <dialog> opened from the stage's flag button.
-    It is moved inside the game's container when the game boots, so it also shows in full screen.
+    The three ways out of a match, a native <dialog> opened from the stage's flag button: keep playing, leave
+    and come back later, or give up. Each button is described by the line under it. The dialog is moved inside
+    the game's container when the game boots, so it also shows in full screen.
 
     Context variables required for this template:
     * title - The dialog's title
-    * text - What giving up costs
-    * confirmlabel - The button that gives up
     * cancellabel - The button that goes back to the match
+    * canceltext - What going back does
+    * exitlabel - The button that leaves the match to finish it later
+    * exittext - What leaving does
+    * confirmlabel - The button that gives up
+    * text - What giving up costs
 
     Example context (json):
     {
-        "title": "Give up the match?",
-        "text": "This counts as a defeat: one attempt is spent and the coins earned in this phase are lost.",
+        "title": "Leave the match?",
+        "cancellabel": "Keep playing",
+        "canceltext": "Close this window and go back to the match.",
+        "exitlabel": "Leave and continue later",
+        "exittext": "The match is saved as it is: back in the Lobby, Play continues this phase.",
         "confirmlabel": "Give up",
-        "cancellabel": "Keep playing"
+        "text": "This counts as a defeat: one attempt is spent and the coins earned in this phase are lost."
     }
 }}
-<dialog id="playerpuzzle-giveup" class="pp-giveup pp-themed" aria-labelledby="pp-giveup-title" aria-describedby="pp-giveup-text">
+<dialog id="playerpuzzle-giveup" class="pp-giveup pp-themed" aria-labelledby="pp-giveup-title">
     <h2 id="pp-giveup-title" class="pp-giveup-title">{{title}}</h2>
-    <p id="pp-giveup-text">{{text}}</p>
-    <div class="pp-giveup-actions">
-        <button type="button" class="btn btn-danger" id="pp-giveup-confirm">{{confirmlabel}}</button>
-        <button type="button" class="btn btn-secondary" id="pp-giveup-cancel" autofocus>{{cancellabel}}</button>
+    <div class="pp-giveup-option">
+        <button type="button" class="btn btn-primary" id="pp-giveup-cancel" aria-describedby="pp-giveup-cancel-text" autofocus>{{cancellabel}}</button>
+        <p id="pp-giveup-cancel-text" class="pp-giveup-option-text">{{canceltext}}</p>
+    </div>
+    <div class="pp-giveup-option">
+        <button type="button" class="btn btn-secondary" id="pp-giveup-exit" aria-describedby="pp-giveup-exit-text">{{exitlabel}}</button>
+        <p id="pp-giveup-exit-text" class="pp-giveup-option-text">{{exittext}}</p>
+    </div>
+    <div class="pp-giveup-option">
+        <button type="button" class="btn btn-danger" id="pp-giveup-confirm" aria-describedby="pp-giveup-text">{{confirmlabel}}</button>
+        <p id="pp-giveup-text" class="pp-giveup-option-text">{{text}}</p>
     </div>
 </dialog>

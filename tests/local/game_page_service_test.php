@@ -1834,8 +1834,8 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests the give up confirmation: a real match says what it costs, a Demo says only that it ends, and the
-     * game's layout carries the dialog with both buttons.
+     * Tests the dialog of the stage's flag: a real match says what giving up costs and that leaving keeps the phase,
+     * a Demo says only that it ends, and the game's layout carries the three ways out, each described.
      *
      * @return void
      */
@@ -1854,6 +1854,8 @@ final class game_page_service_test extends \advanced_testcase {
             'the last attempt of a Campaign says that giving up ends it'
         );
         $this->assertSame($demo['text'], game_page_service::giveup_dialog(true, true)['text'], 'a Demo ends nothing');
+        $this->assertSame(get_string('giveup_exit_text', 'mod_playerpuzzle'), $real['exittext']);
+        $this->assertSame(get_string('giveup_exit_demo', 'mod_playerpuzzle'), $demo['exittext']);
 
         $html = $OUTPUT->render_from_template('mod_playerpuzzle/game_layout', [
             'loadingtext' => 'Loading',
@@ -1863,6 +1865,9 @@ final class game_page_service_test extends \advanced_testcase {
         $this->assertStringContainsString('id="playerpuzzle-giveup"', $html);
         $this->assertStringContainsString('id="pp-giveup-confirm"', $html);
         $this->assertStringContainsString('id="pp-giveup-cancel"', $html);
+        $this->assertStringContainsString('id="pp-giveup-exit"', $html);
+        $this->assertStringContainsString('aria-describedby="pp-giveup-exit-text"', $html);
         $this->assertStringContainsString(get_string('giveup_text', 'mod_playerpuzzle'), $html);
+        $this->assertStringContainsString(get_string('giveup_exit_text', 'mod_playerpuzzle'), $html);
     }
 }

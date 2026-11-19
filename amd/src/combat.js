@@ -313,11 +313,13 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * @param {boolean} useBeacon True for the page-unload path (sendBeacon, fire and
          *  forget); false for the periodic path (core/ajax, a normal awaited call — the tab
          *  isn't closing, so there is no urgency).
+         * @return {Promise|null} The call, for the AJAX path; null when no checkpoint was sent (the board is
+         *  mid-cascade or the match has ended) or for the beacon.
          */
         sendCheckpoint(useBeacon) {
             const board = this.scene.board;
             if (!board || this.matchSaved) {
-                return;
+                return null;
             }
 
             const boardgrid = [];
@@ -330,7 +332,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         // checkpoint. _checkpointDirty is left true (never reset below), so
                         // the next periodic tick or the final unload beacon retries once the
                         // board has settled, instead of saving a board with a hole baked in.
-                        return;
+                        return null;
                     }
                     boardgrid.push(piece.type);
                 }
@@ -372,10 +374,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 // stores each event exactly once whichever copy arrives first.
                 sendCheckpointBeacon(args);
                 this._checkpointDirty = true;
-                return;
+                return null;
             }
 
-            Ajax.call([{methodname: 'mod_playerpuzzle_save_combat_state', args}])[0].done(res => {
+            return Ajax.call([{methodname: 'mod_playerpuzzle_save_combat_state', args}])[0].done(res => {
                 this.confirmStoredEvents(res.eventcount);
             }).fail(() => {
                 // A missed periodic checkpoint is not user-visible and not worth retrying —
@@ -1834,6 +1836,28 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             if (!this.matchSaved) {
                 this.showEndScreen(false);
             }
+        }
+
+        /**
+         * Leaves the match to finish it later, at no cost: the phase stays in progress and the Lobby's Play continues
+         * it. The fight is saved before leaving, and not only by the beacon the page sends as it goes: the Lobby
+         * loads at once and must already find the phase under way, or it would offer its difficulty again. A board
+         * still settling a cascade is waited for a moment; the beacon remains the fallback.
+         */
+        async leaveMatch() {
+            for (let tries = 0; tries < 6; tries++) {
+                const saving = this.sendCheckpoint(false);
+                if (saving) {
+                    try {
+                        await saving;
+                    } catch (e) {
+                        // The beacon sent as the page goes still carries the fight.
+                    }
+                    break;
+                }
+                await new Promise(resolve => setTimeout(resolve, 250));
+            }
+            window.location.href = this.gameConfig.viewurl;
         }
 
         /**

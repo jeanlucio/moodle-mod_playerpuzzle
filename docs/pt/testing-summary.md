@@ -95,6 +95,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `instance_list_service_test.php` | 4 |
 | `last_hero_test.php` | 2 |
 | `lobby_page_service_test.php` | 60 |
+| `match_abandon_test.php` | 2 |
 | `move_log_test.php` | 21 |
 | `opponent_card_test.php` | 11 |
 | `opponents_test.php` | 9 |
@@ -110,7 +111,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `text_test.php` | 1 |
 | `user_hero_test.php` | 7 |
 | `user_stock_test.php` | 10 |
-| **Subtotal** | **475** |
+| **Subtotal** | **477** |
 
 ### Testes do Motor de Combate (`tests/local/engine/`)
 
@@ -136,7 +137,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 41 |
 | **Subtotal** | **41** |
 
-| **Total Geral** | **1174** |
+| **Total Geral** | **1176** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite

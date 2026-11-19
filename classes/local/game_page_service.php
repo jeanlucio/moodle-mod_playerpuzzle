@@ -850,8 +850,9 @@ class game_page_service {
     }
 
     /**
-     * What the dialog that confirms giving up a match says. Giving up ends the attempt as a defeat, with the
-     * attempt spent and the phase's coins lost; a Demo grants and costs nothing, so it says only that it ends.
+     * What the dialog the stage's flag opens says: keep playing, leave and continue later (the phase stays in
+     * progress, at no cost), or give up. Giving up ends the attempt as a defeat, with the attempt spent and the
+     * phase's coins lost; a Demo grants and costs nothing, so it says only that it ends.
      *
      * @param bool $isdemo Whether the match is a Demo.
      * @param bool $lastattempt Whether it is the last attempt of the Campaign, which giving up then ends.
@@ -862,9 +863,12 @@ class game_page_service {
 
         return [
             'title' => get_string('giveup_title', 'mod_playerpuzzle'),
-            'text' => get_string($text, 'mod_playerpuzzle'),
-            'confirmlabel' => get_string('giveup_confirm', 'mod_playerpuzzle'),
             'cancellabel' => get_string('giveup_cancel', 'mod_playerpuzzle'),
+            'canceltext' => get_string('giveup_cancel_text', 'mod_playerpuzzle'),
+            'exitlabel' => get_string('giveup_exit', 'mod_playerpuzzle'),
+            'exittext' => get_string($isdemo ? 'giveup_exit_demo' : 'giveup_exit_text', 'mod_playerpuzzle'),
+            'confirmlabel' => get_string('giveup_confirm', 'mod_playerpuzzle'),
+            'text' => get_string($text, 'mod_playerpuzzle'),
         ];
     }
 

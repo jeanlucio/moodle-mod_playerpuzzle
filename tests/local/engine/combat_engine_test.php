@@ -441,14 +441,17 @@ final class combat_engine_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that resolve_consumable_effect shield fills the meter to 100 and arms it
-     * immediately.
+     * Tests that resolve_consumable_effect shield arms the Shield at once and keeps what the meter had.
      *
      * @return void
      */
-    public function test_resolve_consumable_effect_shield_fills_and_arms(): void {
-        $result = combat_engine::resolve_consumable_effect('shield', $this->fresh_state(), self::CONFIG);
-        $this->assertSame(0, $result['state']['playerShieldMeter']);
+    public function test_resolve_consumable_effect_shield_arms_and_keeps_the_meter(): void {
+        $result = combat_engine::resolve_consumable_effect(
+            'shield',
+            ['playerShieldMeter' => 70] + $this->fresh_state(),
+            self::CONFIG
+        );
+        $this->assertSame(70, $result['state']['playerShieldMeter']);
         $this->assertTrue($result['state']['playerShieldReady']);
     }
 

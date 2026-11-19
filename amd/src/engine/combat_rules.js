@@ -887,8 +887,9 @@
                 healAmount = unit('player', config) * 1.25;
                 next.currentPlayerHp = Math.min(next.maxPlayerHp, next.currentPlayerHp + healAmount);
             } else if (type === 'shield') {
-                next.playerShieldMeter += 100;
-                resolveShieldMeters(next);
+                // Arms the Shield without touching the meter, so what the Shield pieces had filled stays there
+                // for the next one instead of being spent on this.
+                next.playerShieldReady = true;
             } else if (type === 'magic') {
                 next.playerPoisonMeter += 100;
                 resolvePoisonMeters(next, config);

@@ -66,6 +66,7 @@ $string['btnattack'] = '⚔️ Attack!';
 $string['btncontinue'] = 'Continue';
 $string['btnexitgame'] = '🚪 Exit game';
 $string['btnplayagain'] = '🎮 Play again';
+$string['btnshop'] = '🛒 Shop';
 $string['btnstartphase'] = 'Start the next phase';
 $string['bulkapprovebutton'] = 'Approve';
 $string['bulkapprovebuttontitle'] = 'Approve selected questions';

@@ -313,9 +313,9 @@ test('resolveConsumableEffect: potion heals 1.25x baseDamage, clamped to max', (
     assert.equal(result.state.currentPlayerHp, 200, 'must clamp to max, not overshoot');
 });
 
-test('resolveConsumableEffect: shield fills the meter to 100 and arms it immediately', () => {
-    const result = combatRules.resolveConsumableEffect('shield', freshState(), CONFIG);
-    assert.equal(result.state.playerShieldMeter, 0);
+test('resolveConsumableEffect: shield arms the Shield at once and keeps what the meter had', () => {
+    const result = combatRules.resolveConsumableEffect('shield', {...freshState(), playerShieldMeter: 70}, CONFIG);
+    assert.equal(result.state.playerShieldMeter, 70);
     assert.equal(result.state.playerShieldReady, true);
 });
 

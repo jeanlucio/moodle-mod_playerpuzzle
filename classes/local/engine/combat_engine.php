@@ -943,8 +943,9 @@ class combat_engine {
             $healamount = self::unit('player', $config) * 1.25;
             $next['currentPlayerHp'] = min($next['maxPlayerHp'], $next['currentPlayerHp'] + $healamount);
         } else if ($type === 'shield') {
-            $next['playerShieldMeter'] += 100;
-            self::resolve_shield_meters($next);
+            // Arms the Shield without touching the meter, so what the Shield pieces had filled stays there for the
+            // next one instead of being spent on this.
+            $next['playerShieldReady'] = true;
         } else if ($type === 'magic') {
             $next['playerPoisonMeter'] += 100;
             self::resolve_poison_meters($next, $config);

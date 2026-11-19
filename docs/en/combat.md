@@ -156,12 +156,14 @@ or match:
 | Consumable | Effect | Price | Uses per phase |
 |---|---|:---:|:---:|
 | 🧪 Potion | Heals 1.25× the base damage | 8 | 3 |
-| 🛡️ Shield | Fills the Shield meter at once, arming the block of the next hit | 10 | 1 |
-| 🔮 Quick Magic | Fills the Grimoire meter at once, arming three hex rounds on the opponent | 12 | 1 |
+| 🛡️ Shield | Arms the block of the next hit at once, without spending what the Shield meter already had; cannot be used while a block is armed | 10 | 1 |
+| 🔮 Quick Magic | Arms three hex rounds on the opponent at once, without spending what the Grimoire meter already had | 12 | 1 |
 | ⚔️ Sword | An extra attack of one base damage, without ending the turn | 10 | 3 |
 | 💡 Hint | Shows the hint of the open question, when it has one | 5 | no fixed limit |
 
-Prices and limits are fixed, the same for everyone, and the shop shows each item's limit on its own card. A student's first match normally starts with an
+Prices and limits are fixed, the same for everyone, and the shop shows each item's limit on its own card. During the
+fight, the number on each item is how many can still be used in the phase: the stock, up to the phase's limit. After
+a defeat, the **Shop** button on the end screen goes straight to the Lobby's shop, to stock up before the next try. A student's first match normally starts with an
 empty loadout: PuzzleCoin is earned by winning, or transferred in from PlayerHUD. Coins are collected on the board with the Coin
 piece — see [PlayerHUD Integration](#playerhud) for how they are netted against the opponent's and
 banked. A teacher can switch hints off for the whole activity.

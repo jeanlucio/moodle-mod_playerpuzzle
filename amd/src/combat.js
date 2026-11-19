@@ -1155,6 +1155,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          *  keeps the one this phase was played on.
          */
         submitRestartForm(difficulty = null) {
+            // The reload leaves full screen; the next page goes back to it on the student's first click.
+            this.scene.stage?.rememberFullscreen();
             const restartForm = document.createElement('form');
             restartForm.method = 'POST';
             let restarturl = `${M.cfg.wwwroot}/mod/playerpuzzle/play.php?id=${this.gameConfig.cmid}`;
@@ -1782,7 +1784,12 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             answersContainer.append(
                 `<div class="alert alert-${correct ? 'success' : 'warning'} mt-2 mb-0"><strong>${message}</strong></div>`
             );
-            this.scene.ui.pushHistoryLog('player', correct ? strings.historylogopening_player : strings.historylogopening_boss);
+            // The line goes to the history of whoever starts.
+            if (correct) {
+                this.scene.ui.pushHistoryLog('player', strings.historylogopening_player);
+            } else {
+                this.scene.ui.pushHistoryLog('boss', strings.historylogopening_boss);
+            }
         }
 
         /**
@@ -1898,6 +1905,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 btnreview: strings.debriefreview,
                 btnplayagain: strings.btnplayagain,
                 btnexitgame: strings.btnexitgame,
+                // After a real defeat, a way to the Lobby's shop, to stock up before the next try. Not after a
+                // victory, nor in a Demo, which spends no stock.
+                btnshop: victory || this.gameConfig.isdemo ? null : strings.btnshop,
                 ...this.unseenItemsContext(),
                 ...this.retryDifficultyContext(victory),
             };
@@ -1943,7 +1953,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     $('#pp-save-status').removeClass('text-muted').addClass('text-success')
                         .text(successMsg);
                 }
-                $('#btn-pp-restart, #btn-pp-exit, #pp-retry-difficulty').prop('disabled', false);
+                $('#btn-pp-restart, #btn-pp-shop, #btn-pp-exit, #pp-retry-difficulty').prop('disabled', false);
                 if (res.campaignended) {
                     this.showCampaignEnd(res);
                 }
@@ -1954,7 +1964,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             }).fail(() => {
                 $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
                     .text(strings.saveerror);
-                $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
+                $('#btn-pp-restart, #btn-pp-shop, #btn-pp-exit').prop('disabled', false);
             });
 
             $('#btn-pp-restart').on('click', () => {
@@ -1963,6 +1973,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             });
             $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;
+            });
+            $('#btn-pp-shop').on('click', () => {
+                // The Lobby opens the panel its address names (lobby_panels.js).
+                window.location.href = `${viewurl}#pp-lobby-shop`;
             });
         }
 
@@ -1993,6 +2007,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             Templates.replaceNodeContents(box, html, js);
             box.hidden = false;
             document.getElementById('btn-pp-restart').hidden = true;
+            // A new Campaign starts with no coins and no items, so the shop has nothing left to offer.
+            const shop = document.getElementById('btn-pp-shop');
+            if (shop) {
+                shop.hidden = true;
+            }
             const retry = document.getElementById('pp-retry-wrap');
             if (retry) {
                 retry.hidden = true;

@@ -1403,6 +1403,45 @@ final class lobby_page_service_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that with no attempt in progress the button starts on the difficulty of the student's last real attempt,
+     * so going back to the Lobby after a defeat keeps it, and that a later Demo does not count.
+     *
+     * @return void
+     */
+    public function test_build_page_data_starts_on_the_last_difficulty_played(): void {
+        global $DB;
+
+        [$cm, $instance] = $this->make_cm_and_instance(['gamemode' => constants::GAMEMODE_CAMPAIGN]);
+        $token = \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'hard'
+        );
+        $DB->set_field('playerpuzzle_attempts', 'status', 'won', ['token' => $token]);
+        \mod_playerpuzzle\local\engine\security::generate_attempt_token(
+            (int) $instance->id,
+            (int) $this->student->id,
+            'easy',
+            1,
+            1,
+            true
+        );
+
+        $data = lobby_page_service::build_page_data(
+            $cm,
+            $this->course,
+            $instance,
+            (int) $this->student->id,
+            \context_module::instance($cm->id)
+        );
+
+        $this->assertSame('hard', $data['difficultyvalue']);
+        $this->assertSame('hard', $data['demodifficulty']);
+        $this->assertSame(get_string('lobby_difficulty_desc_hard', 'mod_playerpuzzle'), $data['difficultydescription']);
+        $this->assertArrayNotHasKey('difficultyopennote', $data);
+    }
+
+    /**
      * Tests that the button's first text is the pre-selected difficulty — Normal, until the
      * student steps it client-side.
      *

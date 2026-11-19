@@ -178,7 +178,7 @@ class lobby_page_service {
         if (!empty($data['isguest'])) {
             unset($data['minquestionstext']);
         }
-        $data += self::build_difficulty_context($attempt);
+        $data += self::build_difficulty_context($attempt, self::last_difficulty($instance, $userid));
         $data['howto'] = howtoplay::context($instance, is_guest($context, $userid));
         $data += self::build_sound_context($userid);
         $data += self::build_ranking_context($instance, $cm, $userid, $context);
@@ -559,16 +559,19 @@ class lobby_page_service {
      * phase's difficulty (the next choice happens on the phase-complete screen, not here), so the button is locked
      * and says so. With no attempt in progress, or one whose phase nothing has happened in yet (it sits between
      * phases, or at the start of its first), the button steps through the difficulties and its value goes with the
-     * Play form: Normal first for a new attempt, the attempt's own difficulty for one being resumed.
+     * Play form: the attempt's own difficulty for one being resumed, and otherwise the one the student last played
+     * on, so coming back to the Lobby after a defeat keeps it; Normal when they have never played.
      *
      * @param stdClass|null $attempt The most recent in-progress attempt, or null.
+     * @param string|null $last The difficulty of the student's most recent real attempt, or null.
      * @return array
      */
-    private static function build_difficulty_context(?stdClass $attempt): array {
+    private static function build_difficulty_context(?stdClass $attempt, ?string $last = null): array {
         $options = playerpuzzle_get_difficulty_options();
-        $current = $attempt !== null && array_key_exists($attempt->difficulty, $options)
-            ? $attempt->difficulty
-            : constants::DIFFICULTY_NORMAL;
+        $current = $attempt !== null ? $attempt->difficulty : $last;
+        if (!array_key_exists((string) $current, $options)) {
+            $current = constants::DIFFICULTY_NORMAL;
+        }
 
         if ($attempt !== null && !security::phase_not_started($attempt)) {
             return [
@@ -608,6 +611,29 @@ class lobby_page_service {
             $context['difficultyopennote'] = get_string('lobby_difficulty_open', 'mod_playerpuzzle');
         }
         return $context;
+    }
+
+    /**
+     * The difficulty of the student's most recently started real attempt in the activity: a Demo is practice, and
+     * its choice is not the one the student plays with.
+     *
+     * @param stdClass $instance Activity instance (id).
+     * @param int $userid User ID.
+     * @return string|null The difficulty, or null when the student has never played.
+     */
+    private static function last_difficulty(stdClass $instance, int $userid): ?string {
+        global $DB;
+
+        $last = $DB->get_records(
+            'playerpuzzle_attempts',
+            ['playerpuzzleid' => $instance->id, 'userid' => $userid, 'isdemo' => 0],
+            'timecreated DESC, id DESC',
+            'id, difficulty',
+            0,
+            1
+        );
+        $attempt = reset($last);
+        return $attempt ? (string) $attempt->difficulty : null;
     }
 
     /**

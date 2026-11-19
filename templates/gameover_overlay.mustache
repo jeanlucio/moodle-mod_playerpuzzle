@@ -31,6 +31,7 @@
         "btnreview": "Review questions",
         "btnplayagain": "Play Again",
         "btnexitgame": "Exit Game",
+        "btnshop": "Shop",
         "difficultylabel": "Difficulty for the next try",
         "difficultychoices": [
             {"value": "easy", "label": "Easy", "checked": false},
@@ -77,6 +78,11 @@
             <button id="btn-pp-restart" disabled class="btn btn-primary btn-lg shadow">
                 {{btnplayagain}}
             </button>
+            {{#btnshop}}
+            <button id="btn-pp-shop" disabled class="btn btn-secondary btn-lg shadow">
+                {{btnshop}}
+            </button>
+            {{/btnshop}}
             <button id="btn-pp-exit" disabled class="btn btn-secondary btn-lg shadow">
                 {{btnexitgame}}
             </button>

@@ -48,10 +48,11 @@ Campanha.
   requisição não pode ser reproduzida para pular várias fases a partir de uma vitória.
 * **Dificuldade por fase:** o estudante escolhe a dificuldade no Lobby para a primeira fase e de
   novo, a cada tela "Fase vencida", para a seguinte. Sair dessa tela não fecha a escolha: até a fase
-  seguinte ter uma jogada, uma resposta ou um item usado, o Lobby ainda oferece o botão de dificuldade.
-* **O Normal cresce com a Campanha:** no Normal, os oponentes batem mais forte quanto mais adiante na
-  Campanha está a fase, da força de sempre na primeira fase até 60% a mais na última, para a Campanha
-  acompanhar um herói que continua crescendo. O Fácil e o Difícil não mudam.
+  seguinte ter uma jogada, uma resposta ou um item usado, o Lobby ainda oferece o botão de dificuldade. Sem fase em
+  andamento, como depois de uma derrota, o botão começa na dificuldade da última partida do estudante.
+* **O oponente cresce com a Campanha:** no Normal e no Difícil, os oponentes batem mais forte quanto mais
+  adiante na Campanha está a fase, da força de sempre na primeira fase até 60% a mais na última no Normal e
+  100% a mais no Difícil, para a Campanha acompanhar um herói que continua crescendo. O Fácil não muda.
 
 ## Heróis
 

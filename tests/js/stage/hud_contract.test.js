@@ -79,13 +79,17 @@ test('every call the game makes on its HUD exists in the HUD', () => {
     assert.deepEqual(missing, []);
 });
 
-test('the use buttons of a Demo show the uses left in the fight, never an infinity sign', () => {
+test('the use buttons show what can still be used in the fight, never an infinity sign', () => {
     const body = read('hud.js').match(/^ {8}updateConsumableBadges\(\) \{\n([\s\S]*?)^ {8}\}$/m);
 
     assert.ok(body, 'updateConsumableBadges() was not found in hud.js');
     // The phase's limit holds in a Demo, so a button that dims after three uses cannot say it has no end.
     assert.ok(!body[1].includes('∞'), 'a Demo button shows an infinity sign');
-    assert.match(body[1], /combat\.isdemo \? String\(Math\.max\(0, combat\.phaseLimit\(type\) - uses\)\)/);
+    assert.match(body[1], /const left = Math\.max\(0, combat\.phaseLimit\(type\) - uses\);/);
+    // A real attempt shows its stock, but never more than the phase's limit still lets it use.
+    assert.match(body[1], /String\(combat\.isdemo \? left : Math\.min\(owned, left\)\)/);
+    // A Shield already armed cannot take another, so its button dims.
+    assert.match(body[1], /type === 'shield' && combat\.playerShieldReady/);
 });
 
 test('every layout constant the status labels read is defined by both layouts', () => {

@@ -30,7 +30,8 @@
  * A panel marked data-wide="true" (the Shop) takes the hero's column too, while it is open.
  * Focus follows the switch — onto the panel's own heading when it opens, and back onto the
  * button that opened it when it closes — so a keyboard or screen-reader user lands where
- * the content changed instead of on a now-hidden element.
+ * the content changed instead of on a now-hidden element. A page address ending in a panel's id (#pp-lobby-shop, from
+ * the game's defeat screen) opens that panel as the Lobby loads.
  */
 export const init = () => {
     const main = document.getElementById('pp-lobby-main');
@@ -75,4 +76,14 @@ export const init = () => {
             }
         }
     });
+
+    const wanted = window.location.hash.slice(1);
+    if (wanted) {
+        const button = main.querySelector(`[data-action="open-panel"][data-panel="${CSS.escape(wanted)}"]`);
+        if (button) {
+            button.click();
+        }
+        // Once opened, the address no longer names it, so reloading the Lobby later does not open it again.
+        window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    }
 };

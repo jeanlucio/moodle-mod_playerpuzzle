@@ -156,12 +156,14 @@ partida:
 | Consumível | Efeito | Preço | Usos por fase |
 |---|---|:---:|:---:|
 | 🧪 Poção | Cura 1,25× o dano base | 8 | 3 |
-| 🛡️ Escudo | Enche o medidor de Escudo de uma vez, armando o bloqueio do próximo golpe | 10 | 1 |
-| 🔮 Magia Rápida | Enche o medidor do Grimório de uma vez, armando três rodadas de feitiço no oponente | 12 | 1 |
+| 🛡️ Escudo | Arma na hora o bloqueio do próximo golpe, sem gastar o que o medidor de Escudo já tinha; não pode ser usado com um bloqueio já armado | 10 | 1 |
+| 🔮 Magia Rápida | Arma na hora três rodadas de feitiço no oponente, sem gastar o que o medidor do Grimório já tinha | 12 | 1 |
 | ⚔️ Espada | Um ataque extra de um dano base, sem encerrar o turno | 10 | 3 |
 | 💡 Dica | Mostra a dica da pergunta aberta, quando ela tem uma | 5 | sem limite fixo |
 
-Os preços e limites são fixos, iguais para todos, e a loja mostra o limite de cada item no próprio cartão. A primeira partida de um estudante normalmente
+Os preços e limites são fixos, iguais para todos, e a loja mostra o limite de cada item no próprio cartão. Durante a
+luta, o número em cada item é quanto ainda dá para usar na fase: o estoque, até o limite da fase. Depois de uma
+derrota, o botão **Loja** da tela de fim leva direto à loja do Lobby, para se abastecer antes da próxima tentativa. A primeira partida de um estudante normalmente
 começa com o loadout vazio: o PuzzleCoin se ganha vencendo, ou transferindo do PlayerHUD. As moedas
 são coletadas no tabuleiro com a peça Moeda — veja [Integração com o PlayerHUD](#playerhud) para
 como são compensadas com as do oponente e guardadas. O professor pode desligar as dicas em toda a

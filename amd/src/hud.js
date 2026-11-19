@@ -481,9 +481,10 @@ define([
         }
 
         /**
-         * Refreshes every use button's number and name, and dims the ones that cannot be used: out of stock, or the
-         * phase's limit reached. A Demo never touches the real stock, but the phase's limit still holds in it, so what
-         * it shows is the uses left in the fight, not an infinity sign that the dimming button would contradict.
+         * Refreshes every use button's number and name, and dims the ones that cannot be used: out of stock, the
+         * phase's limit reached, or a Shield while one is already armed. The number is what can still be used in this
+         * fight: the stock, but never more than the phase's limit leaves. A Demo never touches the real stock, so it
+         * shows the limit's uses left alone.
          */
         updateConsumableBadges() {
             const combat = this.scene.combat;
@@ -494,10 +495,11 @@ define([
                 const badge = this.purchaseBadges[type];
                 const owned = combat.consumableStock[type] || 0;
                 const uses = combat.consumableUses[type] || 0;
-                const limitReached = uses >= combat.phaseLimit(type);
+                const left = Math.max(0, combat.phaseLimit(type) - uses);
                 const outOfStock = !combat.isdemo && owned <= 0;
-                badge.disabled = limitReached || outOfStock;
-                const count = combat.isdemo ? String(Math.max(0, combat.phaseLimit(type) - uses)) : String(owned);
+                const armed = type === 'shield' && combat.playerShieldReady;
+                badge.disabled = left === 0 || outOfStock || armed;
+                const count = String(combat.isdemo ? left : Math.min(owned, left));
                 badge.label.setText(count);
                 badge.element.setAttribute('aria-disabled', badge.disabled ? 'true' : 'false');
                 badge.element.setAttribute('aria-label', this.strings.stage_use_item

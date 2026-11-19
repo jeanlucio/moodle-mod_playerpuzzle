@@ -53,7 +53,7 @@ define([
                     'answersr_correct', 'answersr_yourcorrect', 'answersr_yourwrong',
                     'bossansweredcorrect', 'bossansweredwrong', 'bosscorrectblocked', 'bosscorrectfeedback',
                     'bosslostmultiplier', 'bossrevived', 'bosstrigger', 'bosswrongfeedback',
-                    'btnattack', 'btncontinue', 'btnexitgame', 'btnplayagain', 'btnstartphase',
+                    'btnattack', 'btncontinue', 'btnexitgame', 'btnplayagain', 'btnshop', 'btnstartphase',
                     'campaigncomplete', 'campaignover', 'coinscollected',
                     'damagedealt', 'damagetaken',
                     'debriefcorrectanswer', 'debriefcorrectsr', 'debriefempty', 'debriefreview',

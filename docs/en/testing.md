@@ -218,13 +218,13 @@ every animation lasts and eases the way players already knew.
 | `clock.test.js` | 14 | Delayed calls and repeats fire on the same frames as the ones sampled from Phaser; a pause freezes the tweens and the clock, and what was waiting fires on the same frame as before; `step()` moves time in frames and ends on the exact amount; `removeAllEvents()` drops the waiting calls; the loop moves time by the real time between frames and never by more than a hundred milliseconds |
 | `emoji.test.js` | 6 | `strip()` takes the pictographs out of the button labels, titles and announcements the game really has and leaves other text exactly as it was; a pictograph with a variation selector, a skin tone or a joiner is one run; `split()` cuts a text into its runs and joins back to the same text; `has()` |
 | `hero_grid.test.js` | 1 | The hero cards wrap and are centred, so an incomplete last row sits in the middle |
-| `hud_contract.test.js` | 6 | Every call `combat.js`, `board.js` and `scene_dom.js` make on the HUD exists in `hud.js`, so a missing method cannot wait for that moment of a match to fail; the status labels' layout constants exist in both layouts, their texts are loaded by the game in both languages, and the old HP-bar badges are gone |
+| `hud_contract.test.js` | 7 | Every call `combat.js`, `board.js` and `scene_dom.js` make on the HUD exists in `hud.js`, so a missing method cannot wait for that moment of a match to fail; the status labels' layout constants exist in both layouts, their texts are loaded by the game in both languages, and the old HP-bar badges are gone; the item buttons show what can still be used in the phase and dim an armed Shield; full screen comes back after a reload only on a click with no dialog open |
 | `modal_contrast.test.js` | 4 | The question dialog's colours reach 4.5:1: what the opponent got wrong, the answer that hurt and the other options, and a judged answer is not faded |
 | `no_globals.test.js` | 1 | No module assigns a property on `window` |
 | `portrait_layout.test.js` | 3 | The portrait layout has a use button for every consumable the landscape one has, fits the student row without overlap, and keeps every use button at least 24×24 screen pixels at any stage scale |
 | `status_effects.test.js` | 7 | What the HUD shows of a Hex and an armed Shield: no sign and no announcement while nothing is on, the aura and a label with the rounds left on the side facing the opponent, labels stacked from the top, rounds counting down not announced again while the end of each effect is, and the labels hidden from assistive technology |
 | `tween.test.js` | 20 | Each sampled tween gives the same values and completion frames as Phaser did, within a fraction of its travel; the curves hold their end points and their middle; `stop()` leaves values where they are and never calls `onComplete`; `killTweensOf()` stops one object's tweens only; a tween on several targets moves them all; a tween is read from where its target stands when it starts counting |
-| **Subtotal** | **70** | |
+| **Subtotal** | **71** | |
 
 ```bash
 node --test tests/js/stage/*.test.js

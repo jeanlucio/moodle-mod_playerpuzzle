@@ -36,7 +36,7 @@ define([], () => {
 
     /**
      * When the page before this one left the game full screen (see rememberFullscreen()), goes back to full screen on
-     * the student's first click or key, the only moment the browser allows it.
+     * the student's first click or key with no dialog open: a gesture is the only moment the browser allows it.
      *
      * @param {HTMLElement} container The element that goes full screen.
      * @return {{cancel: Function}} Stops waiting for the gesture.
@@ -52,6 +52,11 @@ define([], () => {
         const events = ['click', 'keydown'];
         const cancel = () => events.forEach(type => document.removeEventListener(type, onGesture, true));
         const onGesture = async() => {
+            // Full screen entered under an open modal dialog (the opening question) would cover it and leave the page
+            // behind it, the exit button included, out of reach: wait for a click with no dialog open.
+            if (document.querySelector('dialog[open]')) {
+                return;
+            }
             cancel();
             if (!document.fullscreenElement && container.requestFullscreen) {
                 try {

@@ -53,7 +53,6 @@ each Campaign.
   Campaign the phase is, from their usual strength at the first phase to 60% more at the last on Normal and 100%
   more on Hard, so the Campaign keeps pace with a hero that keeps growing. Easy does not change.
 
-<span id="heroes"></span>
 ## Heroes
 
 In a Campaign the student chooses one of six heroes on a screen of its own, when pressing Play for the
@@ -85,7 +84,6 @@ with the hero last used.
   earned in that phase are lost. A Demo just ends. A phase left under way can also be abandoned from the Lobby,
   through the link under the locked difficulty, with the same cost as giving up inside the game.
 
-<span id="opponents"></span>
 ## Opponents
 
 A Campaign meets the same ten opponents on every level, one per phase, from the easiest to the hardest; the last

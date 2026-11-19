@@ -88,24 +88,25 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 | Grade | the same | the same | the same |
 
 The hero is the same on every difficulty: its HP, attack and armor come only from what is bought in the shop, and
-the shop shows those values. On Hard it fights with 1.5× that HP. As an example, an activity with a base HP of 250
-on both sides, a base damage of 10 and 2 levels, where the student starts the fight with 250 HP on Easy and Normal
-and 375 on Hard, before any upgrade:
+the shop shows those values. On Hard it fights with 1.5× that HP. As an example, an activity with the default values (a
+base HP of 100 on both sides, a base damage of 10) and 2 levels, with the student's HP before any upgrade. The
+opponent's HP and both sides' hits grow with every phase; the student's HP only grows with what they buy in the shop:
 
-| Phase | | Opponent HP | Its hit | Its critical | Its armor | Student's hit | Student's critical |
-|---|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| Level 1, Phase 1 (slime) | Easy | 125 | 5 | 15 | 0% | 10 | 30 |
-| | Normal | 250 | 10 | 30 | 0% | 10 | 30 |
-| | Hard | 500 | 20 | 60 | 0% | 20 | 60 |
-| Level 1, Phase 6 (ghost) | Easy | 188 | 8 | 24 | 0% | 15 | 45 |
-| | Normal | 375 | 17 | 52 | 7% | 15 | 45 |
-| | Hard | 750 | 38 | 114 | 7% | 30 | 90 |
-| Level 2, Phase 10 (vampire, final boss) | Easy | 360 | 12 | 36 | 15% | 24 | 72 |
-| | Normal | 828 | 38 | 115 | 40% | 24 | 72 |
-| | Hard | 1440 | 96 | 288 | 40% | 48 | 144 |
+| Phase | | Opponent HP | Its hit | Its critical | Its armor | Student HP | Student's hit | Student's critical |
+|---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Level 1, Phase 1 (slime) | Easy | 50 | 5 | 15 | 0% | 100 | 10 | 30 |
+| | Normal | 100 | 10 | 30 | 0% | 100 | 10 | 30 |
+| | Hard | 200 | 20 | 60 | 0% | 150 | 20 | 60 |
+| Level 1, Phase 6 (ghost) | Easy | 75 | 8 | 24 | 0% | 100 | 15 | 45 |
+| | Normal | 150 | 17 | 52 | 7% | 100 | 15 | 45 |
+| | Hard | 300 | 38 | 114 | 7% | 150 | 30 | 90 |
+| Level 2, Phase 10 (vampire, final boss) | Easy | 144 | 12 | 36 | 15% | 100 | 24 | 72 |
+| | Normal | 331 | 38 | 115 | 40% | 100 | 24 | 72 |
+| | Hard | 576 | 96 | 288 | 40% | 150 | 48 | 144 |
 
 The criticals are shown with a Star multiplier of ×1, before the other side's armor; the student's hits are before
-the hero's attack and the opponent's armor.
+the hero's attack and the opponent's armor. On the Hard final boss, one of the opponent's criticals (288) is more than
+twice the student's starting HP (150): that is what the shop and the hero's upgrades have to cover.
 
 On Normal and Hard the student needs the same number of hits to bring the opponent down, since their own hit
 doubles too; on Easy, half as many. On Hard the opponent's hit is 2.2 to 2.5 times the Normal one while the

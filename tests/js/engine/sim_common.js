@@ -39,7 +39,7 @@ const PLUGIN_ROOT = path.join(__dirname, '..', '..', '..');
 const OPPONENT_ACCURACY = {easy: 0.33, normal: 0.66, hard: 1.0};
 
 // The instance values the activity form defaults to.
-const INSTANCE = {basebosshp: 100, bossdamage: 10, basestudenthp: 100, coingain: 10};
+const INSTANCE = {basebosshp: 100, bossdamage: 10, basestudenthp: 100, coingain: 15};
 
 const NO_MODIFIERS = {hp: 1, attack: 1, armor: 0};
 

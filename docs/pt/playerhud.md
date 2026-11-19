@@ -8,10 +8,10 @@ uma delas está configurada.
 ## PuzzleCoin
 
 As moedas são coletadas no tabuleiro com a peça Moeda. Uma combinação de 3 peças rende o **Ganho de
-moeda** configurado (10 por padrão), uma de 4 peças rende 1,5× isso, e uma de 5 peças 2× — a mesma
+moeda** configurado (15 por padrão), uma de 4 peças rende 1,5× isso, e uma de 5 peças 2× — a mesma
 curva que o dano de Espada usa. Diferente de todo outro valor de combate, o ganho de moeda
 deliberadamente **não** escala por nível ou fase, para que os preços fixos da loja continuem
-equilibrados durante toda a campanha; só a dificuldade o muda (metade no Fácil, o dobro no Difícil).
+equilibrados durante toda a campanha; só a dificuldade o muda (um terço a menos no Fácil, um terço a mais no Difícil).
 
 O oponente acumula as próprias moedas quando combina a peça Moeda no turno dele. Ele não tem loja e
 nunca as gasta; elas só se compensam com as do estudante: o valor guardado é

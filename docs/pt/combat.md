@@ -80,7 +80,7 @@ O estudante escolhe Fácil, Normal ou Difícil. A escolha muda a luta, nunca a n
 | Golpe do estudante | ×1 | ×1 | ×2 |
 | HP do estudante na luta | ×1 | ×1 | ×2,5 |
 | Golpe crítico (uma resposta certa) | 3× o golpe de quem respondeu, vezes o seu multiplicador de Estrela | o mesmo | o mesmo |
-| Moedas por combinação de 3 | ×0,5 | ×1 | ×2 |
+| Moedas por combinação de 3 | ×2/3 (10 a cada 15) | ×1 | ×4/3 (20 a cada 15) |
 | Oponente acerta a pergunta (Múltipla Escolha / Verdadeiro-Falso) | 33% / 50% | 66% / 75% | 100% / 100% |
 | Como o oponente joga | a primeira combinação de Espadas que achar | pesa as peças (Espada e Poção valem mais) | como no Normal, e ainda valoriza mais as peças que alimentam os seus poderes (o lobo, o Orbe) |
 | Itens do oponente (Poção, Espada) | nenhum | 1 por nível depois do primeiro, +1 no chefe final | 1 a mais que no Normal |

@@ -16,7 +16,7 @@
         <FIELD NAME="bossavatar" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="slime" SEQUENCE="false" COMMENT="Single Match opponent: one of the keys in classes/local/opponents.php"/>
         <FIELD NAME="basebosshp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="100" SEQUENCE="false" COMMENT="Base boss HP at Level 1 Phase 1; scales automatically per phase"/>
         <FIELD NAME="bossdamage" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Damage dealt by boss per turn"/>
-        <FIELD NAME="coingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="10" SEQUENCE="false" COMMENT="Base coins per 3-piece Coin match; combo curve applies, does not scale by level/phase"/>
+        <FIELD NAME="coingain" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="15" SEQUENCE="false" COMMENT="Base coins per 3-piece Coin match; combo curve applies, does not scale by level/phase"/>
         <FIELD NAME="questioncategory" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Last Moodle question bank category id imported from via managequestions.php; 0 = none imported yet"/>
         <FIELD NAME="maxattempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Campaign mode only: attempts (defeats and restarts) allowed in each Campaign; running out ends that Campaign. 0 means unlimited"/>
         <FIELD NAME="maxcampaigns" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Campaign mode only: how many Campaigns a student may play, each from Level 1 Phase 1 until it is won or runs out of attempts; 0 means unlimited"/>

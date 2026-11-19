@@ -8,10 +8,10 @@ when one of them is configured.
 ## PuzzleCoin
 
 Coins are collected on the board with the Coin piece. A 3-piece match earns the configured **Coin
-gain** (10 by default), a 4-piece match 1.5× that, and a 5-piece match 2× — the same curve Sword
+gain** (15 by default), a 4-piece match 1.5× that, and a 5-piece match 2× — the same curve Sword
 damage uses. Unlike every other combat value, coin gain deliberately does **not** scale by level
 or phase, so the fixed shop prices stay balanced for the whole campaign; only the difficulty changes it
-(half on Easy, double on Hard).
+(a third less on Easy, a third more on Hard).
 
 The opponent banks its own coins when it matches the Coin piece on its turn. It has no shop and never
 spends them; they only net against the student's: the amount banked is

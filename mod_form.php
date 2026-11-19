@@ -140,7 +140,7 @@ class mod_playerpuzzle_mod_form extends moodleform_mod {
 
         $mform->addElement('text', 'coingain', get_string('coingain', 'mod_playerpuzzle'));
         $mform->setType('coingain', PARAM_INT);
-        $mform->setDefault('coingain', 10);
+        $mform->setDefault('coingain', 15);
         $mform->addHelpButton('coingain', 'coingain', 'mod_playerpuzzle');
 
         // Which Moodle question bank category (if any) to import from lives on

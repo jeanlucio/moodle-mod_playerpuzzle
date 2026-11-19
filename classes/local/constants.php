@@ -53,13 +53,13 @@ final class constants {
      */
     public const GRADE_AVERAGE_ALL = 5;
 
-    /** @var string Difficulty: halves the boss HP/damage and the coin reward. */
+    /** @var string Difficulty: halves the boss HP/damage and pays a third fewer coins. */
     public const DIFFICULTY_EASY = 'easy';
 
     /** @var string Difficulty: the configured boss HP/damage and coin reward, unchanged. */
     public const DIFFICULTY_NORMAL = 'normal';
 
-    /** @var string Difficulty: triples the boss HP, doubles its damage and the coin reward. */
+    /** @var string Difficulty: triples the boss HP, doubles its damage and pays a third more coins. */
     public const DIFFICULTY_HARD = 'hard';
 
     /** @var int Highest base HP the form accepts for the student and the opponent: 100 times the default. */
@@ -68,6 +68,6 @@ final class constants {
     /** @var int Highest base damage the form accepts: 100 times the default. */
     public const MAX_DAMAGE = 1000;
 
-    /** @var int Highest coin gain per 3-coin combination the form accepts: 100 times the default. */
+    /** @var int Highest coin gain per 3-coin combination the form accepts: far above the default, only to catch a typo. */
     public const MAX_COINGAIN = 1000;
 }

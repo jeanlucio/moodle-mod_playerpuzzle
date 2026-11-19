@@ -73,7 +73,7 @@ const ATTACK_GROWTH = {easy: 0.0, normal: 0.6, hard: 1.0};
 // How many points more of each hit an opponent's armor absorbs at the Campaign's last phase, see combat::ARMOR_GROWTH.
 const ARMOR_GROWTH = {easy: 0.0, normal: 0.25, hard: 0.25};
 const PHASES_PER_LEVEL = 10;
-const DIFFICULTY_COIN_FACTORS = {easy: 0.5, normal: 1.0, hard: 2.0};
+const DIFFICULTY_COIN_FACTORS = {easy: 2 / 3, normal: 1.0, hard: 4 / 3};
 
 /**
  * Mirrors combat::scale_attack(): an opponent hits up to ATTACK_GROWTH of its difficulty harder the further into the

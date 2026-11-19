@@ -958,5 +958,14 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026112000, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026112001) {
+        // Normal pays the coin gain as it is, and its default goes from 10 to 15. Activities keep the value they have.
+        $table = new xmldb_table('playerpuzzle');
+        $field = new xmldb_field('coingain', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '15', 'bossdamage');
+        $dbman->change_field_default($table, $field);
+
+        upgrade_mod_savepoint(true, 2026112001, 'playerpuzzle');
+    }
+
     return true;
 }

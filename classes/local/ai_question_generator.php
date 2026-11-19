@@ -49,6 +49,19 @@ class ai_question_generator {
      */
     public const MAX_ANSWERS = 5;
 
+    /** @var string The teacher's choice of both question types, the default. */
+    public const QTYPE_BOTH = 'both';
+
+    /**
+     * The question types a teacher's choice asks the AI for: both, or the one chosen. Anything else counts as both.
+     *
+     * @param string $choice self::QTYPE_BOTH or one of questions_repository::QTYPES.
+     * @return string[] Some of questions_repository::QTYPES.
+     */
+    public static function chosen_types(string $choice): array {
+        return in_array($choice, questions_repository::QTYPES, true) ? [$choice] : questions_repository::QTYPES;
+    }
+
     /**
      * Returns true when an AI source (hub key or core_ai) is available.
      *
@@ -74,24 +87,26 @@ class ai_question_generator {
      * @param string $topic Subject area or theme for the AI prompt.
      * @param int $count How many questions to request (clamped to self::MAX_COUNT).
      * @param context $context Context of the activity requesting generation.
+     * @param string $qtype The type of questions to ask for: self::QTYPE_BOTH or one of questions_repository::QTYPES.
      * @return array List of ['qtype' => string, 'questiontext' => string, 'hint' => string,
      *  'answers' => [['text' => string, 'iscorrect' => bool], ...]]. May be shorter than
      *  $count when the AI returned fewer valid questions than asked for.
      * @throws moodle_exception If no AI source is available or the call itself fails.
      */
-    public static function generate(string $topic, int $count, context $context): array {
+    public static function generate(string $topic, int $count, context $context, string $qtype = self::QTYPE_BOTH): array {
         $count = max(1, min(self::MAX_COUNT, $count));
         $language = get_string('thislanguage', 'langconfig');
         $description = get_string('aiusage', 'mod_playerpuzzle', $topic);
 
-        $prompt = self::build_prompt($topic, $language, $count);
+        $types = self::chosen_types($qtype);
+        $prompt = self::build_prompt($topic, $language, $count, $types);
         $result = self::call_ai($prompt, $description, $context);
 
         if (empty($result['success'])) {
             throw new moodle_exception('error_aigenerate', 'mod_playerpuzzle');
         }
 
-        return self::parse_and_validate((string) ($result['data'] ?? ''), $count);
+        return self::parse_and_validate((string) ($result['data'] ?? ''), $count, $types);
     }
 
     /**
@@ -283,32 +298,50 @@ class ai_question_generator {
     }
 
     /**
-     * Builds the prompt asking the AI for a batch of multichoice/truefalse questions.
+     * Builds the prompt asking the AI for a batch of questions of the given types.
      *
      * @param string $topic Subject area or theme.
      * @param string $language Target language name.
      * @param int $count Number of questions to request.
+     * @param string[] $types The question types to ask for, some of questions_repository::QTYPES.
      * @return string The constructed prompt.
      */
-    protected static function build_prompt(string $topic, string $language, int $count): string {
+    protected static function build_prompt(
+        string $topic,
+        string $language,
+        int $count,
+        array $types = questions_repository::QTYPES
+    ): string {
         $langname = $language !== '' ? $language : 'English';
-        $example = '{"questions":['
-            . '{"type":"multichoice","question":"...","hint":"...",'
-            . '"options":[{"text":"...","correct":true},{"text":"...","correct":false}]},'
-            . '{"type":"truefalse","question":"...","hint":"...","answer":true}'
-            . ']}';
+        $multichoice = in_array('multichoice', $types, true);
+        $truefalse = in_array('truefalse', $types, true);
+        $examples = [];
+        if ($multichoice) {
+            $examples[] = '{"type":"multichoice","question":"...","hint":"...",'
+                . '"options":[{"text":"...","correct":true},{"text":"...","correct":false}]}';
+        }
+        if ($truefalse) {
+            $examples[] = '{"type":"truefalse","question":"...","hint":"...","answer":true}';
+        }
 
         $parts = [
             "You are generating quiz questions for an educational game about the topic: \"{$topic}\".",
             "Generate {$count} questions. Write all text in language: {$langname}.",
-            'Use only these two types: "multichoice" and "truefalse".',
-            'For "multichoice": 2 to ' . self::MAX_ANSWERS . ' short options, with exactly one marked "correct": true.',
-            'For "truefalse": "answer" is a JSON boolean, true or false.',
-            'For every question, "hint" is one short clue sentence that helps without giving away'
-                . ' the answer; use an empty string if no good hint applies.',
-            'IMPORTANT: Reply ONLY with a valid JSON object in this exact format, no code fences:',
-            $example,
+            $multichoice && $truefalse
+                ? 'Use only these two types: "multichoice" and "truefalse".'
+                : 'Use only this type: "' . reset($types) . '". Every question must be of this type.',
         ];
+        if ($multichoice) {
+            $parts[] = 'For "multichoice": 2 to ' . self::MAX_ANSWERS
+                . ' short options, with exactly one marked "correct": true.';
+        }
+        if ($truefalse) {
+            $parts[] = 'For "truefalse": "answer" is a JSON boolean, true or false.';
+        }
+        $parts[] = 'For every question, "hint" is one short clue sentence that helps without giving away'
+            . ' the answer; use an empty string if no good hint applies.';
+        $parts[] = 'IMPORTANT: Reply ONLY with a valid JSON object in this exact format, no code fences:';
+        $parts[] = '{"questions":[' . implode(',', $examples) . ']}';
 
         return implode("\n", $parts);
     }
@@ -318,9 +351,14 @@ class ai_question_generator {
      *
      * @param string $responsetext Raw text returned by the AI provider.
      * @param int $limit Never return more than this many questions.
+     * @param string[] $types The question types asked for; a question of another type is dropped.
      * @return array See generate()'s return shape.
      */
-    protected static function parse_and_validate(string $responsetext, int $limit): array {
+    protected static function parse_and_validate(
+        string $responsetext,
+        int $limit,
+        array $types = questions_repository::QTYPES
+    ): array {
         $cleaned = preg_replace('/^\x60\x60\x60(?:json)?\s*/im', '', $responsetext);
         $cleaned = preg_replace('/\x60\x60\x60\s*$/m', '', $cleaned);
         $cleaned = trim((string) $cleaned);
@@ -336,7 +374,7 @@ class ai_question_generator {
                 break;
             }
             $question = self::shape_ai_question($entry);
-            if ($question !== null) {
+            if ($question !== null && in_array($question['qtype'], $types, true)) {
                 $shaped[] = $question;
             }
         }

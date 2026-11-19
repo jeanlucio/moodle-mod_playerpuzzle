@@ -137,7 +137,7 @@ class provider implements
 
         // Only addedby identifies a person (the teacher/manager who typed the question, or
         // who triggered its AI generation) — questiontext/hint/qtype/source/
-        // approved are course content authored for the activity, not personal data about
+        // approved/phase/questionlevel are course content authored for the activity, not personal data about
         // anyone, the same reasoning that already keeps the base playerpuzzle config table
         // out of this collection entirely. playerpuzzle_question_answers carries no personal
         // data at all (just the answer options' own text), so it is not declared here either.

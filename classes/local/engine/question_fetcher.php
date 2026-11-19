@@ -37,9 +37,9 @@ class question_fetcher {
      * play" — the client never chooses, so it cannot name an arbitrary questionid to
      * validate_answer's forwhom=boss path.
      *
-     * With a phase (a Campaign phase), the draw is from the approved questions meant for that phase
-     * and those meant for any phase; when none of them exists, from every approved question, so a
-     * phase nobody prepared a question for still has one rather than going without.
+     * With a phase (a Campaign phase), the draw is from the approved questions whose phase is that one or any
+     * phase and, with a level too, whose level is that one or any level; when none of them exists, from every
+     * approved question, so a phase nobody prepared a question for still has one rather than going without.
      *
      * Questions already answered in this phase are left out while any other is left to draw, so a match does not ask
      * the same question twice while its pool still has another. Once every one has been asked they come around again:
@@ -48,19 +48,26 @@ class question_fetcher {
      * @param int $playerpuzzleid The instance id.
      * @param int|null $phase Phase of the level being played (1 to 10), or null to draw from every approved question.
      * @param int[] $answered Ids of the questions already answered in this phase of the attempt.
+     * @param int|null $level Level being played, or null to leave the questions' level out of the draw.
      * @return int|null
      */
-    public static function draw_random_question_id(int $playerpuzzleid, ?int $phase = null, array $answered = []): ?int {
+    public static function draw_random_question_id(
+        int $playerpuzzleid,
+        ?int $phase = null,
+        array $answered = [],
+        ?int $level = null
+    ): ?int {
         global $DB;
 
         $ids = [];
         if ($phase !== null) {
-            $ids = $DB->get_fieldset_select(
-                'playerpuzzle_questions',
-                'id',
-                'playerpuzzleid = :ppid AND approved = 1 AND (phase = :phase OR phase = 0)',
-                ['ppid' => $playerpuzzleid, 'phase' => $phase]
-            );
+            $select = 'playerpuzzleid = :ppid AND approved = 1 AND (phase = :phase OR phase = 0)';
+            $params = ['ppid' => $playerpuzzleid, 'phase' => $phase];
+            if ($level !== null) {
+                $select .= ' AND (questionlevel = :questionlevel OR questionlevel = 0)';
+                $params['questionlevel'] = $level;
+            }
+            $ids = $DB->get_fieldset_select('playerpuzzle_questions', 'id', $select, $params);
         }
         if (empty($ids)) {
             $ids = $DB->get_fieldset_select(

@@ -35,12 +35,13 @@ final class question_list_service_test extends \advanced_testcase {
      * Creates a real course module context and instance, needed by build_list_context()
      * for the AI-availability check and the paging bar URL.
      *
+     * @param array $settings Settings of the instance, on top of the generator's (a Campaign of one level).
      * @return array{0: \stdClass, 1: \context_module}
      */
-    private function make_instance_and_context(): array {
+    private function make_instance_and_context(array $settings = []): array {
         $course = $this->getDataGenerator()->create_course();
         $instance = $this->getDataGenerator()->get_plugin_generator('mod_playerpuzzle')
-            ->create_instance(['course' => $course->id]);
+            ->create_instance(['course' => $course->id] + $settings);
         $cm = get_coursemodule_from_instance('playerpuzzle', $instance->id);
 
         return [$instance, \context_module::instance($cm->id)];
@@ -210,8 +211,92 @@ final class question_list_service_test extends \advanced_testcase {
             $labels[$row['questiontext']] = $row['phaselabel'];
         }
         $this->assertSame(get_string('questionphase_n', 'mod_playerpuzzle', 3), $labels['Phased?']);
-        $this->assertSame(get_string('questionphase_any', 'mod_playerpuzzle'), $labels['Unphased?']);
+        $this->assertSame(get_string('questionplacement_any', 'mod_playerpuzzle'), $labels['Unphased?']);
         $this->assertSame(range(0, 10), array_column($listcontext['bulkphaseoptions'], 'value'));
+    }
+
+    /**
+     * Tests that a Campaign's listing names each question's level and phase, offers its levels to filter by and to
+     * set in bulk, and warns about the questions meant for a level it does not have; and that a Single Match's has
+     * none of it.
+     *
+     * @return void
+     */
+    public function test_a_campaign_lists_filters_and_sets_the_level(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+        [$instance, $context] = $this->make_instance_and_context(['maxlevels' => 3]);
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        $add = fn(\stdClass $instance, string $text, int $level, int $phase) => questions_repository::add_question(
+            (int) $instance->id,
+            'multichoice',
+            $text,
+            '',
+            $answers,
+            2,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            $phase,
+            $level
+        );
+        $add($instance, 'Both?', 2, 3);
+        $add($instance, 'Level only?', 2, 0);
+        $add($instance, 'Too far?', 5, 0);
+        $cmid = (int) get_coursemodule_from_instance('playerpuzzle', $instance->id)->id;
+
+        $listcontext = question_list_service::build_list_context($instance, $cmid, $PAGE->get_renderer('core'), $context);
+
+        $labels = array_column($listcontext['questions'], 'phaselabel', 'questiontext');
+        $level = fn(int $n) => get_string('questionlevel_n', 'mod_playerpuzzle', $n);
+        $this->assertSame($level(2) . ' · ' . get_string('questionphase_n', 'mod_playerpuzzle', 3), $labels['Both?']);
+        $this->assertSame($level(2), $labels['Level only?']);
+        $this->assertTrue($listcontext['haslevels']);
+        $this->assertSame(get_string('questionplacement', 'mod_playerpuzzle'), $listcontext['phasecolumnlabel']);
+        $this->assertSame(['', 'none', '1', '2', '3'], array_column($listcontext['levelfilteroptions'], 'value'));
+        $this->assertSame([0, 1, 2, 3], array_column($listcontext['bulkleveloptions'], 'value'));
+        $this->assertSame(get_string('questionsbeyondlevels', 'mod_playerpuzzle', 1), $listcontext['beyondlevelstext']);
+
+        $filtered = question_list_service::build_list_context(
+            $instance,
+            $cmid,
+            $PAGE->get_renderer('core'),
+            $context,
+            'id',
+            'DESC',
+            0,
+            ['id' => $cmid, 'level' => '2'],
+            '',
+            null,
+            null,
+            2
+        );
+        $this->assertCount(2, $filtered['questions']);
+        $this->assertTrue($filtered['filtersactive']);
+
+        [$single, $singlecontext] = $this->make_instance_and_context(['gamemode' => 'single']);
+        $add($single, 'Single?', 2, 3);
+        $singlecmid = (int) get_coursemodule_from_instance('playerpuzzle', $single->id)->id;
+        $singlelist = question_list_service::build_list_context(
+            $single,
+            $singlecmid,
+            $PAGE->get_renderer('core'),
+            $singlecontext,
+            'id',
+            'DESC',
+            0,
+            [],
+            '',
+            null,
+            null,
+            2
+        );
+        $this->assertFalse($singlelist['haslevels']);
+        $this->assertSame('', $singlelist['beyondlevelstext']);
+        $this->assertCount(1, $singlelist['questions'], 'the level filter does not apply');
+        $this->assertSame(get_string('questionphase_n', 'mod_playerpuzzle', 3), $singlelist['questions'][0]['phaselabel']);
     }
 
     /**

@@ -42,37 +42,47 @@ fase, seu status e quantas vezes foi sorteada, e oferece:
 * **Adicionar uma questão** à mão, com uma dica opcional.
 * **Gerar com IA** — veja abaixo.
 * **Aprovar, reativar, editar ou excluir** questões, uma a uma ou em lote.
-* **Definir a fase** para a qual uma questão serve, uma a uma no formulário da questão ou nas
-  questões selecionadas de uma vez — veja abaixo.
+* **Definir o nível e a fase** para os quais uma questão serve, uma a uma no formulário da questão
+  ou nas questões selecionadas de uma vez — veja abaixo.
 
 Só questões **aprovadas** são sorteadas numa partida. Uma questão já respondida numa fase não é perguntada
 de novo nessa fase enquanto o conjunto tiver outra; quando todas já foram feitas, voltam a entrar.
 
-**Localizar e ordenar.** A lista pode ser filtrada por fase (inclusive *Sem fase definida*) e por
-status (aprovadas, pendentes, desativadas), e ordenada por mais recentes, fase, status, mais
-sorteadas, tipo ou fonte. Os filtros se aplicam assim que mudam e acompanham cada ação, então
-aprovar, editar ou definir a fase numa lista filtrada traz o professor de volta à mesma lista. As
-ações em lote (aprovar, definir fase, excluir) aparecem numa barra assim que há questões marcadas.
+**Localizar e ordenar.** A lista pode ser filtrada por nível (na Campanha), por fase (inclusive
+*Sem nível definido* e *Sem fase definida*) e por status (aprovadas, pendentes, desativadas), e
+ordenada por mais recentes, nível e fase, status, mais sorteadas, tipo ou fonte. Os filtros se
+aplicam assim que mudam e acompanham cada ação, então aprovar, editar ou definir o nível ou a fase
+numa lista filtrada traz o professor de volta à mesma lista. As ações em lote (aprovar, definir
+nível, definir fase, excluir) aparecem numa barra assim que há questões marcadas.
 
-## Questões por fase
+## Questões por nível e por fase
 
-Na Campanha, cada questão pode servir a uma fase de um nível (todo nível tem 10), de modo que as
-questões mais fáceis abram o nível e as mais difíceis o fechem. A fase é *Qualquer fase* até o
-professor defini-la, e uma nova importação do banco nunca a altera.
+Na Campanha, cada questão pode servir a um **nível** e a uma **fase** de nível (todo nível tem
+10). Os dois são independentes e começam em *Qualquer*, então o professor só preenche o que quiser
+usar:
 
-Cada fase é jogada com as questões dela mais as de qualquer fase. Quando não há nenhuma das duas,
-o jogo sorteia entre todas as questões aprovadas, então uma fase que ninguém preparou nunca fica
-sem questões. A Partida Única e a Demo não têm fases e sorteiam sempre entre todas as aprovadas.
+| O professor define | Para quê | Exemplo |
+|---|---|---|
+| Só o nível | Um conteúdo por nível: uma unidade, um capítulo | O nível 2 pergunta sobre o capítulo 2 |
+| Só a fase | Dificuldade crescente dentro de cada nível | As fáceis abrem o nível, as difíceis o fecham |
+| Os dois | Uma questão para um ponto exato da Campanha | A questão do chefão do nível 3 |
 
-A fase se repete em todo nível de uma Campanha: a questão da *Fase 3* é sorteada na terceira fase
-de cada nível.
+Cada fase é jogada com as questões cujo nível e cuja fase batem com ela ou são *Qualquer*. Quando
+nenhuma bate, o jogo sorteia entre todas as questões aprovadas, então uma fase que ninguém preparou
+nunca fica sem questões. A Partida Única e a Demo não têm níveis nem fases e sorteiam sempre entre
+todas as aprovadas. Uma nova importação do banco nunca altera o nível nem a fase de uma questão.
+
+Os níveis oferecidos vão até o número de níveis da atividade. Se o professor diminuir esse número
+depois, as questões marcadas para um nível que deixou de existir nunca são sorteadas, e a lista de
+questões avisa quantas são.
 
 ## Geração por IA
 
 Quando há uma fonte de IA disponível (o plugin AI Hub com uma chave, ou o próprio `core_ai` do
-Moodle), o professor pode digitar um tema e uma quantidade de questões (até 10). O resultado
-aparece como uma **prévia** editável, e só as questões que ele selecionar são salvas — como
-*pendentes*. Nada que a IA escreveu chega a um estudante antes de o professor aprovar. Veja
+Moodle), o professor pode digitar um tema, uma quantidade de questões (até 10) e o tipo delas:
+*Múltipla escolha e Verdadeiro ou Falso*, só *Múltipla escolha* ou só *Verdadeiro ou Falso*. Na Campanha,
+também pode escolher o nível e a fase para os quais as questões são salvas. O resultado aparece como
+uma **prévia** editável, e só as questões que ele selecionar são salvas — como *pendentes*. Nada que a IA escreveu chega a um estudante antes de o professor aprovar. Veja
 [Divulgação de Serviço de Terceiros](#third-party) para o que é enviado.
 
 ## Dicas

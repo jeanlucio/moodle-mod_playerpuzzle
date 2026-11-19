@@ -54,6 +54,8 @@
   com IA. Múltipla escolha e Verdadeiro/Falso.
 * **Revisão do professor:** as questões geradas por IA aparecem primeiro numa prévia e são salvas
   como pendentes; nenhuma é sorteada numa partida antes de ser aprovada. Aprovar e excluir em lote.
+* **Por nível e por fase:** na Campanha, cada questão pode servir a um nível, a uma fase ou aos dois;
+  a geração por IA já salva o lote com o nível, a fase e o tipo escolhidos.
 * **Dicas:** uma dica opcional por questão, usada pelo consumível Dica.
 
 ## 📊 Notas e ferramentas do professor

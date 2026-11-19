@@ -46,6 +46,9 @@ class campaigns {
     /** @var int Phases in a level. */
     public const PHASES_PER_LEVEL = 10;
 
+    /** @var int The most levels a Campaign can have (the activity's maxlevels setting). */
+    public const MAX_LEVELS = 10;
+
     /**
      * Where a brand new real attempt starts, from the student's most recently finished one: on the
      * phase that attempt lost, in the same Campaign, or at Level 1, Phase 1 of the next Campaign when

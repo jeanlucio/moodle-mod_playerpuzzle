@@ -67,6 +67,7 @@ class questions_repository {
      * @param int|null $sourceid When source='bank': the question_bank_entries.id it was
      *  imported from. Null otherwise.
      * @param int $phase Phase of a level the question is meant for in a Campaign, 0 for any phase.
+     * @param int $level Level the question is meant for in a Campaign, 0 for any level.
      * @return int The new question id.
      */
     public static function add_question(
@@ -80,7 +81,8 @@ class questions_repository {
         bool $approved = true,
         ?int $questiontextformat = null,
         ?int $sourceid = null,
-        int $phase = 0
+        int $phase = 0,
+        int $level = 0
     ): int {
         global $DB;
 
@@ -96,6 +98,7 @@ class questions_repository {
             'sourceid' => $sourceid,
             'approved' => $approved ? 1 : 0,
             'phase' => self::clean_phase($phase),
+            'questionlevel' => self::clean_level($level),
             'timecreated' => $now,
             'timemodified' => $now,
             'addedby' => $userid,
@@ -234,6 +237,7 @@ class questions_repository {
      * @param array $answers List of ['text' => string, 'iscorrect' => bool], in display order.
      * @param context|null $context Module context, to purge stale answer file areas.
      * @param int|null $phase Phase of a level the question is meant for, 0 for any phase; null leaves it as it is.
+     * @param int|null $level Level the question is meant for, 0 for any level; null leaves it as it is.
      * @return void
      */
     public static function update_question(
@@ -243,7 +247,8 @@ class questions_repository {
         string $hint,
         array $answers,
         ?context $context = null,
-        ?int $phase = null
+        ?int $phase = null,
+        ?int $level = null
     ): void {
         global $DB;
 
@@ -256,6 +261,9 @@ class questions_repository {
         ];
         if ($phase !== null) {
             $record->phase = self::clean_phase($phase);
+        }
+        if ($level !== null) {
+            $record->questionlevel = self::clean_level($level);
         }
         $DB->update_record('playerpuzzle_questions', $record);
 
@@ -465,6 +473,8 @@ class questions_repository {
      * @param int|null $phase Only the questions meant for this phase (1 to 10), or for no phase in particular
      *  with 0; null for every phase.
      * @param string|null $status Only the questions with this status, one of self::MANAGE_STATUSES; null for any.
+     * @param int|null $level Only the questions meant for this level, or for no level in particular with 0; null for
+     *  every level.
      * @return array{rows: stdClass[], total: int, all: int} Rows have ->answers attached, same shape as
      *  get_question(); 'total' is the unpaginated count of rows matching the filters, for the paging bar, and 'all'
      *  the count of the instance's questions whatever the filters.
@@ -476,7 +486,8 @@ class questions_repository {
         string $sort = 'id',
         string $dir = 'DESC',
         ?int $phase = null,
-        ?string $status = null
+        ?string $status = null,
+        ?int $level = null
     ): array {
         global $DB;
 
@@ -494,6 +505,10 @@ class questions_repository {
             $where .= ' AND q.phase = :phase';
             $params['phase'] = self::clean_phase($phase);
         }
+        if ($level !== null) {
+            $where .= ' AND q.questionlevel = :questionlevel';
+            $params['questionlevel'] = self::clean_level($level);
+        }
         if ($status === 'approved') {
             $where .= ' AND q.approved = 1';
         } else if ($status === 'pending') {
@@ -502,19 +517,20 @@ class questions_repository {
             $where .= " AND q.approved = 0 AND q.source <> 'ai'";
         }
 
-        // Phase 0 (any phase) goes last when ascending, after phase 10; a pending question comes before a
-        // disabled one and both before the approved, so the ones needing attention surface first.
+        // By level, then by phase within it; 0 (any) goes last when ascending, after 10. A pending question comes
+        // before a disabled one and both before the approved, so the ones needing attention surface first.
         $orderby = [
             'id' => 'q.id',
             'qtype' => 'q.qtype',
             'source' => 'q.source',
-            'phase' => 'CASE WHEN q.phase = 0 THEN 99 ELSE q.phase END',
+            'phase' => "CASE WHEN q.questionlevel = 0 THEN 99 ELSE q.questionlevel END $dir, "
+                . 'CASE WHEN q.phase = 0 THEN 99 ELSE q.phase END',
             'status' => "CASE WHEN q.approved = 1 THEN 2 WHEN q.source = 'ai' THEN 0 ELSE 1 END",
             'drawn' => '(SELECT COUNT(aq.id) FROM {playerpuzzle_attempt_questions} aq WHERE aq.questionid = q.id)',
         ][$sort];
 
         $all = $DB->count_records('playerpuzzle_questions', ['playerpuzzleid' => $playerpuzzleid]);
-        $total = ($phase === null && $status === null)
+        $total = ($phase === null && $status === null && $level === null)
             ? $all
             : $DB->count_records_sql("SELECT COUNT(q.id) FROM {playerpuzzle_questions} q WHERE $where", $params);
 
@@ -622,6 +638,54 @@ class questions_repository {
         $condition = "id $insql AND playerpuzzleid = :playerpuzzleid";
         $DB->set_field_select('playerpuzzle_questions', 'phase', self::clean_phase($phase), $condition, $inparams);
         $DB->set_field_select('playerpuzzle_questions', 'timemodified', time(), $condition, $inparams);
+    }
+
+    /**
+     * Sets the level of every given question belonging to the instance, in one pass.
+     *
+     * @param int[] $questionids Question ids to update; ids of another instance are left alone.
+     * @param int $playerpuzzleid The instance every id must belong to.
+     * @param int $level Level to set, 0 for any level.
+     * @return void
+     */
+    public static function set_level_bulk(array $questionids, int $playerpuzzleid, int $level): void {
+        global $DB;
+
+        if (empty($questionids)) {
+            return;
+        }
+        [$insql, $inparams] = $DB->get_in_or_equal($questionids, SQL_PARAMS_NAMED, 'qid');
+        $inparams['playerpuzzleid'] = $playerpuzzleid;
+        $condition = "id $insql AND playerpuzzleid = :playerpuzzleid";
+        $DB->set_field_select('playerpuzzle_questions', 'questionlevel', self::clean_level($level), $condition, $inparams);
+        $DB->set_field_select('playerpuzzle_questions', 'timemodified', time(), $condition, $inparams);
+    }
+
+    /**
+     * Coerces a level to a value a question can hold: 1 to the most levels a Campaign can have, or 0 for any level.
+     *
+     * @param int $level Raw level.
+     * @return int
+     */
+    public static function clean_level(int $level): int {
+        return $level >= 1 && $level <= campaigns::MAX_LEVELS ? $level : 0;
+    }
+
+    /**
+     * Counts the instance's questions meant for a level past the Campaign's last one, which no phase ever draws.
+     *
+     * @param int $playerpuzzleid The instance id.
+     * @param int $maxlevels The Campaign's number of levels.
+     * @return int
+     */
+    public static function count_beyond_levels(int $playerpuzzleid, int $maxlevels): int {
+        global $DB;
+
+        return $DB->count_records_select(
+            'playerpuzzle_questions',
+            'playerpuzzleid = :ppid AND questionlevel > :maxlevels',
+            ['ppid' => $playerpuzzleid, 'maxlevels' => $maxlevels]
+        );
     }
 
     /**

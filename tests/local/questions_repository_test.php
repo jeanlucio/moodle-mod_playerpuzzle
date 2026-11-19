@@ -996,6 +996,116 @@ final class questions_repository_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that a question keeps the level it is added or edited with, any level when none is given or the one given
+     * is out of range, and that editing without a level leaves it as it is.
+     *
+     * @return void
+     */
+    public function test_add_and_update_question_keep_the_level(): void {
+        $this->resetAfterTest();
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        $add = fn(int $level) => questions_repository::add_question(
+            7,
+            'multichoice',
+            'Q?',
+            '',
+            $answers,
+            42,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            0,
+            $level
+        );
+        $level = fn(int $id) => (int) questions_repository::get_question($id, 7)->questionlevel;
+
+        $default = questions_repository::add_question(7, 'multichoice', 'Q?', '', $answers, 42);
+        $this->assertSame(0, $level($default));
+        $this->assertSame(0, $level($add(11)));
+        $leveled = $add(4);
+        $this->assertSame(4, $level($leveled));
+
+        questions_repository::update_question($leveled, 'multichoice', 'Q edited?', '', $answers, null, 2);
+        $this->assertSame(4, $level($leveled), 'no level given leaves it');
+        questions_repository::update_question($leveled, 'multichoice', 'Q edited?', '', $answers, null, 2, 9);
+        $this->assertSame(9, $level($leveled));
+        questions_repository::update_question($leveled, 'multichoice', 'Q edited?', '', $answers, null, 2, 0);
+        $this->assertSame(0, $level($leveled));
+    }
+
+    /**
+     * Tests that the bulk level change reaches only the given questions of the given instance, and that the questions
+     * meant for a level past the Campaign's last one are counted.
+     *
+     * @return void
+     */
+    public function test_set_level_bulk_is_scoped_and_levels_past_the_campaign_are_counted(): void {
+        $this->resetAfterTest();
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        $one = questions_repository::add_question(7, 'multichoice', 'Q1?', '', $answers, 42);
+        $two = questions_repository::add_question(7, 'multichoice', 'Q2?', '', $answers, 42);
+        $untouched = questions_repository::add_question(7, 'multichoice', 'Q3?', '', $answers, 42);
+        $foreign = questions_repository::add_question(9, 'multichoice', 'Q4?', '', $answers, 42);
+
+        questions_repository::set_level_bulk([$one, $two, $foreign], 7, 5);
+
+        $this->assertSame(5, (int) questions_repository::get_question($one, 7)->questionlevel);
+        $this->assertSame(5, (int) questions_repository::get_question($two, 7)->questionlevel);
+        $this->assertSame(0, (int) questions_repository::get_question($untouched, 7)->questionlevel);
+        $this->assertSame(0, (int) questions_repository::get_question($foreign, 9)->questionlevel);
+
+        $this->assertSame(2, questions_repository::count_beyond_levels(7, 3));
+        $this->assertSame(0, questions_repository::count_beyond_levels(7, 5));
+        $this->assertSame(0, questions_repository::count_beyond_levels(9, 1));
+
+        questions_repository::set_level_bulk([$one], 7, 0);
+        $this->assertSame(0, (int) questions_repository::get_question($one, 7)->questionlevel);
+        $this->assertSame(0, questions_repository::clean_level(11));
+        $this->assertSame(10, questions_repository::clean_level(10));
+    }
+
+    /**
+     * Tests that the listing filters by level, and sorts by level first and by phase within it, any level last when
+     * ascending.
+     *
+     * @return void
+     */
+    public function test_get_questions_for_management_filters_and_sorts_by_level(): void {
+        $this->resetAfterTest();
+        $answers = [['text' => 'A', 'iscorrect' => true], ['text' => 'B', 'iscorrect' => false]];
+        $add = fn(int $level, int $phase) => questions_repository::add_question(
+            7,
+            'multichoice',
+            "L$level P$phase?",
+            '',
+            $answers,
+            42,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            $phase,
+            $level
+        );
+        $l2p1 = $add(2, 1);
+        $l1p5 = $add(1, 5);
+        $anyp2 = $add(0, 2);
+        $l1p2 = $add(1, 2);
+
+        $sorted = questions_repository::get_questions_for_management(7, 0, 30, 'phase', 'ASC');
+        $this->assertSame([$l1p2, $l1p5, $l2p1, $anyp2], $this->ids_of($sorted));
+
+        $levelone = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', null, null, 1);
+        $this->assertSame([$l1p5, $l1p2], $this->ids_of($levelone));
+        $this->assertSame(2, $levelone['total']);
+        $nolevel = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', null, null, 0);
+        $this->assertSame([$anyp2], $this->ids_of($nolevel));
+        $both = questions_repository::get_questions_for_management(7, 0, 30, 'id', 'ASC', 2, null, 1);
+        $this->assertSame([$l1p2], $this->ids_of($both));
+    }
+
+    /**
      * Tests that the bulk phase change reaches only the given questions of the given instance.
      *
      * @return void

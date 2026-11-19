@@ -124,6 +124,30 @@ final class save_generated_questions_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the batch is saved for the level and phase the teacher chose, any when none is given.
+     *
+     * @return void
+     */
+    public function test_saves_the_batch_for_the_chosen_level_and_phase(): void {
+        $cm = get_coursemodule_from_instance('playerpuzzle', $this->instance->id);
+        $question = [
+            'qtype' => 'truefalse',
+            'questiontext' => 'The sky is blue.',
+            'hint' => '',
+            'answers' => [['text' => 'True', 'iscorrect' => true], ['text' => 'False', 'iscorrect' => false]],
+        ];
+
+        save_generated_questions::execute($cm->id, [$question], 2, 7);
+        save_generated_questions::execute($cm->id, [$question]);
+
+        $placements = array_map(
+            static fn(\stdClass $q): array => [(int) $q->questionlevel, (int) $q->phase],
+            array_values(questions_repository::get_questions_for_instance((int) $this->instance->id))
+        );
+        $this->assertEqualsCanonicalizing([[2, 7], [0, 0]], $placements);
+    }
+
+    /**
      * Tests that a malformed entry in the batch (here, only one correct answer marked
      * out of zero) is counted as skipped and never persisted, while a valid sibling in
      * the same batch is still saved.

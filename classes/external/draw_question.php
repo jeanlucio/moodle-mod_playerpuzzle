@@ -132,7 +132,12 @@ class draw_question extends external_api {
                         (int) $attempt->currentlevel,
                         (int) $attempt->currentphase
                     );
-                    $questionid = question_fetcher::draw_random_question_id((int) $playerpuzzle->id, $phase, $answered);
+                    $questionid = question_fetcher::draw_random_question_id(
+                        (int) $playerpuzzle->id,
+                        $phase,
+                        $answered,
+                        $phase !== null ? (int) $attempt->currentlevel : null
+                    );
                     $attempt->currentquestionid = $questionid ?? 0;
                     $current = $questionid !== null
                         ? question_fetcher::get_single_question($questionid, (int) $playerpuzzle->id, $context)

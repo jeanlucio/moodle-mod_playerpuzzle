@@ -170,6 +170,42 @@ final class upgrade_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the upgrade adds the level a question is meant for, as any level for the questions already stored.
+     *
+     * @return void
+     */
+    public function test_upgrade_adds_the_question_level_as_any_level(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $dbman = $DB->get_manager();
+        $table = new \xmldb_table('playerpuzzle_questions');
+        $field = new \xmldb_field('questionlevel');
+        $dbman->drop_field($table, $field);
+        $this->assertFalse($dbman->field_exists($table, $field));
+
+        $questionid = $DB->insert_record('playerpuzzle_questions', (object) [
+            'playerpuzzleid' => 7,
+            'qtype' => 'truefalse',
+            'questiontext' => 'Old question?',
+            'questiontextformat' => 2,
+            'source' => 'manual',
+            'approved' => 1,
+            'phase' => 4,
+            'timecreated' => 1000,
+            'timemodified' => 1000,
+            'addedby' => 2,
+        ]);
+
+        set_config('version', 2026111800, 'mod_playerpuzzle');
+        xmldb_playerpuzzle_upgrade(2026111800);
+
+        $this->assertTrue($dbman->field_exists($table, new \xmldb_field('questionlevel')));
+        $this->assertSame(0, (int) $DB->get_field('playerpuzzle_questions', 'questionlevel', ['id' => $questionid]));
+        $this->assertSame(4, (int) $DB->get_field('playerpuzzle_questions', 'phase', ['id' => $questionid]));
+    }
+
+    /**
      * Tests that the upgrade recomputes the grades of the Campaigns that count errors, since their formula changed,
      * and leaves the activities it did not touch alone.
      *

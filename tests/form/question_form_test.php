@@ -299,4 +299,27 @@ final class question_form_test extends \advanced_testcase {
         $this->assertTrue($mform->elementExists('phase'));
         $this->assertSame(0, (int) $mform->exportValue('phase'));
     }
+
+    /**
+     * Tests that a Campaign's form offers any level and each of its levels, keeping a level past the last one the
+     * question already holds, and that a form with no levels (a Single Match) has no level field.
+     *
+     * @return void
+     */
+    public function test_offers_the_campaign_levels_and_only_in_a_campaign(): void {
+        $options = question_form::level_options(3);
+        $this->assertSame([0, 1, 2, 3], array_keys($options));
+        $this->assertSame(get_string('questionlevel_any', 'mod_playerpuzzle'), $options[0]);
+        $this->assertSame(get_string('questionlevel_n', 'mod_playerpuzzle', 3), $options[3]);
+        $this->assertSame([0, 1, 2, 3, 7], array_keys(question_form::level_options(3, 7)));
+
+        $form = new question_form(null, ['context' => \context_system::instance(), 'answercount' => 0, 'maxlevels' => 3]);
+        $prop = (new \ReflectionClass($form))->getProperty('_form');
+        $prop->setAccessible(true);
+        $mform = $prop->getValue($form);
+        $this->assertTrue($mform->elementExists('questionlevel'));
+        $this->assertSame(0, (int) $mform->exportValue('questionlevel'));
+
+        $this->assertFalse($this->build_form()->elementExists('questionlevel'));
+    }
 }

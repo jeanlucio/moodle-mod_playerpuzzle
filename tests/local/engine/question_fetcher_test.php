@@ -164,6 +164,66 @@ final class question_fetcher_test extends \advanced_testcase {
     }
 
     /**
+     * Creates one approved question meant for a level and a phase of a Campaign.
+     *
+     * @param int $level Level, 0 for any level.
+     * @param int $phase Phase of a level, 0 for any phase.
+     * @return int The new question id.
+     */
+    private function make_level_question(int $level, int $phase): int {
+        return questions_repository::add_question(
+            7,
+            'truefalse',
+            "Question for level $level, phase $phase?",
+            '',
+            [['text' => 'True', 'iscorrect' => true], ['text' => 'False', 'iscorrect' => false]],
+            2,
+            'manual',
+            true,
+            FORMAT_PLAIN,
+            null,
+            $phase,
+            $level
+        );
+    }
+
+    /**
+     * Tests that with a level a phase is drawn from the questions whose level and phase both match it or are any,
+     * never from one meant for another level or another phase.
+     *
+     * @return void
+     */
+    public function test_draw_for_a_level_and_phase_uses_the_questions_that_match_both(): void {
+        $exact = $this->make_level_question(2, 3);
+        $levelonly = $this->make_level_question(2, 0);
+        $phaseonly = $this->make_level_question(0, 3);
+        $any = $this->make_level_question(0, 0);
+        $this->make_level_question(1, 3);
+        $this->make_level_question(2, 4);
+        $this->make_level_question(1, 0);
+
+        $drawn = [];
+        for ($i = 0; $i < 80; $i++) {
+            $drawn[question_fetcher::draw_random_question_id(7, 3, [], 2)] = true;
+        }
+
+        $this->assertEqualsCanonicalizing([$exact, $levelonly, $phaseonly, $any], array_keys($drawn));
+    }
+
+    /**
+     * Tests that a level nobody prepared a question for still gets one, drawn from every approved question, and that a
+     * draw without a level ignores the questions' level, as before levels existed.
+     *
+     * @return void
+     */
+    public function test_draw_for_a_level_without_questions_falls_back_and_no_level_ignores_it(): void {
+        $other = $this->make_level_question(1, 3);
+
+        $this->assertSame($other, question_fetcher::draw_random_question_id(7, 3, [], 2));
+        $this->assertSame($other, question_fetcher::draw_random_question_id(7, 3));
+    }
+
+    /**
      * Tests that a phase nobody prepared a question for still gets one, drawn from every approved question.
      *
      * @return void

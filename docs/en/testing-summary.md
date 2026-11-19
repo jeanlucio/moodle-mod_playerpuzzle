@@ -23,8 +23,8 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `lib_update_grades_test.php` | 7 |
 | `mod_form_test.php` | 32 |
 | `uninstall_test.php` | 2 |
-| `upgrade_test.php` | 5 |
-| **Subtotal** | **114** |
+| `upgrade_test.php` | 6 |
+| **Subtotal** | **115** |
 
 ### Completion Tests (`tests/completion/`)
 
@@ -50,33 +50,33 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `buy_stock_test.php` | 12 |
 | `buy_upgrade_test.php` | 7 |
 | `core_libraries_test.php` | 2 |
-| `draw_question_test.php` | 15 |
+| `draw_question_test.php` | 16 |
 | `generate_questions_test.php` | 2 |
 | `get_phase_questionlog_test.php` | 5 |
 | `get_shop_test.php` | 4 |
 | `save_combat_state_test.php` | 14 |
-| `save_generated_questions_test.php` | 4 |
+| `save_generated_questions_test.php` | 5 |
 | `save_progress_test.php` | 43 |
 | `set_ranking_preference_test.php` | 2 |
 | `set_sound_preference_test.php` | 5 |
 | `transfer_hud_coins_test.php` | 10 |
 | `use_stock_test.php` | 19 |
 | `validate_answer_test.php` | 20 |
-| **Subtotal** | **196** |
+| **Subtotal** | **198** |
 
 ### Form Tests (`tests/form/`)
 
 | Test file | Cases |
 |-----------|------:|
 | `import_form_test.php` | 4 |
-| `question_form_test.php` | 12 |
-| **Subtotal** | **16** |
+| `question_form_test.php` | 13 |
+| **Subtotal** | **17** |
 
 ### Local Business-Logic Tests (`tests/local/`)
 
 | Test file | Cases |
 |-----------|------:|
-| `ai_question_generator_test.php` | 22 |
+| `ai_question_generator_test.php` | 23 |
 | `attempt_consumables_test.php` | 8 |
 | `attempt_questions_test.php` | 2 |
 | `campaign_giveup_test.php` | 6 |
@@ -99,8 +99,8 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `opponents_test.php` | 9 |
 | `question_bank_sync_test.php` | 24 |
 | `question_editor_files_test.php` | 3 |
-| `question_list_service_test.php` | 6 |
-| `questions_repository_test.php` | 30 |
+| `question_list_service_test.php` | 7 |
+| `questions_repository_test.php` | 33 |
 | `ranking_service_test.php` | 12 |
 | `replay_credit_test.php` | 8 |
 | `report_service_test.php` | 36 |
@@ -109,7 +109,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `text_test.php` | 1 |
 | `user_hero_test.php` | 7 |
 | `user_stock_test.php` | 10 |
-| **Subtotal** | **468** |
+| **Subtotal** | **473** |
 
 ### Combat Engine Tests (`tests/local/engine/`)
 
@@ -122,11 +122,11 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `engine_version_test.php` | 2 |
 | `golden_vectors_test.php` | 5 |
 | `prng_test.php` | 5 |
-| `question_fetcher_test.php` | 27 |
+| `question_fetcher_test.php` | 29 |
 | `replay_test.php` | 34 |
 | `replay_vectors_test.php` | 40 |
 | `security_test.php` | 58 |
-| **Subtotal** | **303** |
+| **Subtotal** | **305** |
 
 ### Privacy Tests (`tests/privacy/`)
 
@@ -135,7 +135,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `provider_test.php` | 41 |
 | **Subtotal** | **41** |
 
-| **Grand Total** | **1157** |
+| **Grand Total** | **1168** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite

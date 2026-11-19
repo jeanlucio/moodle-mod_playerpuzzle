@@ -49,6 +49,12 @@ class generate_questions extends external_api {
             'cmid'  => new external_value(PARAM_INT, 'Course module ID'),
             'topic' => new external_value(PARAM_TEXT, 'Subject/theme for the generated questions'),
             'count' => new external_value(PARAM_INT, 'How many questions to request'),
+            'qtype' => new external_value(
+                PARAM_ALPHA,
+                'The type of questions to ask for: both, multichoice or truefalse',
+                VALUE_DEFAULT,
+                ai_question_generator::QTYPE_BOTH
+            ),
         ]);
     }
 
@@ -58,13 +64,20 @@ class generate_questions extends external_api {
      * @param int $cmid Course module ID.
      * @param string $topic Subject/theme for the generated questions.
      * @param int $count How many questions to request.
+     * @param string $qtype The type of questions to ask for: both, multichoice or truefalse.
      * @return array {questions: array}
      */
-    public static function execute(int $cmid, string $topic, int $count): array {
+    public static function execute(
+        int $cmid,
+        string $topic,
+        int $count,
+        string $qtype = ai_question_generator::QTYPE_BOTH
+    ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid'  => $cmid,
             'topic' => $topic,
             'count' => $count,
+            'qtype' => $qtype,
         ]);
 
         $context = context_module::instance($params['cmid']);
@@ -76,7 +89,7 @@ class generate_questions extends external_api {
             throw new moodle_exception('error_aitopicrequired', 'mod_playerpuzzle');
         }
 
-        $questions = ai_question_generator::generate($topic, $params['count'], $context);
+        $questions = ai_question_generator::generate($topic, $params['count'], $context, $params['qtype']);
 
         return ['questions' => $questions];
     }

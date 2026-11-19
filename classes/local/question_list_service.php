@@ -56,6 +56,7 @@ class question_list_service {
      * @param string $importhtml The import-from-bank panel, already rendered.
      * @param int|null $phase Phase the listing is filtered to (0 for those meant for no phase), or null for all.
      * @param string|null $status Status the listing is filtered to, or null for all.
+     * @param int|null $level Level the listing is filtered to (0 for those meant for no level), or null for all.
      * @return array Template context for mod_playerpuzzle/managequestions.
      */
     public static function build_list_context(
@@ -69,9 +70,16 @@ class question_list_service {
         array $viewparams = [],
         string $importhtml = '',
         ?int $phase = null,
-        ?string $status = null
+        ?string $status = null,
+        ?int $level = null
     ): array {
         $viewparams = $viewparams ?: ['id' => $cmid];
+        // Only a Campaign has levels: a Single Match lists, filters and sets the phase alone, as it always did.
+        $maxlevels = $instance->gamemode === constants::GAMEMODE_CAMPAIGN ? (int) $instance->maxlevels : 0;
+        $haslevels = $maxlevels > 0;
+        if (!$haslevels) {
+            $level = null;
+        }
         $perpage = questions_repository::MANAGE_PERPAGE;
         $pool = questions_repository::get_questions_for_management(
             (int) $instance->id,
@@ -80,7 +88,8 @@ class question_list_service {
             $sort,
             $dir,
             $phase,
-            $status
+            $status,
+            $level
         );
         $drawcounts = questions_repository::get_draw_counts((int) $instance->id);
 
@@ -160,8 +169,8 @@ class question_list_service {
                 'sourcelabel' => get_string('source_' . $question->source, 'mod_playerpuzzle'),
                 'metaline' => get_string('qtype_' . $question->qtype, 'mod_playerpuzzle') . ' · '
                     . get_string('source_' . $question->source, 'mod_playerpuzzle'),
-                'phaselabel' => $phaselabels[(int) $question->phase] ?? '',
-                'hasphase' => (int) $question->phase > 0,
+                'phaselabel' => self::placement_label($question, $haslevels),
+                'hasphase' => (int) $question->phase > 0 || ($haslevels && (int) $question->questionlevel > 0),
                 'statuslabel' => $statuslabel,
                 'statusbadgeclass' => $statusbadgeclass,
                 'canapprove' => $canapprove,
@@ -172,8 +181,10 @@ class question_list_service {
             ];
         }
 
-        $filtersactive = $phase !== null || $status !== null;
-        $clearparams = array_diff_key($viewparams, ['phase' => 1, 'status' => 1]);
+        $filtersactive = $phase !== null || $status !== null || $level !== null;
+        $clearparams = array_diff_key($viewparams, ['level' => 1, 'phase' => 1, 'status' => 1]);
+        $beyond = $haslevels ? questions_repository::count_beyond_levels((int) $instance->id, $maxlevels) : 0;
+        $levellabels = question_form::level_options($maxlevels);
 
         return [
             'cmid' => $cmid,
@@ -192,12 +203,16 @@ class question_list_service {
             'filteraction' => (new moodle_url($path))->out(false),
             'filterlabel' => get_string('filterlabel', 'mod_playerpuzzle'),
             'filterbutton' => get_string('filterbutton', 'mod_playerpuzzle'),
+            'haslevels' => $haslevels,
+            'levelfilterlabel' => get_string('questionlevel', 'mod_playerpuzzle'),
+            'levelfilteroptions' => self::level_filter_options($level, $maxlevels),
+            'beyondlevelstext' => $beyond > 0 ? get_string('questionsbeyondlevels', 'mod_playerpuzzle', $beyond) : '',
             'phasefilterlabel' => get_string('questionphase', 'mod_playerpuzzle'),
             'phasefilteroptions' => self::phase_filter_options($phase),
             'statusfilterlabel' => get_string('statuscolumnlabel', 'mod_playerpuzzle'),
             'statusfilteroptions' => self::status_filter_options($status),
             'sortbylabel' => get_string('sortbylabel', 'mod_playerpuzzle'),
-            'sortoptions' => self::sort_options($sort),
+            'sortoptions' => self::sort_options($sort, $haslevels),
             'sortdirlabel' => get_string('sortdirlabel', 'mod_playerpuzzle'),
             'sortdiroptions' => [
                 [
@@ -220,7 +235,7 @@ class question_list_service {
             'clearfiltersurl' => (new moodle_url($path, $clearparams))->out(false),
             'clearfilterslabel' => get_string('clearfilters', 'mod_playerpuzzle'),
             'questioncolumnlabel' => get_string('question', 'mod_playerpuzzle'),
-            'phasecolumnlabel' => get_string('questionphase', 'mod_playerpuzzle'),
+            'phasecolumnlabel' => get_string($haslevels ? 'questionplacement' : 'questionphase', 'mod_playerpuzzle'),
             'statuscolumnlabel' => get_string('statuscolumnlabel', 'mod_playerpuzzle'),
             'drawcountcolumnlabel' => get_string('drawcountcolumnlabel', 'mod_playerpuzzle'),
             'actionscolumnlabel' => get_string('actions'),
@@ -254,6 +269,13 @@ class question_list_service {
                 array_values($phaselabels)
             ),
             'bulkphasebutton' => get_string('bulkphasebutton', 'mod_playerpuzzle'),
+            'bulklevelselectlabel' => get_string('bulklevelselectlabel', 'mod_playerpuzzle'),
+            'bulkleveloptions' => array_map(
+                static fn(int $value, string $label): array => ['value' => $value, 'label' => $label],
+                array_keys($levellabels),
+                array_values($levellabels)
+            ),
+            'bulklevelbutton' => get_string('bulklevelbutton', 'mod_playerpuzzle'),
             'bulkdeletebutton' => get_string('bulkdeletebutton', 'mod_playerpuzzle'),
             'bulkdeleteconfirm' => get_string('bulkdeleteconfirm', 'mod_playerpuzzle'),
             'deletequestionbutton' => get_string('delete'),
@@ -290,6 +312,52 @@ class question_list_service {
     }
 
     /**
+     * What a question is meant for, as the listing shows it: its level and its phase, either one alone, or any.
+     *
+     * @param stdClass $question The question (questionlevel, phase).
+     * @param bool $haslevels Whether the activity is a Campaign, which has levels.
+     * @return string
+     */
+    private static function placement_label(stdClass $question, bool $haslevels): string {
+        $level = $haslevels ? (int) $question->questionlevel : 0;
+        $phase = (int) $question->phase;
+        $parts = [];
+        if ($level > 0) {
+            $parts[] = get_string('questionlevel_n', 'mod_playerpuzzle', $level);
+        }
+        if ($phase > 0) {
+            $parts[] = get_string('questionphase_n', 'mod_playerpuzzle', $phase);
+        }
+        if (empty($parts)) {
+            return get_string($haslevels ? 'questionplacement_any' : 'questionphase_any', 'mod_playerpuzzle');
+        }
+        return implode(' · ', $parts);
+    }
+
+    /**
+     * The options of the level filter: every level, the questions meant for no level in particular, then each level
+     * of the Campaign.
+     *
+     * @param int|null $selected The level the listing is filtered to (0 for none in particular), null for all.
+     * @param int $maxlevels The Campaign's number of levels.
+     * @return array[] Each with value, label and selected.
+     */
+    private static function level_filter_options(?int $selected, int $maxlevels): array {
+        $options = [
+            ['value' => '', 'label' => get_string('filterlevel_all', 'mod_playerpuzzle'), 'selected' => $selected === null],
+            ['value' => 'none', 'label' => get_string('filterlevel_none', 'mod_playerpuzzle'), 'selected' => $selected === 0],
+        ];
+        for ($level = 1; $level <= $maxlevels; $level++) {
+            $options[] = [
+                'value' => (string) $level,
+                'label' => get_string('questionlevel_n', 'mod_playerpuzzle', $level),
+                'selected' => $selected === $level,
+            ];
+        }
+        return $options;
+    }
+
+    /**
      * The options of the status filter.
      *
      * @param string|null $selected The status the listing is filtered to, null for all.
@@ -314,13 +382,14 @@ class question_list_service {
      * as the ones they do.
      *
      * @param string $selected The column the listing is sorted by.
+     * @param bool $haslevels Whether the activity is a Campaign, whose placement sort goes by level, then phase.
      * @return array[] Each with value, label and selected.
      */
-    private static function sort_options(string $selected): array {
+    private static function sort_options(string $selected, bool $haslevels = false): array {
         $options = [];
         $keys = [
             'id' => 'recent',
-            'phase' => 'phase',
+            'phase' => $haslevels ? 'placement' : 'phase',
             'status' => 'status',
             'drawn' => 'drawn',
             'qtype' => 'type',

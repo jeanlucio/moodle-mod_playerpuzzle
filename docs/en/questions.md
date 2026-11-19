@@ -39,37 +39,47 @@ and how many times it has been drawn, and offers:
 * **Add a question** by hand, with an optional hint.
 * **Generate with AI** — see below.
 * **Approve, reactivate, edit or delete** questions, one by one or in bulk.
-* **Set the phase** a question is meant for, one by one in the question's form or for the selected
-  questions at once — see below.
+* **Set the level and the phase** a question is meant for, one by one in the question's form or for
+  the selected questions at once — see below.
 
 Only **approved** questions are ever drawn in a match. A question already answered in a phase is not asked
 again in that phase while the pool still has another; once all have been asked they come around again.
 
-**Finding and sorting.** The list can be filtered by phase (including *No phase set*) and by status
-(approved, pending, disabled), and sorted by most recent, phase, status, most drawn, type or source.
-The filters apply as soon as they change and travel with every action, so approving, editing or setting
-a phase on a filtered list brings the teacher back to the same list. The bulk actions (approve, set
-phase, delete) appear in a bar once questions are selected.
+**Finding and sorting.** The list can be filtered by level (in a Campaign), by phase (including *No
+level set* and *No phase set*) and by status (approved, pending, disabled), and sorted by most recent,
+level and phase, status, most drawn, type or source. The filters apply as soon as they change and
+travel with every action, so approving, editing or setting a level or a phase on a filtered list brings
+the teacher back to the same list. The bulk actions (approve, set level, set phase, delete) appear in a
+bar once questions are selected.
 
-## Questions by Phase
+## Questions by Level and Phase
 
-In a Campaign, each question can be meant for one phase of a level (every level has 10), so the
-easier questions can open a level and the harder ones close it. The phase is *Any phase* until the
-teacher sets it, and a bank re-import never changes it.
+In a Campaign, each question can be meant for a **level** and for a **phase** of a level (every level
+has 10). The two are independent and start as *Any*, so the teacher only fills in what they want to
+use:
 
-A phase is played with the questions meant for it plus those meant for any phase. When it has none
-of either, the game draws from every approved question, so a phase nobody prepared is never left
-without questions. A Single Match and the Demo have no phases and always draw from every approved
-question.
+| The teacher sets | What for | Example |
+|---|---|---|
+| The level only | Content of its own for each level: a unit, a chapter | Level 2 asks about chapter 2 |
+| The phase only | Rising difficulty inside every level | The easy ones open the level, the hard ones close it |
+| Both | A question for one exact point of the Campaign | The question of level 3's boss |
 
-The phase repeats on every level of a Campaign: the question for *Phase 3* is drawn on the third
-phase of every level.
+A phase is played with the questions whose level and phase both match it or are *Any*. When none
+does, the game draws from every approved question, so a phase nobody prepared is never left without
+questions. A Single Match and the Demo have no levels or phases and always draw from every approved
+question. A bank re-import never changes a question's level or phase.
+
+The levels offered go up to the activity's number of levels. If the teacher lowers that number later,
+the questions meant for a level that no longer exists are never drawn, and the question list says how
+many there are.
 
 ## AI Generation
 
 When an AI source is available (the AI Hub plugin with a key, or Moodle's own `core_ai`), the
-teacher can type a topic and a number of questions (up to 10). The result is shown as a
-**preview** the teacher can edit, and only the questions they select are saved — as *pending*.
+teacher can type a topic, a number of questions (up to 10) and their type: *Multiple choice and
+True/False*, *Multiple choice* only or *True/False* only. In a Campaign they can also choose the level
+and the phase the questions are saved for. The result is shown as a **preview** the teacher can edit,
+and only the questions they select are saved — as *pending*.
 Nothing the AI wrote reaches a student before the teacher approves it. See
 [Third-party Service Disclosure](#third-party) for what is sent.
 

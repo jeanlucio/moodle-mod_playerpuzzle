@@ -26,7 +26,7 @@ import Modal from 'core/modal';
 import Ajax from 'core/ajax';
 import Notification from 'core/notification';
 import Templates from 'core/templates';
-import {get_string as getString} from 'core/str';
+import {get_string as getString, get_strings as getStrings} from 'core/str';
 
 /**
  * The last batch generate_questions() returned, so save only resends what the teacher
@@ -105,7 +105,12 @@ const runGenerate = async(modalBody, cmid) => {
     try {
         const result = await Ajax.call([{
             methodname: 'mod_playerpuzzle_generate_questions',
-            args: {cmid, topic, count: parseInt(countSelect.value, 10)},
+            args: {
+                cmid,
+                topic,
+                count: parseInt(countSelect.value, 10),
+                qtype: modalBody.querySelector('[data-region="qtype"]').value,
+            },
         }])[0];
         statusRegion.textContent = '';
         await renderResults(resultsRegion, result.questions);
@@ -137,11 +142,16 @@ const saveSelected = async(modalBody, cmid, modal) => {
     if (selected.length === 0) {
         return;
     }
+    // The level and phase the batch is saved for, any outside a Campaign, which offers neither.
+    const placement = region => {
+        const select = modalBody.querySelector(`[data-region="${region}"]`);
+        return select ? parseInt(select.value, 10) : 0;
+    };
 
     try {
         await Ajax.call([{
             methodname: 'mod_playerpuzzle_save_generated_questions',
-            args: {cmid, questions: selected},
+            args: {cmid, questions: selected, level: placement('level'), phase: placement('phase')},
         }])[0];
         await modal.hide();
         window.location.reload();
@@ -151,19 +161,60 @@ const saveSelected = async(modalBody, cmid, modal) => {
 };
 
 /**
+ * The options of a level or phase select: any, then each one up to the last.
+ *
+ * @param {string} prefix 'questionlevel' or 'questionphase'.
+ * @param {number} last The last level or phase.
+ * @return {Promise<Array>} Each {value, label}.
+ */
+const placementOptions = async(prefix, last) => {
+    const component = 'mod_playerpuzzle';
+    const keys = [{key: `${prefix}_any`, component}];
+    for (let value = 1; value <= last; value++) {
+        keys.push({key: `${prefix}_n`, component, param: value});
+    }
+    const labels = await getStrings(keys);
+    return labels.map((label, value) => ({value, label}));
+};
+
+/**
  * Builds and opens the "Generate with AI" modal.
  *
  * @param {number} cmid Course module id.
+ * @param {number} maxlevels The Campaign's number of levels, 0 outside a Campaign.
  * @return {Promise<void>}
  */
-const openGenerateModal = async(cmid) => {
+const openGenerateModal = async(cmid, maxlevels) => {
     const counts = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => ({value, selected: value === 5}));
-    const {html, js} = await Templates.renderForPromise('mod_playerpuzzle/ai_generate_form', {
-        topiclabel: await getString('aitopic', 'mod_playerpuzzle'),
-        countlabel: await getString('aicount', 'mod_playerpuzzle'),
-        generatelabel: await getString('generatebutton', 'mod_playerpuzzle'),
+    const component = 'mod_playerpuzzle';
+    const [qtypelabel, both, multichoice, truefalse] = await getStrings([
+        {key: 'ai_qtype', component},
+        {key: 'ai_qtype_both', component},
+        {key: 'qtype_multichoice', component},
+        {key: 'qtype_truefalse', component},
+    ]);
+    const context = {
+        topiclabel: await getString('aitopic', component),
+        countlabel: await getString('aicount', component),
+        generatelabel: await getString('generatebutton', component),
         counts,
-    });
+        qtypelabel,
+        qtypes: [
+            {value: 'both', label: both, selected: true},
+            {value: 'multichoice', label: multichoice, selected: false},
+            {value: 'truefalse', label: truefalse, selected: false},
+        ],
+        hasplacement: maxlevels > 0,
+    };
+    if (context.hasplacement) {
+        // A level and a phase of the Campaign, 10 phases in every level.
+        context.levellabel = await getString('questionlevel', component);
+        context.levels = await placementOptions('questionlevel', maxlevels);
+        context.phaselabel = await getString('questionphase', component);
+        context.phases = await placementOptions('questionphase', 10);
+        context.placementnote = await getString('ai_placement_note', component);
+    }
+    const {html, js} = await Templates.renderForPromise('mod_playerpuzzle/ai_generate_form', context);
 
     const modal = await Modal.create({
         title: await getString('generatewithai', 'mod_playerpuzzle'),
@@ -188,11 +239,12 @@ const openGenerateModal = async(cmid) => {
  * Wires the "Generate with AI" trigger button on managequestions.php.
  *
  * @param {number} cmid Course module id.
+ * @param {number} maxlevels The Campaign's number of levels, 0 outside a Campaign.
  */
-export const init = (cmid) => {
+export const init = (cmid, maxlevels = 0) => {
     document.addEventListener('click', (event) => {
         if (event.target.closest('[data-action="pp-ai-generate"]')) {
-            openGenerateModal(cmid);
+            openGenerateModal(cmid, maxlevels);
         }
     });
 };

@@ -41,6 +41,7 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
     let bulkDeleteBtn = null;
     let bulkApproveBtn = null;
     let bulkPhaseBtn = null;
+    let bulkLevelBtn = null;
     let bulkBar = null;
 
     /**
@@ -77,6 +78,9 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
 
         if (bulkPhaseBtn) {
             bulkPhaseBtn.disabled = totalCount === 0;
+        }
+        if (bulkLevelBtn) {
+            bulkLevelBtn.disabled = totalCount === 0;
         }
 
         if (bulkApproveBtn) {
@@ -156,6 +160,7 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
         bulkDeleteBtn = document.getElementById('playerpuzzle-bulk-delete-btn');
         bulkApproveBtn = document.getElementById('playerpuzzle-bulk-approve-btn');
         bulkPhaseBtn = document.getElementById('playerpuzzle-bulk-phase-btn');
+        bulkLevelBtn = document.getElementById('playerpuzzle-bulk-level-btn');
         bulkBar = document.getElementById('pp-bulkbar');
 
         if (!bulkForm) {
@@ -176,15 +181,18 @@ define(['core/modal_save_cancel', 'core/modal_events', 'core/str'], function(Mod
             });
         }
 
-        if (bulkPhaseBtn) {
-            // Not destructive, so no confirmation: the page says what changed and the phase can be set again.
-            bulkPhaseBtn.addEventListener('click', () => {
+        // Not destructive, so no confirmation: the page says what changed and the level or phase can be set again.
+        [[bulkPhaseBtn, 'phase'], [bulkLevelBtn, 'level']].forEach(([button, action]) => {
+            if (!button) {
+                return;
+            }
+            button.addEventListener('click', () => {
                 if (bulkActionField) {
-                    bulkActionField.value = 'phase';
+                    bulkActionField.value = action;
                 }
                 bulkForm.submit();
             });
-        }
+        });
 
         if (bulkDeleteBtn) {
             bulkDeleteBtn.addEventListener('click', () => {

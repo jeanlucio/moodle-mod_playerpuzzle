@@ -1293,7 +1293,7 @@ final class backup_restore_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that duplicating an activity keeps the phase each bank question is meant for.
+     * Tests that duplicating an activity keeps the level and the phase each bank question is meant for.
      *
      * @return void
      */
@@ -1317,7 +1317,8 @@ final class backup_restore_test extends \advanced_testcase {
             true,
             FORMAT_PLAIN,
             null,
-            7
+            7,
+            3
         );
         questions_repository::add_question((int) $instance->id, 'multichoice', 'Unphased?', '', $answers, 2);
 
@@ -1326,9 +1327,9 @@ final class backup_restore_test extends \advanced_testcase {
 
         $phases = [];
         foreach (questions_repository::get_questions_for_instance((int) $newcm->instance) as $question) {
-            $phases[$question->questiontext] = (int) $question->phase;
+            $phases[$question->questiontext] = [(int) $question->questionlevel, (int) $question->phase];
         }
         ksort($phases);
-        $this->assertSame(['Phased?' => 7, 'Unphased?' => 0], $phases);
+        $this->assertSame(['Phased?' => [3, 7], 'Unphased?' => [0, 0]], $phases);
     }
 }

@@ -64,6 +64,8 @@ class save_generated_questions extends external_api {
                     ),
                 ])
             ),
+            'level'     => new external_value(PARAM_INT, 'Level the questions are meant for, 0 for any', VALUE_DEFAULT, 0),
+            'phase'     => new external_value(PARAM_INT, 'Phase the questions are meant for, 0 for any', VALUE_DEFAULT, 0),
         ]);
     }
 
@@ -72,14 +74,18 @@ class save_generated_questions extends external_api {
      *
      * @param int $cmid Course module ID.
      * @param array $questions Teacher-confirmed question batch.
+     * @param int $level Level the questions are meant for in a Campaign, 0 for any.
+     * @param int $phase Phase the questions are meant for in a Campaign, 0 for any.
      * @return array {saved: int, skipped: int}
      */
-    public static function execute(int $cmid, array $questions): array {
+    public static function execute(int $cmid, array $questions, int $level = 0, int $phase = 0): array {
         global $USER;
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid'      => $cmid,
             'questions' => $questions,
+            'level'     => $level,
+            'phase'     => $phase,
         ]);
 
         $cm = get_coursemodule_from_id('playerpuzzle', $params['cmid'], 0, false, MUST_EXIST);
@@ -104,7 +110,11 @@ class save_generated_questions extends external_api {
                 $shaped['answers'],
                 (int) $USER->id,
                 'ai',
-                false
+                false,
+                null,
+                null,
+                $params['phase'],
+                $params['level']
             );
             $saved++;
         }

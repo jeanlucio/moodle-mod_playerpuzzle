@@ -86,6 +86,24 @@ class question_form extends \moodleform {
         return $options;
     }
 
+    /**
+     * The levels a question can be meant for: any level, then each level of the Campaign. A level past the Campaign's
+     * last one that the question already holds stays on the list, so editing it does not silently move it.
+     *
+     * @param int $maxlevels The Campaign's number of levels.
+     * @param int $current The level the question holds now, 0 for any.
+     * @return string[] Level (0 for any) => label.
+     */
+    public static function level_options(int $maxlevels, int $current = 0): array {
+        $options = [0 => get_string('questionlevel_any', 'mod_playerpuzzle')];
+        for ($level = 1; $level <= max($maxlevels, $current); $level++) {
+            if ($level <= $maxlevels || $level === $current) {
+                $options[$level] = get_string('questionlevel_n', 'mod_playerpuzzle', $level);
+            }
+        }
+        return $options;
+    }
+
     #[\Override]
     protected function definition(): void {
         $mform = $this->_form;
@@ -111,6 +129,20 @@ class question_form extends \moodleform {
             $editoroptions
         );
         $mform->setType('questiontext_editor', PARAM_RAW);
+
+        // Only a Campaign has levels; a Single Match has nothing to choose here.
+        $maxlevels = (int) ($this->_customdata['maxlevels'] ?? 0);
+        if ($maxlevels > 0) {
+            $mform->addElement(
+                'select',
+                'questionlevel',
+                get_string('questionlevel', 'mod_playerpuzzle'),
+                self::level_options($maxlevels, (int) ($this->_customdata['questionlevel'] ?? 0))
+            );
+            $mform->setType('questionlevel', PARAM_INT);
+            $mform->setDefault('questionlevel', 0);
+            $mform->addHelpButton('questionlevel', 'questionlevel', 'mod_playerpuzzle');
+        }
 
         $mform->addElement('select', 'phase', get_string('questionphase', 'mod_playerpuzzle'), self::phase_options());
         $mform->setType('phase', PARAM_INT);

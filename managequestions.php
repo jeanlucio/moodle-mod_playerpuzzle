@@ -25,6 +25,7 @@
 use mod_playerpuzzle\form\import_form;
 use mod_playerpuzzle\form\question_form;
 use mod_playerpuzzle\local\campaigns;
+use mod_playerpuzzle\local\constants;
 use mod_playerpuzzle\local\question_bank_sync;
 use mod_playerpuzzle\local\question_editor_files;
 use mod_playerpuzzle\local\question_list_service;
@@ -46,11 +47,13 @@ $context = context_module::instance($cm->id);
 require_capability('mod/playerpuzzle:managequestions', $context);
 
 // How the listing is filtered and sorted. Kept in $url, which every redirect and form of this page goes back to,
-// so approving, deleting, editing or setting a phase never drops the teacher out of the view they were working in.
+// so approving, deleting, editing or setting a level or a phase never drops the teacher out of the view they were
+// working in.
 $sort = optional_param('sort', 'id', PARAM_ALPHA);
 $dir = strtoupper(optional_param('dir', 'DESC', PARAM_ALPHA));
 $page = optional_param('page', 0, PARAM_INT);
 $phasefilter = optional_param('phase', '', PARAM_ALPHANUM);
+$levelfilter = optional_param('level', '', PARAM_ALPHANUM);
 $statusfilter = optional_param('status', '', PARAM_ALPHA);
 
 $allowedsorts = ['id', 'qtype', 'source', 'phase', 'status', 'drawn'];
@@ -74,8 +77,21 @@ if ($phasefilter === 'none') {
 if (!in_array($statusfilter, questions_repository::MANAGE_STATUSES, true)) {
     $statusfilter = '';
 }
+// Only a Campaign has levels to filter by.
+$iscampaign = $instance->gamemode === constants::GAMEMODE_CAMPAIGN;
+$levelvalue = null;
+if ($iscampaign && $levelfilter === 'none') {
+    $levelvalue = 0;
+} else if ($iscampaign && ctype_digit($levelfilter) && (int) $levelfilter >= 1 && (int) $levelfilter <= campaigns::MAX_LEVELS) {
+    $levelvalue = (int) $levelfilter;
+} else {
+    $levelfilter = '';
+}
 
 $viewparams = ['id' => $cmid];
+if ($levelfilter !== '') {
+    $viewparams['level'] = $levelfilter;
+}
 if ($phasefilter !== '') {
     $viewparams['phase'] = $phasefilter;
 }
@@ -121,6 +137,10 @@ if ($bulkaction !== '') {
         $bulkphase = optional_param('bulkphase', 0, PARAM_INT);
         questions_repository::set_phase_bulk($bulkids, (int) $instance->id, $bulkphase);
         redirect($url, get_string('bulkphaseupdated', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
+    } else if ($bulkaction === 'level') {
+        $bulklevel = optional_param('bulklevel', 0, PARAM_INT);
+        questions_repository::set_level_bulk($bulkids, (int) $instance->id, $bulklevel);
+        redirect($url, get_string('bulklevelupdated', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
     } else if ($bulkaction === 'approve') {
         questions_repository::approve_questions_bulk($bulkids, (int) $instance->id);
         redirect($url, get_string('bulkapproved', 'mod_playerpuzzle'), null, \core\output\notification::NOTIFY_SUCCESS);
@@ -158,6 +178,8 @@ if ($action === 'edit' && $questionid) {
 $mform = new question_form($url, [
     'context' => $context,
     'answercount' => $editquestion ? count($editquestion->answers) : 0,
+    'maxlevels' => $instance->gamemode === constants::GAMEMODE_CAMPAIGN ? (int) $instance->maxlevels : 0,
+    'questionlevel' => $editquestion ? (int) $editquestion->questionlevel : 0,
 ]);
 
 if ($mform->is_cancelled()) {
@@ -199,7 +221,8 @@ if ($mform->is_cancelled()) {
             $data->hint,
             $answers,
             $context,
-            (int) $data->phase
+            (int) $data->phase,
+            isset($data->questionlevel) ? (int) $data->questionlevel : null
         );
         $questionid = (int) $data->qid;
     } else {
@@ -214,7 +237,8 @@ if ($mform->is_cancelled()) {
             true,
             FORMAT_PLAIN,
             null,
-            (int) $data->phase
+            (int) $data->phase,
+            (int) ($data->questionlevel ?? 0)
         );
     }
 
@@ -253,6 +277,7 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
         $formdata->qtype = $question->qtype;
         $formdata->hint = $question->hint ?? '';
         $formdata->phase = (int) $question->phase;
+        $formdata->questionlevel = (int) $question->questionlevel;
         $formdata->questiontext_editor = question_editor_files::prepare(
             $question->questiontext,
             (int) $question->questiontextformat,
@@ -322,10 +347,12 @@ if ($action === 'add' || $action === 'edit' || $mform->is_submitted()) {
         $viewparams,
         $importhtml,
         $phasevalue,
-        $statusfilter !== '' ? $statusfilter : null
+        $statusfilter !== '' ? $statusfilter : null,
+        $levelvalue
     );
     if ($listcontext['aiavailable']) {
-        $PAGE->requires->js_call_amd('mod_playerpuzzle/ai_generate', 'init', [$cmid]);
+        // The levels the AI form offers to mark the batch with, none outside a Campaign.
+        $PAGE->requires->js_call_amd('mod_playerpuzzle/ai_generate', 'init', [$cmid, $iscampaign ? (int) $instance->maxlevels : 0]);
     }
     $PAGE->requires->js_call_amd('mod_playerpuzzle/managequestions', 'init');
     echo $OUTPUT->render_from_template('mod_playerpuzzle/managequestions', $listcontext);

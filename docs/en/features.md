@@ -54,6 +54,8 @@
   generate them with AI. Multiple choice and True/False.
 * **Teacher review:** AI-generated questions are shown as a preview first and saved as pending;
   none is ever drawn in a match before it is approved. Bulk approve and delete.
+* **By level and by phase:** in a Campaign, each question can be meant for a level, a phase or both;
+  AI generation saves the batch with the level, phase and type chosen.
 * **Hints:** an optional hint per question, usable through the Hint consumable.
 
 ## 📊 Grading and teacher tools

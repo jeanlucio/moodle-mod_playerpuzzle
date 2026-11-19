@@ -67,6 +67,35 @@ final class ai_question_generator_test extends \basic_testcase {
     }
 
     /**
+     * Tests that a teacher's choice of one type asks the AI for that type alone, keeps only the questions of that
+     * type, and that both types (or an unknown choice) keep asking for both.
+     *
+     * @return void
+     */
+    public function test_a_chosen_type_is_the_only_one_asked_for_and_kept(): void {
+        $this->assertSame(['truefalse'], ai_question_generator::chosen_types('truefalse'));
+        $this->assertSame(['multichoice', 'truefalse'], ai_question_generator::chosen_types('both'));
+        $this->assertSame(['multichoice', 'truefalse'], ai_question_generator::chosen_types('nonsense'));
+
+        $method = new \ReflectionMethod(ai_question_generator::class, 'build_prompt');
+        $method->setAccessible(true);
+        $prompt = $method->invoke(null, 'astronomy', 'English', 5, ['truefalse']);
+        $this->assertStringContainsString('Use only this type: "truefalse"', $prompt);
+        $this->assertStringNotContainsString('multichoice', $prompt);
+
+        $response = json_encode(['questions' => [
+            ['type' => 'multichoice', 'question' => 'Planet?', 'hint' => '',
+                'options' => [['text' => 'Mars', 'correct' => true], ['text' => 'Moon', 'correct' => false]]],
+            ['type' => 'truefalse', 'question' => 'The Sun is a star.', 'hint' => '', 'answer' => true],
+        ]]);
+        $parse = new \ReflectionMethod(ai_question_generator::class, 'parse_and_validate');
+        $parse->setAccessible(true);
+        $kept = $parse->invoke(null, $response, 10, ['truefalse']);
+        $this->assertSame(['truefalse'], array_column($kept, 'qtype'));
+        $this->assertCount(2, $this->parse_and_validate($response));
+    }
+
+    /**
      * A well-formed multichoice and truefalse entry are both shaped correctly.
      *
      * @return void

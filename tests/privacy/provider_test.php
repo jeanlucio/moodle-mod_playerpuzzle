@@ -304,6 +304,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
             'sourceid',
             'approved',
             'phase',
+            'questionlevel',
             'timecreated',
             'timemodified',
         ];

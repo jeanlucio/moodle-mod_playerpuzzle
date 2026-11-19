@@ -37,6 +37,14 @@
         "filteraction": "https://example.com/mod/playerpuzzle/managequestions.php",
         "filterlabel": "Filter and sort the questions",
         "filterbutton": "Apply",
+        "haslevels": true,
+        "levelfilterlabel": "Level",
+        "levelfilteroptions": [
+            {"value": "", "label": "All levels", "selected": true},
+            {"value": "none", "label": "No level set", "selected": false},
+            {"value": "1", "label": "Level 1", "selected": false}
+        ],
+        "beyondlevelstext": "",
         "phasefilterlabel": "Phase",
         "phasefilteroptions": [
             {"value": "", "label": "All phases", "selected": true},
@@ -92,6 +100,12 @@
             {"value": 1, "label": "Phase 1"}
         ],
         "bulkphasebutton": "Set phase",
+        "bulklevelselectlabel": "Level to set on the selected questions",
+        "bulkleveloptions": [
+            {"value": 0, "label": "Any level"},
+            {"value": 1, "label": "Level 1"}
+        ],
+        "bulklevelbutton": "Set level",
         "bulkdeletebutton": "Delete",
         "bulkdeleteconfirm": "Are you sure you want to delete the selected questions?",
         "deletequestionbutton": "Delete",
@@ -146,9 +160,23 @@
 <div class="alert alert-info" role="alert">{{noquestionslabel}}</div>
 {{/hasquestions}}
 
+{{#beyondlevelstext}}
+<div class="alert alert-warning" role="alert">{{beyondlevelstext}}</div>
+{{/beyondlevelstext}}
+
 {{#hasquestions}}
 <form id="pp-filter-form" class="pp-filters" method="get" action="{{{filteraction}}}" aria-label="{{filterlabel}}">
     <input type="hidden" name="id" value="{{cmid}}">
+    {{#haslevels}}
+    <div class="pp-filter-group">
+        <label for="pp-filter-level">{{levelfilterlabel}}</label>
+        <select id="pp-filter-level" name="level" class="form-select form-select-sm custom-select custom-select-sm">
+            {{#levelfilteroptions}}
+            <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+            {{/levelfilteroptions}}
+        </select>
+    </div>
+    {{/haslevels}}
     <div class="pp-filter-group">
         <label for="pp-filter-phase">{{phasefilterlabel}}</label>
         <select id="pp-filter-phase" name="phase" class="form-select form-select-sm custom-select custom-select-sm">
@@ -209,6 +237,19 @@
                     disabled>
                 {{bulkapprovebutton}}
             </button>
+            {{#haslevels}}
+            <span class="pp-ig">
+                <label for="playerpuzzle-bulk-level" class="visually-hidden">{{bulklevelselectlabel}}</label>
+                <select id="playerpuzzle-bulk-level" name="bulklevel" class="form-select form-select-sm custom-select custom-select-sm">
+                    {{#bulkleveloptions}}
+                    <option value="{{value}}">{{label}}</option>
+                    {{/bulkleveloptions}}
+                </select>
+                <button type="button" id="playerpuzzle-bulk-level-btn" class="btn btn-outline-secondary btn-sm">
+                    {{bulklevelbutton}}
+                </button>
+            </span>
+            {{/haslevels}}
             <span class="pp-ig">
                 <label for="playerpuzzle-bulk-phase" class="visually-hidden">{{bulkphaseselectlabel}}</label>
                 <select id="playerpuzzle-bulk-phase" name="bulkphase" class="form-select form-select-sm custom-select custom-select-sm">

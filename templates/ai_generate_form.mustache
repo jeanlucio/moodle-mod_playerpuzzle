@@ -17,9 +17,9 @@
 {{!
     @template mod_playerpuzzle/ai_generate_form
 
-    Topic/count form shown inside the "Generate with AI" modal. The Generate button and
-    the results/status regions below are wired by amd/src/ai_generate.js, not by this
-    template itself.
+    Topic/count/type form shown inside the "Generate with AI" modal, with the level and phase the batch is saved
+    for in a Campaign. The Generate button and the results/status regions below are wired by
+    amd/src/ai_generate.js, not by this template itself.
 
     Example context (json):
     {
@@ -29,7 +29,19 @@
         "counts": [
             {"value": 1, "selected": false},
             {"value": 5, "selected": true}
-        ]
+        ],
+        "qtypelabel": "Question type",
+        "qtypes": [
+            {"value": "both", "label": "Multiple choice and True/False", "selected": true},
+            {"value": "multichoice", "label": "Multiple choice", "selected": false},
+            {"value": "truefalse", "label": "True/False", "selected": false}
+        ],
+        "hasplacement": true,
+        "levellabel": "Level",
+        "levels": [{"value": 0, "label": "Any level"}, {"value": 1, "label": "Level 1"}],
+        "phaselabel": "Phase",
+        "phases": [{"value": 0, "label": "Any phase"}, {"value": 1, "label": "Phase 1"}],
+        "placementnote": "The questions are saved for this level and phase, and can be changed later."
     }
 }}
 <div class="pp-ai-generate-form">
@@ -45,6 +57,33 @@
             {{/counts}}
         </select>
     </div>
+    <div class="mb-3">
+        <label for="pp-ai-qtype" class="form-label">{{qtypelabel}}</label>
+        <select id="pp-ai-qtype" class="form-select" data-region="qtype">
+            {{#qtypes}}
+            <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+            {{/qtypes}}
+        </select>
+    </div>
+    {{#hasplacement}}
+    <div class="mb-3">
+        <label for="pp-ai-level" class="form-label">{{levellabel}}</label>
+        <select id="pp-ai-level" class="form-select" data-region="level" aria-describedby="pp-ai-placement-note">
+            {{#levels}}
+            <option value="{{value}}">{{label}}</option>
+            {{/levels}}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="pp-ai-phase" class="form-label">{{phaselabel}}</label>
+        <select id="pp-ai-phase" class="form-select" data-region="phase" aria-describedby="pp-ai-placement-note">
+            {{#phases}}
+            <option value="{{value}}">{{label}}</option>
+            {{/phases}}
+        </select>
+        <div id="pp-ai-placement-note" class="form-text">{{placementnote}}</div>
+    </div>
+    {{/hasplacement}}
     <button type="button" class="btn btn-primary" data-action="pp-ai-run-generate">{{generatelabel}}</button>
     <div class="pp-ai-generate-status mt-2" data-region="status" aria-live="polite"></div>
     <div class="pp-ai-generate-results mt-3" data-region="results"></div>

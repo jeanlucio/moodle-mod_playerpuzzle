@@ -163,7 +163,8 @@ class report_service {
             fn(stdClass $a): bool => $a->status !== 'inprogress'
         ));
 
-        $grade = grade_calculator::calculate_user_grade($instance, $userattempts);
+        // An activity with no grade has none to show, not a zero for everyone.
+        $grade = self::has_grade($instance) ? grade_calculator::calculate_user_grade($instance, $userattempts) : null;
 
         $damagepercents = [];
         $correctsum = 0;
@@ -272,16 +273,27 @@ class report_service {
     }
 
     /**
+     * Whether the activity has a grade to report: a maximum grade above zero. With the grade type set to "None" every
+     * grade works out to zero, which says nothing about how a student did.
+     *
+     * @param stdClass $instance Activity instance record (grade).
+     * @return bool
+     */
+    public static function has_grade(stdClass $instance): bool {
+        return (float) $instance->grade > 0;
+    }
+
+    /**
      * Buckets the students by their grade, as a percentage of the activity's maximum grade, into 5 fixed ranges.
      *
      * Each student counts once, by the same grade the gradebook and the table hold (grade_calculator), so the chart
-     * and the table agree. A student with no grade yet is left out.
+     * and the table agree. A student with no grade yet is left out. An activity with no grade has nothing to bucket.
      *
      * @param stdClass $instance Activity instance record.
      * @param stdClass $cm Course module record.
      * @param context $context Module context.
      * @param int $viewerid Current viewer's user id, for SEPARATEGROUPS scoping.
-     * @return array Rows: {min, max, count}, one per bucket, in ascending order.
+     * @return array Rows: {min, max, count}, one per bucket, in ascending order; none for an activity with no grade.
      */
     public static function get_score_distribution(
         stdClass $instance,
@@ -289,6 +301,9 @@ class report_service {
         context $context,
         int $viewerid
     ): array {
+        if (!self::has_grade($instance)) {
+            return [];
+        }
         $buckets = [
             ['min' => 0, 'max' => 20, 'count' => 0],
             ['min' => 21, 'max' => 40, 'count' => 0],

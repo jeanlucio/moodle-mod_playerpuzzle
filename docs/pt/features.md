@@ -70,7 +70,8 @@
   recusam é explicado numa caixa de diálogo, e não numa página de erro. Uma Campanha em andamento pode ser
   abandonada pelo Lobby.
 * **Relatório do professor:** progresso por estudante, dano médio ao oponente e taxa de acerto, as
-  questões mais erradas, a distribuição das notas, a taxa de conclusão e, na Campanha, como foi cada
+  questões mais erradas, a distribuição das notas (que some, com a coluna de nota, numa atividade sem nota), a
+  taxa de conclusão e, na Campanha, como foi cada
   dificuldade (fases vencidas de primeira, por dificuldade e por fase do nível) e quais heróis os estudantes escolheram (a Partida Única mostra as partidas vencidas por dificuldade), respeitando grupos
   separados. A tabela de estudantes é paginada, 50 por vez, então uma turma de milhares abre tão
   rápido quanto uma pequena.

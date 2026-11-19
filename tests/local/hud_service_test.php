@@ -40,6 +40,12 @@ final class hud_service_test extends \advanced_testcase {
         $this->resetAfterTest();
     }
 
+    #[\Override]
+    protected function tearDown(): void {
+        hud_service::force_legacy_api_for_tests(false);
+        parent::tearDown();
+    }
+
     /**
      * Skips the current test when block_playerhud is not installed.
      *
@@ -194,6 +200,43 @@ final class hud_service_test extends \advanced_testcase {
         $this->assertCount(2, $items);
         $this->assertSame('Alpha Coin', $items[0]->name);
         $this->assertSame('Zinc Coin', $items[1]->name);
+    }
+
+    /**
+     * Tests that the enabled items and their XP come out the same through PlayerHUD's batch functions and through the
+     * table an older PlayerHUD is read from: only the block's own enabled items, sorted by name.
+     *
+     * @return void
+     */
+    public function test_items_and_xp_are_the_same_with_an_older_playerhud(): void {
+        global $DB;
+        $this->skip_if_no_playerhud();
+        $course = $this->getDataGenerator()->create_course();
+        $biid = $this->make_block_instance($course);
+        $zinc = $this->make_item($biid, 'Zinc Coin');
+        $alpha = $this->make_item($biid, 'Alpha Coin');
+        $hidden = $this->make_item($biid, 'Hidden Coin', false);
+        $foreign = $this->make_item($this->make_block_instance($this->getDataGenerator()->create_course()), 'Foreign');
+        foreach ([$zinc => 30, $alpha => 10, $hidden => 99, $foreign => 70] as $id => $xp) {
+            $DB->set_field('block_playerhud_items', 'xp', $xp, ['id' => $id]);
+        }
+        $read = fn(): array => [
+            array_map(static fn(\stdClass $i): array => [(int) $i->id, $i->name], hud_service::get_items_for_block($biid)),
+            hud_service::get_xp_for_items($biid, [$zinc, $alpha, $hidden, $foreign]),
+        ];
+
+        [$items, $xps] = $read();
+        ksort($xps);
+        $this->assertSame([[$alpha, 'Alpha Coin'], [$zinc, 'Zinc Coin']], $items);
+        $expected = [$zinc => 30, $alpha => 10];
+        ksort($expected);
+        $this->assertSame($expected, $xps);
+
+        hud_service::force_legacy_api_for_tests(true);
+        [$legacyitems, $legacyxps] = $read();
+        ksort($legacyxps);
+        $this->assertSame($items, $legacyitems);
+        $this->assertSame($xps, $legacyxps);
     }
 
     /**

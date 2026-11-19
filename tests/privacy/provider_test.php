@@ -225,7 +225,7 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
      * playerpuzzleid is a structural foreign key never itself exported; token is an
      * opaque anti-replay value with no personal information; timemodified always
      * mirrors timecreated or timefinished, both already declared; rngseed/moveseq/
-     * engineversion/frozenbasebosshp/frozenbossdamage/frozencoingain/frozenmaxlevels/frozenopponent/
+     * engineversion/frozenbasebosshp/frozenbossdamage/frozencoingain/frozenmaxlevels/frozenminquestions/frozenopponent/
      * frozenplayerhp/frozenplayerattack/frozenplayerarmor/frozenhero are
      * anti-cheat replay plumbing, not personal data (movelog, the actual gameplay actions, IS
      * declared — see the doc comment for why it is treated differently from its
@@ -242,7 +242,8 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
         $documentedexclusions = [
             'playerpuzzleid', 'token', 'timemodified', 'isdemo', 'currentquestionid',
             'rngseed', 'moveseq', 'engineversion', 'frozenbasebosshp', 'frozenbossdamage', 'frozencoingain',
-            'frozenmaxlevels', 'frozenopponent', 'frozenplayerhp', 'frozenplayerattack', 'frozenplayerarmor', 'frozenhero',
+            'frozenmaxlevels', 'frozenminquestions', 'frozenopponent', 'frozenplayerhp', 'frozenplayerattack',
+            'frozenplayerarmor', 'frozenhero',
             'phaserestarts',
         ];
 

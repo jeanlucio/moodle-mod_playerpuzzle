@@ -9,7 +9,9 @@ pilares:
 O HP do oponente pro nível/fase atuais e o lado do estudante (HP, ataque e armadura do herói) são
 calculados uma única vez, no servidor, quando a fase começa (`combat::calculate_boss_hp()` e
 `combat::phase_student()`), e entregues ao cliente como configuração somente-leitura. O cliente nunca
-os recalcula, e o replay luta com os mesmos valores congelados.
+os recalcula, e o replay luta com os mesmos valores congelados. Toda configuração da atividade que decide como uma
+luta acontece é congelada com a fase, inclusive o mínimo de questões e o número de níveis, então um professor que
+edita a atividade enquanto um estudante está no meio de uma fase nunca muda essa fase.
 
 ## 2. Resultados Verificados
 

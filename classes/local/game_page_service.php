@@ -767,7 +767,7 @@ class game_page_service {
             // counter or the boss-revive rule — it only ever mirrors this server-reported total,
             // updated on every validate_answer call. A Demo has no minimum: it is a practice
             // fight with nothing at stake, so its opponent never revives.
-            'minquestions'         => $isdemo ? 0 : (int) $instance->minquestions,
+            'minquestions'         => combat::phase_minquestions($attemptinfo, $instance),
             'questionstotal'       => $attemptinfo->questionstotal,
             // Coin ledger counts already on the attempt (0 for a fresh one, whatever the
             // current phase/match carries for a resumed one) — lets the coin display render

@@ -38,6 +38,37 @@ namespace mod_playerpuzzle\local;
  * other item the teacher could pick or create.
  */
 class hud_service {
+    /** @var string The class of PlayerHUD's public item API. */
+    private const ITEMS_API = '\\block_playerhud\\local\\external_items';
+
+    /** @var bool In PHPUnit only: behave as if PlayerHUD were older than its batch item functions. */
+    private static bool $forcelegacyapi = false;
+
+    /**
+     * Whether PlayerHUD's item API has the given method. Each method is checked on its own: the API grew over several
+     * releases, and an older PlayerHUD still accepted by is_installed() lacks the newest ones.
+     *
+     * @param string $method Method of \block_playerhud\local\external_items.
+     * @return bool
+     */
+    private static function api_has(string $method): bool {
+        return !self::$forcelegacyapi && method_exists(self::ITEMS_API, $method);
+    }
+
+    /**
+     * Makes this class behave, in PHPUnit, as if PlayerHUD lacked its batch item functions, so the path an older
+     * PlayerHUD takes can be tested on a site that has the newest one.
+     *
+     * @param bool $legacy Whether to hide them.
+     * @return void
+     * @throws \coding_exception Outside PHPUnit.
+     */
+    public static function force_legacy_api_for_tests(bool $legacy): void {
+        if (!defined('PHPUNIT_TEST') || !PHPUNIT_TEST) {
+            throw new \coding_exception('force_legacy_api_for_tests() is for PHPUnit only');
+        }
+        self::$forcelegacyapi = $legacy;
+    }
     /**
      * Returns the PlayerHUD block instance ID for the given course, or null if none.
      *
@@ -99,19 +130,36 @@ class hud_service {
     }
 
     /**
-     * Returns enabled items for a block instance, sorted by name.
+     * Returns enabled items for a block instance, sorted by name: the ones a grant can still award.
+     *
+     * Read through PlayerHUD's own API when it has get_enabled_names(). An older PlayerHUD has no such function, so its
+     * table is read instead, and a change to that table only leaves the list empty rather than breaking the activity's
+     * settings form.
      *
      * @param int $blockinstanceid Block instance ID.
      * @return \stdClass[] Array of objects with id and name fields.
      */
     public static function get_items_for_block(int $blockinstanceid): array {
         global $DB;
-        return array_values($DB->get_records(
-            'block_playerhud_items',
-            ['blockinstanceid' => $blockinstanceid, 'enabled' => 1],
-            'name ASC',
-            'id, name'
-        ));
+
+        if (self::api_has('get_enabled_names')) {
+            $items = [];
+            $api = self::ITEMS_API;
+            foreach ($api::get_enabled_names($blockinstanceid) as $id => $name) {
+                $items[] = (object) ['id' => (int) $id, 'name' => $name];
+            }
+            return $items;
+        }
+        try {
+            return array_values($DB->get_records(
+                'block_playerhud_items',
+                ['blockinstanceid' => $blockinstanceid, 'enabled' => 1],
+                'name ASC',
+                'id, name'
+            ));
+        } catch (\dml_exception $e) {
+            return [];
+        }
     }
 
     /**
@@ -226,16 +274,26 @@ class hud_service {
         if ($itemids === []) {
             return [];
         }
+        if (self::api_has('get_enabled_xp')) {
+            $api = self::ITEMS_API;
+            return $api::get_enabled_xp($blockinstanceid, $itemids);
+        }
 
+        // An older PlayerHUD has no batch function: its table is read instead, and a change to that table only leaves
+        // the estimate without this activity's XP rather than breaking it.
         [$insql, $params] = $DB->get_in_or_equal($itemids, SQL_PARAMS_NAMED);
         $params['blockinstanceid'] = $blockinstanceid;
-        $records = $DB->get_records_select(
-            'block_playerhud_items',
-            "blockinstanceid = :blockinstanceid AND enabled = 1 AND id $insql",
-            $params,
-            '',
-            'id, xp'
-        );
+        try {
+            $records = $DB->get_records_select(
+                'block_playerhud_items',
+                "blockinstanceid = :blockinstanceid AND enabled = 1 AND id $insql",
+                $params,
+                '',
+                'id, xp'
+            );
+        } catch (\dml_exception $e) {
+            return [];
+        }
 
         $map = [];
         foreach ($records as $record) {

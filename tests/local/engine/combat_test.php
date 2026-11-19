@@ -407,6 +407,31 @@ final class combat_test extends \basic_testcase {
     }
 
     /**
+     * Tests that a phase is fought under the minimum of questions and the level count it started with, the
+     * activity's own only for an attempt from before they were frozen, and with no minimum in a Demo.
+     *
+     * @return void
+     */
+    public function test_a_phase_keeps_the_minimum_and_the_levels_it_started_with(): void {
+        $instance = (object) ['minquestions' => 5, 'maxlevels' => 1, 'basebosshp' => 100, 'bossdamage' => 10];
+
+        $this->assertSame(2, combat::phase_minquestions($this->make_attempt(['frozenminquestions' => 2]), $instance));
+        $this->assertSame(0, combat::phase_minquestions($this->make_attempt(['frozenminquestions' => 0]), $instance));
+        $this->assertSame(5, combat::phase_minquestions($this->make_attempt(['frozenminquestions' => null]), $instance));
+        $this->assertSame(5, combat::phase_minquestions($this->make_attempt(), $instance), 'an older attempt');
+        $this->assertSame(0, combat::phase_minquestions($this->make_attempt(['isdemo' => 1]), $instance));
+
+        // Phase 5 of a two-level Campaign is a fifth of the way through it; with one level, almost half. The opponent's
+        // hit follows the level count frozen with the phase, not the one the activity has now.
+        $phase = ['difficulty' => 'hard', 'currentphase' => 5];
+        $frozen = combat::phase_opponent($this->make_attempt($phase + ['frozenmaxlevels' => 2]), $instance);
+        $live = combat::phase_opponent($this->make_attempt($phase), $instance);
+        $this->assertSame(combat::scale_attack(1.15, 'hard', 1, 5, 2), $frozen['bossattack']);
+        $this->assertSame(combat::scale_attack(1.15, 'hard', 1, 5, 1), $live['bossattack']);
+        $this->assertNotSame($frozen['bossattack'], $live['bossattack']);
+    }
+
+    /**
      * Tests that phase_student() gives the student half as much HP again on Hard, rounding a half up, and leaves it
      * alone on Easy, on Normal and in a Demo on Hard.
      *

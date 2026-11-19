@@ -974,6 +974,34 @@ final class advance_phase_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the minimum checked when a phase is won is the one the phase started with: a teacher raising it
+     * after the start does not turn down the win, and the phase froze the value it started with.
+     *
+     * @return void
+     */
+    public function test_the_minimum_checked_is_the_one_the_phase_started_with(): void {
+        global $DB;
+
+        $instance = $this->make_instance(['basebosshp' => 100, 'minquestions' => 3]);
+        $this->setUser($this->student);
+        $token = $this->put_attempt_at((int) $instance->id, 1, 1);
+        $this->assertSame(3, (int) $DB->get_field('playerpuzzle_attempts', 'frozenminquestions', ['token' => $token]));
+        $DB->set_field('playerpuzzle_attempts', 'questionresults', json_encode(array_fill(
+            0,
+            3,
+            ['side' => 'player', 'correct' => true, 'counted' => true]
+        )), ['token' => $token]);
+        $DB->set_field('playerpuzzle', 'minquestions', 5, ['id' => $instance->id]);
+
+        $result = $this->call_advance_phase([
+            'cmid' => $instance->cmid, 'token' => $token, 'damage' => 100,
+            'coinsearnedsofar' => 0, 'bosscoinsearnedsofar' => 0,
+        ]);
+
+        $this->assertFalse($result['error']);
+    }
+
+    /**
      * Tests that advancing succeeds once the attempt has answered at least the
      * configured minimum.
      *

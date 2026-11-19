@@ -68,7 +68,8 @@
   (the attempt it is, the retry cost, when the cooldown ends), and a start the rules refuse is explained in a
   dialog instead of an error page. A Campaign under way can be given up from the Lobby.
 * **Teacher report:** per-student progress, average opponent damage and accuracy, the most missed
-  questions, the score distribution, the completion rate and, for a Campaign, how each difficulty has gone
+  questions, the score distribution (left out, with the grade column, for an activity with no grade), the
+  completion rate and, for a Campaign, how each difficulty has gone
   (phases won on the first try, by difficulty and by phase of the level) and which heroes the students chose (a Single Match activity shows its matches won by difficulty), respecting separate groups. The student
   table is paged, 50 students at a time, so a class of thousands opens as fast as a small one.
 * **Backup and restore,** with the question bank, and with the attempts, heroes, loadout stock and

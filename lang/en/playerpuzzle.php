@@ -618,6 +618,7 @@ $string['report_lastmatch'] = 'Last match';
 $string['report_matches'] = 'Matches played';
 $string['report_matcheswon'] = 'Matches won';
 $string['report_missedquestions'] = 'Most missed questions';
+$string['report_nograde'] = 'This activity has no grade (its grade type is None), so there is no grade distribution, and the table does not show a grade.';
 $string['report_nomissedquestions'] = 'No question has been answered wrong yet.';
 $string['report_nostudents'] = 'No students to show yet.';
 $string['report_phase'] = 'Phase';

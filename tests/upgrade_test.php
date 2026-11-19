@@ -206,6 +206,37 @@ final class upgrade_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the upgrade adds the frozen minimum of questions to the attempts, empty on the ones already stored so
+     * they keep reading the activity's value.
+     *
+     * @return void
+     */
+    public function test_upgrade_adds_the_frozen_minimum_of_questions_empty(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $dbman = $DB->get_manager();
+        $table = new \xmldb_table('playerpuzzle_attempts');
+        $field = new \xmldb_field('frozenminquestions');
+        $dbman->drop_field($table, $field);
+        $this->assertFalse($dbman->field_exists($table, $field));
+        $attemptid = $DB->insert_record('playerpuzzle_attempts', (object) [
+            'playerpuzzleid' => 7,
+            'userid' => 2,
+            'token' => str_repeat('a', 64),
+            'status' => 'inprogress',
+            'timecreated' => 1000,
+            'timemodified' => 1000,
+        ]);
+
+        set_config('version', 2026111900, 'mod_playerpuzzle');
+        xmldb_playerpuzzle_upgrade(2026111900);
+
+        $this->assertTrue($dbman->field_exists($table, new \xmldb_field('frozenminquestions')));
+        $this->assertNull($DB->get_field('playerpuzzle_attempts', 'frozenminquestions', ['id' => $attemptid]));
+    }
+
+    /**
      * Tests that the upgrade recomputes the grades of the Campaigns that count errors, since their formula changed,
      * and leaves the activities it did not touch alone.
      *

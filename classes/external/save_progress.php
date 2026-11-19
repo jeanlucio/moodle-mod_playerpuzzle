@@ -138,14 +138,11 @@ class save_progress extends external_api {
                 // should never actually reach this: the revive keeps the boss alive until
                 // enough questions are answered. A Demo has no minimum (see
                 // game_page_service::build_game_config()).
-                $belowminimum = question_results::count_counted($attempt->questionresults) < (int) $playerpuzzle->minquestions;
+                // The minimum the phase started under, so a teacher edit mid-phase never turns down a fair win.
+                $minquestions = combat::phase_minquestions($attempt, $playerpuzzle);
+                $belowminimum = question_results::count_counted($attempt->questionresults) < $minquestions;
                 if ($claimedvictory && !(bool) $attempt->isdemo && $belowminimum) {
-                    throw new moodle_exception(
-                        'minquestionsnotmet',
-                        'mod_playerpuzzle',
-                        '',
-                        (int) $playerpuzzle->minquestions
-                    );
+                    throw new moodle_exception('minquestionsnotmet', 'mod_playerpuzzle', '', $minquestions);
                 }
 
                 // In a Campaign a win only ends the attempt on the last phase of the last level; before

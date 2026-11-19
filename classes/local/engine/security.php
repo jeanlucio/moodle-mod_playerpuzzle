@@ -130,7 +130,7 @@ class security {
         $playerpuzzle = $DB->get_record(
             'playerpuzzle',
             ['id' => $playerpuzzleid],
-            'id, basebosshp, basestudenthp, bossdamage, coingain, gamemode, maxlevels, bossavatar',
+            'id, basebosshp, basestudenthp, bossdamage, coingain, gamemode, maxlevels, minquestions, bossavatar',
             MUST_EXIST
         );
         self::seed_replay_state($attempt, $playerpuzzle);
@@ -151,7 +151,7 @@ class security {
      *
      * @param \stdClass $attempt Attempt object to populate (mutated in place, not yet saved);
      *  its currentlevel/currentphase must already name the phase about to start.
-     * @param \stdClass $playerpuzzle The instance record — basebosshp/bossdamage/coingain
+     * @param \stdClass $playerpuzzle The instance record — basebosshp/bossdamage/coingain/minquestions
      *  are read from it and frozen for this phase, so a later teacher edit mid-match cannot
      *  desync a replay of an already-played phase; maxlevels is frozen too, so the last attempt of a
      *  Campaign says how many phases it had (campaigns::total_phases()); gamemode/maxlevels/bossavatar decide the
@@ -168,6 +168,7 @@ class security {
         $attempt->frozenbossdamage = (int) $playerpuzzle->bossdamage;
         $attempt->frozencoingain = (int) $playerpuzzle->coingain;
         $attempt->frozenmaxlevels = max(1, (int) $playerpuzzle->maxlevels);
+        $attempt->frozenminquestions = (int) $playerpuzzle->minquestions;
         $attempt->frozenopponent = opponents::for_phase(
             $playerpuzzle,
             (int) $attempt->currentlevel,
@@ -514,6 +515,8 @@ class security {
                 'frozenplayerattack' => (float) $attempt->frozenplayerattack,
                 'frozenplayerarmor' => (float) $attempt->frozenplayerarmor,
                 'frozenhero' => (string) ($attempt->frozenhero ?? ''),
+                'frozenmaxlevels' => (int) $attempt->frozenmaxlevels,
+                'frozenminquestions' => $attempt->frozenminquestions,
                 'isdemo' => (bool) $attempt->isdemo,
                 'isnew' => false,
             ];
@@ -554,7 +557,7 @@ class security {
             'playerpuzzle_attempts',
             ['token' => $token],
             'id, isdemo, rngseed, moveseq, frozenbasebosshp, frozenbossdamage, frozencoingain, frozenopponent, '
-                . 'frozenplayerhp, frozenplayerattack, frozenplayerarmor, frozenhero',
+                . 'frozenplayerhp, frozenplayerattack, frozenplayerarmor, frozenhero, frozenmaxlevels, frozenminquestions',
             MUST_EXIST
         );
 
@@ -578,6 +581,8 @@ class security {
             'frozenplayerattack' => (float) $newrow->frozenplayerattack,
             'frozenplayerarmor' => (float) $newrow->frozenplayerarmor,
             'frozenhero' => (string) ($newrow->frozenhero ?? ''),
+            'frozenmaxlevels' => (int) $newrow->frozenmaxlevels,
+            'frozenminquestions' => $newrow->frozenminquestions,
             'isdemo' => (bool) $newrow->isdemo,
             'isnew' => true,
         ];

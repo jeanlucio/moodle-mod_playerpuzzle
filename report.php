@@ -59,7 +59,7 @@ $studentrows = report_service::get_student_rows($instance, $cm, $context, $viewe
 $baseurl = new moodle_url('/mod/playerpuzzle/report.php', ['id' => $cm->id]);
 $haspaging = $totalstudents > $perpage;
 
-$maxbucketcount = max(1, ...array_column($distribution, 'count'));
+$maxbucketcount = max([1, ...array_column($distribution, 'count')]);
 foreach ($distribution as &$bucket) {
     $bucket['barpercent'] = (int) round(($bucket['count'] / $maxbucketcount) * 100);
 }
@@ -82,6 +82,7 @@ $templatecontext = [
     'missedquestions'       => $missedquestions,
     'missedquestionsempty'  => empty($missedquestions),
     'distribution'          => $distribution,
+    'activityhasgrade'      => report_service::has_grade($instance),
     'completedcount'        => $completion['completed'],
     'completedtotal'        => $completion['total'],
     'hasdifficulty'         => !empty($difficulty['difficulties']),

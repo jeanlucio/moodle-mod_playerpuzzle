@@ -618,6 +618,7 @@ $string['report_lastmatch'] = 'Última partida';
 $string['report_matches'] = 'Partidas jogadas';
 $string['report_matcheswon'] = 'Partidas vencidas';
 $string['report_missedquestions'] = 'Questões mais erradas';
+$string['report_nograde'] = 'Esta atividade não tem nota (o tipo de nota é Nenhuma), então não há distribuição de notas, e a tabela não mostra nota.';
 $string['report_nomissedquestions'] = 'Nenhuma questão foi errada ainda.';
 $string['report_nostudents'] = 'Nenhum estudante para mostrar ainda.';
 $string['report_phase'] = 'Fase';

@@ -47,6 +47,7 @@
             {"questiontext": "How much is 2 + 2?", "errors": 6, "total": 10, "errorrate": 60.0, "errorratetext": "60.0"}
         ],
         "missedquestionsempty": false,
+        "activityhasgrade": true,
         "distribution": [
             {"min": 0, "max": 20, "count": 1, "barpercent": 20},
             {"min": 21, "max": 40, "count": 2, "barpercent": 40},
@@ -100,6 +101,15 @@
         </div>
     </div>
 
+    {{^activityhasgrade}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4>{{#str}} report_scoredistribution, mod_playerpuzzle {{/str}}</h4>
+            <p class="mb-0">{{#str}} report_nograde, mod_playerpuzzle {{/str}}</p>
+        </div>
+    </div>
+    {{/activityhasgrade}}
+    {{#activityhasgrade}}
     <div class="card mb-4">
         <div class="card-body">
             <h4>{{#str}} report_scoredistribution, mod_playerpuzzle {{/str}}</h4>
@@ -117,6 +127,7 @@
             {{/distribution}}
         </div>
     </div>
+    {{/activityhasgrade}}
 
     {{#hasdifficulty}}
     <div class="card mb-4">
@@ -250,7 +261,9 @@
                         <thead>
                             <tr>
                                 <th scope="col">{{#str}} report_student, mod_playerpuzzle {{/str}}</th>
+                                {{#activityhasgrade}}
                                 <th scope="col">{{#str}} report_grade, mod_playerpuzzle {{/str}}</th>
+                                {{/activityhasgrade}}
                                 <th scope="col">{{#str}} report_attempts, mod_playerpuzzle {{/str}}</th>
                                 <th scope="col">{{#str}} report_avgdamage, mod_playerpuzzle {{/str}}</th>
                                 <th scope="col">{{#str}} report_avgquestions, mod_playerpuzzle {{/str}}</th>
@@ -261,7 +274,9 @@
                             {{#studentrows}}
                                 <tr>
                                     <td>{{fullname}}</td>
+                                    {{#activityhasgrade}}
                                     <td>{{grade}}</td>
+                                    {{/activityhasgrade}}
                                     <td>{{attemptsused}}</td>
                                     <td>{{avgdamagepercent}}%</td>
                                     <td>{{avgcorrect}} / {{avgtotal}}</td>

@@ -174,7 +174,8 @@ class combat {
      * @param \stdClass $attempt The attempt: isdemo, difficulty, currentlevel, currentphase,
      *  frozenbasebosshp, frozenbossdamage and frozenopponent are read, and frozenhero, which decides the second
      *  power the final boss fights with (see opponents::counter()).
-     * @param \stdClass $instance The activity: basebosshp and bossdamage are read, and maxlevels (1 when absent).
+     * @param \stdClass $instance The activity: basebosshp and bossdamage are read, and maxlevels (1 when absent), each
+     *  only when the attempt has no frozen value of its own (frozenbasebosshp, frozenbossdamage, frozenmaxlevels).
      * @return array ['maxbosshp' => int, 'basedamage' => int (the opponent's unit), 'playerbasedamage' => int (the
      *  student's unit), 'bossattack' => float, 'bossarmor' => float,
      *  'bosspowers' => string[], 'bossbreathevery' => int (0 for the default rhythm),
@@ -208,6 +209,9 @@ class combat {
             ? self::NORMAL_FINAL_BOSS_HP_FACTOR
             : 1.0;
         $unit = self::calculate_boss_hp($basedamage, $level, $phase);
+        // The level count the phase started under: it decides how far into the Campaign the phase is, so a teacher
+        // changing it mid-phase must not change how hard the opponent hits.
+        $maxlevels = (int) ($attempt->frozenmaxlevels ?? 0) ?: (int) ($instance->maxlevels ?? 1);
 
         // Halves round up with floor(), never round(): the replay mirror in JavaScript must land
         // on the same whole number, and round() pre-rounds values like 227.49999999999997 up.
@@ -220,14 +224,14 @@ class combat {
                 $difficulty,
                 $level,
                 $phase,
-                (int) ($instance->maxlevels ?? 1)
+                $maxlevels
             ),
             'bossarmor' => self::scale_armor(
                 (float) ($modifiers['armor'] + $counter['armor']),
                 $difficulty,
                 $level,
                 $phase,
-                (int) ($instance->maxlevels ?? 1)
+                $maxlevels
             ),
             'bosspowers' => array_values(array_unique(
                 array_merge(opponents::powers((string) $attempt->frozenopponent), $counter['powers'])
@@ -326,6 +330,24 @@ class combat {
         }
 
         return $side;
+    }
+
+    /**
+     * The minimum of questions a phase is fought under, which decides when the opponent revives: the value frozen when
+     * the phase started, the instance's for an attempt from before it was frozen, and none in a Demo, a practice
+     * fight with nothing at stake.
+     *
+     * @param \stdClass $attempt The attempt (isdemo, frozenminquestions).
+     * @param \stdClass $instance The instance record (minquestions).
+     * @return int 0 for no minimum.
+     */
+    public static function phase_minquestions(\stdClass $attempt, \stdClass $instance): int {
+        if (!empty($attempt->isdemo)) {
+            return 0;
+        }
+        return isset($attempt->frozenminquestions)
+            ? (int) $attempt->frozenminquestions
+            : (int) ($instance->minquestions ?? 0);
     }
 
     /**

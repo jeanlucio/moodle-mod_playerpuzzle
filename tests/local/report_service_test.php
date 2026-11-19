@@ -579,6 +579,26 @@ final class report_service_test extends \advanced_testcase {
     }
 
     /**
+     * An activity with no grade (grade type None) reports no grade distribution and no grade per student, instead of
+     * putting every student in the lowest bucket with a grade of zero.
+     *
+     * @return void
+     */
+    public function test_an_activity_with_no_grade_reports_no_grade(): void {
+        global $DB;
+        $DB->set_field('playerpuzzle', 'grade', 0, ['id' => $this->instance->id]);
+        $this->instance->grade = 0;
+        $this->make_student_with_progress(10);
+
+        $this->assertFalse(report_service::has_grade($this->instance));
+        $this->assertSame([], report_service::get_score_distribution($this->instance, $this->cm, $this->context, 0));
+        $rows = report_service::get_student_rows($this->instance, $this->cm, $this->context, 0, 0, 10);
+        $this->assertCount(1, $rows);
+        $this->assertFalse($rows[0]['hasgrade']);
+        $this->assertSame('-', $rows[0]['grade']);
+    }
+
+    /**
      * A student counts once, by their final grade, however many attempts they made.
      *
      * @return void

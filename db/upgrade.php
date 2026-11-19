@@ -946,5 +946,17 @@ function xmldb_playerpuzzle_upgrade(int $oldversion): bool {
         upgrade_mod_savepoint(true, 2026111900, 'playerpuzzle');
     }
 
+    if ($oldversion < 2026112000) {
+        // The minimum of questions a phase is fought under, frozen when it starts like the rest of the fight's
+        // config. Left null on the attempts stored so far, which keep reading the activity's value.
+        $table = new xmldb_table('playerpuzzle_attempts');
+        $field = new xmldb_field('frozenminquestions', XMLDB_TYPE_INTEGER, '4', null, null, null, null, 'frozenmaxlevels');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026112000, 'playerpuzzle');
+    }
+
     return true;
 }

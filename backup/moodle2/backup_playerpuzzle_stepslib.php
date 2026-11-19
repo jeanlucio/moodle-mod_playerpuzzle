@@ -100,6 +100,7 @@ class backup_playerpuzzle_activity_structure_step extends backup_activity_struct
             'frozenplayerarmor',
             'frozenhero',
             'frozenmaxlevels',
+            'frozenminquestions',
             'questionresults',
             'phaserestarts',
             'score',

@@ -78,9 +78,8 @@ class replay {
      * @param \stdClass $attempt The attempt row (already at/about to move to a final state, or
      *  about to advance phase) — rngseed/movelog/moveseq/engineversion/frozen* fields, plus
      *  currentlevel/currentphase/difficulty/questions_total/isdemo, are all read from it.
-     * @param \stdClass $playerpuzzle The instance record (minquestions/basestudenthp read from
-     *  it — the latter is not itself frozen per phase, unlike the boss-side config; see
-     *  simulate()'s own note on why that is safe).
+     * @param \stdClass $playerpuzzle The instance record, read only as the fallback of an attempt from before a value
+     *  was frozen per phase (see combat::phase_opponent(), phase_student() and phase_minquestions()).
      * @return array|null ['damage' => int, 'playergold' => int, 'bossgold' => int,
      *  'bossdefeated' => bool] (whether the match ended with the boss dead for good, or with
      *  the player), or null when the phase could not be conclusively re-derived.
@@ -217,7 +216,7 @@ class replay {
             'outcomes' => $outcomes,
             'outcomeindex' => 0,
             'questionstotal' => 0,
-            'minquestions' => (int) $playerpuzzle->minquestions,
+            'minquestions' => combat::phase_minquestions($attempt, $playerpuzzle),
             'playerpuzzleid' => (int) ($playerpuzzle->id ?? 0),
             'poolempty' => null,
             'serveruses' => attempt_consumables::get_uses_by_type((int) $attempt->id),
@@ -233,7 +232,7 @@ class replay {
             }
             return self::describe($grid, $state, $sim, $turn, $terminal, ($seed + $draws->count * 0x6D2B79F5) & 0xFFFFFFFF);
         };
-        $minquestions = (int) $playerpuzzle->minquestions;
+        $minquestions = combat::phase_minquestions($attempt, $playerpuzzle);
 
         // Every real phase opens with a question that decides who moves first: the student when it is answered
         // right (or no question could be drawn), the opponent when it is answered wrong, failed or skipped.

@@ -195,13 +195,10 @@ class advance_phase extends external_api {
                 // never persisted above this point on this path, so a rejection leaves it
                 // untouched and still resumable. The client should never actually reach this:
                 // the revive keeps the boss alive until enough questions are answered.
-                if (question_results::count_counted($attempt->questionresults) < (int) $playerpuzzle->minquestions) {
-                    throw new moodle_exception(
-                        'minquestionsnotmet',
-                        'mod_playerpuzzle',
-                        '',
-                        (int) $playerpuzzle->minquestions
-                    );
+                // The minimum the phase started under, so a teacher edit mid-phase never turns down a fair win.
+                $minquestions = combat::phase_minquestions($attempt, $playerpuzzle);
+                if (question_results::count_counted($attempt->questionresults) < $minquestions) {
+                    throw new moodle_exception('minquestionsnotmet', 'mod_playerpuzzle', '', $minquestions);
                 }
 
                 if ($currentphase < 10) {

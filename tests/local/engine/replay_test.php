@@ -462,6 +462,43 @@ final class replay_test extends \advanced_testcase {
     }
 
     /**
+     * Tests that the replay runs a phase under the minimum of questions it started with, not the activity's current
+     * one: a teacher raising the minimum after the phase started does not revive the opponent of a fair kill, and
+     * lowering it does not end the match where the student saw the opponent revive.
+     *
+     * @return void
+     */
+    public function test_derive_uses_the_minimum_of_questions_the_phase_started_with(): void {
+        $log = move_log::encode([
+            self::OPENING,
+            ['type' => 'move', 'r1' => 2, 'c1' => 5, 'r2' => 2, 'c2' => 6],
+            ['type' => 'move', 'r1' => 1, 'c1' => 2, 'r2' => 1, 'c2' => 3],
+            ['type' => 'question', 'side' => 'boss', 'outcome' => 'answered'],
+            ['type' => 'move', 'r1' => 2, 'c1' => 0, 'r2' => 2, 'c2' => 1],
+            ['type' => 'move', 'r1' => 0, 'c1' => 4, 'r2' => 0, 'c2' => 5],
+        ]);
+        $attempt = fn(int $frozen) => $this->make_attempt([
+            'rngseed' => 22,
+            'movelog' => $log,
+            'frozenbasebosshp' => 15,
+            'frozenbossdamage' => 10,
+            'frozencoingain' => 10,
+            'frozenminquestions' => $frozen,
+            'questionresults' => question_results::append(null, 'boss', true, false),
+        ]);
+
+        $this->assertSame(
+            ['damage' => 15, 'playergold' => 0, 'bossgold' => 0, 'bossdefeated' => true],
+            replay::derive($attempt(0), $this->make_playerpuzzle(['minquestions' => 5])),
+            'raised after the start: still the clean kill the student played'
+        );
+        $this->assertNull(
+            replay::derive($attempt(5), $this->make_playerpuzzle(['minquestions' => 0])),
+            'lowered after the start: the opponent still revives, as it did for the student'
+        );
+    }
+
+    /**
      * Tests that the minimum-questions rule counts the match's own questions: a large lifetime
      * questions_total on the attempt, built up by earlier phases of the Campaign, does not
      * stop the boss from reviving in a phase where the student has answered nothing yet.

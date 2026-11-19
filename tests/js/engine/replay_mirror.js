@@ -165,6 +165,8 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
     const hpFactor = DIFFICULTY_HP_FACTORS[attempt.difficulty] ?? 1.0;
     const playerFactor = DIFFICULTY_PLAYER_FACTORS[attempt.difficulty] ?? 1.0;
     const unitBase = scaleBoss(attempt.frozenbossdamage, level, phase);
+    // The level count the phase was frozen with (combat::phase_opponent()), the instance's for an older attempt.
+    const maxLevels = attempt.frozenmaxlevels || playerpuzzle.maxlevels || 1;
     const finalBossFactor = attempt.difficulty === 'normal' && attempt.frozenopponent === 'vampire'
         ? NORMAL_FINAL_BOSS_HP_FACTOR
         : 1.0;
@@ -188,8 +190,8 @@ function phaseSetup(attempt, playerpuzzle, modifiers = NO_MODIFIERS, powers = []
             playerBaseDamage: Math.round(unitBase * playerFactor),
             coinGain: attempt.frozencoingain,
             coinFactor: DIFFICULTY_COIN_FACTORS[attempt.difficulty] ?? 1.0,
-            bossAttack: scaleAttack(modifiers.attack, attempt.difficulty, level, phase, playerpuzzle.maxlevels ?? 1),
-            bossArmor: scaleArmor(modifiers.armor, attempt.difficulty, level, phase, playerpuzzle.maxlevels ?? 1),
+            bossAttack: scaleAttack(modifiers.attack, attempt.difficulty, level, phase, maxLevels),
+            bossArmor: scaleArmor(modifiers.armor, attempt.difficulty, level, phase, maxLevels),
             bossPowers: powers,
             ...(breathEvery ? {bossBreathEvery: breathEvery} : {}),
             // The final boss's key, as classes/local/opponents.php::FINAL_BOSS names it.
@@ -239,7 +241,8 @@ function runPhase({attempt, playerpuzzle, modifiers, powers, breathEvery, events
         loggedUses: {potion: 0, shield: 0, magic: 0, sword: 0},
         questionCount: {player: 0, boss: 0},
     };
-    const minQuestions = playerpuzzle.minquestions;
+    // The minimum the phase was frozen with (combat::phase_minquestions()), the instance's for an older attempt.
+    const minQuestions = attempt.frozenminquestions ?? playerpuzzle.minquestions;
 
     const done = result => ({result, events: sim.events, outcomes: sim.outcomes, serverUses: uses});
 

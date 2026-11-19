@@ -73,12 +73,12 @@ O estudante escolhe Fácil, Normal ou Difícil. A escolha muda a luta, nunca a n
 
 | | Fácil | Normal | Difícil |
 |---|:---:|:---:|:---:|
-| HP do oponente | ×0,5 | ×1 (chefe final +15%) | ×2 |
+| HP do oponente | ×0,5 | ×1 (chefe final +15%) | ×3 |
 | Golpe base do oponente | ×0,5 | ×1 | ×2 |
 | Crescimento do golpe na Campanha | nenhum | até +60% | até +100% |
 | Armadura do oponente | só a dele | a dele +25 pontos ao longo da Campanha | a dele +25 pontos |
 | Golpe do estudante | ×1 | ×1 | ×2 |
-| HP do estudante na luta | ×1 | ×1 | ×1,5 |
+| HP do estudante na luta | ×1 | ×1 | ×2,5 |
 | Golpe crítico (uma resposta certa) | 3× o golpe de quem respondeu, vezes o seu multiplicador de Estrela | o mesmo | o mesmo |
 | Moedas por combinação de 3 | ×0,5 | ×1 | ×2 |
 | Oponente acerta a pergunta (Múltipla Escolha / Verdadeiro-Falso) | 33% / 50% | 66% / 75% | 100% / 100% |
@@ -88,7 +88,7 @@ O estudante escolhe Fácil, Normal ou Difícil. A escolha muda a luta, nunca a n
 | Nota | a mesma | a mesma | a mesma |
 
 O herói é o mesmo em toda dificuldade: o HP, o ataque e a armadura dele vêm só do que é comprado na loja, e a loja
-mostra esses valores. No Difícil ele luta com 1,5× esse HP. Como exemplo, uma atividade com os valores padrão (HP base de 100 dos
+mostra esses valores. No Difícil ele luta com 2,5× esse HP. Como exemplo, uma atividade com os valores padrão (HP base de 100 dos
 dois lados, dano base de 10) e 2 níveis, com o HP do estudante antes de qualquer melhoria. O HP do oponente e os
 golpes dos dois lados crescem a cada fase; o HP do estudante só cresce com o que ele compra na loja:
 
@@ -96,27 +96,28 @@ golpes dos dois lados crescem a cada fase; o HP do estudante só cresce com o qu
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Nível 1, Fase 1 (slime) | Fácil | 50 | 5 | 15 | 0% | 100 | 10 | 30 |
 | | Normal | 100 | 10 | 30 | 0% | 100 | 10 | 30 |
-| | Difícil | 200 | 20 | 60 | 0% | 150 | 20 | 60 |
+| | Difícil | 300 | 20 | 60 | 0% | 250 | 20 | 60 |
 | Nível 1, Fase 6 (fantasma) | Fácil | 75 | 8 | 24 | 0% | 100 | 15 | 45 |
 | | Normal | 150 | 17 | 52 | 7% | 100 | 15 | 45 |
-| | Difícil | 300 | 38 | 114 | 7% | 150 | 30 | 90 |
+| | Difícil | 450 | 38 | 114 | 7% | 250 | 30 | 90 |
 | Nível 2, Fase 10 (vampiro, chefe final) | Fácil | 144 | 12 | 36 | 15% | 100 | 24 | 72 |
 | | Normal | 331 | 38 | 115 | 40% | 100 | 24 | 72 |
-| | Difícil | 576 | 96 | 288 | 40% | 150 | 48 | 144 |
+| | Difícil | 864 | 96 | 288 | 40% | 250 | 48 | 144 |
 
 Os críticos aparecem com multiplicador de Estrela ×1, antes da armadura do outro lado; os golpes do estudante, antes
 do ataque do herói e da armadura do oponente. No chefe final do Difícil, um crítico do oponente (288) passa do
-dobro do HP inicial do estudante (150): é o que a loja e as melhorias do herói precisam cobrir.
+HP inicial do estudante (250): é o que a loja e as melhorias do herói precisam cobrir.
 
-No Normal e no Difícil o estudante precisa do mesmo número de golpes para derrubar o oponente, já que o golpe dele
-também dobra; no Fácil, metade. No Difícil o golpe do oponente é de 2,2 a 2,5 vezes o do Normal e o HP do
-estudante sobe só 1,5×, então ele aguenta de 60% a 70% dos golpes que aguentaria no Normal.
+No Difícil o estudante precisa de 1,5 vez os golpes do Normal para derrubar o oponente, já que o HP dele triplica
+e o golpe do estudante dobra; no Fácil, metade. No Difícil o golpe do oponente é de 2,2 a 2,5 vezes o do Normal e o
+HP do estudante sobe 2,5×, então ele aguenta mais ou menos os mesmos golpes que aguentaria no Normal.
 
 No Fácil a redução é só do oponente: o HP e os golpes dele caem pela metade enquanto os golpes, as
 Poções e o feitiço do próprio estudante mantêm o valor cheio, então uma partida fácil é mais curta, e não só mais
-segura. No Difícil o HP e o golpe dobram para os dois lados, menos o HP do estudante, que sobe 1,5×: a partida dura o mesmo
-que no Normal e cada golpe do oponente pesa mais do HP do estudante, mas um crítico no começo da Campanha não derruba
-um herói de HP cheio. No Normal o chefão final também tem 15% a mais de HP, o que o põe um pouco
+segura. No Difícil o golpe dobra para os dois lados, o HP do oponente triplica e o do estudante sobe 2,5×: a partida
+dura mais ou menos o mesmo que no Normal, e o que a deixa mais difícil é o próprio oponente (ele acerta toda
+pergunta, os golpes dele crescem ao longo da Campanha e ele tem mais itens), e não golpes que derrubam um herói de
+HP cheio. No Normal o chefão final também tem 15% a mais de HP, o que o põe um pouco
 acima do que um herói com todas as melhorias consegue alcançar.
 
 O herói cresce ao longo da Campanha (HP, ataque e armadura, comprados na loja) e os poderes dos oponentes
@@ -136,12 +137,12 @@ quantos golpes ele aguenta. Em partidas simuladas de uma Campanha de 3 níveis n
 
 | HP base do oponente | HP base do estudante | Tentativas por fase |
 |:---:|:---:|:---:|
-| 100 | 100 (o padrão) | 2,7 a 3,3 |
-| 100 | 250 | 1,1 a 1,2 |
-| 250 | 250 | 3,2 a 3,3 |
+| 100 | 100 (o padrão) | 2,9 a 3,6 |
+| 100 | 250 | 1,1 |
+| 250 | 250 | 3,8 a 5,1 |
 
 Subir só o HP do estudante deixa o jogo bem mais fácil; subir os dois deixa a luta 2,5 vezes mais longa, e no
-Difícil isso a deixa um pouco mais dura que com os dois em 100. No Normal as mesmas três linhas ficam em 2,1 a 2,3,
+Difícil isso a deixa mais dura que com os dois em 100. No Normal as mesmas três linhas ficam em 2,1 a 2,3,
 1,1 e 1,5 a 1,8.
 
 Na Campanha a escolha é feita a cada fase: no Lobby para a primeira, e na tela "Fase vencida"

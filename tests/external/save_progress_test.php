@@ -508,8 +508,8 @@ final class save_progress_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that scoring applies the run's difficulty factor: on Hard the boss has double the
-     * HP (and deals double damage), so the same verified Sword match is 20 of 2000.
+     * Tests that scoring applies the run's difficulty factor: on Hard the boss has triple the
+     * HP (and deals double damage), so the same verified Sword match is 20 of 3000.
      *
      * @return void
      */
@@ -534,8 +534,8 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $attempt = $DB->get_record('playerpuzzle_attempts', ['token' => $token], '*', MUST_EXIST);
-        $this->assertSame(1980, (int) $attempt->bosshp_remaining);
-        $this->assertEqualsWithDelta(1.0, (float) $attempt->score, 0.001);
+        $this->assertSame(2980, (int) $attempt->bosshp_remaining);
+        $this->assertEqualsWithDelta(2 / 3, (float) $attempt->score, 0.001);
     }
 
     /**

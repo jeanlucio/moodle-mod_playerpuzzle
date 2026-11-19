@@ -59,7 +59,7 @@ final class constants {
     /** @var string Difficulty: the configured boss HP/damage and coin reward, unchanged. */
     public const DIFFICULTY_NORMAL = 'normal';
 
-    /** @var string Difficulty: doubles the boss HP/damage and the coin reward. */
+    /** @var string Difficulty: triples the boss HP, doubles its damage and the coin reward. */
     public const DIFFICULTY_HARD = 'hard';
 
     /** @var int Highest base HP the form accepts for the student and the opponent: 100 times the default. */

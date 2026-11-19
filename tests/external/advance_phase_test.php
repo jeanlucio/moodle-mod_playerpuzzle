@@ -464,10 +464,10 @@ final class advance_phase_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertSame('hard', $result['data']['difficulty']);
-        // Phase 2 boss HP is 100 * (1 + 0.1) = 110; Hard doubles it to 220.
-        $this->assertSame(220, $result['data']['bosshp']);
-        // Student HP never grows with the phase; Hard gives it half as much again.
-        $this->assertSame(150, $result['data']['studenthp']);
+        // Phase 2 boss HP is 100 * (1 + 0.1) = 110; Hard triples it to 330.
+        $this->assertSame(330, $result['data']['bosshp']);
+        // Student HP never grows with the phase; Hard gives it two and a half times as much.
+        $this->assertSame(250, $result['data']['studenthp']);
         $this->assertSame('hard', $DB->get_field('playerpuzzle_attempts', 'difficulty', ['token' => $result['data']['token']]));
     }
 

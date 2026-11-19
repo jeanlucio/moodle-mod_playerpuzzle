@@ -999,8 +999,8 @@ final class game_page_service_test extends \advanced_testcase {
     }
 
     /**
-     * Tests that difficulty scales the boss HP and boss damage (Hard doubles, Easy halves)
-     * on top of the level/phase scaling, the student HP only on Hard (half as much again), and that the chosen
+     * Tests that difficulty scales the boss HP (Hard triples, Easy halves) and boss damage (Hard doubles, Easy halves)
+     * on top of the level/phase scaling, the student HP only on Hard (two and a half times), and that the chosen
      * difficulty and its coin factor are passed through to the JS config.
      *
      * @return void
@@ -1017,9 +1017,9 @@ final class game_page_service_test extends \advanced_testcase {
 
         $studentid = (int) $this->student->id;
         $hard = game_page_service::build_game_config($cm, $instance, $context, $studentid, false, 'hard');
-        $this->assertSame(400, $hard['bosshp']);
+        $this->assertSame(600, $hard['bosshp']);
         $this->assertSame(20, $hard['bossdamage']);
-        $this->assertSame(150, $hard['studenthp']);
+        $this->assertSame(250, $hard['studenthp']);
         $this->assertSame('hard', $hard['difficulty']);
         $this->assertSame(2.0, $hard['coinfactor']);
     }
@@ -1084,7 +1084,7 @@ final class game_page_service_test extends \advanced_testcase {
         $config = game_page_service::build_game_config($cm, $instance, $context, $studentid, false, 'easy');
 
         $this->assertSame('hard', $config['difficulty']);
-        $this->assertSame(400, $config['bosshp']);
+        $this->assertSame(600, $config['bosshp']);
     }
 
     /**

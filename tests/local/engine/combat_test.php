@@ -96,7 +96,7 @@ final class combat_test extends \basic_testcase {
      * @return void
      */
     public function test_difficulty_factors_by_side(): void {
-        $this->assertSame([0.5, 1.0, 2.0, 1.0], [
+        $this->assertSame([0.5, 1.0, 3.0, 1.0], [
             combat::difficulty_hp_factor('easy'),
             combat::difficulty_hp_factor('normal'),
             combat::difficulty_hp_factor('hard'),
@@ -128,7 +128,7 @@ final class combat_test extends \basic_testcase {
         $normal = combat::phase_opponent($attempt('normal'), $instance);
         $this->assertSame([100, 10, 10], [$normal['maxbosshp'], $normal['basedamage'], $normal['playerbasedamage']]);
         $hard = combat::phase_opponent($attempt('hard'), $instance);
-        $this->assertSame([200, 20, 20], [$hard['maxbosshp'], $hard['basedamage'], $hard['playerbasedamage']]);
+        $this->assertSame([300, 20, 20], [$hard['maxbosshp'], $hard['basedamage'], $hard['playerbasedamage']]);
     }
 
     /**
@@ -147,7 +147,7 @@ final class combat_test extends \basic_testcase {
         // 100 * 1.9 for the tenth phase, then the final boss's 1.2 and, on Normal only, the 1.15.
         $this->assertSame(262, combat::phase_opponent($attempt('normal', 'vampire'), $instance)['maxbosshp']);
         $this->assertSame(114, combat::phase_opponent($attempt('easy', 'vampire'), $instance)['maxbosshp']);
-        $this->assertSame(456, combat::phase_opponent($attempt('hard', 'vampire'), $instance)['maxbosshp']);
+        $this->assertSame(684, combat::phase_opponent($attempt('hard', 'vampire'), $instance)['maxbosshp']);
         $this->assertSame(190, combat::phase_opponent($attempt('normal', 'dragon'), $instance)['maxbosshp']);
     }
 
@@ -243,7 +243,7 @@ final class combat_test extends \basic_testcase {
         ]), $instance);
         $this->assertSame(
             [
-                'maxbosshp' => 340, 'basedamage' => 34, 'playerbasedamage' => 34, 'bossattack' => 2.3, 'bossarmor' => 0.25,
+                'maxbosshp' => 510, 'basedamage' => 34, 'playerbasedamage' => 34, 'bossattack' => 2.3, 'bossarmor' => 0.25,
                 'bosspowers' => ['ambush'],
                 'bossbreathevery' => 0, 'bosskit' => ['potion' => 1, 'sword' => 1],
             ],
@@ -443,12 +443,12 @@ final class combat_test extends \basic_testcase {
             'frozenplayerhp' => 179, 'frozenplayerattack' => '1.225', 'frozenplayerarmor' => '0.138',
         ], $overrides)), $instance)['maxhp'];
 
-        $this->assertSame(269, $hp(['difficulty' => 'hard']), '268.5 rounds up');
+        $this->assertSame(448, $hp(['difficulty' => 'hard']), '447.5 rounds up');
         $this->assertSame(179, $hp(['difficulty' => 'normal']));
         $this->assertSame(179, $hp(['difficulty' => 'easy']));
         $this->assertSame(179, $hp(['difficulty' => 'hard', 'isdemo' => 1]), 'a Demo ignores the difficulty');
-        $this->assertSame(150, $hp(['difficulty' => 'hard', 'frozenplayerhp' => 0]), 'the instance\'s HP, scaled too');
-        $this->assertSame(1.5, combat::difficulty_student_hp_factor('hard'));
+        $this->assertSame(250, $hp(['difficulty' => 'hard', 'frozenplayerhp' => 0]), 'the instance\'s HP, scaled too');
+        $this->assertSame(2.5, combat::difficulty_student_hp_factor('hard'));
         $this->assertSame(1.0, combat::difficulty_student_hp_factor('unknown'));
     }
 

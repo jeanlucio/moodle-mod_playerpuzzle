@@ -192,7 +192,7 @@ test('the opponent of each difficulty has the HP and the unit the server gives i
     // Mirrors combat_test::test_the_final_boss_has_more_hp_on_normal_only().
     assert.equal(setup('normal', 'vampire').maxBossHp, 262);
     assert.equal(setup('easy', 'vampire').maxBossHp, 114);
-    assert.equal(setup('hard', 'vampire').maxBossHp, 456);
+    assert.equal(setup('hard', 'vampire').maxBossHp, 684);
     assert.equal(setup('normal', 'dragon').maxBossHp, 190);
 
     // Mirrors combat_test::test_the_student_unit_is_not_weakened_on_easy(): Easy halves the opponent's unit only.

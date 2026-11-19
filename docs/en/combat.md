@@ -73,12 +73,12 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 
 | | Easy | Normal | Hard |
 |---|:---:|:---:|:---:|
-| Opponent HP | ×0.5 | ×1 (final boss +15%) | ×2 |
+| Opponent HP | ×0.5 | ×1 (final boss +15%) | ×3 |
 | Opponent's base hit | ×0.5 | ×1 | ×2 |
 | Growth of its hit over the Campaign | none | up to +60% | up to +100% |
 | Opponent armor | its own only | its own +25 points over the Campaign | its own +25 points |
 | Student's hit | ×1 | ×1 | ×2 |
-| Student's HP in the fight | ×1 | ×1 | ×1.5 |
+| Student's HP in the fight | ×1 | ×1 | ×2.5 |
 | Critical hit (a right answer) | 3× the hit of whoever answered, times their Star multiplier | the same | the same |
 | Coins per 3-coin match | ×0.5 | ×1 | ×2 |
 | Opponent answers right (Multiple Choice / True-False) | 33% / 50% | 66% / 75% | 100% / 100% |
@@ -88,7 +88,7 @@ The student chooses Easy, Normal or Hard. The choice changes the fight, never th
 | Grade | the same | the same | the same |
 
 The hero is the same on every difficulty: its HP, attack and armor come only from what is bought in the shop, and
-the shop shows those values. On Hard it fights with 1.5× that HP. As an example, an activity with the default values (a
+the shop shows those values. On Hard it fights with 2.5× that HP. As an example, an activity with the default values (a
 base HP of 100 on both sides, a base damage of 10) and 2 levels, with the student's HP before any upgrade. The
 opponent's HP and both sides' hits grow with every phase; the student's HP only grows with what they buy in the shop:
 
@@ -96,27 +96,27 @@ opponent's HP and both sides' hits grow with every phase; the student's HP only 
 |---|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Level 1, Phase 1 (slime) | Easy | 50 | 5 | 15 | 0% | 100 | 10 | 30 |
 | | Normal | 100 | 10 | 30 | 0% | 100 | 10 | 30 |
-| | Hard | 200 | 20 | 60 | 0% | 150 | 20 | 60 |
+| | Hard | 300 | 20 | 60 | 0% | 250 | 20 | 60 |
 | Level 1, Phase 6 (ghost) | Easy | 75 | 8 | 24 | 0% | 100 | 15 | 45 |
 | | Normal | 150 | 17 | 52 | 7% | 100 | 15 | 45 |
-| | Hard | 300 | 38 | 114 | 7% | 150 | 30 | 90 |
+| | Hard | 450 | 38 | 114 | 7% | 250 | 30 | 90 |
 | Level 2, Phase 10 (vampire, final boss) | Easy | 144 | 12 | 36 | 15% | 100 | 24 | 72 |
 | | Normal | 331 | 38 | 115 | 40% | 100 | 24 | 72 |
-| | Hard | 576 | 96 | 288 | 40% | 150 | 48 | 144 |
+| | Hard | 864 | 96 | 288 | 40% | 250 | 48 | 144 |
 
 The criticals are shown with a Star multiplier of ×1, before the other side's armor; the student's hits are before
 the hero's attack and the opponent's armor. On the Hard final boss, one of the opponent's criticals (288) is more than
-twice the student's starting HP (150): that is what the shop and the hero's upgrades have to cover.
+the student's starting HP (250): that is what the shop and the hero's upgrades have to cover.
 
-On Normal and Hard the student needs the same number of hits to bring the opponent down, since their own hit
-doubles too; on Easy, half as many. On Hard the opponent's hit is 2.2 to 2.5 times the Normal one while the
-student's HP only grows 1.5×, so the student survives 60% to 70% of the hits they would on Normal.
+On Hard the student needs 1.5 times as many hits as on Normal to bring the opponent down, since its HP triples
+while their own hit doubles; on Easy, half as many. On Hard the opponent's hit is 2.2 to 2.5 times the Normal one
+while the student's HP grows 2.5×, so the student survives about as many hits as on Normal.
 
 On Easy the halving is on the opponent only: its HP and its hits are halved while the student's own
-hits, Potions and hex keep their full value, so an Easy match is shorter and not only safer. On Hard HP and hits
-double for both sides, except the student's HP, which grows 1.5×: the match lasts as long as a Normal one and each
-of the opponent's hits weighs more of the student's HP, but a critical hit early in the Campaign does not bring down
-a hero at full HP.
+hits, Potions and hex keep their full value, so an Easy match is shorter and not only safer. On Hard both sides'
+hits double, the opponent's HP triples and the student's grows 2.5×: a match lasts about as long as a Normal one,
+and what makes it harder is the opponent itself (it answers every question right, its hits grow over the Campaign
+and it has more items), not hits that bring down a hero at full HP.
 On Normal the final boss also has 15% more HP, which puts it a little above what a hero with every upgrade can
 reach.
 
@@ -136,12 +136,12 @@ questions right and a base damage of 10:
 
 | Opponent's base HP | Student's base HP | Tries per phase |
 |:---:|:---:|:---:|
-| 100 | 100 (the default) | 2.7 to 3.3 |
-| 100 | 250 | 1.1 to 1.2 |
-| 250 | 250 | 3.2 to 3.3 |
+| 100 | 100 (the default) | 2.9 to 3.6 |
+| 100 | 250 | 1.1 |
+| 250 | 250 | 3.8 to 5.1 |
 
 Raising only the student's HP makes the game much easier; raising both makes the fight 2.5 times longer, and on Hard
-that makes it a little harder than with both at 100. On Normal the same three rows come to 2.1 to 2.3, 1.1 and 1.5
+that makes it harder than with both at 100. On Normal the same three rows come to 2.1 to 2.3, 1.1 and 1.5
 to 1.8.
 
 In Campaign the choice is made for each phase: in the Lobby for the first one, and on the

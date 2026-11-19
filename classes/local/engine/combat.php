@@ -57,18 +57,21 @@ class combat {
     private const DIFFICULTY_BOSS_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 2.0];
 
     /**
-     * Multiplier per difficulty on the opponent's max HP: Easy halves it and Hard doubles it, as on its hits.
+     * Multiplier per difficulty on the opponent's max HP: Easy halves it and Hard triples it. Hard's opponent has
+     * more HP than its hits grow (they double), so a Hard fight lasts longer than a Normal one instead of ending in
+     * a few exchanges. Tuned together with DIFFICULTY_STUDENT_HP_FACTORS.
      */
-    private const DIFFICULTY_HP_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 2.0];
+    private const DIFFICULTY_HP_FACTORS = ['easy' => 0.5, 'normal' => 1.0, 'hard' => 3.0];
 
     /**
      * Multiplier per difficulty on the student's max HP in a fight. Hard doubles the opponent's hits, and with the
-     * student's HP left alone a single critical hit could take more than all of it; half as much again keeps each hit
-     * at a third more of the student's HP than on Normal, so Hard stays harder through what is its own (an opponent
-     * that always answers right and grows stronger) instead of through one-hit defeats. It applies to the fight, not
-     * to the hero, so the shop shows the hero's own HP. Tuned with tests/js/engine/simulate_heroes.js.
+     * student's HP left alone a single critical hit could take more than all of it; two and a half times as much
+     * keeps each hit at a smaller share of the student's HP than on Normal, so Hard stays harder through what is its
+     * own (an opponent with three times the HP, that always answers right and grows stronger) instead of through
+     * short fights and one-hit defeats. It applies to the fight, not to the hero, so the shop shows the hero's own
+     * HP. Tuned with tests/js/engine/simulate_heroes.js, which keeps Hard above Normal from 3 to 10 levels.
      */
-    private const DIFFICULTY_STUDENT_HP_FACTORS = ['easy' => 1.0, 'normal' => 1.0, 'hard' => 1.5];
+    private const DIFFICULTY_STUDENT_HP_FACTORS = ['easy' => 1.0, 'normal' => 1.0, 'hard' => 2.5];
 
     /**
      * What a Normal final boss has on top of the HP the level, the phase and its own profile give: 15% more, so it
@@ -105,7 +108,7 @@ class combat {
     /**
      * Multiplier per difficulty on the unit the student's own amounts are counted in. Easy leaves it alone, so
      * that halving the opponent's HP makes the match shorter instead of cancelling out against the student's
-     * hits; Hard doubles it along with the opponent's HP, as it always did.
+     * hits; Hard doubles it, while the opponent's HP triples, so its fights last longer.
      */
     private const DIFFICULTY_PLAYER_FACTORS = ['easy' => 1.0, 'normal' => 1.0, 'hard' => 2.0];
 

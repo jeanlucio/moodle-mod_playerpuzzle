@@ -1137,7 +1137,7 @@ body.path-mod-playerpuzzle .pp-lobby-wide .pp-lobby-hero {
 /**
  * The title scroll: a 3-slice (pix/scroll_banner.webp) whose two rolled ends keep their shape at the
  * ribbon's fixed height while the paper between them stretches to the width. The slice and the
- * border are sized together: 160px of the 1636x941 image at 100px high is 17px.
+ * border are sized together: 80px of the 818x471 image at 100px high is 17px.
  */
 body.path-mod-playerpuzzle .pp-lobby-ribbon {
     box-sizing: border-box;
@@ -1149,7 +1149,7 @@ body.path-mod-playerpuzzle .pp-lobby-ribbon {
     border-width: 0 17px;
     border-color: transparent;
     border-image-source: var(--pp-ribbon);
-    border-image-slice: 0 160 fill;
+    border-image-slice: 0 80 fill;
     border-image-repeat: stretch;
     padding: 0.75rem 1.25rem;
     text-align: center;

@@ -1173,10 +1173,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 // attempt — the student explicitly asked for practice, not a scored try.
                 fields.isdemo = 1;
             }
-            if (this.scene.stage?.isExpanded()) {
-                // The reload leaves full screen; the next page opens with the game filling the window instead.
-                fields.maximized = 1;
-            }
             Object.entries(fields).forEach(([name, value]) => {
                 const input = document.createElement('input');
                 input.type = 'hidden';

@@ -31,9 +31,6 @@ define([], () => {
 
     const LAYERS = ['back', 'middle', 'front', 'floating', 'overlay'];
 
-    /** The body class of a page whose game fills the browser window (see play.php). */
-    const MAXIMIZED_CLASS = 'pp-maximized';
-
     /**
      * Sets where an element stands on the stage, in the game's coordinates; the stylesheet turns the four numbers
      * into its box.
@@ -104,22 +101,8 @@ define([], () => {
             observer.observe(container);
         }
 
-        // The game can fill the browser window without the browser's full screen: the page opens that way after a
-        // reload of a game that was full screen, since a reload always leaves full screen and the browser only enters
-        // it from a click, and it stands in for full screen where the browser has none for a page (an iPhone).
-        const fullscreenSupported = typeof container.requestFullscreen === 'function' && document.fullscreenEnabled !== false;
-        const isMaximized = () => document.body.classList.contains(MAXIMIZED_CLASS);
-        const setMaximized = on => document.body.classList.toggle(MAXIMIZED_CLASS, on);
-        // What the full screen button shows as on: the browser's full screen, or the window filled where that is
-        // the closest the browser allows. Filled after a reload, the button still offers the browser's full screen.
-        const isOn = () => (fullscreenSupported ? Boolean(document.fullscreenElement) : isMaximized());
         const fullscreenListeners = [];
-        const notifyFullscreen = () => fullscreenListeners.forEach(listener => listener(isOn()));
-        const onFullscreenChange = () => {
-            // Leaving the browser's full screen goes back to the page as it was before the filled window.
-            setMaximized(false);
-            notifyFullscreen();
-        };
+        const onFullscreenChange = () => fullscreenListeners.forEach(listener => listener(Boolean(document.fullscreenElement)));
         document.addEventListener('fullscreenchange', onFullscreenChange);
 
         return {
@@ -179,43 +162,34 @@ define([], () => {
             },
 
             /**
-             * Whether the game is full screen or fills the window, which the next game page should open in too.
+             * Whether the container is full screen.
              *
              * @return {boolean}
              */
-            isExpanded() {
-                return document.fullscreenElement === container || isMaximized();
+            isFullscreen() {
+                return document.fullscreenElement === container;
             },
 
             /**
-             * Enters or leaves full screen with the container, which keeps the dialogs inside it. Where the browser has
-             * no full screen for a page, the game fills the window instead.
+             * Enters or leaves full screen with the container, which keeps the dialogs inside it.
              *
              * @return {Promise<void>}
              */
             async toggleFullscreen() {
-                if (!fullscreenSupported) {
-                    setMaximized(!isMaximized());
-                    notifyFullscreen();
-                } else if (document.fullscreenElement) {
+                if (document.fullscreenElement) {
                     await document.exitFullscreen();
-                } else {
-                    try {
-                        await container.requestFullscreen();
-                    } catch (e) {
-                        // A browser that refuses leaves the page as it is.
-                    }
+                } else if (container.requestFullscreen) {
+                    await container.requestFullscreen();
                 }
             },
 
             /**
-             * Calls a function now and whenever the page enters or leaves full screen.
+             * Calls a function whenever the page enters or leaves full screen.
              *
-             * @param {Function} listener Called with whether the full screen button should show as on.
+             * @param {Function} listener Called with whether it is full screen now.
              */
             onFullscreenChange(listener) {
                 fullscreenListeners.push(listener);
-                listener(isOn());
             },
 
             /**

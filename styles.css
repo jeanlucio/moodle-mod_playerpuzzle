@@ -56,26 +56,6 @@ body.path-mod-playerpuzzle .pp-canvas-desktop {
     }
 }
 
-/**
- * The game filling the browser window: the page that follows a full-screen game (a phase won, a retry), and the
- * full screen of a browser that has none for a page. Above the navbar and the drawers (up to 1035), below
- * Moodle's modals and toasts (1050).
- */
-body.path-mod-playerpuzzle.pp-maximized {
-    overflow: hidden;
-}
-
-body.path-mod-playerpuzzle.pp-maximized .pp-canvas-container {
-    position: fixed;
-    inset: 0;
-    z-index: 1040;
-    max-width: none;
-    aspect-ratio: auto;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-}
-
 body.path-mod-playerpuzzle .pp-loading-text {
     color: var(--white, #fff);
 }

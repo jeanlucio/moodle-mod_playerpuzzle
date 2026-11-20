@@ -114,12 +114,6 @@ $chosendifficulty = optional_param('difficultychoice', 0, PARAM_INT) === 1 ? $di
 $PAGE->set_pagelayout('incourse');
 $PAGE->blocks->show_only_fake_blocks();
 
-// The game page that follows a full-screen one (a phase won, a retry) opens with the game filling the window: the
-// reload has left full screen, and the browser only enters it again from a click.
-if (optional_param('maximized', 0, PARAM_BOOL)) {
-    $PAGE->add_body_class('pp-maximized');
-}
-
 // For a real attempt this also runs the gates that decide whether a new one may begin (attempt limit,
 // cooldown, retry cost), under the lock that stops two simultaneous requests from both passing them.
 try {

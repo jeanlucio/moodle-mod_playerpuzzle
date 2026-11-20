@@ -26,8 +26,7 @@
   answered the required number of questions, and each Orb combo then asks the next one.
 * **Resume anywhere:** the board and the fight are saved while playing, so closing the tab or
   reloading picks the fight up where it was. The flag button also offers to leave and continue later,
-  at no cost, or to give up the match. A game left in full screen opens the next phase or try filling the
-  window, and where the browser has no full screen for a page (an iPhone) the button fills the window instead.
+  at no cost, or to give up the match.
 * **Demo match:** a guided practice fight (100 HP on both sides), always available from the Lobby, that
   never counts for grade, coins or attempts. A one-time balloon explains each piece the first time the
   student matches it, and the closing screen lists the pieces that never came up.

@@ -56,7 +56,7 @@ Full disclosure:
 
 ### 🛠️ Installation & Configuration
 
-> ⚠️ This plugin is not yet published on the Moodle Plugin Directory. Install manually from this repository.
+> ⚠️ This plugin is not yet published on the Moodle Marketplace. Install manually from this repository.
 
 1. Download the `.zip` file or clone this repository.
 2. Extract the folder into your Moodle `mod/` directory.
@@ -136,7 +136,7 @@ Divulgação completa:
 
 ### 🛠️ Instalação e Configuração
 
-> ⚠️ Este plugin ainda não está publicado no Diretório de Plugins do Moodle. Instale manualmente a partir deste repositório.
+> ⚠️ Este plugin ainda não está publicado no Moodle Marketplace. Instale manualmente a partir deste repositório.
 
 1. Baixe o arquivo `.zip` ou clone este repositório.
 2. Extraia na pasta `mod/` do seu Moodle.

@@ -1,6 +1,6 @@
 # 🛠️ Instalação e Configuração
 
-> ⚠️ Este plugin ainda não está publicado no Diretório de Plugins do Moodle. Instale manualmente
+> ⚠️ Este plugin ainda não está publicado no Moodle Marketplace. Instale manualmente
 > a partir deste repositório.
 
 1. Baixe o arquivo `.zip` ou clone este repositório.

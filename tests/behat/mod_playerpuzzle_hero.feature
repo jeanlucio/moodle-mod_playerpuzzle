@@ -86,7 +86,6 @@ Feature: A student chooses a hero
     And I am on the "Dungeon Quiz" "playerpuzzle activity" page
     And I should see "Campaign 1 complete!"
     When I click on "Start a new Campaign" "button"
-    And I click on "Start a new Campaign" "button" in the "Start a new Campaign" "dialogue"
     Then I should see "Starting a new Campaign empties your PuzzleCoin and consumables"
     When I click on "Male mage" "radio"
     And I press "Play"

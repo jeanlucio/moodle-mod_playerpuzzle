@@ -452,7 +452,6 @@ class lobby_page_service {
             return $data + [
                 'newcampaign' => true,
                 'newcampaigntext' => get_string('lobby_newcampaign_notice', 'mod_playerpuzzle'),
-                'newcampaignconfirmtext' => get_string('lobby_newcampaign_confirm', 'mod_playerpuzzle'),
                 'playtext' => get_string('lobby_newcampaign_button', 'mod_playerpuzzle'),
             ];
         }

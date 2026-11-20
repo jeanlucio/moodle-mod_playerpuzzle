@@ -579,7 +579,6 @@ final class lobby_page_service_test extends \advanced_testcase {
 
         $html = $this->render_lobby($data);
         $this->assertStringContainsString('name="confirmnewcampaign" value="1"', $html);
-        $this->assertStringContainsString('data-confirm=', $html);
     }
 
     /**

@@ -11,7 +11,8 @@ each Campaign.
 * **Playing again:** a Campaign ends when its last phase is won or its attempts run out (it keeps
   the progress it reached). The student may then start another Campaign at Level 1, Phase 1, up to
   **Maximum Campaigns** (1 to 10, or unlimited, the default). A new Campaign starts with the
-  student's PuzzleCoin and consumables back to zero, so the Lobby asks them to confirm it first. Once a Campaign
+  student's PuzzleCoin and consumables back to zero: the Lobby says so, and the hero choice, which comes before the
+  Campaign starts, says it again and offers a way back to the Lobby. Once a Campaign
   has ended the Lobby no longer shows the balance or the shop, and the next Campaign's hero choice comes marked
   with the hero of the one that ended.
 * **Attempts and the end of a Campaign:** with limited attempts the Lobby says which attempt the student is

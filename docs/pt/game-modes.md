@@ -11,8 +11,8 @@ Campanha.
 * **Jogar de novo:** uma Campanha termina quando a última fase é vencida ou quando as tentativas dela
   acabam (fica com o progresso que alcançou). O estudante pode então começar outra Campanha no Nível
   1, Fase 1, até o **Número máximo de Campanhas** (de 1 a 10, ou ilimitado, o padrão). Uma Campanha
-  nova começa com a PuzzleCoin e os consumíveis do estudante zerados, por isso o Lobby pede
-  confirmação antes. Depois que uma Campanha termina, o Lobby deixa de mostrar o saldo e a loja, e a escolha do
+  nova começa com a PuzzleCoin e os consumíveis do estudante zerados: o Lobby avisa disso, e a escolha do
+  herói, que vem antes de a Campanha começar, repete o aviso e permite voltar ao Lobby. Depois que uma Campanha termina, o Lobby deixa de mostrar o saldo e a loja, e a escolha do
   herói da próxima Campanha vem marcada com o herói da que acabou.
 * **Tentativas e o fim da Campanha:** com tentativas limitadas o Lobby diz em qual tentativa o estudante está
   ("Tentativa 2 de 3") e avisa antes da última, e o diálogo de desistir da partida também. Quando a última

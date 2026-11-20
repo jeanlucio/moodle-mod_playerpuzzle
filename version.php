@@ -28,5 +28,5 @@ $plugin->component = 'mod_playerpuzzle';
 $plugin->version   = 2026112002;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2024100700;        // Requires: Moodle 4.5+.
 $plugin->supported = [405, 503];
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = 'v0.1.0';         // User-friendly version number.
+$plugin->maturity  = MATURITY_STABLE;
+$plugin->release   = 'v1.0.0';         // User-friendly version number.

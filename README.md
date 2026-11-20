@@ -2,7 +2,7 @@
 
 ![Moodle](https://img.shields.io/badge/Moodle-4.5%2B-orange?style=flat&logo=moodle&logoColor=white)
 ![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat)
-![Status](https://img.shields.io/badge/Status-Alpha-red?style=flat)
+![Status](https://img.shields.io/badge/Status-Stable-green?style=flat)
 [![Latest Release](https://img.shields.io/github/v/release/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/releases)
 [![PlayerGames Ecosystem](https://img.shields.io/badge/PlayerGames-Ecosystem-6f42c1?style=flat&logo=gamepad&logoColor=white)](https://jeanlucio.github.io/playergames/)
 [![Author](https://img.shields.io/badge/by-Jean_Lucio-6f42c1?style=flat)](https://github.com/jeanlucio/)
@@ -10,8 +10,6 @@
 [![Moodle Plugin CI](https://github.com/jeanlucio/moodle-mod_playerpuzzle/actions/workflows/ci.yml/badge.svg)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/actions/workflows/ci.yml)
 [![Last Commit](https://img.shields.io/github/last-commit/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/commits)
 [![Open Issues](https://img.shields.io/github/issues/jeanlucio/moodle-mod_playerpuzzle?style=flat)](https://github.com/jeanlucio/moodle-mod_playerpuzzle/issues)
-
-> ⚠️ **This plugin is a pre-release.** It is not yet published on the Moodle Plugin Directory.
 
 [English](#english) | [Português](#português)
 
@@ -97,8 +95,6 @@ Maintained by [Jean Lúcio](https://github.com/jeanlucio).
 ---
 
 ## Português
-
-> ⚠️ **Este plugin é uma pré-versão.** Ainda não foi publicado no Diretório de Plugins do Moodle.
 
 O **PlayerPuzzle** é uma atividade gamificada Match-3 RPG por turnos para o Moodle: o estudante
 combina peças num tabuleiro 8×8 para atacar um oponente controlado por uma IA simples, respondendo

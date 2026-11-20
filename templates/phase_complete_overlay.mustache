@@ -29,7 +29,7 @@
         "btnreview": "Review questions",
         "btncontinue": "Continue",
         "btnexitgame": "Exit game",
-        "btnstartphase": "Start the next phase",
+        "btnstart": "Start the next phase",
         "shoptitle": "Get ready for the next phase",
         "difficultylabel": "Difficulty for the next phase",
         "difficultychoices": [
@@ -68,17 +68,5 @@
         </div>
     </div>
     </div>
-    <div id="pp-phase-shop" class="pp-phase-shop" hidden>
-        <h2 class="pp-phase-shop-title">{{shoptitle}}</h2>
-        <p id="pp-phase-hero-evolved" class="pp-hero-evolved" role="status" hidden></p>
-        <div id="pp-phase-shop-body"></div>
-        <div class="pp-gameover-buttons">
-            <button id="btn-pp-start-phase" class="btn btn-primary btn-lg shadow">
-                {{btnstartphase}}
-            </button>
-            <button id="btn-pp-exit-shop" class="btn btn-secondary btn-lg shadow">
-                {{btnexitgame}}
-            </button>
-        </div>
-    </div>
+    {{> mod_playerpuzzle/end_shop }}
 </dialog>

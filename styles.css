@@ -2470,6 +2470,19 @@ body.path-mod-playerpuzzle .pp-gameover-card > * {
     flex-shrink: 0;
 }
 
+/* The result and its buttons, which the shop takes the place of on Play again. A class of its own rather than
+   Bootstrap's d-flex, whose display would win over the hidden attribute. */
+body.path-mod-playerpuzzle .pp-gameover-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* With the shop open, the card is as wide as the screen between phases. */
+body.path-mod-playerpuzzle .pp-gameover-card.pp-gameover-shopping {
+    width: 44rem;
+}
+
 /**
  * The Demo's closing note on the items that never showed up: a short list that scrolls rather than
  * pushing the buttons off a small screen.

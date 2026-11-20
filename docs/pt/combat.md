@@ -164,7 +164,7 @@ partida:
 
 Os preços e limites são fixos, iguais para todos, e a loja mostra o limite de cada item no próprio cartão. Durante a
 luta, o número em cada item é quanto ainda dá para usar na fase: o estoque, até o limite da fase. Depois de uma
-derrota, o botão **Loja** da tela de fim leva direto à loja do Lobby, para se abastecer antes da próxima tentativa. A primeira partida de um estudante normalmente
+partida, **Jogar novamente** abre a mesma loja dentro do jogo, como a tela entre as fases, para se abastecer antes da próxima tentativa ou partida. A primeira partida de um estudante normalmente
 começa com o loadout vazio: o PuzzleCoin se ganha vencendo, ou transferindo do PlayerHUD. As moedas
 são coletadas no tabuleiro com a peça Moeda — veja [Integração com o PlayerHUD](#playerhud) para
 como são compensadas com as do oponente e guardadas. O professor pode desligar as dicas em toda a

@@ -163,7 +163,7 @@ or match:
 
 Prices and limits are fixed, the same for everyone, and the shop shows each item's limit on its own card. During the
 fight, the number on each item is how many can still be used in the phase: the stock, up to the phase's limit. After
-a defeat, the **Shop** button on the end screen goes straight to the Lobby's shop, to stock up before the next try. A student's first match normally starts with an
+a match, **Play again** opens the same shop inside the game, as the screen between phases does, to stock up before the next try or match. A student's first match normally starts with an
 empty loadout: PuzzleCoin is earned by winning, or transferred in from PlayerHUD. Coins are collected on the board with the Coin
 piece — see [PlayerHUD Integration](#playerhud) for how they are netted against the opponent's and
 banked. A teacher can switch hints off for the whole activity.

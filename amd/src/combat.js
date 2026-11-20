@@ -1276,7 +1276,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 btnreview: strings.debriefreview,
                 btncontinue: strings.btncontinue,
                 btnexitgame: strings.btnexitgame,
-                btnstartphase: strings.btnstartphase,
+                btnstart: strings.btnstartphase,
                 shoptitle: strings.phaseshoptitle,
                 difficultylabel: strings.phasedifficulty,
                 difficultychoices: this.difficultyChoices(),
@@ -1982,9 +1982,9 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                 btnreview: strings.debriefreview,
                 btnplayagain: strings.btnplayagain,
                 btnexitgame: strings.btnexitgame,
-                // After a real defeat, a way to the Lobby's shop, to stock up before the next try. Not after a
-                // victory, nor in a Demo, which spends no stock.
-                btnshop: victory || this.gameConfig.isdemo ? null : strings.btnshop,
+                // Play again opens the shop before the next match, as the screen between phases does. Not in a Demo,
+                // which spends no stock.
+                ...this.endShopContext(),
                 ...this.unseenItemsContext(),
                 ...this.retryDifficultyContext(victory),
             };
@@ -2030,7 +2030,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                     $('#pp-save-status').removeClass('text-muted').addClass('text-success')
                         .text(successMsg);
                 }
-                $('#btn-pp-restart, #btn-pp-shop, #btn-pp-exit, #pp-retry-difficulty').prop('disabled', false);
+                $('#btn-pp-restart, #btn-pp-exit, #pp-retry-difficulty').prop('disabled', false);
                 if (res.campaignended) {
                     this.showCampaignEnd(res);
                 }
@@ -2041,20 +2041,38 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             }).fail(() => {
                 $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
                     .text(strings.saveerror);
-                $('#btn-pp-restart, #btn-pp-shop, #btn-pp-exit').prop('disabled', false);
+                $('#btn-pp-restart, #btn-pp-exit').prop('disabled', false);
             });
 
             $('#btn-pp-restart').on('click', () => {
                 const retry = document.getElementById('pp-retry-difficulty');
-                this.goToNextMatch(retry ? retry.value : null);
+                const difficulty = retry ? retry.value : null;
+                if (!document.getElementById('pp-end-shop')) {
+                    this.goToNextMatch(difficulty);
+                    return;
+                }
+                this.openShop('pp-gameover-main', () => this.goToNextMatch(difficulty));
             });
             $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;
             });
-            $('#btn-pp-shop').on('click', () => {
-                // The Lobby opens the panel its address names (lobby_panels.js).
-                window.location.href = `${viewurl}#pp-lobby-shop`;
-            });
+        }
+
+        /**
+         * The shop's part of the end screen of a real match: its title and start button say what comes next, another
+         * try at the phase in a Campaign or another match in a Single Match. Nothing in a Demo, which has no shop.
+         *
+         * @return {object} Template context for mod_playerpuzzle/end_shop, or an empty one.
+         */
+        endShopContext() {
+            if (this.gameConfig.isdemo) {
+                return {};
+            }
+            const campaign = this.gameConfig.gamemode === 'campaign';
+            return {
+                shoptitle: campaign ? this.strings.retryshoptitle : this.strings.matchshoptitle,
+                btnstart: campaign ? this.strings.btnstartretry : this.strings.btnstartmatch,
+            };
         }
 
         /**
@@ -2084,11 +2102,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             Templates.replaceNodeContents(box, html, js);
             box.hidden = false;
             document.getElementById('btn-pp-restart').hidden = true;
-            // A new Campaign starts with no coins and no items, so the shop has nothing left to offer.
-            const shop = document.getElementById('btn-pp-shop');
-            if (shop) {
-                shop.hidden = true;
-            }
             const retry = document.getElementById('pp-retry-wrap');
             if (retry) {
                 retry.hidden = true;
@@ -2099,16 +2112,14 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         /**
          * The step after the phase's win is banked: the shop, the same one as the Lobby's, with the hero's
          * upgrades, before the next phase starts. Says so when the hero evolved on entering the phase.
-         * If the shop cannot be read the game goes on rather than stay stuck here.
          *
          * @param {object} res The advance_phase response (currentlevel, currentphase, heroevolved).
          * @return {Promise<void>}
          */
         async showPhaseShop(res) {
             const strings = this.strings;
-            const cmid = this.gameConfig.cmid;
             const total = parseInt(this.gameConfig.maxlevels, 10) * 10 || 10;
-            const startNext = () => {
+            await this.openShop('pp-phase-main', () => {
                 // Announce the transition for screen-reader users, then give it a beat to be read
                 // before the next phase is built and starts speaking. The beat is counted on the real clock, not
                 // the game's, which slows down together with a slow device and would stretch it to many seconds.
@@ -2119,35 +2130,51 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         .replace('{$a->total}', total)
                 );
                 window.setTimeout(() => this.goToNextMatch(res.difficulty), 1600);
-            };
+            }, Boolean(res.heroevolved));
+        }
 
+        /**
+         * Turns an end screen into the shop (mod_playerpuzzle/end_shop), the same one as the Lobby's, before the
+         * next match: after a phase won, and on Play again after a match. Whatever is bought is in the next match,
+         * which is built when the student starts it. If the shop cannot be read the game goes on rather than stay
+         * stuck here.
+         *
+         * @param {string} mainId The id of the end screen's part the shop takes the place of.
+         * @param {Function} startNext Goes on to the next match.
+         * @param {boolean} heroEvolved Whether to say the hero evolved on entering the next phase.
+         * @return {Promise<void>}
+         */
+        async openShop(mainId, startNext, heroEvolved = false) {
+            const cmid = this.gameConfig.cmid;
             try {
                 const shop = await Ajax.call([{methodname: 'mod_playerpuzzle_get_shop', args: {cmid}}])[0];
-                document.getElementById('pp-phase-shop-body').innerHTML = shop.html;
+                document.getElementById('pp-end-shop-body').innerHTML = shop.html;
             } catch (error) {
                 startNext();
                 return;
             }
 
-            if (res.heroevolved) {
-                const notice = document.getElementById('pp-phase-hero-evolved');
-                notice.textContent = strings.shop_hero_evolved;
+            if (heroEvolved) {
+                const notice = document.getElementById('pp-end-hero-evolved');
+                notice.textContent = this.strings.shop_hero_evolved;
                 notice.hidden = false;
             }
             // Loaded only now: the shop's own click handler is needed on this screen and nowhere else in the game.
             const LobbyShop = await new Promise(resolve => require(['mod_playerpuzzle/lobby_shop'], resolve));
             LobbyShop.init(cmid);
-            document.getElementById('pp-phase-main').hidden = true;
-            document.getElementById('pp-phase-shop').hidden = false;
-            const start = document.getElementById('btn-pp-start-phase');
+            const main = document.getElementById(mainId);
+            main.hidden = true;
+            main.closest('.pp-gameover-card')?.classList.add('pp-gameover-shopping');
+            document.getElementById('pp-end-shop').hidden = false;
+            const start = document.getElementById('btn-pp-start-next');
             const exit = document.getElementById('btn-pp-exit-shop');
             start.addEventListener('click', () => {
                 start.disabled = true;
                 exit.disabled = true;
                 startNext();
             });
-            // The phase is already banked and its next one ready, as the Lobby finds it: leaving here only means
-            // starting the next phase later, with whatever was bought already registered.
+            // What was bought is already registered, as the Lobby finds it: leaving here only means starting the
+            // next match later.
             exit.addEventListener('click', () => {
                 window.location.href = this.gameConfig.viewurl;
             });

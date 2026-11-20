@@ -17,7 +17,8 @@
 {{!
     @template mod_playerpuzzle/gameover_overlay
 
-    Game over overlay rendered client-side inside the canvas container via core/templates.
+    Game over overlay rendered client-side inside the canvas container via core/templates. With shoptitle, Play
+    again opens the shop (mod_playerpuzzle/end_shop) before the next match.
 
     Example context (json):
     {
@@ -31,7 +32,8 @@
         "btnreview": "Review questions",
         "btnplayagain": "Play Again",
         "btnexitgame": "Exit Game",
-        "btnshop": "Shop",
+        "shoptitle": "Get ready for the next try",
+        "btnstart": "Start the next try",
         "difficultylabel": "Difficulty for the next try",
         "difficultychoices": [
             {"value": "easy", "label": "Easy", "checked": false},
@@ -44,6 +46,7 @@
 }}
 <div id="playerpuzzle-gameover" class="d-flex flex-column justify-content-center align-items-center">
     <div class="pp-gameover-card pp-themed d-flex flex-column align-items-center">
+        <div id="pp-gameover-main" class="pp-gameover-main">
         <h1 class="display-4 pp-bold {{colorclass}} mb-3">{{msg}}</h1>
         <p id="pp-gameover-coins" class="lead mb-4">
             {{coinscollected}} <strong class="pp-accent">{{playergold}}</strong><br>
@@ -78,14 +81,13 @@
             <button id="btn-pp-restart" disabled class="btn btn-primary btn-lg shadow">
                 {{btnplayagain}}
             </button>
-            {{#btnshop}}
-            <button id="btn-pp-shop" disabled class="btn btn-secondary btn-lg shadow">
-                {{btnshop}}
-            </button>
-            {{/btnshop}}
             <button id="btn-pp-exit" disabled class="btn btn-secondary btn-lg shadow">
                 {{btnexitgame}}
             </button>
         </div>
+        </div>
+        {{#shoptitle}}
+        {{> mod_playerpuzzle/end_shop }}
+        {{/shoptitle}}
     </div>
 </div>

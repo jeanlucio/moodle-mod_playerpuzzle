@@ -2106,7 +2106,8 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             if (retry) {
                 retry.hidden = true;
             }
-            Accessibility.announce(`${this.strings.campaignover} ${res.campaignlines.join(' ')}`);
+            const title = res.outcome === 'won' ? this.strings.campaigncomplete : this.strings.campaignover;
+            Accessibility.announce(`${title} ${res.campaignlines.join(' ')}`);
         }
 
         /**

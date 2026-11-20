@@ -29,8 +29,8 @@ use stdClass;
 /**
  * The end screen of a match says "phase lost" and offers to play again, which is wrong when that attempt was the
  * Campaign's last: the Campaign is over, the next Play starts another, if the activity allows one. This builds
- * what the screen shows instead: that it ended and why, how far the student got, the grade it earned when the
- * activity is graded, and the position in the class ranking when the teacher turned it on.
+ * what the screen shows instead: that it ended and why (won, or out of attempts), how far the student got, the
+ * grade it earned when the activity is graded, and the position in the class ranking when the teacher turned it on.
  */
 final class campaign_end {
     /**
@@ -69,7 +69,9 @@ final class campaign_end {
         }
 
         $lines = [];
-        if (!$won && $start->ended === campaigns::ENDED_ATTEMPTS) {
+        if ($won) {
+            $lines[] = get_string('campaignend_won', 'mod_playerpuzzle');
+        } else if ($start->ended === campaigns::ENDED_ATTEMPTS) {
             $lines[] = get_string('campaignover_text', 'mod_playerpuzzle');
         }
         $attempts = array_values($attempts);

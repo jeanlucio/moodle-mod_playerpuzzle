@@ -1396,7 +1396,7 @@ final class save_progress_test extends \advanced_testcase {
 
     /**
      * The victory that ends the whole Campaign, on the last phase of the last level, is the one this
-     * endpoint records as 'won'.
+     * endpoint records as 'won', and its end screen opens by saying the final boss was beaten.
      *
      * @return void
      */
@@ -1407,6 +1407,9 @@ final class save_progress_test extends \advanced_testcase {
 
         $this->assertFalse($result['error']);
         $this->assertSame('won', $DB->get_field('playerpuzzle_attempts', 'status', ['token' => $token]));
+        $this->assertTrue($result['data']['campaignended']);
+        $this->assertSame(get_string('campaignend_won', 'mod_playerpuzzle'), $result['data']['campaignlines'][0]);
+        $this->assertNotContains(get_string('campaignover_text', 'mod_playerpuzzle'), $result['data']['campaignlines']);
     }
 
     /**

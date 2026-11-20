@@ -421,6 +421,12 @@ body.path-mod-playerpuzzle .pp-stage .pp-badge-btn {
     box-shadow: 0 0 0 1px #9c6b2e, inset 0 0 0 1px #9c6b2e;
 }
 
+/* A button on a ring lets the ring's arc show through, so it hides none of how full the ring is. */
+body.path-mod-playerpuzzle .pp-stage .pp-badge-btn.pp-badge-on-ring {
+    background-color: rgb(28 23 18 / 35%);
+    text-shadow: 0 0 3px #000, 0 0 1px #000;
+}
+
 body.path-mod-playerpuzzle .pp-stage .pp-badge-btn[aria-disabled="true"] {
     opacity: 0.4;
 }

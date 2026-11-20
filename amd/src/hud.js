@@ -349,8 +349,8 @@ define([
             this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0', L.indicatorIconSize);
             this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0', L.indicatorIconSize);
 
-            this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, 'magic', 1, true);
-            this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, 'shield', 1, true);
+            this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, 'magic');
+            this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, 'shield');
 
             this.playerLogLines = this.createHistoryLog(L.playerUiX);
             this.bossLogLines = this.createHistoryLog(L.bossUiX);
@@ -383,8 +383,8 @@ define([
             this.txtBossGold = this.addResourceChip(L.bossGoldX, L.bossGoldY, 'item6', '0');
             this.txtBossStar = this.addResourceChip(L.bossStarX, L.bossStarY, 'item0', 'x1.0');
 
-            this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, 'magic', L.badgeScale, true);
-            this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, 'shield', L.badgeScale, true);
+            this.createPurchaseBadge(L.playerGrimoireX, L.playerRingY, 'magic', L.badgeScale);
+            this.createPurchaseBadge(L.playerShieldRingX, L.playerRingY, 'shield', L.badgeScale);
 
             this.setupHistoryButtonMobile();
         }
@@ -456,33 +456,22 @@ define([
 
         /**
          * The button that uses a consumable, over the corner of its icon. A real button, named after what it uses and
-         * how many are left; it dims and stops doing anything when none is left or the phase's limit is reached.
-         *
-         * Under a ring the button sits centred instead, its top tucked behind the ring: the ring is drawn over it, so
-         * it hides none of the arc, and its number shows just below the ring's edge.
+         * how many are left; it dims and stops doing anything when none is left or the phase's limit is reached. The
+         * buttons of the Grimoire and the Shield sit on a ring, whose arc shows through them.
          *
          * @param {number} iconX The icon's centre x.
          * @param {number} iconY The icon's centre y.
          * @param {string} type 'potion', 'shield', 'magic' or 'sword'.
          * @param {number} [scale] Size multiplier off the 46 x 34 baseline.
-         * @param {boolean} [onRing] Whether the icon is a ring's.
          */
-        createPurchaseBadge(iconX, iconY, type, scale = 1, onRing = false) {
+        createPurchaseBadge(iconX, iconY, type, scale = 1) {
             const w = 46 * scale;
             const h = 34 * scale;
-            // How far the top of a button under a ring goes behind it: never so far that the ring covers the number.
-            const tuck = 10 * scale;
-            const ringBottom = this.L.ringRadius + (this.L.ringThickness / 2) - tuck;
-            const centreX = iconX + (onRing ? 0 : 20 * scale);
-            const centreY = iconY + (onRing ? ringBottom + (h / 2) : 20 * scale);
-            // The rings are made later, on the first update, in the middle layer: a button there sits under them.
-            const layer = onRing ? this.layers.middle : this.layers.front;
-            const button = make('button', 'pp-el pp-badge-btn', layer, centered(centreX, centreY, w, h));
+            const offset = 20 * scale;
+            const onRing = type === 'magic' || type === 'shield';
+            const button = make('button', `pp-el pp-badge-btn${onRing ? ' pp-badge-on-ring' : ''}`, this.layers.front,
+                centered(iconX + offset, iconY + offset, w, h));
             button.type = 'button';
-            if (onRing) {
-                // The number is centred in the part the ring leaves in sight.
-                button.style.paddingTop = `${tuck}px`;
-            }
             button.style.borderRadius = `${6 * scale}px`;
             button.style.fontSize = `${Math.round(16 * scale)}px`;
             button.textContent = '0';

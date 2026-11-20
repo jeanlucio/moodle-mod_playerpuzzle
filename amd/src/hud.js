@@ -35,6 +35,10 @@ define([
     const TURN_GOLD = '#f2c14e';
     // The fill of each side's HP bar: a moss green and a brick red dark enough for white text to read on them.
     const HP_FILL = {player: '#3f7a2e', boss: '#9b2d28'};
+    // The Shield's ring fills in silver, apart from the blue of the Orb's ring beside it, and turns gold once the
+    // block is armed.
+    const SHIELD_RING_FILLING = 0xc0ccd8;
+    const SHIELD_RING_ARMED = 0xffcc00;
     const TRANSLUCENT_ALPHA = 0.45;
 
     // The characters' idle breathing: how much taller they get at the top of a breath, and how long half a breath
@@ -1384,7 +1388,7 @@ define([
             this.updateRing('bossGrimoire', L.bossGrimoireX, L.bossRingY, 'item1', poisonMeter / 100, 0x9933cc);
             this.updateRing(
                 'bossShieldRing', L.bossShieldRingX, L.bossRingY, 'item4',
-                shieldReady ? 1 : (shieldMeter / 100), shieldReady ? 0xffcc00 : 0x3388ff
+                shieldReady ? 1 : (shieldMeter / 100), shieldReady ? SHIELD_RING_ARMED : SHIELD_RING_FILLING
             );
             this.updateRing('bossOrb', L.bossOrbX, L.bossRingY, 'item2', mana / 100, 0x0088ff);
             this.updateStatusEffects('boss', poisonRounds, shieldReady);
@@ -1415,7 +1419,7 @@ define([
             this.updateRing('playerGrimoire', L.playerGrimoireX, L.playerRingY, 'item1', poisonMeter / 100, 0x9933cc);
             this.updateRing(
                 'playerShieldRing', L.playerShieldRingX, L.playerRingY, 'item4',
-                shieldReady ? 1 : (shieldMeter / 100), shieldReady ? 0xffcc00 : 0x3388ff
+                shieldReady ? 1 : (shieldMeter / 100), shieldReady ? SHIELD_RING_ARMED : SHIELD_RING_FILLING
             );
             this.updateRing('playerOrb', L.playerOrbX, L.playerRingY, 'item2', mana / 100, 0x0088ff);
             this.updateStatusEffects('player', poisonRounds, shieldReady);

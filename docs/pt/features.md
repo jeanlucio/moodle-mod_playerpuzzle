@@ -27,7 +27,8 @@
   ter respondido o número exigido de perguntas, e cada combo de Orbe faz a próxima.
 * **Retome de onde parou:** o tabuleiro e a luta são salvos durante o jogo, então fechar a aba ou
   recarregar a página retoma a luta de onde estava. O botão de bandeira também oferece sair e continuar
-  depois, sem custo, ou desistir da partida.
+  depois, sem custo, ou desistir da partida. A próxima fase, ou uma nova tentativa depois de uma derrota, começa na
+  mesma página, então um jogo em tela cheia continua em tela cheia.
 * **Partida Demo:** uma luta de prática guiada (100 de HP dos dois lados), sempre disponível no Lobby,
   que nunca conta para nota, moedas ou tentativas. Um balão explica cada peça na primeira vez em que o
   estudante a combina, e a tela final lista as peças que não apareceram.

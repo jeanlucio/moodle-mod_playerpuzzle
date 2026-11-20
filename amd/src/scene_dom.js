@@ -36,7 +36,8 @@ define([
     'mod_playerpuzzle/stage/stage',
     'mod_playerpuzzle/stage/assets',
     'mod_playerpuzzle/stage/sound',
-], (Layout, Hud, CombatHandler, BoardHandler, RuntimeModule, StageModule, Assets, SoundModule) => {
+    'mod_playerpuzzle/accessibility',
+], (Layout, Hud, CombatHandler, BoardHandler, RuntimeModule, StageModule, Assets, SoundModule, Accessibility) => {
     'use strict';
 
     // How long the game waits for something, anything, to finish loading before it gives up.
@@ -102,14 +103,16 @@ define([
      *
      * @param {object} urls The images by key.
      * @param {object} sound The stage's sound.
+     * @param {boolean} withEffects Whether the sound effects still have to be loaded; the next match in the same
+     *  page has them already.
      * @return {Promise<void>}
      */
-    const load = async(urls, sound) => {
-        const effects = {
+    const load = async(urls, sound, withEffects) => {
+        const effects = withEffects ? {
             swap: `${M.cfg.wwwroot}/mod/playerpuzzle/pix/swap.mp3`,
             match: `${M.cfg.wwwroot}/mod/playerpuzzle/pix/match.mp3`,
             hit: `${M.cfg.wwwroot}/mod/playerpuzzle/pix/hit.mp3`,
-        };
+        } : {};
         const total = Object.keys(urls).length + Object.keys(effects).length;
         let loaded = 0;
         let timer = null;
@@ -148,22 +151,26 @@ define([
      *
      * @param {object} gameConfig The game's configuration.
      * @param {object} strings The strings.
+     * @param {?object} previousSound The sound of the match before in the same page, which goes on (the music
+     *  included); null for the first one.
      * @return {Promise<object>} The scene.
      */
-    const start = async(gameConfig, strings) => {
+    const start = async(gameConfig, strings, previousSound = null) => {
         const isDesk = window.innerWidth > window.innerHeight;
         const L = Layout.build(isDesk);
         const container = document.getElementById('playerpuzzle-canvas-container');
 
-        const sound = SoundModule.create(SoundModule.browserEnv(), {
+        const sound = previousSound || SoundModule.create(SoundModule.browserEnv(), {
             effectsOn: gameConfig.sfxenabled !== false,
             musicOn: gameConfig.musicenabled !== false,
         });
-        sound.setMusicUrl(`${M.cfg.wwwroot}/mod/playerpuzzle/pix/music.mp3`);
+        if (!previousSound) {
+            sound.setMusicUrl(`${M.cfg.wwwroot}/mod/playerpuzzle/pix/music.mp3`);
+        }
         const urls = imageUrls(gameConfig, isDesk);
-        await load(urls, sound);
+        await load(urls, sound, !previousSound);
 
-        container.querySelectorAll('p').forEach(el => el.remove());
+        container.querySelectorAll('.pp-loading-text').forEach(el => el.remove());
         container.classList.toggle('pp-canvas-desktop', isDesk);
         container.classList.toggle('pp-canvas-portrait', !isDesk);
         container.appendChild(document.getElementById('playerpuzzle-modal'));
@@ -226,7 +233,32 @@ define([
             });
         }
         runtime.start();
+        scene.restartWith = (nextConfig, html) => restart(scene, nextConfig, html, strings);
         return scene;
+    };
+
+    /**
+     * Takes a match out of the page and builds the next one in the same box, which stays in full screen if it is.
+     * Everything the match did on its own stops first (its saves, its loop, its listeners), and its box is emptied,
+     * dialogs and end screens included, for what the server rendered for the next one.
+     *
+     * @param {object} previous The scene of the match that ended.
+     * @param {object} gameConfig The next match's configuration.
+     * @param {string} html What goes in the game's box for it, rendered by the server (mod_playerpuzzle/game_parts).
+     * @param {object} strings The strings.
+     * @return {Promise<object>} The new scene.
+     */
+    const restart = async(previous, gameConfig, html, strings) => {
+        previous.combat.stop();
+        previous.board.destroy();
+        previous.runtime.stop();
+        previous.stage.destroy();
+
+        const container = document.getElementById('playerpuzzle-canvas-container');
+        container.replaceChildren();
+        container.insertAdjacentHTML('beforeend', html);
+        Accessibility.hideEmojis(container);
+        return start(gameConfig, strings, previous.sound);
     };
 
     return {start};

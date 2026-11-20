@@ -1,0 +1,74 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_playerpuzzle/game_parts
+
+    What goes in the game's box for one match: the loading screen, the board's grid for the keyboard and screen
+    readers, and the dialogs. The game page renders it inside the box, and the game renders it again in place of
+    the old one when it goes on to the next match without leaving the page.
+
+    Context variables required for this template:
+    * loadingtext - The text shown while the game loads
+    * opponenthelp - The opponent's card for the help dialog, with the variables of mod_playerpuzzle/opponent_help
+    * howtoplay - The How to play help, with the variables of mod_playerpuzzle/howtoplay_dialog
+    * giveup - The give up confirmation, with the variables of mod_playerpuzzle/giveup_dialog
+
+    Example context (json):
+    {
+        "loadingtext": "Loading the game engine...",
+        "opponenthelp": {
+            "heading": "Your opponent",
+            "closelabel": "Close",
+            "name": "Goblin",
+            "spriteurl": "/mod/playerpuzzle/pix/opponents/goblin.webp",
+            "phasetext": "",
+            "traits": [{"text": "Nothing sets it apart."}]
+        },
+        "giveup": {
+            "title": "Give up the match?",
+            "text": "This counts as a defeat.",
+            "confirmlabel": "Give up",
+            "cancellabel": "Keep playing"
+        }
+    }
+}}
+<div id="pp-bootstrap-loader" class="d-flex flex-column justify-content-center align-items-center">
+    <h3 class="text-white mb-3">{{#str}} loading, mod_playerpuzzle {{/str}}</h3>
+    <div class="progress pp-loader-progress">
+        <div id="pp-progress-bar"
+             class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+             role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+             <span class="visually-hidden">0%</span>
+        </div>
+    </div>
+</div>
+<p class="text-center p-5 pp-loading-text">{{loadingtext}}</p>
+<div class="visually-hidden">
+    <table role="grid" id="pp-board-grid" aria-label="{{#str}} boardgridlabel, mod_playerpuzzle {{/str}}">
+        <tbody id="pp-board-grid-body"></tbody>
+    </table>
+</div>
+{{> mod_playerpuzzle/question_modal }}
+{{#opponenthelp}}
+{{> mod_playerpuzzle/opponent_help }}
+{{/opponenthelp}}
+{{#howtoplay}}
+{{> mod_playerpuzzle/howtoplay_dialog }}
+{{/howtoplay}}
+{{#giveup}}
+{{> mod_playerpuzzle/giveup_dialog }}
+{{/giveup}}

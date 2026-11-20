@@ -60,10 +60,11 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `save_progress_test.php` | 43 |
 | `set_ranking_preference_test.php` | 2 |
 | `set_sound_preference_test.php` | 5 |
+| `start_match_test.php` | 5 |
 | `transfer_hud_coins_test.php` | 10 |
 | `use_stock_test.php` | 19 |
 | `validate_answer_test.php` | 20 |
-| **Subtotal** | **199** |
+| **Subtotal** | **204** |
 
 ### Testes de Formulário (`tests/form/`)
 
@@ -137,7 +138,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 41 |
 | **Subtotal** | **41** |
 
-| **Total Geral** | **1176** |
+| **Total Geral** | **1181** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite

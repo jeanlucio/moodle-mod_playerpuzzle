@@ -1857,9 +1857,8 @@ final class game_page_service_test extends \advanced_testcase {
         $this->assertSame(get_string('giveup_exit_text', 'mod_playerpuzzle'), $real['exittext']);
         $this->assertSame(get_string('giveup_exit_demo', 'mod_playerpuzzle'), $demo['exittext']);
 
-        $html = $OUTPUT->render_from_template('mod_playerpuzzle/game_layout', [
+        $html = $OUTPUT->render_from_template('mod_playerpuzzle/game_parts', [
             'loadingtext' => 'Loading',
-            'gameconfig' => '{}',
             'giveup' => $real,
         ]);
         $this->assertStringContainsString('id="playerpuzzle-giveup"', $html);

@@ -80,6 +80,13 @@ define([
         }
 
         /**
+         * Takes the board's listeners off the page, before the game goes on to the next match in the same page.
+         */
+        destroy() {
+            this.view.destroy();
+        }
+
+        /**
          * Picks up a resumed fight where it stood: a match already over goes straight to its
          * end screen, a question still open reopens (its close then refills the board and
          * finishes the cascade, as in live play), and otherwise the turn continues. A boss

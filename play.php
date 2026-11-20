@@ -52,102 +52,44 @@ require_sesskey();
 // skipped for it entirely.
 $isdemo = optional_param('isdemo', 0, PARAM_BOOL);
 
-$returnurl = new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id]);
-\mod_playerpuzzle\local\game_page_service::check_guest_demo_only($isdemo, $returnurl, $context);
-
-// A Campaign attempt needs the student's hero for that Campaign. The choice screen sends it on with the Play
-// that starts the match, and it is saved here, so the Campaign has it from its first phase. A request without
-// one (the end screen's "Play again" once a Campaign ended, or a stale link) goes back to the Lobby, where the
-// choice, and the warning a new Campaign comes with, begin.
-if (!$isdemo) {
-    // Checked before the hero is saved too: choosing the hero of a new Campaign is what starts it, so a Campaign
-    // refused by the cooldown would otherwise begin anyway. start_game() checks again under its lock.
-    try {
-        \mod_playerpuzzle\local\game_page_service::check_cooldown($playerpuzzle, (int) $USER->id, $returnurl);
-    } catch (\mod_playerpuzzle\exception\start_refused $refused) {
-        redirect(new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id, 'refused' => $refused->errorcode]));
-    }
-    $choice = \mod_playerpuzzle\local\hero_page_service::choose_for_play(
-        $playerpuzzle,
-        (int) $USER->id,
-        optional_param('hero', '', PARAM_ALPHANUM),
-        (bool) optional_param('confirmnewcampaign', 0, PARAM_BOOL)
-    );
-    if ($choice === \mod_playerpuzzle\local\hero_page_service::CHOICE_INVALID) {
-        redirect(new moodle_url('/mod/playerpuzzle/hero.php', ['id' => $cm->id, 'heroerror' => 1]));
-    }
-    if ($choice === \mod_playerpuzzle\local\hero_page_service::CHOICE_LOBBY) {
-        redirect($returnurl);
-    }
-}
-
-// The hero a Single Match or a Demo is fought with, from the choice screen; the Campaign's hero is the
-// student's own row. Only a hero from the catalog counts, and the last one chosen for a Single Match is
-// remembered, never one for a Demo.
-$hero = optional_param('hero', '', PARAM_ALPHANUM);
-if (!\mod_playerpuzzle\local\heroes::is_valid($hero)) {
-    $hero = array_key_first(\mod_playerpuzzle\local\heroes::CATALOG);
-} else if (!$isdemo && $playerpuzzle->gamemode === constants::GAMEMODE_SINGLE) {
-    \mod_playerpuzzle\local\last_hero::set((int) $USER->id, $hero);
-}
-
 $PAGE->set_url('/mod/playerpuzzle/play.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playerpuzzle->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
-
-$ismobile = optional_param('mobile', 0, PARAM_INT) === 1;
 
 // Student's difficulty choice from the Lobby. Used when a fresh attempt is created. Resuming an attempt keeps its own
 // difficulty, except when the Lobby marked the value as a choice (difficultychoice) and the attempt's phase has not
 // started yet; the pages that reload the game after a win or a loss send the value without the mark. Coerced to
 // a known value inside security::clean_difficulty().
 $difficulty = optional_param('difficulty', constants::DIFFICULTY_NORMAL, PARAM_ALPHA);
-$chosendifficulty = optional_param('difficultychoice', 0, PARAM_INT) === 1 ? $difficulty : null;
 
 // Previously switched to a chromeless 'embedded' layout for mobile devices, opened in a new
 // tab by the Lobby's own form — removed because the game now always stays in the same window,
 // in the normal course layout, using the same Expand/Collapse fullscreen toggle as desktop
 // (see hud.js::setupButtons()) instead of a device-specific windowing trick.
-// $ismobile is still passed into the JS game config below —
+// The mobile flag is still passed into the JS game config —
 // it now only drives a CSS sizing tweak for the question modal's answer buttons.
 $PAGE->set_pagelayout('incourse');
 $PAGE->blocks->show_only_fake_blocks();
 
-// For a real attempt this also runs the gates that decide whether a new one may begin (attempt limit,
-// cooldown, retry cost), under the lock that stops two simultaneous requests from both passing them.
-try {
-    $jsconfig = \mod_playerpuzzle\local\game_page_service::start_game(
-        $cm,
-        $playerpuzzle,
-        $context,
-        (int) $USER->id,
-        $ismobile,
-        $difficulty,
-        $isdemo,
-        $returnurl,
-        $hero,
-        $chosendifficulty
-    );
-} catch (\mod_playerpuzzle\exception\start_refused $refused) {
-    // The activity's rules do not let this attempt begin: the Lobby says why in a dialog, not an error page.
-    redirect(new moodle_url('/mod/playerpuzzle/view.php', ['id' => $cm->id, 'refused' => $refused->errorcode]));
+$start = \mod_playerpuzzle\local\match_start::begin($cm, $playerpuzzle, $context, (int) $USER->id, [
+    'isdemo' => $isdemo,
+    'hero' => optional_param('hero', '', PARAM_ALPHANUM),
+    'confirmnewcampaign' => optional_param('confirmnewcampaign', 0, PARAM_BOOL),
+    'difficulty' => $difficulty,
+    'chosendifficulty' => optional_param('difficultychoice', 0, PARAM_INT) === 1 ? $difficulty : null,
+    'mobile' => optional_param('mobile', 0, PARAM_INT) === 1,
+]);
+if ($start['redirect'] !== null) {
+    // The activity's rules do not let this match begin: the Lobby (or the hero choice) says why.
+    redirect($start['redirect']);
 }
 
 $PAGE->requires->js_call_amd('mod_playerpuzzle/game_boot', 'init', []);
 
 $templatedata = [
-    'loadingtext' => get_string('loadinggame', 'mod_playerpuzzle'),
-    'gameconfig' => json_encode($jsconfig),
-    'opponenthelp' => [
-        'closelabel' => get_string('close', 'mod_playerpuzzle'),
-    ] + \mod_playerpuzzle\local\opponent_card::for_fight($jsconfig),
-    'giveup' => \mod_playerpuzzle\local\game_page_service::giveup_dialog(
-        !empty($jsconfig['isdemo']),
-        empty($jsconfig['isdemo'])
-            && (\mod_playerpuzzle\local\game_page_service::attempt_position($playerpuzzle, (int) $USER->id)['last'] ?? false)
-    ),
-    'howtoplay' => \mod_playerpuzzle\local\howtoplay::context($playerpuzzle, is_guest($context, (int) $USER->id)),
+    'gameconfig' => json_encode($start['config']),
+    'parts' => \mod_playerpuzzle\local\match_start::parts_context($playerpuzzle, $context, (int) $USER->id, $start['config']),
 ];
 
 echo $OUTPUT->header();

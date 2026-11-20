@@ -74,6 +74,8 @@ define(['mod_playerpuzzle/stage/stage'], (Stage) => {
             this.offsetY = layout.boardOffY;
             this.sprites = new Map();
             this.hintSprites = null;
+            // Takes the listeners the board puts on the page away again, when the game goes on to the next match.
+            this.listening = new AbortController();
 
             const middle = scene.stage.layers.middle;
             this.drawBackground(middle);
@@ -412,8 +414,9 @@ define(['mod_playerpuzzle/stage/stage'], (Stage) => {
                     this.handlers.onRelease(point(event));
                 }
             };
-            document.addEventListener('pointerup', release);
-            document.addEventListener('pointercancel', release);
+            const signal = this.listening.signal;
+            document.addEventListener('pointerup', release, {signal});
+            document.addEventListener('pointercancel', release, {signal});
 
             // A touch that starts on the board in the student's turn must not scroll the page, or a swipe would move
             // the page instead of the piece; anywhere else on the stage, and out of the student's turn, it scrolls.
@@ -426,8 +429,15 @@ define(['mod_playerpuzzle/stage/stage'], (Stage) => {
 
             // The cell with the focus is outlined only while the keyboard is what is being used, so whoever plays with
             // the mouse or the finger never sees it.
-            document.addEventListener('keydown', () => table.classList.add('pp-board-keyboard'));
-            document.addEventListener('pointerdown', () => table.classList.remove('pp-board-keyboard'));
+            document.addEventListener('keydown', () => table.classList.add('pp-board-keyboard'), {signal});
+            document.addEventListener('pointerdown', () => table.classList.remove('pp-board-keyboard'), {signal});
+        }
+
+        /**
+         * Takes the board's listeners off the page; the board itself goes with the stage.
+         */
+        destroy() {
+            this.listening.abort();
         }
     }
 

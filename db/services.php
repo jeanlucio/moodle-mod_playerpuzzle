@@ -145,4 +145,12 @@ $functions = [
         'ajax'         => true,
         'capabilities' => 'mod/playerpuzzle:view',
     ],
+    'mod_playerpuzzle_start_match' => [
+        'classname'    => 'mod_playerpuzzle\external\start_match',
+        'methodname'   => 'execute',
+        'description'  => 'Starts the next match from inside the game, without leaving the page.',
+        'type'         => 'write',
+        'ajax'         => true,
+        'capabilities' => 'mod/playerpuzzle:view',
+    ],
 ];

@@ -17,70 +17,33 @@
 {{!
     @template mod_playerpuzzle/game_layout
 
-    The main layout for the game canvas and accessible question modal.
+    The game page: the game's box, with what goes in it for the match, and the live region the game speaks through.
 
     Context variables required for this template:
-    * loadingtext - The text shown while the game loads
     * gameconfig - The game's config, as JSON
-    * opponenthelp - The opponent's card for the help dialog, with the variables of mod_playerpuzzle/opponent_help
-    * howtoplay - The How to play help, with the variables of mod_playerpuzzle/howtoplay_dialog
-    * giveup - The give up confirmation, with the variables of mod_playerpuzzle/giveup_dialog
+    * parts - What goes in the game's box, with the variables of mod_playerpuzzle/game_parts
 
     Example context (json):
     {
-        "loadingtext": "Loading the game engine...",
         "gameconfig": "{}",
-        "opponenthelp": {
-            "heading": "Your opponent",
-            "closelabel": "Close",
-            "name": "Goblin",
-            "spriteurl": "/mod/playerpuzzle/pix/opponents/goblin.webp",
-            "phasetext": "",
-            "traits": [{"text": "Nothing sets it apart."}]
-        },
-        "giveup": {
-            "title": "Give up the match?",
-            "text": "This counts as a defeat.",
-            "confirmlabel": "Give up",
-            "cancellabel": "Keep playing"
+        "parts": {
+            "loadingtext": "Loading the game engine...",
+            "giveup": {
+                "title": "Give up the match?",
+                "text": "This counts as a defeat.",
+                "confirmlabel": "Give up",
+                "cancellabel": "Keep playing"
+            }
         }
     }
 }}
-
 <div class="playerpuzzle-game-wrapper d-flex flex-column align-items-center mt-3 mb-5">
     <div id="playerpuzzle-canvas-container" class="pp-canvas-container"
          aria-label="{{#str}} pluginname, mod_playerpuzzle {{/str}}" role="region"
          data-config="{{gameconfig}}">
-
-        <div id="pp-bootstrap-loader" class="d-flex flex-column justify-content-center align-items-center">
-            <h3 class="text-white mb-3">{{#str}} loading, mod_playerpuzzle {{/str}}</h3>
-            <div class="progress pp-loader-progress">
-                <div id="pp-progress-bar"
-                     class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                     role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                     <span class="visually-hidden">0%</span>
-                </div>
-            </div>
-        </div>
-        <p class="text-center p-5 pp-loading-text">{{loadingtext}}</p>
+        {{#parts}}
+        {{> mod_playerpuzzle/game_parts }}
+        {{/parts}}
     </div>
-
     <div id="pp-aria-live" class="visually-hidden" aria-live="polite" role="status"></div>
-
-    <div class="visually-hidden">
-        <table role="grid" id="pp-board-grid" aria-label="{{#str}} boardgridlabel, mod_playerpuzzle {{/str}}">
-            <tbody id="pp-board-grid-body"></tbody>
-        </table>
-    </div>
-
-    {{> mod_playerpuzzle/question_modal }}
-    {{#opponenthelp}}
-    {{> mod_playerpuzzle/opponent_help }}
-    {{/opponenthelp}}
-    {{#howtoplay}}
-    {{> mod_playerpuzzle/howtoplay_dialog }}
-    {{/howtoplay}}
-    {{#giveup}}
-    {{> mod_playerpuzzle/giveup_dialog }}
-    {{/giveup}}
 </div>

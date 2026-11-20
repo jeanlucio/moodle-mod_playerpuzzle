@@ -290,19 +290,73 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          * backgrounding the tab, since visibilitychange fires before it can suspend it).
          */
         startCheckpointing() {
-            setInterval(() => {
+            this.checkpointTimer = setInterval(() => {
                 if (document.hidden || !this._checkpointDirty) {
                     return;
                 }
                 this.sendCheckpoint(false);
             }, 10000);
 
-            document.addEventListener('visibilitychange', () => {
+            this.onPageHidden = () => {
                 if (document.hidden) {
                     this.sendCheckpoint(true);
                 }
-            });
-            window.addEventListener('pagehide', () => this.sendCheckpoint(true));
+            };
+            this.onPageHide = () => this.sendCheckpoint(true);
+            document.addEventListener('visibilitychange', this.onPageHidden);
+            window.addEventListener('pagehide', this.onPageHide);
+        }
+
+        /**
+         * Stops everything this match does on its own, before the game goes on to the next one in the same page:
+         * nothing of it may save again under a token the server has already moved on from.
+         */
+        stop() {
+            clearInterval(this.checkpointTimer);
+            document.removeEventListener('visibilitychange', this.onPageHidden);
+            window.removeEventListener('pagehide', this.onPageHide);
+        }
+
+        /**
+         * Goes on to the next match (the next phase, another try, another Demo) without leaving the page, so the game
+         * stays in full screen: the server starts it as play.php would, and the game is built again in its box. A
+         * start the rules refuse goes to the page that explains it, and anything else that goes wrong falls back to
+         * reloading the game page, as it always could.
+         *
+         * @param {?string} difficulty The difficulty picked for a new attempt; null keeps the one this phase was
+         *  played on.
+         * @return {Promise<void>}
+         */
+        async goToNextMatch(difficulty = null) {
+            if (typeof this.scene.restartWith !== 'function') {
+                this.submitRestartForm(difficulty);
+                return;
+            }
+            let next = null;
+            try {
+                next = await Ajax.call([{
+                    methodname: 'mod_playerpuzzle_start_match',
+                    args: {
+                        cmid: this.gameConfig.cmid,
+                        difficulty: difficulty || this.gameConfig.difficulty || 'normal',
+                        isdemo: Boolean(this.gameConfig.isdemo),
+                        mobile: Boolean(this.gameConfig.mobile),
+                    },
+                }])[0];
+            } catch (error) {
+                this.submitRestartForm(difficulty);
+                return;
+            }
+            if (next.redirect) {
+                window.location.href = next.redirect;
+                return;
+            }
+            try {
+                await this.scene.restartWith(JSON.parse(next.config), next.html);
+            } catch (error) {
+                window.console.error('PlayerPuzzle could not go on to the next match:', error);
+                this.submitRestartForm(difficulty);
+            }
         }
 
         /**
@@ -1143,10 +1197,10 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
         }
 
         /**
-         * Submits a real POST to play.php, mirroring the Lobby's own Play form. A scene
-         * restart would only reset client-side state and keep reusing a token the
-         * server has already rotated or consumed, so the next attempt's own save/advance
-         * call would always fail with an invalid-token error.
+         * Submits a real POST to play.php, mirroring the Lobby's own Play form: the way to the next match when
+         * goToNextMatch() cannot build it in the page. A scene restart on its own would only reset client-side
+         * state and keep reusing a token the server has already rotated or consumed, so the next attempt's own
+         * save/advance call would always fail with an invalid-token error.
          *
          * Carries the current difficulty: on a post-defeat replay (no in-progress attempt)
          * the new attempt is created with it, so the student stays on the difficulty they
@@ -1279,11 +1333,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         onSuccess(res);
                     } else if (res.outcome === 'restarted') {
                         // The victory could not be verified: the phase starts over within this
-                        // same attempt, which the reloaded play.php resumes.
+                        // same attempt, which the next match resumes.
                         $('#pp-phase-status').removeClass('text-muted').addClass('text-danger')
                             .text(strings.victoryunverifiedrestart);
                         Accessibility.announce(strings.victoryunverifiedrestart);
-                        window.setTimeout(() => this.submitRestartForm(), 4000);
+                        window.setTimeout(() => this.goToNextMatch(), 4000);
                     } else {
                         // The replay found a defeat: record it as one, through the end screen.
                         document.getElementById('playerpuzzle-phasecomplete').close();
@@ -1956,11 +2010,11 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             }])[0].done(res => {
                 if (res.outcome === 'restarted') {
                     // The victory could not be verified: the phase starts over within this
-                    // same attempt, which the reloaded play.php resumes.
+                    // same attempt, which the next match resumes.
                     $('#pp-save-status').removeClass('text-muted').addClass('text-danger')
                         .text(strings.victoryunverifiedrestart);
                     Accessibility.announce(strings.victoryunverifiedrestart);
-                    window.setTimeout(() => this.submitRestartForm(), 4000);
+                    window.setTimeout(() => this.goToNextMatch(), 4000);
                     return;
                 }
                 if (victory && res.outcome !== 'won') {
@@ -1992,7 +2046,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
 
             $('#btn-pp-restart').on('click', () => {
                 const retry = document.getElementById('pp-retry-difficulty');
-                this.submitRestartForm(retry ? retry.value : null);
+                this.goToNextMatch(retry ? retry.value : null);
             });
             $('#btn-pp-exit').on('click', () => {
                 window.location.href = viewurl;
@@ -2056,7 +2110,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
             const total = parseInt(this.gameConfig.maxlevels, 10) * 10 || 10;
             const startNext = () => {
                 // Announce the transition for screen-reader users, then give it a beat to be read
-                // before the full page reload wipes the live region. The beat is counted on the real clock, not
+                // before the next phase is built and starts speaking. The beat is counted on the real clock, not
                 // the game's, which slows down together with a slow device and would stretch it to many seconds.
                 Accessibility.announce(
                     strings.phaseadvanced
@@ -2064,7 +2118,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
                         .replace('{$a->phase}', res.currentphase)
                         .replace('{$a->total}', total)
                 );
-                window.setTimeout(() => this.submitRestartForm(res.difficulty), 1600);
+                window.setTimeout(() => this.goToNextMatch(res.difficulty), 1600);
             };
 
             try {

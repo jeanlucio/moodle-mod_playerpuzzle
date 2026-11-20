@@ -31,47 +31,6 @@ define([], () => {
 
     const LAYERS = ['back', 'middle', 'front', 'floating', 'overlay'];
 
-    /** The sessionStorage key that tells the next game page the last one was full screen. */
-    const FULLSCREEN_KEY = 'mod_playerpuzzle_fullscreen';
-
-    /**
-     * When the page before this one left the game full screen (see rememberFullscreen()), goes back to full screen on
-     * the student's first click or key with no dialog open: a gesture is the only moment the browser allows it.
-     *
-     * @param {HTMLElement} container The element that goes full screen.
-     * @return {{cancel: Function}} Stops waiting for the gesture.
-     */
-    const restoreFullscreenOnGesture = container => {
-        let wanted = false;
-        try {
-            wanted = window.sessionStorage.getItem(FULLSCREEN_KEY) === '1';
-            window.sessionStorage.removeItem(FULLSCREEN_KEY);
-        } catch (e) {
-            wanted = false;
-        }
-        const events = ['click', 'keydown'];
-        const cancel = () => events.forEach(type => document.removeEventListener(type, onGesture, true));
-        const onGesture = async() => {
-            // Full screen entered under an open modal dialog (the opening question) would cover it and leave the page
-            // behind it, the exit button included, out of reach: wait for a click with no dialog open.
-            if (document.querySelector('dialog[open]')) {
-                return;
-            }
-            cancel();
-            if (!document.fullscreenElement && container.requestFullscreen) {
-                try {
-                    await container.requestFullscreen();
-                } catch (e) {
-                    // A browser that refuses simply stays out of full screen.
-                }
-            }
-        };
-        if (wanted) {
-            events.forEach(type => document.addEventListener(type, onGesture, true));
-        }
-        return {cancel};
-    };
-
     /**
      * Sets where an element stands on the stage, in the game's coordinates; the stylesheet turns the four numbers
      * into its box.
@@ -145,7 +104,6 @@ define([], () => {
         const fullscreenListeners = [];
         const onFullscreenChange = () => fullscreenListeners.forEach(listener => listener(Boolean(document.fullscreenElement)));
         document.addEventListener('fullscreenchange', onFullscreenChange);
-        const restoreGesture = restoreFullscreenOnGesture(container);
 
         return {
             root,
@@ -226,22 +184,6 @@ define([], () => {
             },
 
             /**
-             * Remembers, for the page that loads next in this tab, that the game was full screen. A page load always
-             * leaves full screen and the browser only lets a page enter it from a click or a key, so the next game
-             * page goes back to it on the student's first one.
-             */
-            rememberFullscreen() {
-                if (document.fullscreenElement !== container) {
-                    return;
-                }
-                try {
-                    window.sessionStorage.setItem(FULLSCREEN_KEY, '1');
-                } catch (e) {
-                    // Without storage the next page simply opens out of full screen.
-                }
-            },
-
-            /**
              * Calls a function whenever the page enters or leaves full screen.
              *
              * @param {Function} listener Called with whether it is full screen now.
@@ -258,11 +200,10 @@ define([], () => {
                     observer.disconnect();
                 }
                 document.removeEventListener('fullscreenchange', onFullscreenChange);
-                restoreGesture.cancel();
                 root.remove();
             },
         };
     };
 
-    return {create, place, LAYERS, FULLSCREEN_KEY};
+    return {create, place, LAYERS};
 });

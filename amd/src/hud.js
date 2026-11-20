@@ -1521,6 +1521,8 @@ define([
                 music: {x: xMusic, y, r},
                 effects: {x: xEffects, y, r}, expand: {x: xExpand, y, r},
             };
+            // The buttons that act on the match wait for the student's turn; music, sound effects and full screen
+            // change nothing in it, so they answer at any moment, the opponent's turn and the animations included.
             const whenActive = action => () => {
                 if (me.input.enabled) {
                     action();
@@ -1564,7 +1566,7 @@ define([
                 return {button, draw};
             };
             const music = toggle('music', strings.lobby_music_label, () => me.musicOn);
-            music.button.addEventListener('click', whenActive(() => {
+            music.button.addEventListener('click', () => {
                 if (me.board && me.board.swipePiece !== null) {
                     return;
                 }
@@ -1576,9 +1578,9 @@ define([
                     me.pauseMusic();
                 }
                 this.saveSoundPreference('music', me.musicOn);
-            }));
+            });
             const effects = toggle('effects', strings.lobby_sfx_label, () => me.sfxOn);
-            effects.button.addEventListener('click', whenActive(() => {
+            effects.button.addEventListener('click', () => {
                 if (me.board && me.board.swipePiece !== null) {
                     return;
                 }
@@ -1589,20 +1591,20 @@ define([
                 me.sfxMatch.setVolume(0.5 * vol);
                 me.sfxHit.setVolume(0.65 * vol);
                 this.saveSoundPreference('sfx', me.sfxOn);
-            }));
+            });
 
             const expand = this.roundButton('expand', strings.stage_fullscreen, xExpand, y, r);
             this.drawFullscreenIcon(expand, r, false);
             expand.setAttribute('aria-pressed', 'false');
             // The screen fades to black, goes full screen or back while it is black, and fades in.
-            expand.addEventListener('click', whenActive(() => {
+            expand.addEventListener('click', () => {
                 const stage = me.stage;
                 stage.fadeVeil(1, 200);
                 me.time.delayedCall(200, () => {
                     stage.toggleFullscreen();
                     stage.fadeVeil(0, 200);
                 });
-            }));
+            });
             me.stage.onFullscreenChange(on => {
                 this.drawFullscreenIcon(expand, r, on);
                 expand.setAttribute('aria-pressed', on ? 'true' : 'false');

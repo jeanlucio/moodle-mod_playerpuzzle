@@ -120,12 +120,3 @@ test('the old status badges on the HP bars are gone', () => {
     assert.ok(!hud.includes('updateStatusBadges'), 'updateStatusBadges() is still in hud.js');
     assert.ok(hud.includes('updateStatusEffects'), 'updateStatusEffects() is missing from hud.js');
 });
-
-test('full screen comes back after a reload only on a click with no dialog open', () => {
-    const stage = read('stage/stage.js');
-    const body = stage.match(/const restoreFullscreenOnGesture = container => \{\n([\s\S]*?)^ {4}\};$/m);
-
-    assert.ok(body, 'restoreFullscreenOnGesture() was not found in stage.js');
-    // Entered under the opening question, full screen would cover it and the exit button with it.
-    assert.match(body[1], /if \(document\.querySelector\('dialog\[open\]'\)\) \{\n\s+return;\n\s+\}\n\s+cancel\(\);/);
-});

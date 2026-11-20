@@ -1157,8 +1157,6 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'core/conf
          *  keeps the one this phase was played on.
          */
         submitRestartForm(difficulty = null) {
-            // The reload leaves full screen; the next page goes back to it on the student's first click.
-            this.scene.stage?.rememberFullscreen();
             const restartForm = document.createElement('form');
             restartForm.method = 'POST';
             let restarturl = `${M.cfg.wwwroot}/mod/playerpuzzle/play.php?id=${this.gameConfig.cmid}`;

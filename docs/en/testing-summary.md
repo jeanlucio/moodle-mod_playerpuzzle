@@ -176,13 +176,13 @@ contract between the game and its HUD, run headless with `node --test`. The twee
 | `clock.test.js` | 14 |
 | `emoji.test.js` | 6 |
 | `hero_grid.test.js` | 1 |
-| `hud_contract.test.js` | 7 |
+| `hud_contract.test.js` | 6 |
 | `modal_contrast.test.js` | 4 |
 | `no_globals.test.js` | 1 |
 | `portrait_layout.test.js` | 3 |
 | `status_effects.test.js` | 7 |
 | `tween.test.js` | 20 |
-| **Subtotal** | **71** |
+| **Subtotal** | **70** |
 
 ```bash
 node --test tests/js/stage/*.test.js

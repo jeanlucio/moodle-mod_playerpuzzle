@@ -16,7 +16,8 @@
 /**
  * Headless test that the vertical (phone) layout offers every use button the horizontal one does, and that the
  * student's row of resources fits them. The shop sells each consumable once, whatever the screen: an item with no
- * button in one layout is stock a student paid for and cannot use there.
+ * button in one layout is stock a student paid for and cannot use there. The buttons of the rings sit under them in
+ * both layouts, clear of what is around them, so they hide none of the arc.
  *
  * @package    mod_playerpuzzle
  * @copyright  2026 Jean Lúcio
@@ -94,18 +95,41 @@ const badgeRect = (x, y, scale) => ({
     bottom: y + (20 * scale) + (17 * scale),
 });
 
+/**
+ * The rectangle the use button of a ring occupies, as hud.js::createPurchaseBadge() places it: centred under the
+ * ring, its top 10 * scale behind the ring's outer edge, 46 x 34 at scale 1.
+ *
+ * @param {object} L The layout.
+ * @param {number} x Centre of the ring.
+ * @param {number} y Centre of the ring.
+ * @param {number} scale The badge scale.
+ * @return {{left: number, right: number, top: number, bottom: number}}
+ */
+const ringBadgeRect = (L, x, y, scale) => {
+    const top = y + L.ringRadius + (L.ringThickness / 2) - (10 * scale);
+    return {left: x - (23 * scale), right: x + (23 * scale), top, bottom: top + (34 * scale)};
+};
+
+/**
+ * The square a ring occupies, its stroke included.
+ *
+ * @param {object} L The layout.
+ * @param {number} x Centre of the ring.
+ * @param {number} y Centre of the ring.
+ * @return {{left: number, right: number, top: number, bottom: number}}
+ */
+const ringRect = (L, x, y) => {
+    const reach = L.ringRadius + (L.ringThickness / 2);
+    return {left: x - reach, right: x + reach, top: y - reach, bottom: y + reach};
+};
+
 const overlap = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
 test('the student row of the vertical layout fits its icons, rings and use buttons without overlap', () => {
     const L = layoutFor(false);
     const half = L.resourceIconSize / 2;
     const icon = (x, y) => ({left: x - half, right: x + half, top: y - half, bottom: y + half});
-    const ring = x => ({
-        left: x - L.ringRadius,
-        right: x + L.ringRadius,
-        top: L.playerRingY - L.ringRadius,
-        bottom: L.playerRingY + L.ringRadius,
-    });
+    const ring = x => ringRect(L, x, L.playerRingY);
 
     const items = {
         potion: icon(L.potionX, L.potionY),
@@ -113,9 +137,9 @@ test('the student row of the vertical layout fits its icons, rings and use butto
         sword: icon(L.swordX, L.swordY),
         swordButton: badgeRect(L.swordX, L.swordY, L.badgeScale),
         grimoire: ring(L.playerGrimoireX),
-        grimoireButton: badgeRect(L.playerGrimoireX, L.playerRingY, L.badgeScale),
+        grimoireButton: ringBadgeRect(L, L.playerGrimoireX, L.playerRingY, L.badgeScale),
         shield: ring(L.playerShieldRingX),
-        shieldButton: badgeRect(L.playerShieldRingX, L.playerRingY, L.badgeScale),
+        shieldButton: ringBadgeRect(L, L.playerShieldRingX, L.playerRingY, L.badgeScale),
         orb: ring(L.playerOrbX),
     };
 
@@ -129,6 +153,45 @@ test('the student row of the vertical layout fits its icons, rings and use butto
             assert.ok(!overlap(items[first], items[second]), `${first} overlaps ${second}`);
         });
         assert.ok(items[first].left >= 0 && items[first].right <= L.w, `${first} leaves the stage`);
+        assert.ok(items[first].bottom <= L.panelBottomPlayer, `${first} leaves the student's panel`);
+    });
+    assert.ok(L.panelBottomPlayer <= L.historyBtnY, "the student's panel runs into the history button");
+});
+
+test('the use buttons of the rings sit under them in both layouts, so the arcs stay in sight', () => {
+    ['buildLandscapeStage', 'buildPortraitStage'].forEach(method => {
+        const calls = [...methodBody(method).matchAll(/createPurchaseBadge\(([^)]*)\)/g)].map(match => match[1]);
+        calls.forEach(args => {
+            const onRing = /'(magic|shield)'/.test(args);
+            assert.equal(/,\s*true$/.test(args.trim()), onRing, `${method}: ${args}`);
+        });
+    });
+});
+
+test('in the horizontal layout the use buttons of the rings stay clear of the history, the coins and the stars', () => {
+    const L = layoutFor(true);
+    const banner = {
+        left: L.playerUiX,
+        right: L.playerUiX + (L.historyBannerH * 1.738),
+        top: L.historyTitleY - (L.historyBannerH / 2),
+        bottom: L.historyTitleY + (L.historyBannerH / 2),
+    };
+    const chip = (x, y) => ({
+        left: x - (L.indicatorIconSize / 2),
+        right: x + 60,
+        top: y - (L.indicatorIconSize / 2),
+        bottom: y + (L.indicatorIconSize / 2),
+    });
+    const others = {banner, gold: chip(L.goldX, L.goldY), star: chip(L.starX, L.starY)};
+    const rings = {grimoire: L.playerGrimoireX, shield: L.playerShieldRingX, orb: L.playerOrbX};
+    [['grimoire', L.playerGrimoireX], ['shield', L.playerShieldRingX]].forEach(([name, x]) => {
+        const button = ringBadgeRect(L, x, L.playerRingY, 1);
+        Object.entries(others).forEach(([other, rect]) => {
+            assert.ok(!overlap(button, rect), `the ${name} button overlaps the ${other}`);
+        });
+        Object.entries(rings).filter(([other]) => other !== name).forEach(([other, ringX]) => {
+            assert.ok(!overlap(button, ringRect(L, ringX, L.playerRingY)), `the ${name} button overlaps the ${other} ring`);
+        });
     });
 });
 

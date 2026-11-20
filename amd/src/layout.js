@@ -101,8 +101,8 @@ define([], () => {
             // beside the history block instead, stacked vertically just right of the scroll
             // banner — the space freed up when the Status badges moved to the HP bar's own
             // corner. Smaller icon (indicatorIconSize) than the consumable row's.
-            goldX: 190, goldY: 538, starX: 285, starY: 538,
-            bossGoldX: 1050, bossGoldY: 538, bossStarX: 1145, bossStarY: 538,
+            goldX: 190, goldY: 566, starX: 285, starY: 566,
+            bossGoldX: 1050, bossGoldY: 566, bossStarX: 1145, bossStarY: 566,
             indicatorIconSize: 26,
             // Gap between ring centers tightened 120 -> 100 (was 90/210/330) — same border
             // as the HP bar/resource row above, now clearing it on both sides instead of
@@ -116,8 +116,9 @@ define([], () => {
             // the player character and resource chips — no mobile equivalent yet. Title Y
             // (and the line Y that follows it) both shifted down — at the old 500/520 the
             // scroll banner behind the title (see hud.js createHistoryLog()) overlapped the
-            // bottom of the ring row above it.
-            historyTitleY: 538, historyBannerH: 46, historyLines: 4, historyLineY: 565, historyLineHeight: 19,
+            // bottom of the ring row above it. The banner starts just under the use buttons below the rings (hud.js
+            // createPurchaseBadge()), and the lines are packed so the last stays inside the frame.
+            historyTitleY: 566, historyBannerH: 46, historyLines: 4, historyLineY: 591, historyLineHeight: 16,
 
             // Compact circular icon buttons: Give Up and Help at the left edge, Music/Sound Effects/Expand
             // right-aligned —
@@ -184,8 +185,9 @@ define([], () => {
             // questions), then one row with Coin/Star, the Potion, the Sword and the rings, with
             // purchase badges on the Potion, Sword, Grimoire and Shield. The rings sit 30px
             // further right than the opponent's row first had them, to make room for the Sword's
-            // icon and badge; the opponent's row moved with them so the two stay aligned.
-            panelTopPlayer: 776, panelBottomPlayer: 870,
+            // icon and badge; the opponent's row moved with them so the two stay aligned. The panel runs on below the
+            // row to hold the rings' use buttons, which sit under the rings.
+            panelTopPlayer: 776, panelBottomPlayer: 888,
             playerUiX: 120, playerHpY: 784, playerTxtY: 795,
             questionsCounterY: 811,
             goldX: 60, goldY: 846, starX: 150, starY: 846,

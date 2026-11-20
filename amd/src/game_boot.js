@@ -43,10 +43,11 @@ define([
                 Accessibility.hideEmojis(container);
                 Accessibility.hideEmojis(document.getElementById('playerpuzzle-modal'));
 
-                // Apply desktop layout immediately so the loading screen renders at the correct size.
-                if (window.innerWidth > window.innerHeight) {
-                    container.classList.add('pp-canvas-desktop');
-                }
+                // Fix the shape the stylesheet gave the loading screen from the window's orientation, so turning the
+                // phone later does not change it under the game.
+                const landscape = window.innerWidth > window.innerHeight;
+                container.classList.toggle('pp-canvas-desktop', landscape);
+                container.classList.toggle('pp-canvas-portrait', !landscape);
 
                 const strKeys = [
                     'advancingphase',

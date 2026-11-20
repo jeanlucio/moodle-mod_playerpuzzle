@@ -23,8 +23,9 @@
  */
 
 /**
- * Default canvas container: portrait 9/16 layout (mobile and desktop-portrait).
- * JS adds .pp-canvas-desktop on desktop-landscape to switch to 16/9 layout.
+ * Default canvas container: portrait 9/16 layout (mobile and desktop-portrait). A landscape window gets the
+ * 16/9 layout from the media query below as soon as the page renders; the game then fixes the shape it started
+ * with (.pp-canvas-desktop or .pp-canvas-portrait), so turning the phone later does not change it.
  */
 body.path-mod-playerpuzzle .pp-canvas-container {
     position: relative;
@@ -46,6 +47,33 @@ body.path-mod-playerpuzzle .pp-canvas-desktop {
        Expand button (the stage's own fit + the browser Fullscreen API) still fills the
        whole screen on request, since fullscreen sizing is independent of this cap. */
     max-width: 960px;
+}
+
+@media (orientation: landscape) {
+    body.path-mod-playerpuzzle .pp-canvas-container:not(.pp-canvas-portrait) {
+        aspect-ratio: 16/9;
+        max-width: 960px;
+    }
+}
+
+/**
+ * The game filling the browser window: the page that follows a full-screen game (a phase won, a retry), and the
+ * full screen of a browser that has none for a page. Above the navbar and the drawers (up to 1035), below
+ * Moodle's modals and toasts (1050).
+ */
+body.path-mod-playerpuzzle.pp-maximized {
+    overflow: hidden;
+}
+
+body.path-mod-playerpuzzle.pp-maximized .pp-canvas-container {
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    max-width: none;
+    aspect-ratio: auto;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
 }
 
 body.path-mod-playerpuzzle .pp-loading-text {

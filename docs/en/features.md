@@ -116,5 +116,4 @@ neighbour, number-key moves, and `aria-live` turn announcements), with real labe
 * 💲 **Shop prices that mirror a PlayerHUD trade:** prices are fixed today (see
   [Combat](#combat)); following a trade configured in PlayerHUD is a possible future step.
 
-<p class="page-hint">The plugin has not been published on the Moodle Marketplace yet.
-Everything listed above works today and is covered by the automated test suite.</p>
+<p class="page-hint">Everything listed above works today and is covered by the automated test suite.</p>

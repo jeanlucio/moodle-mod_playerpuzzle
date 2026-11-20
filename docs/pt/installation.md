@@ -1,8 +1,5 @@
 # 🛠️ Instalação e Configuração
 
-> ⚠️ Este plugin ainda não está publicado no Moodle Marketplace. Instale manualmente
-> a partir deste repositório.
-
 1. Baixe o arquivo `.zip` ou clone este repositório.
 2. Extraia na pasta `mod/` do seu Moodle.
 3. Renomeie para `playerpuzzle` (se necessário).

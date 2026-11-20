@@ -122,5 +122,4 @@ e rotulados, um `<dialog>` nativo para as perguntas e uma narração falada opci
 * 💲 **Preços da loja espelhando uma troca do PlayerHUD:** os preços são fixos hoje (veja
   [Combate](#combat)); seguir uma troca configurada no PlayerHUD é um passo futuro possível.
 
-<p class="page-hint">O plugin ainda não foi publicado no Moodle Marketplace. Tudo o que
-está listado acima funciona hoje e é coberto pela suíte de testes automatizados.</p>
+<p class="page-hint">Tudo o que está listado acima funciona hoje e é coberto pela suíte de testes automatizados.</p>

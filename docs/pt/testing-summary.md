@@ -24,8 +24,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `lib_update_grades_test.php` | 7 |
 | `mod_form_test.php` | 32 |
 | `uninstall_test.php` | 2 |
-| `upgrade_test.php` | 7 |
-| **Subtotal** | **116** |
+| **Subtotal** | **109** |
 
 ### Testes de Conclusão (`tests/completion/`)
 
@@ -138,7 +137,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 41 |
 | **Subtotal** | **41** |
 
-| **Total Geral** | **1181** |
+| **Total Geral** | **1174** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite

@@ -24,8 +24,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `lib_update_grades_test.php` | 7 | Limpa a nota obsoleta de um estudante específico assim que sua última tentativa é removida; ignora tentativas de Demo; recalcula a partir do progresso restante mais distante quando outras tentativas ainda existem; recalcula a nota de todo mundo quando `$userid = 0`; a data de envio é informada com cada nota, e mudar o método de avaliação ou o número de níveis recalcula as notas já registradas |
 | `mod_form_test.php` | 32 | A seção do PlayerHUD aparece/some conforme a presença do bloco no curso e preserva um item configurado obsoleto como opção selecionável; `gamemode` tem padrão Campanha; os campos exclusivos de Campanha (`maxlevels`, `maxattempts`, `maxcampaigns`) e o exclusivo de Partida Única `max_single_matches` registram o `hideIf` certo nos dois sentidos, enquanto `grademethod` e o cooldown ficam nos dois modos; `minquestions` tem padrão 3; `considererrors` desativa quando `minquestions` é 0; os campos de quantidade de custo de retentativa/prêmio de vitória do PlayerHUD somem quando o item não está configurado, e a validação rejeita um item configurado com quantidade abaixo de 1; a validação rejeita HP e dano do oponente abaixo de 1, HP, dano e ganho de moeda acima do teto (aceitando o próprio teto), ganho de moeda negativo, limite de tentativas negativo (só do modo selecionado), cooldown negativo e escala como nota, e aceita os valores padrão; um cooldown salvo em segundos volta a ser um valor e uma unidade; o campo de nome tem uma regra de tamanho máximo que cabe na coluna e traz o rótulo "Nome" do próprio Moodle |
 | `uninstall_test.php` | 2 | `xmldb_playerpuzzle_uninstall()` apaga só as linhas de `user_preferences` prefixadas com `mod_playerpuzzle`, deixando as demais (inclusive de outros plugins) intactas, e é um no-op inofensivo quando nada bate |
-| `upgrade_test.php` | 7 | Os passos de upgrade, rodados pelo `xmldb_playerpuzzle_upgrade()` de verdade: numerar as Campanhas já jogadas, registrar os níveis das Campanhas já vencidas, acrescentar a fase da pergunta como Qualquer fase, recalcular as notas das Campanhas que contam erros e zerar o cooldown que uma Campanha guardava escondido; acrescentar o nível da questão como qualquer nível; acrescentar o mínimo de questões congelado, vazio nas tentativas já gravadas |
-| **Subtotal** | **116** | |
+| **Subtotal** | **109** | |
 
 ### Testes de Conclusão (`tests/completion/`)
 
@@ -138,7 +137,7 @@ atividade e privacidade. Todo push no CI roda a matriz completa (Moodle 4.5 → 
 | `provider_test.php` | 41 | `get_metadata()` declara `playerpuzzle_attempts` e as três preferências de som, e — conferido contra o schema real via `$DB->get_columns()`, não uma lista fixa de chaves — toda coluna real de `playerpuzzle_attempts`, `playerpuzzle_questions` e `playerpuzzle_user_stock` é declarada ou uma exclusão documentada e justificada (mecânica de replay anti-trapaça, FKs estruturais), enquanto `playerpuzzle_question_answers` não carrega dado pessoal nenhum; `export_user_preferences()` exporta só um canal alterado; contextos/usuários são descobertos via tentativas, só estoque de loadout, ou só autoria de questão; `export_user_data()` carrega dados de tentativa incluindo o log de movimentos e os resultados de questão (diferente dos campos irmãos de anti-trapaça), entre múltiplos contextos, e é um no-op pra um contexto que não é de módulo; a exclusão (por usuário, por vários usuários, e contexto inteiro) remove só as linhas/contextos pretendidos, é um no-op pra contextos que não são de módulo ou um módulo de curso ausente, e — pra autoria de questão especificamente — anonimiza `addedby` em vez de apagar a questão em si, nos três caminhos de exclusão; uma guarda de regressão confirma que toda consulta faz join por `{modules}.name = 'playerpuzzle'` pra que um id de instância colidindo com outro tipo de módulo nunca seja confundido com dado deste |
 | **Subtotal** | **41** | |
 
-| **Total Geral** | **1181** |
+| **Total Geral** | **1174** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
@@ -161,10 +160,7 @@ arquivos declarativos de `db/`. Cerca de sessenta dos 79 arquivos estão em 100%
 todos os web services exceto o de IA, o provedor de privacidade, a etapa de backup, o Lobby e os
 serviços de nota, ranking e relatório. Os que merecem atenção:
 
-* **`settings.php`** (0%) e **`db/upgrade.php`** (28%) — a página de configurações do site só é
-  carregada pela árvore de administração, e só os passos de upgrade recentes têm um teste que os
-  roda pelo `xmldb_playerpuzzle_upgrade()` de verdade; os mais antigos são conferidos localmente pelo
-  `moodle-upgrade` e pela checagem de schema, já que o banco do PHPUnit é instalado do zero.
+* **`settings.php`** (0%) — a página de configurações do site só é carregada pela árvore de administração.
 * **`local/ai_question_generator`** (69%) e **`external/generate_questions`** (48%) — o caminho de
   geração por IA em si (montagem do prompt, chamadas ao provedor) está praticamente sem teste; só
   a validação/parsing determinístico de uma resposta já recebida está. Uma decisão de escopo

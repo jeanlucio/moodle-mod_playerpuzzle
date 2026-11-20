@@ -23,8 +23,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `lib_update_grades_test.php` | 7 | Clears a specific student's stale grade once their last attempt is removed; ignores Demo attempts; recomputes from the furthest remaining progress when other attempts still exist; recomputes every user's grade when `$userid = 0`; the date submitted is reported with each grade, and changing the grading method or the number of levels recomputes the grades already recorded |
 | `mod_form_test.php` | 32 | The PlayerHUD section appears/hides with the block's presence in the course and preserves a stale configured item as a selectable option; `gamemode` defaults to Campaign; the Campaign-only fields (`maxlevels`, `maxattempts`, `maxcampaigns`) and the Single Match-only `max_single_matches` each register the right `hideIf` in both directions, while `grademethod` and the cooldown stay in both modes; `minquestions` defaults to 3; `considererrors` disables when `minquestions` is 0; the HUD retry-cost/win-grant quantity fields hide when their item is unconfigured, and validation rejects a configured item paired with a quantity below 1; validation rejects HP and opponent damage below 1, HP, damage and coin gain above their ceilings (accepting the ceiling itself), a negative coin gain, a negative attempt limit (only for the selected mode), a negative cooldown and a scale as the grade, and accepts the defaults; a stored cooldown in seconds converts back to an amount and unit; the name field has a maxlength rule that fits the column and carries Moodle's own "Name" label |
 | `uninstall_test.php` | 2 | `xmldb_playerpuzzle_uninstall()` deletes only `mod_playerpuzzle`-prefixed `user_preferences` rows, leaving unrelated ones (including other plugins') untouched, and is a harmless no-op when nothing matches |
-| `upgrade_test.php` | 7 | The upgrade steps, run through the real `xmldb_playerpuzzle_upgrade()`: numbering the Campaigns already played, recording the levels of Campaigns already won, adding the question phase as Any phase, recomputing the grades of Campaigns that count errors, and clearing the cooldown a Campaign kept hidden; adding the question level as any level; adding the frozen minimum of questions, empty on stored attempts |
-| **Subtotal** | **116** | |
+| **Subtotal** | **109** | |
 
 ### Completion Tests (`tests/completion/`)
 
@@ -137,7 +136,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `provider_test.php` | 41 | `get_metadata()` declares `playerpuzzle_attempts` and the three sound preferences, and — checked against the real schema via `$DB->get_columns()`, not a fixed key list — every real column of `playerpuzzle_attempts`, `playerpuzzle_questions` and `playerpuzzle_user_stock` is either declared or a documented, justified exclusion (anti-cheat replay plumbing, structural FKs), while `playerpuzzle_question_answers` carries no personal data at all; `export_user_preferences()` exports only a touched channel; contexts/users are discovered via attempts, loadout stock alone, or question authorship alone; `export_user_data()` carries attempt data including the move log and question outcomes (unlike their anti-cheat sibling fields), across multiple contexts, and is a no-op for a non-module context; deletion (per-user, per-users, and whole-context) removes only the intended rows/contexts, is a no-op for non-module contexts or a missing course module, and — for question authorship specifically — anonymizes `addedby` rather than deleting the question itself, on all three deletion paths; a regression guard confirms every query joins through `{modules}.name = 'playerpuzzle'` so a colliding instance id from a different module type is never mistaken for this one's data |
 | **Subtotal** | **41** | |
 
-| **Grand Total** | **1181** |
+| **Grand Total** | **1174** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
@@ -160,10 +159,7 @@ declarative `db/` files. About sixty of the 79 files are at or near 100%, includ
 except the AI one, the privacy provider, the backup step, the Lobby and the grade, ranking and report
 services. The ones worth a closer look:
 
-* **`settings.php`** (0%) and **`db/upgrade.php`** (28%) — the site settings page is only loaded by
-  the admin tree, and only the recent upgrade steps have a test that runs them through the real
-  `xmldb_playerpuzzle_upgrade()`; the older ones are checked locally by `moodle-upgrade` and the
-  schema check, since the PHPUnit database is installed fresh.
+* **`settings.php`** (0%) — the site settings page is only loaded by the admin tree.
 * **`local/ai_question_generator`** (69%) and **`external/generate_questions`** (48%) — the
   AI-generation path itself (prompt building, provider calls) is largely untested; only the
   deterministic parsing and validation of an already-returned response is. A deliberate scope

@@ -23,8 +23,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `lib_update_grades_test.php` | 7 |
 | `mod_form_test.php` | 32 |
 | `uninstall_test.php` | 2 |
-| `upgrade_test.php` | 7 |
-| **Subtotal** | **116** |
+| **Subtotal** | **109** |
 
 ### Completion Tests (`tests/completion/`)
 
@@ -137,7 +136,7 @@ Every CI push runs the full matrix (Moodle 4.5 → 5.3, PHP 8.1 → 8.4, Postgre
 | `provider_test.php` | 41 |
 | **Subtotal** | **41** |
 
-| **Grand Total** | **1181** |
+| **Grand Total** | **1174** |
 
 ```bash
 vendor/bin/phpunit --testsuite mod_playerpuzzle_testsuite
